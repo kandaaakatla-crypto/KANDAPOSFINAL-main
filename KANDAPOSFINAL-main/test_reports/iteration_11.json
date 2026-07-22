@@ -1,0 +1,33 @@
+{
+  "summary": "Tested Phase-2 Daily Digest + fixed AI Assistant chat. Backend 8/8 pytest passing (assistant chat static + live tools, digest GET/PUT config persistence, preview shape, send-now with saved config, auth guards). Frontend end-to-end verified via Playwright: owner login → /biz/digest → preview metrics render (Revenue Today, Orders, Avg Ticket, Staff on Duty) → digest-ai-text populated with real AI copy → email recipient add + Enabled toggle + Save shows 'Digest settings saved' toast → Send preview now completes without error → floating AI Assistant on the digest page returns a proper 'How do I add a menu item?' answer (no 'Sorry — I couldn't answer' message).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/biz/digest Delivery settings", "issues": ["Adding the same email twice via the input+Add button silently creates a duplicate entry in email_recipients — consider dedup on add, or backend PUT could dedupe. Minor UX polish."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_assistant_and_digest.py",
+    "/app/test_reports/pytest/assistant_digest.xml"
+  ],
+  "action_items": [
+    "Optional: dedupe email/sms recipient lists on add (frontend) or on PUT (backend).",
+    "Optional: also add a data-testid on the login form's 'Sign in' button confirmation state; existing dash-submit-btn works fine.",
+    "None blocking — feature is production-ready."
+  ],
+  "critical_code_review_comments": [
+    "digest.py: _do_send() uses tenant name safely and always updates last_sent_at, good. Scheduler dedupes by last_sent_at.startswith(YYYY-MM-DD) — correct.",
+    "assistant.py: budget-exceeded errors now raise HTTP 402 with a clear detail; generic upstream failures raise 502. Good.",
+    "Duplicate emails: PUT /api/digest/config accepts arbitrary list — consider server-side dedup + basic email format validation via Pydantic EmailStr.",
+    "digest.py imports internal helpers from routes.assistant; keeps single source of truth for live tenant data. Nice."
+  ],
+  "updated_files": ["/app/backend/tests/test_assistant_and_digest.py"],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% of asked flows"},
+  "test_credentials": "owner@demo.com / OwnerPass#2025 (dashboard); Manager PIN 1234 with X-Tenant-Slug demo for POS /api/auth/login",
+  "seed_data_creation": "None — used existing demo tenant data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Digest tests live at /app/backend/tests/test_assistant_and_digest.py. Note that PUT /api/digest/config in the last test leaves the demo tenant with enabled=true, send_hour_utc=2, send_minute=45, email_recipients=['kandaaakatla@gmail.com'] and last_sent_at populated. Non-dash-token guard is verified via POS /api/auth/login with PIN 1234. Assistant chat depends on EMERGENT_LLM_KEY budget — a 402 response there means top-up needed."
+}

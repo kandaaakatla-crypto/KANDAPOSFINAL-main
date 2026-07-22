@@ -1,0 +1,52 @@
+{
+  "summary": "Iteration 9 — Tip/Coupon/Email/Loyalty + Split-pay + Refund/Void + Onboarding + Labour widget + Daily-rollup + Staff pay_type. 29 new pytest backend tests created — all 29 pass after fixing one production bug. Frontend manager-side verified end-to-end (refund/void buttons, labour widget, staff pay-type selector, role gating). TimeClock camera empty-state CTA verified. Cashier cart panel — tip/coupon/email/loyalty inputs not surfaced in headless automation runs (cart-total + pay-btn ARE rendered, so panel itself is mounted; items may not have actually been added by test). Main agent should self-verify the cashier checkout UI manually.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/orders/{id}/refund and /api/orders/{id}/void",
+        "issue": "Both endpoints returned 500 'Internal server error' because the `_log()` helper in routes/refunds.py returned the doc that motor.insert_one() had mutated to include MongoDB's ObjectId `_id`, breaking FastAPI's JSON serialization. FIXED by popping `_id` from doc before returning.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Cashier checkout — tip/coupon/email/loyalty inputs in CartPanel",
+        "issue": "Headless Playwright did not surface tip-0/5/10/15, coupon-input, email-input, send-receipt-toggle, tip-amount testids on /new-order after clicking 2 menu cards. The pay-btn and cart-total WERE found, so CartPanel renders; clicks on menu-item-* cards may not have actually added items (cart possibly remained empty so the conditional inputs never mounted). PaymentModal split-method buttons (pay-method-cash/card/split) likewise not detected — modal may have opened against an empty cart. Needs manual verification by main agent.",
+        "affected_selectors": ["tip-0","tip-5","tip-10","tip-15","coupon-input","email-input","send-receipt-toggle","tip-amount","pay-method-cash","pay-method-card","pay-method-split"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration9_batch.py",
+    "/app/test_reports/pytest/iteration9.xml"
+  ],
+  "action_items": [
+    "DONE (by testing agent): refunds.py _log() now strips _id before returning — refund+void no longer 500.",
+    "Self-verify cashier cart UI: login as PIN 2345, /new-order, manually add 2 items, confirm tip presets / coupon input / email input / send-receipt switch all render, and PaymentModal shows cash/card/split method buttons. Headless test could not confirm because clicks on [data-testid^=\"menu-item-\"] cards did not appear to add to cart in the automation context.",
+    "Other misc info from review_request — confirm Pay button is not cut off at smaller viewports given the taller cart panel. Not measured by this run."
+  ],
+  "critical_code_review_comments": [
+    "routes/refunds.py: was returning Mongo-mutated doc with ObjectId — FIXED. Recommend the same audit on any other route that returns `insert_one(doc)` then `return doc` (grep finds none in current iteration's new code).",
+    "routes/orders.py — there is no GET /orders/{id} endpoint; clients must fetch via the list. Consider adding GET-by-id for future receipt look-ups.",
+    "routes/reports.py daily-rollup: cache writes a `tenant_id` field into report_rollups but the entry returned to caller correctly strips it — good. Today bucket is recomputed each call (intentional).",
+    "routes/loyalty.py burn_for_order: caps `burned = min(points, balance, subtotal_cap)` — note subtotal_cap uses `order_doc.get('total')` which already includes the redemption discount already applied client-side; if cashier double-redeems on the same payload this could under-cap. Worth a quick look.",
+    "routes/onboarding.py: SEEDED_STAFF_IDS hard-coded {s1..s4} — if seeding scheme ever changes, has_extra_staff will go stale silently. Consider tagging seeded users with a `seeded:true` flag instead.",
+    "models.py effective_hourly_rate uses 234 hrs/mo divisor (per docstring) — labour widget zero-cost result in our run was because the demo punch we inserted at /timeclock/punch is brand new and elapsed time was < 1 sec when we read /reports/labour. Functionality-wise OK."
+  ],
+  "updated_files": [
+    "/app/backend/routes/refunds.py  (FIX: pop _id from log doc before return)",
+    "/app/backend/tests/test_iteration9_batch.py  (NEW — 29 pytest cases)"
+  ],
+  "success_rate": {"backend": "100% (29/29) — required 1 production fix", "frontend": "Manager 100% verified; Cashier cart partially verified (cart-total + pay-btn rendered; tip/coupon/email/split UI needs manual confirmation)"},
+  "test_credentials": "Per /app/memory/test_credentials.md — Manager PIN 1234 (Aarav, id s1), Cashier PIN 2345 (Priya, id s2). staff-quick-s1/s2 testids on /login provide the fastest automation login.",
+  "seed_data_creation": "Test created/cleaned up: 1 QA Loyal customer, 1 QA Earner customer, 1 QATEST<nnnn> coupon, 2 QA orders for refund+void exercise, 1 TEST QA Pay staff (all deleted/deactivated in teardown). Also called /onboarding/dismiss on demo tenant — this is idempotent and matches the already-completed state (no behavioural impact since banner was already hidden).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "If you need to drive PIN login from Playwright, the most reliable path is the demo-staff shortcut: [data-testid=\"staff-quick-s1\"] for Manager Aarav and [data-testid=\"staff-quick-s2\"] for Cashier Priya. Typing into the keypad via [data-testid=\"pin-key-N\"] auto-submits at 4 digits but sometimes the first click does not register if the page hasn't fully hydrated — add 1500ms wait before pressing. There is no GET /orders/{id} route; verify via the list endpoint. CartPanel conditionally hides tip/coupon/email/loyalty inputs when the cart is empty, so make sure your menu-item click actually adds an item before asserting those testids exist.",
+  "rca of the issue": "Production bug fixed: in /app/backend/routes/refunds.py the `_log()` helper returned the dict passed to `db.refund_logs.insert_one(doc)`. The motor (PyMongo) driver mutates the dict in-place to set `_id = ObjectId(...)`. Because both /orders/{id}/refund and /orders/{id}/void include this log dict in their JSON response, FastAPI's jsonable_encoder hit `'ObjectId' object is not iterable` and the request 500'd. Reproduction: POST /api/orders/{any-paid-order}/refund with {amount: 100, reason: 'x'} as Manager → 500. Fix: `doc.pop('_id', None)` after insert_one, before return. Verified by re-running the pytest suite — 29/29 pass."
+}

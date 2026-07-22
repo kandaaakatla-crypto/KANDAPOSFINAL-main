@@ -1,0 +1,27 @@
+{
+  "summary": "Full verification of Manager Whisper P2 + AIAssistant Voice Mode. All 6 pytest tests in test_whisper.py pass green. Route ordering verified (/voice/calls/active resolves correctly, not swallowed by /{call_id}). Auth guard (401 without header) and validation (400 empty/oversized, 404 missing bridge) all confirmed via live curl + pytest. In-process ASGI happy-path verifies conversation.item.create with role=system + 'MANAGER WHISPER' prefix followed by response.create sent to mocked OpenAI WS, plus cross-tenant 403 guard. Frontend: /biz/voice loads with fallback 'No active calls' empty card, [data-testid=live-calls-panel] correctly absent when no calls. AIAssistant voice toggle switches text↔voice mode: [data-testid=ai-mic] + 'Tap and speak' appear, [data-testid=ai-toggle-speak] mute toggle appears, and toggling back restores [data-testid=ai-input] + [data-testid=ai-send].",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AI Assistant header badge", "issues": ["Badge text in JSX is 'Voice' (title case) styled uppercase by CSS class. Review-request spec said 'VOICE' badge — the visual output IS uppercase via .uppercase class, so acceptance criterion met. Just noting for future exact-text selector authors."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_whisper.py",
+    "/app/test_reports/pytest/iteration12_whisper.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "LIVE_BRIDGES is a module-global dict — will not survive multi-worker gunicorn/uvicorn setups. If the backend is scaled horizontally, whisper injection will only work when the whisper POST lands on the same worker holding the Twilio<->OpenAI WS. Consider a Redis pub/sub or single-worker deployment note.",
+    "whisper endpoint persists to db.voice_calls with $push but no upsert; if the call_doc row hasn't been inserted yet (race at very start of call), whisper text is lost from audit trail. Low risk given register_bridge is called AFTER voice_calls.insert_one in the WS handler."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "owner@demo.com / OwnerPass#2025 used successfully",
+  "seed_data_creation": "None — in-process test uses AsyncMock() bridges injected into voice.LIVE_BRIDGES and clears after.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "test_whisper.py is the canonical whisper regression suite. Route ordering (active before /{id}) is critical — do not reorder. Voice mode UI requires Chrome/Edge (Web Speech API); playwright chromium supports it."
+}

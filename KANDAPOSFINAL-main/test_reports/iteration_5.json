@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 5 (KDS + server.py refactor + cleanup_qa script) verified end-to-end. Backend pytest: 114/114 passing — 107 prior (61 andromeda + 20 owner_portal + 11 p3c_p3d + 7 p2 + 8 KDS) + 7 new iteration5 smoke tests. Refactor regression: every endpoint from iteration_4 still responds identically under the new /app/backend/routes/ layout (/api/auth/login, /api/auth/me, /api/menu/items, /api/menu/categories, /api/tables, /api/customers, /api/customers/search?phone=99999, /api/inventory, /api/orders, /api/reports/summary, /api/users/drivers). KDS token issuance + idempotency + rotation work; /api/kds/tickets without token → 401, bad token → 401, valid token → 200 with shape {tenant, station, stations, tickets}, ?station=bbq → 400, ?station=pizza only returns items where station==pizza. Fresh POS order (Margherita 12\") appears on KDS with station auto-stamped as 'pizza' and kds_status='new'. Item-toggle promotes new→preparing→ready and Recall button moves to Recall lane — order.status legacy field auto-syncs to 'ready' when all items are ready. KDS UI at /kds?token=… shows 4 lanes with counters, 6 station chips (All/Kitchen/Pizza/Grill/Drinks/Desserts), sound toggle (icon swaps on click), refresh button — no design issues. Owner Portal /owner/tenants/demo shows new Kitchen Display token card with Station picker, Tablet URL field, Copy button, Rotate button (asks for confirm, shows 'KDS token rotated' toast on success). Station picker on the card switches Tablet URL between /kds and /kds/<station>. cleanup_qa is idempotent: first run cleared 7 qatest tenants + 21 smoke tickets + 15 TEST_ customers, second run reported all zeros. Post-cleanup: zero qatest* tenants and zero support tickets matching ^(smoke|test_|qa[:_ ]|owner-flow).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5_smoke.py",
+    "/app/backend/tests/test_kds.py",
+    "/app/backend/tests/test_p3c_p3d.py",
+    "/app/backend/tests/test_p3c_p3d_smoke.py",
+    "/app/backend/tests/test_owner_portal.py",
+    "/app/backend/tests/test_andromeda_api.py",
+    "/app/backend/tests/test_p2_features.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional, cosmetic) cleanup_qa removes TEST_ customers and smoke tickets but does NOT delete orders authored by those probe customers. After a long QA run the demo tenant's NEW/READY/RECALL lanes still show TEST_Walk-in / TEST_Pay tickets. Consider extending cleanup_qa to also delete demo-tenant orders whose customer.name starts with TEST_ (or `^Iter\\d`/`^QA `), or push very-old orders to status='completed' so they fall off the 12h KDS window.",
+    "(Optional) Carry over the still-pending DialogDescription/aria-describedby a11y warning on ContactSupportModal from iteration_4."
+  ],
+  "critical_code_review_comments": [
+    "routes/ split is clean: _shared.py holds clean()/PROJECTION, each domain module imports the shared auth/tenants/db helpers and registers its own APIRouter under api_router via routes/__init__.py. No duplicated endpoint paths — all iteration_4 endpoint URLs remained identical.",
+    "kds.py is self-contained and well-bounded: STATIONS literal + CAT_STATION map + station_for_item_name() fallback heuristics. annotate_order_items_for_kds() is called from routes/orders.py on every POST so historic and new orders both have station/kds_status. Auditor read-only middleware correctly does NOT short-circuit /api/kds (token-only auth path), matching the spec.",
+    "Recall window of 5 minutes is hard-coded as RECALL_WINDOW_MIN; fine for now but consider moving to env if multiple deployments need to override.",
+    "Owner KDS routes correctly behind get_current_owner (verified 401 path implicitly via passing pytest suite).",
+    "cleanup_qa.py is idempotent and uses the same SCOPED_COLLECTIONS list the rest of the app uses for tenant scoping; safe to re-run from cron.",
+    "KDS UI: KdsTokenCard.jsx uses window.confirm before rotating — Playwright tests must accept the dialog (page.on('dialog', d.accept())). Worth documenting in test_credentials.md for next QA pass."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration5_smoke.py (new — 7 smoke tests for refactor regression, cleanup post-conditions, KDS lifecycle)"
+  ],
+  "success_rate": {
+    "backend": "100% (114/114 — 107 prior + 7 new iteration5 smoke)",
+    "frontend": "100% (KDS board with 4 lanes/6 station chips/sound toggle/refresh + Owner KdsTokenCard with all 6 station-pick buttons + Copy/Rotate; full new→preparing→ready→recall promotion verified via UI clicks against a freshly-placed POS order)"
+  },
+  "test_credentials": "Tenant Manager PIN 1234 (X-Tenant-Slug: demo); Platform Owner owner@kanda.app / OwnerPass#2025 / TOTP 000000 (bypass); KDS token: GET /api/owner/tenants/demo/kds-token with owner Bearer; current rotated token used during this run: kds_demo_oUj26YkQ_5sbqxg7Tsbv-qYSD4S3d2OJ (rotate again before next iteration).",
+  "seed_data_creation": "Created 2 demo-tenant orders during testing (Iter5 Smoke + UI Probe, both Margherita 12\" collection). These appear on the KDS board's pizza station; they do NOT pollute customer table because the orders embed customer inline. Cleanup script doesn't currently touch them — see action_items.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend has been refactored from monolithic server.py into /app/backend/routes/*. All previous endpoint URLs unchanged. KDS endpoints: GET /api/kds/tickets?token=&station= (auth via ?token= or X-KDS-Token header), PATCH /api/kds/orders/{id}/items/{idx}, PATCH /api/kds/orders/{id}/recall. Owner-side: GET/POST /api/owner/tenants/{id}/kds-token[/rotate]. The auditor read-only middleware deliberately skips /api/kds. To regress: `cd /app/backend && python -m pytest tests/ -q` (expect 114/114). UI smoke: open /owner/tenants/demo, click Rotate (accept confirm), copy tablet URL, open /kds?token=… → 4 lanes render, click any item checkbox to cycle status, Recall button moves to Recall lane.",
+  "rca of the issue": "No bugs found. Two test-script fixes during this iteration: (1) /api/customers/search requires phone with ≥5 chars (initial test used '+91' → expected 400 by design), (2) Owner support tickets endpoint is /api/owner/ops/support (mounted under ops_router with /ops prefix), not /api/owner/support. Both fixed in test_iteration5_smoke.py."
+}

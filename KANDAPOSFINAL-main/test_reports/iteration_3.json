@@ -1,0 +1,56 @@
+{
+  "summary": "P3b Platform Owner Portal verified end-to-end. Backend: 81/81 pytest (61 prior regression + 20 new owner-portal tests) — TOTP bypass `000000`, two-step login, KPIs, tenants CRUD, demo detail, create-tenant + auto-seeded Manager PIN 9999 login on `/api/auth/login` with X-Tenant-Slug header, impersonation FULL writeable, impersonation AUDITOR returns 403 on POST /api/customers, missing reason → 400, unknown tenant → 404, unauthorized owner endpoints → 401. UI: login + TOTP 000000 → dashboard with all 4 KPI tiles + demo tenant row, sidebar Tenants list shows 4+ rows, demo detail shows KPIs + staff (Aarav Reddy), Create Tenant form provisions tenant. UI impersonation has ONE high-priority bug — modal navigates via React Router only (no full reload), so PosContext (already mounted) never re-reads the swapped JWT and Protected gate bounces to /login. Verified the localStorage IS correctly set (pos_token, imp_ctx, owner_backup) and a hard navigation to `/` renders the banner properly with the right colors (Full=#1c1410, Auditor=#321519, text 'Auditing … · read-only'). Exit button + auditor write-block both work.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ImpersonateModal.jsx",
+        "issue": "After beginImpersonation() the modal calls navigate('/') but PosContext only bootstraps on mount with the OLD token (empty). Result: Protected gate sees staffUser=null and redirects to /login. ImpersonationBanner never renders. localStorage IS correctly populated; a window.location.assign('/') (or location.reload after navigate, mirroring endImpersonation's pattern at ImpersonationBanner line 17) fixes it instantly — verified by manually reloading the page, banner then renders with correct colors and read-only text.",
+        "selector": "[data-testid='imp-confirm']",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Owner → Impersonate FULL/AUDITOR → POS",
+        "issue": "Soft SPA navigation does not re-bootstrap PosContext, so the staff session swap is invisible to React until a hard reload. Backend impersonation token itself is valid (auth.me succeeds when called manually, /api/customers POST returns 200 in full mode and 403 in auditor mode).",
+        "affected_selectors": ["[data-testid='impersonation-banner']", "[data-testid='imp-confirm']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_owner_portal.py",
+    "/app/backend/tests/test_andromeda_api.py",
+    "/app/backend/tests/test_p2_features.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "ImpersonateModal.jsx onGo(): after beginImpersonation(...), replace `navigate('/')` with `window.location.assign('/')` (or call navigate('/') then setTimeout(() => window.location.reload(), 50)). Mirrors the same hard-reload pattern already used in ImpersonationBanner.onExit() — without it, Protected route bounces to /login because PosContext never re-runs auth.me() with the new token.",
+    "After the above fix, re-test impersonation FULL and AUDITOR end-to-end through the UI (banner color + text + Exit + writes/blocks)."
+  ],
+  "critical_code_review_comments": [
+    "PosContext.jsx boot useEffect has deps [loadAll] but the token swap happens via direct localStorage write in beginImpersonation — there is no signal back to React. Either move bootstrap to depend on a `tokenVersion` state that beginImpersonation bumps, OR do a hard reload on impersonation begin (simplest + already the convention on exit).",
+    "owner_routes.py:281 impersonate_tenant picks the FIRST seeded Manager (no selector). Fine for single-Manager tenants but should fail-fast if multiple Managers exist or accept a target user_id.",
+    "owner_routes.py:316 /me/totp-qr returns the owner's TOTP secret URI to anyone with an owner JWT — acceptable since owner is already authenticated, but consider gating behind a fresh-password challenge before exposing the secret again.",
+    "tenants.py X-Tenant-Slug resolution: header name is `X-Tenant-Slug`, NOT `X-Tenant` (docs/credentials file did not mention this; I had to correct my pytest fixture).",
+    "ownerClient.js beginImpersonation does set staffTokenStore + staffTenantStore + impersonationCtx but offers no callback/event for React contexts to re-read — see ImpersonateModal bug above.",
+    "OwnerTotp.jsx fix verified — no longer bounces back to /owner/login after successful verify."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_owner_portal.py (new — 20 P3b tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (81/81 — 20/20 new owner-portal tests)",
+    "frontend": "85% (login + TOTP + dashboard + KPIs + tenants list + tenant detail + create tenant + exit impersonation + logout all pass; impersonation-begin UI hand-off is broken by SPA navigation, banner only appears after a hard reload)"
+  },
+  "test_credentials": "Owner email owner@kanda.app / password OwnerPass#2025 / TOTP 000000 (test bypass). New tenants seeded with Manager PIN 9999 in tests — auth via POST /api/auth/login with header X-Tenant-Slug: <slug>.",
+  "seed_data_creation": "Each test run creates ~1 new tenant `qatest<NNNNN>` (with Manager 'QA Manager' PIN 9999), ~2 impersonation audit rows in owner_impersonations, and 1 TEST_ImpFull customer on the demo tenant. Old qatest tenants accumulate — main agent may want to add a cleanup pass.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Re-run `cd /app/backend && python -m pytest tests/ -v` to confirm 81/81 pass. For UI re-test of the impersonation fix, open /owner/login, complete login+TOTP 000000, click demo tenant row → Impersonate → confirm; URL should land on `/` (NOT `/login`) and `[data-testid='impersonation-banner']` should be visible. RCA proven: localStorage is set correctly post-impersonate but PosContext never re-runs auth.me() — fix needs a hard reload, mirroring ImpersonationBanner.onExit.",
+  "rca of the issue": "ROOT CAUSE — ImpersonateModal.onGo calls `beginImpersonation(...)` which writes `kanda_pos_token_v1`, `kanda_pos_tenant_slug` and `kanda_owner_impersonation_ctx_v1` to localStorage, then calls `navigate('/')`. PosContext was already mounted at /owner with no staff token; its boot useEffect (line 44, deps [loadAll]) ran exactly once with an empty token and set bootState='ready', staffUser=null. React Router's SPA navigation does NOT remount PosContext, so the new token is never seen. The Protected gate at App.js:34 reads staffUser=null and redirects to /login. REPRODUCTION — Login as owner, open Demo tenant, click Impersonate, click Open Demo Restaurant. Observed URL: `/login` (Staff Sign In). Expected: `/` with the orange Impersonating banner at the top. MITIGATION — In ImpersonateModal.jsx replace `navigate('/')` with `window.location.assign('/')` so PosContext bootstraps fresh. Verified manually: navigating to `/` after a full reload renders the Full banner (bg #1c1410, text 'Impersonating Demo Restaurant') and the Auditor banner (bg #321519, text 'Auditing Demo Restaurant · read-only') correctly. Auditor backend write-block also confirmed (POST /api/customers → 403 with impersonation token, GET /api/menu/items → 200)."
+}

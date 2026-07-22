@@ -1,0 +1,49 @@
+{
+  "summary": "Iteration 15 — WhatsApp Templates UI + Daily Sales Rollup Cron. Backend: 9/9 pytest cases green in test_iteration15_templates_rollup.py — GET /whatsapp/templates (auth required, returns 5 approved templates with {sid, friendly_name, language, preview, variables}); POST /whatsapp/send-template (401 without auth; unknown SID => ok:false w/ friendly error; happy path renders {{k}} placeholders using payload.variables — merged keys from Twilio 'variables' dict AND parsed preview {{k}} placeholders, verified body is persisted RENDERED with no {{ left when all placeholders provided); GET /reports/daily-rollup?days=5 returns 6 rows w/ core keys; POST /reports/daily-rollup/rebuild?days=5 (401 unauthed, ok=true rebuilt=5 days=5 for Manager); after rebuild historic rows have enriched shape {date, orders, gross_sales, refunded, net_sales, avg_ticket, hourly_revenue(24), top_items, computed_at, is_final:true}; startup log 'Kanda POS DB seeded / verified + reminder loop started' confirmed in supervisor logs (implies asyncio.create_task(daily_rollup_cron_loop) fired). Frontend: /biz/login as owner@demo.com works, /biz/whatsapp loads, clicking a conversation reveals composer, [data-testid=wa-open-template] opens WhatsappTemplateDialog listing 5 approved templates, template selection reveals variable inputs and preview pane, [data-testid=wa-tpl-send] fires the API. Free-form send + delivery ticks + template send all render in the thread — no regression. HOWEVER a real FE bug found in WhatsappTemplateDialog.jsx variable/preview logic (see frontend_issues).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "WhatsappTemplateDialog",
+        "issue": "Variable inputs are derived ONLY from Twilio's `variables` dict when it is non-empty, but Twilio's `variables` keys are NOT guaranteed to match the {{k}} placeholders actually present in the template body (`preview`). Concrete example on the live demo account: `notification_order_tracking` returns variables={order_number, time} but the preview body is 'Order {{order_number}} has shipped. Estimated arrival {{date}}.' — so the UI shows an unused 'time' input, shows NO 'date' input, and the preview keeps {{date}} unrendered forever. Users can't send this template correctly from the UI. Fix: in WhatsappTemplateDialog.jsx (varKeys useMemo, ~line 35), merge Object.keys(raw) with all `{{k}}` matches parsed from `selected.preview` (dedupe via Set) instead of using the fallback only when `keys.length===0`.",
+        "selector": "[data-testid^=wa-tpl-var-]",
+        "priority": "HIGH"
+      },
+      {
+        "component": "WhatsappTemplateDialog",
+        "issue": "When a template's Twilio `types` object has no `twilio/text` body (e.g. `marketing_welcome_template` on the demo account), backend returns preview='' so the dialog shows 'Fill variables' inputs but the Preview pane says '(nothing to preview)'. Send is still enabled — the user has no idea what will be sent. Show at minimum the template friendly_name + a warning, or fetch the fuller body server-side (types/twilio/card body etc.) so preview is never empty for approved templates.",
+        "selector": "[data-testid=wa-tpl-preview]",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration15_templates_rollup.py",
+    "/app/test_reports/pytest/iteration15.xml"
+  ],
+  "action_items": [
+    "WhatsappTemplateDialog.jsx: fix `varKeys` to be the UNION of Object.keys(selected.variables) AND placeholders parsed from selected.preview via /\\{\\{\\s*([^}]+?)\\s*\\}\\}/g — dedupe. This makes the UI expose exactly the placeholders the send-template backend will substitute against, and eliminates orphan {{date}} in the preview.",
+    "Handle templates whose Twilio preview body is empty (no `twilio/text` type) — either display a warning banner in the dialog or extract a body from `twilio/card` header/body/footer server-side in routes/whatsapp.py list_templates."
+  ],
+  "critical_code_review_comments": [
+    "background_tasks._compute_day_rollup uses `int(placed[11:13])` to bucket by hour, which assumes `placedAt` is a UTC ISO-8601 string starting with 'YYYY-MM-DDTHH…'. If any code path writes a Date object or a non-UTC ISO offset, hourly_revenue silently drops that order into the wrong bucket / IndexError-swallowed slot. Use datetime.fromisoformat(placed) with tzinfo handling instead.",
+    "routes/reports.rebuild_rollups only rebuilds for the CURRENT user's tenant_id, whereas the cron loop rebuilds for ALL tenants. That's a reasonable per-tenant admin action, but the endpoint name is ambiguous — consider renaming to /reports/daily-rollup/rebuild-mine or documenting scope in the response.",
+    "routes/whatsapp.wa_send_template renders the preview by string.replace('{{k}}', v) but does NOT support Twilio's positional {{1}} {{2}} placeholders even though Twilio's Content API is the canonical positional variant. The demo templates use named vars so tests pass, but a template with '{{1}}' will render literally as '{{1}}' in the persisted body while Twilio itself substitutes correctly — creating a divergence between what's shown in the chat log and what the customer actually receives. Consider also substituting numeric keys mapped to positional args, e.g. content_variables={\"1\":\"Alice\"}.",
+    "routes/whatsapp.list_templates loops synchronously through pages (`limit=100`) — if the tenant has >100 approved templates it silently truncates. Use client.content.v1.content_and_approvals.stream(...) or paginate explicitly.",
+    "background_tasks.daily_rollup_cron_loop polls every 60s and only fires 'if now >= target'. Since `target` is computed each tick as today's 00:05, a process bounce at 23:59 UTC that survives to 00:05 will fire — good. But if the cron_state row already has today's date from a previous run in the SAME UTC day, the second run silently no-ops. Working as designed, but worth an explicit log line 'skipped: already ran today' at debug level for observability.",
+    "background_tasks: no timezone handling per tenant — 'yesterday' is always UTC yesterday. Tenants operating in IST (UTC+5:30) will see their 'yesterday' rollup finalise ~5.5h before their local midnight, which chops orders placed between 18:30-23:59 IST on 'yesterday' into 'today's rollup' from a business perspective. Consider computing rollups in each tenant's timezone (tenants.timezone if present).",
+    "WhatsappTemplateDialog.jsx: `useEffect(() => {...}, [open])` doesn't watch `to` — if the dialog stays open (edge case) while user switches active conversation, `to` becomes stale. Not currently reachable in the UI but fragile."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration15_templates_rollup.py"
+  ],
+  "success_rate": { "backend": "100% (9/9)", "frontend": "80% — template send works but variable UI has a mismatch bug on real Twilio templates" },
+  "test_credentials": "PIN 1234 (Manager) + owner@demo.com/OwnerPass#2025 (dashboard) both verified.",
+  "seed_data_creation": "Real Twilio WhatsApp send attempts made against +916303435484 (opted-in sandbox) — expected 63016/24h errors; three additional wa_messages rows persisted in demo tenant. Test also rebuilt the last 5 days of report_rollups cache for demo tenant.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_iteration15_templates_rollup.py is the canonical regression for templates + daily rollup (9 tests, ~3s). Demo Twilio account has 5 approved templates: marketing_welcome_template, message_opt_in, notification_order_tracking, marketing_birthday_discount_template, marketing_holiday_template. notification_order_tracking's Twilio-declared variables ({order_number, time}) do NOT match its preview placeholders ({{order_number}}, {{date}}) — this is a real quirk of Twilio's Content API, expose the union in FE. Rebuild endpoint scoped per-tenant; cron scoped all-tenants — expected.",
+  "rca of the issue": "WhatsappTemplateDialog.jsx builds `varKeys` from `Object.keys(selected.variables)` first, and only falls back to parsing `{{k}}` from preview when Twilio returned an EMPTY variables dict. Twilio's Content Templates API returns `variables` as author-declared placeholders with default sample values — but the actual template body can contain a superset (or a disjoint set) of {{name}} placeholders. On the demo template `notification_order_tracking`, variables={order_number, time} while body uses {{order_number}} and {{date}}. Result: FE shows the useless `time` input, hides `date`, and preview stays as 'Order X has shipped. Estimated arrival {{date}}.' with an unrendered placeholder. Backend send-template happy-path test only passes because we provide values for the UNION in the test payload. Reproduction: log in as owner, open /biz/whatsapp, click Test Sir conversation, click [data-testid=wa-open-template], pick 'notification_order_tracking'. Observe preview retains '{{date}}'. Mitigation (1-line fix): const keys = new Set([...Object.keys(raw), ...(selected.preview||'').match(/{{\\s*([^}]+?)\\s*}}/g) || []].map(k => k.replace(/[{}\\s]/g,''))); return Array.from(keys);"
+}

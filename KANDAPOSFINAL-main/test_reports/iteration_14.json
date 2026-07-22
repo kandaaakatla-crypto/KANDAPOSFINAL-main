@@ -1,0 +1,31 @@
+{
+  "summary": "Iteration 14 — WhatsApp two-way chat (Twilio) end-to-end verified. Backend: 8/8 pytest cases green in test_whatsapp.py — 401 without auth on /whatsapp/send, /whatsapp/send returns {ok,message:{id,body,direction:out,status,at,conversation_id,phone,...},error} with status='sent' when Twilio accepts (test recipient +916303435484 has joined the sandbox so ok=true), /whatsapp/conversations/start upserts (returns clean {id,tenant_id,phone,unread_count:0}), /whatsapp/conversations returns array sorted last_at desc, /whatsapp/conversations/{id}/messages returns {conversation,messages} + 404 on unknown id, /whatsapp/conversations/{id}/read returns {ok:true} + 404 on unknown, /whatsapp/incoming with a Twilio-signed form body creates an 'in' message, bumps unread_count, enriches customer_name from ProfileName; unsigned request rejected with 403. No Mongo ObjectId leakage verified — no _id present in any returned document. Frontend: /biz/login owner@demo.com works, 'WhatsApp' nav link routes to /biz/whatsapp, DashWhatsApp loads conversation list (seeded 'Test Sir · +916303435484' visible), clicking loads thread with outbound bubble (justify-end + green background), typing in [data-testid=wa-input] + [data-testid=wa-send] posts a new message and appends it to the thread, [data-testid=wa-new-chat] toggles the inline form, entering a phone + Start creates a new conversation which becomes selected, [data-testid=wa-search] filters conversations by name/phone/last_body substring (verified 'Test'→2, phone digits '6303435484'→1, bogus→0).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "DashWhatsApp", "issue": "After clicking Send, the outbound message is appended locally via setMessages() AND then re-delivered by the WebSocket 'wa.message.new' event with the same id, producing 'Encountered two children with the same key wam_xxxxx' React warnings and (per React docs) potential duplicate/omitted renders. Dedupe by message.id in the WS onmessage handler (e.g. if (prev.find(x => x.id === m.id)) return prev; else return [...prev, m]).", "selector": "[data-testid^=wa-msg-]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_whatsapp.py", "/app/test_reports/pytest/iteration14_whatsapp.xml"],
+  "action_items": [
+    "Dedupe messages by id in DashWhatsApp WS handler (and in send() append) to eliminate duplicate-key React warnings when the sender is the same tab receiving its own broadcast."
+  ],
+  "critical_code_review_comments": [
+    "routes/whatsapp.py::_upsert_conversation — the returned dict for the update branch returns {**existing, **upd} which does NOT increment unread_count for the caller when inc_unread>0 unless the row already had unread_count set; more importantly the returned dict is not re-fetched, so any concurrent updates aren't reflected. Consider a single find_one_and_update with return_document=AFTER for atomicity.",
+    "routes/whatsapp.py::_validate_signature has a fragile URL-rewrite branch (`if public and url.startswith('http://')`) that tries to swap http→PUBLIC_BACKEND_URL but only when the incoming URL is http. Behind an ingress that already presents https it will silently skip the rewrite; and the string-splitting (`url.split('://',1)[1].split('/',1)[-1]`) is confusing. Use urllib.parse.urlparse and rebuild the URL.",
+    "DashWhatsApp.jsx: loadConvs is called on every WS message, causing a full re-fetch of the conversation list for each incoming message — high frequency chats will hammer the API. Prefer patching the affected conversation in-place from evt.data (bump last_body/last_at/unread_count).",
+    "DashWhatsApp.jsx: WebSocket is torn down and re-established every time `active?.id` changes (effect deps include active?.id), needlessly killing the connection on chat switch. Split into a stable WS effect (mount/unmount) and use a ref for the current active id.",
+    "SendWaPayload.body has max_length=1500 but Twilio WhatsApp templates cap at 1600 chars; either raise to 1600 or document the 1500 cap in the UI (currently no client-side length hint).",
+    "routes/whatsapp.py: no rate limiting on /whatsapp/send — a compromised manager token could burn Twilio credits. Consider a per-tenant per-minute cap similar to what SMS should have."
+  ],
+  "updated_files": ["/app/backend/tests/test_whatsapp.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "PIN 1234 (POS Manager) and owner@demo.com/OwnerPass#2025 (dashboard) both worked.",
+  "seed_data_creation": "Backend tests sent real Twilio WhatsApp messages to +916303435484 (opted-in sandbox recipient), plus signed webhook seeded an incoming from +919000111133 ('Iter14 Tester'). Playwright run added another outbound message and a new empty conversation for a random +9190001xxxxx number.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_whatsapp.py is the canonical WhatsApp regression suite (8 tests, ~3s). Uses PIN 1234 (Manager) for auth — works for both /whatsapp/send and require_role('Manager'). Twilio WA sandbox is live and +916303435484 has joined it, so send returns ok=true; if that ever changes the test will still pass (asserts either sent+ok or failed+error). The signed incoming webhook uses the same RequestValidator.compute_signature helper as tests/test_voice_agent.py — sig must be computed against the exact URL the server sees (REACT_APP_BACKEND_URL + /api/whatsapp/incoming).",
+  "rca of the issue": "N/A — no bugs to RCA. Only a MEDIUM React key warning caused by double-append (local + WS echo) documented in frontend_issues."
+}

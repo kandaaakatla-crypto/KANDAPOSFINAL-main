@@ -1,0 +1,48 @@
+{
+  "summary": "P3c (Ops & Support) and P3d (Razorpay Subscriptions) verified end-to-end. Backend: 99/99 pytest passing (92 from existing suite + 7 new smoke tests in test_p3c_p3d_smoke.py). UI on POS side: PIN login (1234), yellow BillingBanner with correct copy and Dismiss → localStorage key `kanda_pos_billing_banner_dismissed_at`, Help button → Contact support modal (subject/body/severity low/normal/high) → POST /api/support/tickets → green toast 'Ticket sent — we will reply soon.', modal auto-closes. Owner Portal: login+TOTP `000000` lands on /owner; new sidebar items Support/Audit log/Errors render and route correctly; SupportInbox lists 19 tickets, click row → detail panel with severity+status chips, Reply textarea → 'Reply posted' toast (status auto-flips to in_progress), Mark resolved button updates status; AuditLog page shows 200 rows with tenant/actor/method/route/status/at columns; ErrorLog shows 85 rows with status color coding (404 amber, 403/400/422 etc.) and clicking a row opens the error-detail modal. TenantBillingCard on /owner/tenants/demo shows Plan/Renews/Grace/Last paid + Starter ₹999 / Pro ₹1999 / Master ₹2999 toggle buttons + Create subscription button (data-testids present). Razorpay webhook HMAC validation verified: bad signature → 400, valid signature with unknown subscription → 200 with skipped:'unknown_subscription'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Contact Support modal", "issues": ["Cosmetic a11y warning: 'Missing Description or aria-describedby for DialogContent' — not blocking but should add a DialogDescription for screen-readers."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_p3c_p3d.py",
+    "/app/backend/tests/test_p3c_p3d_smoke.py",
+    "/app/backend/tests/test_owner_portal.py",
+    "/app/backend/tests/test_andromeda_api.py",
+    "/app/backend/tests/test_p2_features.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional, non-blocking) Add `<DialogDescription>` (or `aria-describedby`) to ContactSupportModal Radix DialogContent to silence the a11y console warning.",
+    "(Optional) Add a periodic cleanup pass for accumulated QA support tickets — 19 'Smoke/Owner-flow test/Card terminal not connecting' rows already pollute the inbox from prior test runs.",
+    "(Optional) Live Razorpay test-mode subscription creation via the UI was not exercised end-to-end (would create a real test-mode sub_… ID on the upstream account); subscribe-btn UI, plan toggles, and backend webhook+signature path are all verified independently."
+  ],
+  "critical_code_review_comments": [
+    "ops.py middleware ordering: confirmed audit_logs captures all POST/PUT/PATCH/DELETE /api/* and error_logs captures 4xx/5xx — both visible at /owner/ops/audit and /owner/ops/errors. actor_type correctly distinguishes staff/owner/impersonator (verified in error log screenshot: po_697f88fb94 owner, s1 staff, s1 impersonator rows all present).",
+    "subscriptions.py webhook handler correctly rejects bad signatures with 400 and accepts valid HMAC SHA256 signed payloads — verified via direct HTTP POST against /api/payments/razorpay/webhook with hmac.new(secret, body, sha256).hexdigest().",
+    "Grace gate: GET /api/billing/status returns the expected shape {ok, in_grace, plan, ...} and /api/auth/login still succeeds (200) for the demo tenant which is in `none/no_plan` state — confirmed by both the smoke test and the POS UI login flow.",
+    "Resend email is best-effort: ticket creation responses are returned promptly even though the SUPPORT_TO_EMAIL=kandaaakatla@gmail.com is not the verified Resend account (per task note). UI does not block on email send failure — verified.",
+    "ContactSupportModal a11y: Radix Dialog missing aria-describedby (cosmetic console warning only).",
+    "Plan amount display in TenantBillingCard reads `₹999/mo`, `₹1999/mo`, `₹2999/mo` — matches backend GET /api/owner/plans amounts_inr {999, 1999, 2999}."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_p3c_p3d_smoke.py (new — 7 additional smoke tests for support full chain, audit/error log fields, billing status shape, demo no-plan login allowed, plans catalogue amounts, and webhook signature good/bad)"
+  ],
+  "success_rate": {
+    "backend": "100% (99/99 — 92 existing + 7 new smoke tests)",
+    "frontend": "100% (POS BillingBanner + Help/ContactSupportModal + Owner Support/Audit/Errors pages + TenantBillingCard subscription block all verified)"
+  },
+  "test_credentials": "Tenant Manager PIN 1234 (X-Tenant-Slug: demo); Owner owner@kanda.app / OwnerPass#2025 / TOTP 000000",
+  "seed_data_creation": "Created ~5 additional support tickets on demo tenant during UI + smoke testing (TEST_AuditProbe customer, Smoke chain ticket, QA: Smoke test subject ticket, QA owner reply text). Webhook smoke test generated 1 audit/error row each. None of these block functionality; consider cleanup if inbox grows too large.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "P3c + P3d shipped clean. To regress: `cd /app/backend && python -m pytest tests/ -q` (expect 99/99). UI smoke: PIN 1234 → BillingBanner + Help → ticket submit, then Owner login → Support/Audit/Errors → demo tenant Subscription card. Live Razorpay subscription creation through UI wasn't end-to-end exercised in this iteration to avoid creating real test-mode subs on the upstream account; the subscribe-btn click path and short_url surfacing logic should be confirmed during a future iteration if needed.",
+  "rca of the issue": "No bugs found in this iteration. All P3c & P3d acceptance criteria pass."
+}

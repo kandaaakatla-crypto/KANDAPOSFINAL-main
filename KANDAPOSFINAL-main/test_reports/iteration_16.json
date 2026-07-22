@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 16 — Reopen occupied-table bill + append items + settle. Backend: 6/6 pytest cases GREEN in test_orders_append.py — (1) new dine-in POST /api/orders sets table.status=occupied+orderId; (2) POST /api/orders/{id}/append on unpaid order returns 200 with items array length +1 and total incremented by qty*price (verified persisted via GET); (3) empty items => 422; (4) non-existent order => 404; (5) paid order => 400 'Order already paid — start a new order'; (6) PATCH /api/orders/{id}/status status=completed releases the table (status=available, orderId=null). Frontend E2E via preview URL: PIN 1234 login OK. Clicked Table 4 (Occupied, Order #1483) on /tables → navigated to /?order=o_0734ac5df9 → reopen-banner shows 'Reopened Bill #1483 · Table 4 · 3 sent · ₹135.98', running-bill-items block lists all 3 sent items with total ₹135.98, order-type buttons all disabled (delivery/collection/dine-in), pay-btn ENABLED reading 'Pay Bill ₹135.98', send-kitchen-btn disabled while cart empty. Added a menu item (TEST_Side_v2 ₹2.49): new-subtotal=₹2.49, cart-total=₹138.47 = running(135.98)+new(2.49) — correct. Clicked 'Add to Kitchen' → toast 'Added 1 item(s) to #1483', cart emptied, running-bill list refreshed to include TEST_Side_v2 with new running total ₹138.47. Settlement flow: navigated to /?order=o_449c6b4814 (freshly-placed order #1489 on Table 1, ₹6.49) → clicked Pay Bill → PaymentModal opened with method-cash pre-selected → entered ₹10 tendered → Confirm Cash → toast 'Bill #1489 settled by cash — ₹6.49' → auto-navigated to /tables → Table 1 title now 'Table 1 · Available' (green border). OrdersScreen: /orders shows 8 'Bill this order' buttons on unpaid non-voided orders (data-testid='bill-<number>'); clicking bill-1489 navigated to /?order=<oid> and revealed reopen-banner as expected.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "TablesScreen (Floor Plan)",
+        "issue": "Table 3 shows status='occupied' with title 'Order #1044', but the underlying order o3 is status='completed' payment='unpaid' (stale demo data). Clicking it correctly triggers the OrderScreen guard (toast 'Order is already settled or voided') and clears state, so the new-feature guard works. However this is data drift — either the demo seed is inconsistent (order completed but tables.orderId never cleared) or an earlier code path completed an order without releasing the table. Current append/settle code paths are fine; consider a one-off maintenance sweep that releases any tables whose linked order is completed/voided/paid, and add a `POST /api/tables/reconcile` admin action.",
+        "selector": "[data-testid='table-3']",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "Preview 'Made with Emergent' badge",
+        "issue": "The fixed-position `#emergent-badge` overlaps the bottom-right pay-btn at 1920×1080 viewport and INTERCEPTS pointer events, blocking real user clicks on Pay in edit/reopen mode (repro: Playwright reported '<a id=emergent-badge> subtree intercepts pointer events' for 30s straight, even with force=True). Once the badge was hidden via JS, Pay opened the PaymentModal immediately. This may affect real users of the preview environment. Fix by raising cart-action row z-index (currently unset) above the badge, or add bottom padding to CartPanel action bar so the badge doesn't overlap.",
+        "selector": "[data-testid='pay-btn']",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_orders_append.py",
+    "/app/test_reports/pytest/iteration16_append.xml"
+  ],
+  "action_items": [
+    "Consider tightening CartPanel pay-btn z-index / bottom padding so the fixed Emergent preview badge doesn't intercept clicks at 1920×1080.",
+    "Add a one-off reconcile pass (or startup hook) that clears tables.orderId + resets status to available when the referenced order is completed/voided/paid — Table 3 in demo data currently linked to completed order o3 (#1044)."
+  ],
+  "critical_code_review_comments": [
+    "OrderScreen.jsx useEffect depends on `[searchParams, orders.length]` — if the orders array mutates without changing length (e.g. an item append updates the same order in-place), the effect won't re-run. That's actually the correct behaviour here (we only want to prefill once on URL change), but `orders.length` is a fragile proxy — consider depending only on `[searchParams]` and guarding with `if (editingOrderId) return;`.",
+    "routes/orders.append_items_to_order forces status back to 'new' via `new_status = existing.get('status') if existing.get('status') in ('new',) else 'new'` — that's effectively unconditional status='new'. Simplify to `'$set': {'total': new_total, 'status': 'new'}`. Also, dropping from 'ready'/'in-kitchen' back to 'new' is intentional to re-alert KDS, but be aware this loses the earlier KDS ack timestamp for the previously-sent items.",
+    "OrderScreen.onPaid always toasts with the CLIENT-side `total`, but for card path Razorpay may have charged a different amount if there's server-side rounding. Safer to use `placed.total` from the returned order.",
+    "OrderScreen.onCreateOrder in edit-mode calls `ordersApi.setPayment(id, 'cash')` in a swallowed try/catch — failures leave the order unpaid but the client still calls updateOrderStatus(id,'completed'). This produces a completed+unpaid order (which is exactly the drift we see on Table 3's o3). Suggest failing loudly (toast + abort) instead of best-effort.",
+    "test_orders_append.py — the `_place_dine_in` helper depends on there being at least one available table in the demo data; if the suite is run against a fully-booked tenant it will `assert tbl` fail. Consider adding a teardown that recycles a table."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_orders_append.py"
+  ],
+  "success_rate": { "backend": "100% (6/6)", "frontend": "100% for the append/reopen/settle flow — pay-btn is blocked by the Emergent preview badge overlay in real browser sessions, mitigated in tests by hiding #emergent-badge" },
+  "test_credentials": "POS PIN 1234 (Manager Aarav Reddy) — verified.",
+  "seed_data_creation": "Created & settled test dine-in order #1489 on Table 1 (₹6.49 Classic Beef Burger). Appended TEST_Side_v2 to running order #1483 on Table 4 (still open with total ₹138.47 for downstream E2E). Also completed 4 short-lived dine-in orders during pytest run.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_orders_append.py is canonical regression for the running-tab/append feature (6 tests, ~2s). Reopen flow: /?order=<oid> → OrderScreen enters edit mode. Key data-testids: reopen-banner, running-bill-items, running-bill-summary, order-type-{delivery|collection|dine-in} (disabled in edit mode), pay-btn (label 'Pay Bill ₹X', enabled with empty cart when runningBill present), send-kitchen-btn (label 'Add to Kitchen' in edit mode, disabled when cart empty), payment-modal + confirm-cash-btn for CASH settle. OrdersScreen exposes 'bill-<orderNumber>' buttons on any payment=unpaid non-voided non-completed order. Preview environment's #emergent-badge overlays bottom-right at 1920px viewport — hide it in Playwright before clicking pay-btn: `page.evaluate(\"document.getElementById('emergent-badge').style.display='none'\")`.",
+  "rca of the issue": "Original user report ('cannot open occupied table bill as its empty, how do i generate bill now') is FIXED. The gap was that TablesScreen navigated to /?table=N (creating a NEW dine-in flow with an empty cart) even when the table was occupied — so the running bill was invisible. Fix: (a) TablesScreen now navigates to /?table=N&order=OID for occupied tables, (b) OrderScreen reads ?order= param and enters edit-mode: loads existing order, disables order-type switching, renders running-bill-items panel + banner, enables Pay Bill even with empty cart, converts Send-to-Kitchen into 'Add to Kitchen' which hits POST /api/orders/{id}/append, and on payment success calls PATCH /status=completed to release the table then navigates back to /tables. Verified end-to-end. Only follow-ups are the badge overlay quality-of-life bug + a demo-data reconcile."
+}

@@ -1,0 +1,58 @@
+{
+  "summary": "Iteration 6 (5-feature batch) backend testing. Wrote /app/backend/tests/test_iteration6_features.py (11 tests). 7 pass, 4 fail surfacing CRITICAL backend implementation gaps. Prior 114-test suite (test_andromeda_api/test_p2_features/test_owner_portal/test_p3c_p3d/test_kds/test_iteration5_smoke) still passes 114/114 — no regression. Frontend preview at REACT_APP_BACKEND_URL was sleeping (bot detection wall) during the run so live UI walk-through could not be completed, but static code review of OrderScreen/DriverScreen/TableLayoutEditor/LoginScreen/client.js confirms the data-testids, source pills, claim/setPayment wiring are all present — they just fail at runtime because the backend endpoints they call do not exist.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/orders/{id}/claim", "issue": "Endpoint NOT IMPLEMENTED — returns 404 'Not Found'. routes/orders.py has no @router.post('/orders/{order_id}/claim'). DriverScreen.jsx calls ordersApi.claim() which 404s; driver flow is completely broken end-to-end.", "priority": "CRITICAL"},
+      {"endpoint": "PATCH /api/orders/{id}/payment", "issue": "Endpoint NOT IMPLEMENTED — returns 404. routes/orders.py is missing the /payment route. DriverScreen 'Collected cash' button calls ordersApi.setPayment() which 404s.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/orders", "issue": "`source` field NOT persisted. routes/orders.py create_order() builds the order doc without copying payload.source — every order is saved with the default 'in-store' regardless of what the client sent. Spec requires Swiggy/Zomato/Phone/Other to round-trip.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/orders (recipes)", "issue": "Recipe-driven inventory decrement NOT IMPLEMENTED. No _apply_recipes() call in routes/orders.py — even after recipe is saved via PUT /menu/items/{id}/recipes (which works), placing an order does not decrement db.inventory.stock. Test verified: inventory.stock stays at 94 before/after a qty=2 order against a wired recipe.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/reservations", "issue": "Overlap guard BROKEN for same-timestamp bookings. routes/reservations.py overlap query is `{'at': {'$lt': payload.at, '$gte': ''}}` which only matches reservations whose `at` is strictly LESS than the new one — when two bookings share the exact same `at`, the second one is accepted with 200 (no 409). Should query the time-window pair, not lt+gte ''.", "priority": "CRITICAL"},
+      {"endpoint": "GET /api/tables, PATCH /api/tables/{id}/position", "issue": "Layout-editor fields stripped from API response. routes/_shared.table_doc_to_response() returns only {id,number,seats,status,orderId} — it drops x, y, width, height, shape, rotation. So even though PATCH .../position writes them to Mongo, the frontend TableLayoutEditor cannot read them back via GET /api/tables. The Table response_model declares those fields with defaults ('square', 0), masking the omission.", "priority": "HIGH"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Driver Claim/Cash/Mark-Delivered", "issue": "Buttons in DriverScreen.jsx call ordersApi.claim/setPayment which hit 404 endpoints — driver workflow non-functional. Toast will show 'Could not claim' / 404 detail.", "affected_selectors": ["[data-testid^=driver-claim-]", "[data-testid^=driver-cash-]"]},
+      {"flow": "Order source pills", "issue": "Selecting Swiggy/Zomato/Phone has no effect on persisted order — backend silently ignores `source`, every order is stored as in-store. OrderScreen pill UI itself renders correctly per code review.", "affected_selectors": ["[data-testid=order-source-swiggy]", "[data-testid=order-source-zomato]"]},
+      {"flow": "Table Layout Editor restore", "issue": "After Save, reopening editor will see all tables back at default positions because GET /api/tables doesn't return x/y/shape/rotation.", "affected_selectors": ["[data-testid=table-layout-editor]"]}
+    ],
+    "design_issues": [
+      {"screen": "/login (preview)", "issues": ["Preview environment returned 'Preview Unavailable' bot-detect screen on this run — live UI tests could not be executed. Backend tests proxy successfully through REACT_APP_BACKEND_URL/api."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration6_features.py",
+    "/app/test_reports/pytest/iteration6.xml"
+  ],
+  "action_items": [
+    "Add POST /api/orders/{order_id}/claim in routes/orders.py: require role 'Driver' (403 for others), find order with status='ready' and driver=None, set driver=user.id; 404 if already claimed or wrong status.",
+    "Add PATCH /api/orders/{order_id}/payment in routes/orders.py taking {payment: OrderPayment}; FastAPI will return 422 for invalid literal values automatically via Pydantic.",
+    "In routes/orders.py create_order(), add `\"source\": payload.source` to the doc dict (current code copies type/status/customer/... but skips source).",
+    "Implement _apply_recipes() in routes/orders.py: for each ordered item, look up recipes matching menu_item_id (+ size if provided), then db.inventory.update_one({id: inventory_id}, {\"$inc\": {\"stock\": -qty * recipe.qty}}). Call from create_order BEFORE inserting the order (or after; must be tenant-scoped).",
+    "Fix reservation overlap guard in routes/reservations.py: replace the misleading lt+gte''  query with a proper window-intersection check (e.g., fetch all booked/seated reservations for the table within a wide bracket, then compare time windows in Python — the post-fetch timedelta check already exists, just gate it correctly). Same-`at` duplicates must yield 409.",
+    "Extend table_doc_to_response in routes/_shared.py to include x/y/width/height/shape/rotation so the layout editor can restore positions after save."
+  ],
+  "critical_code_review_comments": [
+    "routes/orders.py is missing TWO advertised endpoints (/claim, /payment) and one model field write (source) — the iteration's developer-facing client.js (ordersApi.claim/setPayment) is wired but the server side was never delivered.",
+    "Reservation overlap query in routes/reservations.py:44–51 is structurally wrong: `{'at': {'$lt': payload.at, '$gte': ''}}` will never match a same-time booking; also `$gte: ''` is a no-op (string compare against ISO timestamps happens to work but is fragile). Switch to a proper window-intersection: fetch reservations for the table with `at` between (payload.at − 3h, payload.at + 3h), then compare windows in Python.",
+    "routes/_shared.table_doc_to_response strips layout fields. Either return the full doc (it already excludes _id via PROJECTION) or extend the mapping. Currently the Table pydantic response_model fills in defaults, hiding the bug.",
+    "Recipe path is half-built: the GET/PUT /menu/items/{id}/recipes works, but POST /orders does not consume the recipes (no _apply_recipes step in routes/orders.py:26). This was explicitly called out in the iteration scope.",
+    "Frontend client.js already imports reservationsApi (used where?) — confirm the Tables UI surfaces the booking flow; iteration brief mentioned API only, no UI, which matches.",
+    "Driver flow front-end gracefully toasts the backend error, so users will see 'Not Found' instead of crashing — acceptable failure mode, but the feature is dead until backend ships /claim and /payment."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration6_features.py (new — 11 tests covering all 5 features)"
+  ],
+  "success_rate": {
+    "backend": "63.6% on iteration-6 spec (7/11 new tests pass). 114/114 prior tests still pass — no regression.",
+    "frontend": "Not measured — preview environment unavailable during run (bot-detect wall). Code review confirms all data-testids and wiring are present in OrderScreen/DriverScreen/LoginScreen/TableLayoutEditor."
+  },
+  "test_credentials": "Tenant Manager PIN 1234 / Cashier 2345 / Driver 4567 with X-Tenant-Slug: demo header (all confirmed working).",
+  "seed_data_creation": "Tests create + clean up their own TEST_-prefixed categories, menu items, orders, reservations, tables, floor elements. A handful of TEST_DrvCust orders + leftover reservations from failure paths may persist on demo tenant — safe to leave or run cleanup_qa.",
+  "retest_needed": true,
+  "main_agent_can_self_test": false,
+  "context_for_next_testing_agent": "Re-run /app/backend/tests/test_iteration6_features.py after main agent ships: (a) POST /api/orders/{id}/claim, (b) PATCH /api/orders/{id}/payment, (c) `source` field write in create_order, (d) _apply_recipes() in create_order, (e) reservation overlap fix, (f) table_doc_to_response extension. Expect 11/11 to go green. Then resume live UI walk-through once preview is awake — script in this report's history attempts driver auto-route + source pills.",
+  "rca of the issue": "Five of six iteration-6 acceptance criteria fail because the backend code shipped is a subset of what the spec + frontend client.js expect. routes/orders.py shows no /claim, no /payment, and no source persistence; routes/reservations.py overlap query uses wrong operators; routes/_shared.table_doc_to_response is the iteration-5-era shape and was never extended. Once those land the existing tests in test_iteration6_features.py will validate them automatically."
+}

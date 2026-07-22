@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 8 — Staff Mgmt + TimeClock + Workforce (rota/timesheet) + Operations (wastage, Z-report, tips, coupons, prep, multi-location) end-to-end testing. 18 new backend pytest tests + targeted Playwright UI checks. All backend tests pass (18/18); the full 150-test regression also passes (149 pass, 1 pre-existing MONGO_URL env error unrelated to this work). Frontend: Manager-only sidebar gating, /staff modal, /clock keypad, /workforce 3 tabs, /operations 6 sub-tabs all render and work as designed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/inventory", "issue": "Note: route is /api/inventory (not /api/inventory/items as some docs imply). Confirmed list-of-dicts response."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/staff", "issues": ["Several inactive 'TEST QA Worker' rows accumulated from prior failed runs — soft-deleted but still visible. Consider adding a 'Show inactive' toggle or auto-hide inactive in the default list."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration8_workforce.py",
+    "/app/test_reports/pytest/iteration8.xml"
+  ],
+  "action_items": [
+    "Consider hiding inactive staff by default on /staff (currently they pile up at the bottom). UX-only.",
+    "Pre-existing: /app/backend/tests/test_reports_window.py setup raises KeyError 'MONGO_URL' (env not loaded in that fixture). Not related to iter 8 but worth fixing during next pass."
+  ],
+  "critical_code_review_comments": [
+    "routes/timeclock.py: punch endpoint correctly auto-detects in/out from last punch and 401s on unknown PIN, 403s on deactivated user.",
+    "routes/coupons.py /apply: validates active / expiry / max_uses / min_subtotal; counter is bumped on order create (not on apply) — good (prevents abandoned-cart burn).",
+    "routes/cashdrawer.py: expected_cash = opening_float + sum(orders.payment=='cash' since opened_at). Verified variance math via /open(100) → /close(150) cycle.",
+    "routes/locations.py: auto-seeds loc_default; refuses delete of last remaining location; flipping is_default cascades correctly.",
+    "routes/staff.py: PIN uniqueness check correctly iterates all users (incl. inactive). Soft-deactivate keeps history intact — good design.",
+    "routes/prep.py: graceful when no recipes wired (returns empty items[] with 200)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration8_workforce.py (new)"
+  ],
+  "success_rate": {"backend": "100% (18/18 new + 149/150 regression)", "frontend": "100% on tested flows"},
+  "test_credentials": "Manager PIN 1234, Cashier PIN 2345 — per /app/memory/test_credentials.md",
+  "seed_data_creation": "Test created (then deleted/deactivated) a few coupons, locations, shifts, waste entries. Staff QA users were soft-deleted (active=False) — they accumulate across runs but are inert.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Use /app/backend/tests/test_iteration8_workforce.py as the regression for this feature batch. The orders endpoint requires type ∈ {delivery,collection,dine-in}, customer{}, and total — see TestOrdersAndReports for a working payload. Inventory list route is /api/inventory (not /inventory/items). The frontend PIN login keypad needs an explicit submit-button click — automation must click the orange enter arrow (button[type=submit]) after entering 4 digits.",
+  "rca of the issue": "No production bugs found. Three initial test failures were all test-script issues (wrong inventory path, wrong order schema, PIN reuse across runs) — fixed in the test file, not in product code."
+}

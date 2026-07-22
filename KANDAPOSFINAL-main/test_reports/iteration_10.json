@@ -1,0 +1,49 @@
+{
+  "summary": "Iteration 10 — Rota PDF export + Operations/Reports/Inventory/Workforce restructure + LocationSwitcher + non-Manager 'My Rota'. Backend: 5 NEW pytest cases for /shifts.pdf and /shifts?mine=true all green; full regression 180/180 passing. Frontend Manager flow verified end-to-end (Operations now only coupons+prep — old crashing tabs removed; Reports has labour widget + zreport/tippool collapsibles; Inventory has WastePanel under inv-toggle-waste; Workforce → Rota → rota-pdf-btn present; LocationSwitcher in header opens popover, lists loc_default, persists to kanda_pos_active_location_v1). Zero console errors during Manager navigation across all 5 screens. Cashier (PIN 2345) sidebar correctly omits Workforce/Staff/Operations and shows nav-my-rota; /workforce renders only wf-tab-myrota with myrota-empty card. Driver (PIN 4567) at /workforce works identically; HOWEVER on initial login Drivers are routed to /driver (DriverScreen) which has its own no-sidebar layout, so Drivers have no in-app way to reach /workforce. Backend cleanup performed: 18 leftover TEST QA staff + 3 leftover TEST_ customers from previous iterations deleted.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Driver (PIN 4567) → My Rota discovery",
+        "issue": "LoginScreen.jsx line 41 redirects users with role=='Driver' to /driver (DriverScreen) which renders WITHOUT the POSLayout sidebar. nav-my-rota exists in POSLayout for non-Manager roles, but Drivers never see that layout from their normal login flow — they have no in-app link to /workforce. Manually navigating to /workforce works correctly (wf-tab-myrota + myrota-empty render fine). Either (a) add a 'My Rota' link inside DriverScreen header, or (b) route Drivers to / (POSLayout) by default and let them open the dispatch view from the sidebar.",
+        "affected_selectors": ["nav-my-rota", "/driver", "/workforce"]
+      },
+      {
+        "flow": "Cashier direct URL access to /operations and /staff",
+        "issue": "Cashier can navigate to /operations and /staff via URL bar. The frontend route guard does not redirect — backend returns 403 for the data calls so the screens render in a broken/loading state and 6 axios 403 errors are logged to console. Not a security hole (data is gated) but a poor UX. Consider client-side role guard that redirects non-Managers off these routes.",
+        "affected_selectors": ["/operations", "/staff"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration10_pdf_and_myrota.py",
+    "/app/test_reports/pytest/iteration10.xml",
+    "/app/test_reports/pytest/iteration10_full.xml"
+  ],
+  "action_items": [
+    "Decide on Driver UX: drivers cannot reach /workforce from /driver. Either add a 'My Rota' button inside DriverScreen header, or route drivers to POSLayout root and surface their dispatch view as a sidebar entry.",
+    "Optional polish: add client-side role guard that redirects Cashiers/Drivers away from /operations and /staff to avoid the 6 axios 403 console errors and broken screens on direct URL access."
+  ],
+  "critical_code_review_comments": [
+    "routes/shifts.py _render_rota_pdf: imports reportlab modules lazily inside the function — good for cold start. The PDF generation works correctly with proper Content-Disposition (attachment; filename=\"rota-YYYY-MM-DD.pdf\"), media type application/pdf, body starts with %PDF magic. No issues.",
+    "POSLayout.jsx line 86: `staffUser && staffUser.role !== 'Manager'` correctly adds nav-my-rota for Cashier and Driver — but only renders when POSLayout is the active layout. Drivers land on /driver and skip POSLayout entirely.",
+    "All 5 of the previously-crashing useEffect(load, []) sites in OperationsScreen.jsx / StaffScreen.jsx are confirmed converted — no 'destroy is not a function' errors observed during navigation across Manager → Operations → Reports → Inventory → Workforce.",
+    "LocationSwitcher.jsx persists kanda_pos_active_location_v1 to localStorage on selection — verified. Cross-route data filtering by active location_id is correctly not implemented yet (per spec, future work).",
+    "Header at 1280×720 — Pay button overflow concern from iteration_9 not reproduced; document.scrollWidth == clientWidth (0px horizontal overflow) across Manager screens."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration10_pdf_and_myrota.py (NEW — 5 pytest cases for PDF + mine=true)"
+  ],
+  "success_rate": {"backend": "100% (5/5 new + 180/180 full regression)", "frontend": "Manager 100%; Cashier 100%; Driver 90% (My Rota works on /workforce; discoverability gap from /driver landing)"},
+  "test_credentials": "/app/memory/test_credentials.md (Manager 1234, Cashier 2345, Driver 4567). staff-quick-s1/s2/s3/s4 testids on /login give one-click logins.",
+  "seed_data_creation": "Cleaned up 18 leftover staff (TEST QA Pay / TEST QA Worker) + 3 leftover customers (TEST_ImpFull, TEST_AuditProbe, TEST_AuditFields) from iteration_9. Demo tenant now back to 4 seeded staff (s1..s4) + 0 QA fixtures. No new test data created this iteration.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression suite is at 180 tests across 13 files in /app/backend/tests/. New iteration10 tests cover Rota PDF (Manager 200 + Cashier 403 + Driver 403) and /shifts?mine=true for Cashier+Driver. To test Driver UI, note Drivers land on /driver (DriverScreen, no sidebar) on login — you must page.goto('/workforce') manually to see the My Rota tab. LocationSwitcher localStorage key is 'kanda_pos_active_location_v1'. Manager Operations now has ONLY ops-tab-coupons and ops-tab-prep — do not assume waste/drawer/tips/locations pills exist there.",
+  "rca of the issue": "Driver routing gap: /app/frontend/src/components/pos/LoginScreen.jsx line 41 — `navigate(user.role === 'Driver' ? '/driver' : '/');`. /driver renders DriverScreen which has its own minimal layout (just a header with name + Sign out + refresh, no sidebar). The new nav-my-rota link added to POSLayout for non-Managers is therefore unreachable for Drivers via normal navigation. Reproduction: login PIN 4567 → land on /driver → no sidebar/nav-my-rota visible. Mitigation: either add a 'My Rota' navigation entry inside DriverScreen, or change the login redirect so Drivers also use POSLayout."
+}
