@@ -55,6 +55,36 @@ api.interceptors.response.use(
   }
 );
 
+// Dedicated client for dashboard-only endpoints (Daily Digest, dash account
+// routes) that require the strict dash JWT (`dash: true` claim). These must
+// NOT go through the shared `api` instance above: that one reads whatever
+// token last landed in the POS slot, which a staff PIN login in another tab
+// can silently overwrite — leaving the dashboard 403'ing with no clear way
+// to recover. Reading straight from the dash token slot avoids that.
+const DASH_TOKEN_KEY = "kanda_dash_token_v1";
+export const dashApi = axios.create({ baseURL: BASE });
+dashApi.interceptors.request.use((cfg) => {
+  const t = localStorage.getItem(DASH_TOKEN_KEY);
+  if (t) cfg.headers.Authorization = `Bearer ${t}`;
+  return cfg;
+});
+dashApi.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    // 401 = the dash session itself is gone/expired — bounce to re-login.
+    // (403 is left alone: that's a validly-logged-in dash user who simply
+    // lacks the role for this endpoint, which isn't fixed by logging out.)
+    if (err?.response?.status === 401) {
+      localStorage.removeItem(DASH_TOKEN_KEY);
+      localStorage.removeItem("kanda_dash_user_v1");
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/biz/login")) {
+        window.location.assign("/biz/login");
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
 export const auth = {
   login: (pin) => api.post("/auth/login", { pin }).then((r) => r.data),
   me: () => api.get("/auth/me").then((r) => r.data),
@@ -264,10 +294,10 @@ export const assistantApi = {
 };
 
 export const digestApi = {
-  getConfig: () => api.get("/digest/config").then((r) => r.data),
-  saveConfig: (cfg) => api.put("/digest/config", cfg).then((r) => r.data),
-  preview: () => api.get("/digest/preview").then((r) => r.data),
-  sendNow: (payload = {}) => api.post("/digest/send-now", payload).then((r) => r.data),
+  getConfig: () => dashApi.get("/digest/config").then((r) => r.data),
+  saveConfig: (cfg) => dashApi.put("/digest/config", cfg).then((r) => r.data),
+  preview: () => dashApi.get("/digest/preview").then((r) => r.data),
+  sendNow: (payload = {}) => dashApi.post("/digest/send-now", payload).then((r) => r.data),
 };
 
 export const smsApi = {

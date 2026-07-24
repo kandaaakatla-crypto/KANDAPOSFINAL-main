@@ -1,20 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import { dashApi } from "../api/client";
 
 const DashContext = createContext(null);
 const STORAGE_TOKEN = "kanda_dash_token_v1";
 const STORAGE_USER = "kanda_dash_user_v1";
-
-const BACKEND = process.env.REACT_APP_BACKEND_URL;
-
-// Dedicated axios instance for dashboard calls — its own interceptor that
-// injects the dash JWT, separate from the POS PIN-session client.
-const dashApi = axios.create({ baseURL: `${BACKEND}/api` });
-dashApi.interceptors.request.use((cfg) => {
-  const t = localStorage.getItem(STORAGE_TOKEN);
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  return cfg;
-});
 
 export function DashProvider({ children }) {
   const [user, setUser] = useState(() => {

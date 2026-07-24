@@ -18,6 +18,7 @@ export default function DashDigest() {
 
   const [cfg, setCfg] = useState(null);
   const [cfgLoading, setCfgLoading] = useState(true);
+  const [cfgError, setCfgError] = useState("");
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -40,10 +41,13 @@ export default function DashDigest() {
 
   const loadConfig = async () => {
     setCfgLoading(true);
+    setCfgError("");
     try {
       const c = await digestApi.getConfig();
       setCfg(c);
     } catch (e) {
+      const msg = e?.response?.data?.detail || e?.message || "Failed to load digest config";
+      setCfgError(String(msg));
       toast.error("Failed to load digest config");
     } finally {
       setCfgLoading(false);
@@ -117,7 +121,10 @@ export default function DashDigest() {
           <div className="p-5">
             {previewLoading && <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading preview…</div>}
             {previewError && !previewLoading && (
-              <div className="text-sm p-3 rounded" style={{ background: "rgba(220,38,38,0.15)", color: "#fca5a5" }}>{previewError}</div>
+              <div className="text-sm p-3 rounded space-y-2" style={{ background: "rgba(220,38,38,0.15)", color: "#fca5a5" }}>
+                <div>{previewError}</div>
+                <button onClick={loadPreview} className="text-xs font-bold underline">Retry</button>
+              </div>
             )}
             {preview && !previewLoading && (
               <div className="space-y-5">
@@ -141,8 +148,14 @@ export default function DashDigest() {
             <div className="text-sm font-bold text-white">Delivery settings</div>
           </div>
           <div className="p-5 space-y-4">
+            {cfgError && !cfgLoading && (
+              <div className="text-sm p-3 rounded space-y-2" style={{ background: "rgba(220,38,38,0.15)", color: "#fca5a5" }}>
+                <div>{cfgError}</div>
+                <button onClick={loadConfig} className="text-xs font-bold underline">Retry</button>
+              </div>
+            )}
             {cfgLoading || !cfg ? (
-              <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>
+              cfgError ? null : <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>
             ) : (
               <>
                 <Toggle label="Enabled" testid="digest-enabled"
