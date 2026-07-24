@@ -38,6 +38,7 @@ def menu_doc_to_response(doc: dict) -> dict:
         "sizes": doc.get("sizes"),
         "available": doc.get("available", True),
         "isPizza": doc.get("is_pizza", False),
+        "dealGroups": doc.get("deal_groups"),
     }
 
 

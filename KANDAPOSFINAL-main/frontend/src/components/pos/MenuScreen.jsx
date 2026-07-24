@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Pencil, PlusCircle, ChefHat, LayoutGrid, Download, Upload, FileText, Eye } from "lucide-react";
+import { Pencil, PlusCircle, ChefHat, LayoutGrid, Download, Upload, FileText, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import RecipeModal from "./RecipeModal";
 import CategoryManagerModal from "./CategoryManagerModal";
@@ -36,6 +36,10 @@ export default function MenuScreen() {
 
   const save = () => {
     if (!editing.name) { toast.error("Item name is required"); return; }
+    if (isDealsCat && (editing.dealGroups || []).some((g) => !g.cat_id || !g.label.trim() || g.count < 1)) {
+      toast.error("Every deal group needs a category, label, and count of at least 1");
+      return;
+    }
     const item = { ...editing };
     if (item.isPizza) {
       item.sizes = { sm: parseFloat(item.sm) || 0, md: parseFloat(item.md) || 0, lg: parseFloat(item.lg) || 0 };
@@ -51,12 +55,18 @@ export default function MenuScreen() {
   const openEdit = (item) => {
     const e = { ...item };
     if (item.isPizza) { e.sm = item.sizes.sm; e.md = item.sizes.md; e.lg = item.sizes.lg; }
+    e.dealGroups = item.dealGroups || [];
     setEditing(e);
   };
 
   const openNew = () => {
-    setEditing({ name: "", desc: "", catId: activeCat, price: "", available: true, isPizza: false, sm: "", md: "", lg: "" });
+    setEditing({ name: "", desc: "", catId: activeCat, price: "", available: true, isPizza: false, sm: "", md: "", lg: "", dealGroups: [] });
   };
+
+  const isDealsCat = editing?.catId === "deals";
+  const addDealGroup = () => setEditing({ ...editing, dealGroups: [...(editing.dealGroups || []), { cat_id: cats.find((c) => c.id !== "deals")?.id || "", label: "", count: 1, size: null }] });
+  const updateDealGroup = (i, patch) => setEditing({ ...editing, dealGroups: editing.dealGroups.map((g, gi) => (gi === i ? { ...g, ...patch } : g)) });
+  const removeDealGroup = (i) => setEditing({ ...editing, dealGroups: editing.dealGroups.filter((_, gi) => gi !== i) });
 
   const [importPreview, setImportPreview] = useState(null); // { file, body }
   const apiBase = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -230,6 +240,51 @@ export default function MenuScreen() {
                 <Input data-testid="menu-field-price" type="number" placeholder="Price ₹ *" value={editing.price} onChange={(e) => setEditing({ ...editing, price: e.target.value })}
                   className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
               )}
+
+              {isDealsCat && (
+                <div className="rounded-lg p-3 space-y-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                  <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--pos-muted)" }}>
+                    Deal components — what the customer picks
+                  </div>
+                  {(editing.dealGroups || []).map((g, i) => (
+                    <div key={i} className="flex items-center gap-1.5" data-testid={`deal-group-row-${i}`}>
+                      <Select value={g.cat_id} onValueChange={(v) => updateDealGroup(i, { cat_id: v, size: v === "pizzas" ? (g.size || "md") : null })}>
+                        <SelectTrigger data-testid={`deal-group-cat-${i}`} className="h-9 text-white text-xs w-28 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cats.filter((c) => c.id !== "deals").map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      {g.cat_id === "pizzas" && (
+                        <Select value={g.size || "md"} onValueChange={(v) => updateDealGroup(i, { size: v })}>
+                          <SelectTrigger data-testid={`deal-group-size-${i}`} className="h-9 text-white text-xs w-16 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sm">Sm</SelectItem>
+                            <SelectItem value="md">Md</SelectItem>
+                            <SelectItem value="lg">Lg</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <Input data-testid={`deal-group-label-${i}`} placeholder="Label shown to staff" value={g.label} onChange={(e) => updateDealGroup(i, { label: e.target.value })}
+                        className="h-9 text-white text-xs flex-1" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                      <Input data-testid={`deal-group-count-${i}`} type="number" min={1} value={g.count} onChange={(e) => updateDealGroup(i, { count: parseInt(e.target.value) || 1 })}
+                        className="h-9 text-white text-xs w-14 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                      <button type="button" data-testid={`deal-group-remove-${i}`} onClick={() => removeDealGroup(i)} className="pos-btn w-9 h-9 shrink-0 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}>
+                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      </button>
+                    </div>
+                  ))}
+                  <button type="button" data-testid="deal-group-add" onClick={addDealGroup}
+                    className="pos-btn w-full h-9 rounded-md text-xs font-bold flex items-center justify-center gap-1.5"
+                    style={{ background: "var(--pos-panel)", color: "var(--pos-accent)", border: "1px dashed var(--pos-border)" }}>
+                    <PlusCircle className="w-3.5 h-3.5" /> Add component
+                  </button>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 {editing.id && isManager && (
                   <button type="button" data-testid="open-recipe-from-edit" onClick={() => { setRecipeFor(editing); setEditing(null); }}

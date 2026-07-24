@@ -444,7 +444,7 @@ export default function OrderScreen() {
         runningBill={editingOrder}
       />
 
-      <ItemModal item={modalItem} onClose={() => setModalItem(null)} onAdd={addLine} />
+      <ItemModal item={modalItem} menuItems={menuItems} onClose={() => setModalItem(null)} onAdd={addLine} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName={orderCustomer()?.name} onCreateOrder={onCreateOrder} onPaid={onPaid} />
 
       <Dialog open={zReportOpen} onOpenChange={setZReportOpen}>

@@ -97,6 +97,7 @@ async def create_menu_item(payload: MenuItemCreate, user: dict = Depends(require
         "sizes": payload.sizes.model_dump() if payload.sizes else None,
         "available": payload.available,
         "is_pizza": payload.isPizza,
+        "deal_groups": [g.model_dump() for g in payload.dealGroups] if payload.dealGroups else None,
     }
     await db.menu_items.insert_one(doc)
     return menu_doc_to_response(doc)
@@ -107,7 +108,7 @@ async def update_menu_item(item_id: str, payload: MenuItemUpdate, user: dict = D
     db = get_db()
     update = {}
     raw = payload.model_dump(exclude_none=True)
-    mapping = {"catId": "cat_id", "isPizza": "is_pizza"}
+    mapping = {"catId": "cat_id", "isPizza": "is_pizza", "dealGroups": "deal_groups"}
     for k, v in raw.items():
         key = mapping.get(k, k)
         update[key] = v.model_dump() if hasattr(v, "model_dump") else v

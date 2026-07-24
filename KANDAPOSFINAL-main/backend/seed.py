@@ -29,10 +29,29 @@ CATEGORIES = [
 ]
 
 MENU_ITEMS = [
-    {"id": "d1", "cat_id": "deals", "name": "Family Feast", "desc": "2 Large Pizzas + 2 Sides + 1.5L Drink", "price": 899, "available": True, "is_pizza": False},
-    {"id": "d2", "cat_id": "deals", "name": "Duo Deal", "desc": "2 Medium Pizzas + Garlic Bread", "price": 649, "available": True, "is_pizza": False},
-    {"id": "d3", "cat_id": "deals", "name": "Lunch Special", "desc": "Any Small Pizza + Can", "price": 199, "available": True, "is_pizza": False},
-    {"id": "d4", "cat_id": "deals", "name": "Big Night In", "desc": "1 Large Pizza + Wings + Wedges + Drink", "price": 749, "available": True, "is_pizza": False},
+    {"id": "d1", "cat_id": "deals", "name": "Family Feast", "desc": "2 Large Pizzas + 2 Sides + 1.5L Drink", "price": 899, "available": True, "is_pizza": False,
+     "deal_groups": [
+         {"cat_id": "pizzas", "label": "Choose 2 Large Pizzas", "count": 2, "size": "lg"},
+         {"cat_id": "sides", "label": "Choose 2 Sides", "count": 2},
+         {"cat_id": "drinks", "label": "Choose a Drink", "count": 1},
+     ]},
+    {"id": "d2", "cat_id": "deals", "name": "Duo Deal", "desc": "2 Medium Pizzas + a Side", "price": 649, "available": True, "is_pizza": False,
+     "deal_groups": [
+         {"cat_id": "pizzas", "label": "Choose 2 Medium Pizzas", "count": 2, "size": "md"},
+         {"cat_id": "sides", "label": "Choose a Side", "count": 1},
+     ]},
+    {"id": "d3", "cat_id": "deals", "name": "Lunch Special", "desc": "Any Small Pizza + a Drink", "price": 199, "available": True, "is_pizza": False,
+     "deal_groups": [
+         {"cat_id": "pizzas", "label": "Choose a Small Pizza", "count": 1, "size": "sm"},
+         {"cat_id": "drinks", "label": "Choose a Drink", "count": 1},
+     ]},
+    {"id": "d4", "cat_id": "deals", "name": "Big Night In", "desc": "1 Large Pizza + Chicken + a Side + a Drink", "price": 749, "available": True, "is_pizza": False,
+     "deal_groups": [
+         {"cat_id": "pizzas", "label": "Choose a Large Pizza", "count": 1, "size": "lg"},
+         {"cat_id": "chicken", "label": "Choose Chicken", "count": 1},
+         {"cat_id": "sides", "label": "Choose a Side", "count": 1},
+         {"cat_id": "drinks", "label": "Choose a Drink", "count": 1},
+     ]},
 
     {"id": "p1", "cat_id": "pizzas", "name": "Margherita", "desc": "Tomato base, mozzarella", "sizes": {"sm": 199, "md": 349, "lg": 499}, "available": True, "is_pizza": True},
     {"id": "p2", "cat_id": "pizzas", "name": "Pepperoni Passion", "desc": "Double pepperoni, extra cheese", "sizes": {"sm": 249, "md": 399, "lg": 599}, "available": True, "is_pizza": True},

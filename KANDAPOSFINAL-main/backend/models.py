@@ -64,6 +64,18 @@ class PizzaSizes(BaseModel):
     lg: float
 
 
+class DealGroup(BaseModel):
+    """One pick-N-from-category slot inside a meal deal, e.g. 'choose 1 pizza'.
+
+    `size` only applies when `cat_id` is the pizzas category — it fixes which
+    size tier's price/label to show since the deal itself has one flat price.
+    """
+    cat_id: str
+    label: str
+    count: int = 1
+    size: Optional[str] = None
+
+
 class MenuItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
@@ -74,6 +86,7 @@ class MenuItem(BaseModel):
     sizes: Optional[PizzaSizes] = None
     available: bool = True
     isPizza: bool = False
+    dealGroups: Optional[List[DealGroup]] = None
 
 
 class MenuItemCreate(BaseModel):
@@ -84,6 +97,7 @@ class MenuItemCreate(BaseModel):
     sizes: Optional[PizzaSizes] = None
     available: bool = True
     isPizza: bool = False
+    dealGroups: Optional[List[DealGroup]] = None
 
 
 class MenuItemUpdate(BaseModel):
@@ -94,6 +108,7 @@ class MenuItemUpdate(BaseModel):
     sizes: Optional[PizzaSizes] = None
     available: Optional[bool] = None
     isPizza: Optional[bool] = None
+    dealGroups: Optional[List[DealGroup]] = None
 
 
 class AvailabilityPayload(BaseModel):
