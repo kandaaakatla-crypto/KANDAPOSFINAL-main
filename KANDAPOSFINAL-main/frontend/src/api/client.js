@@ -137,6 +137,9 @@ export const customersApi = {
 
 export const inventoryApi = {
   list: () => api.get("/inventory").then((r) => r.data),
+  create: (payload) => api.post("/inventory", payload).then((r) => r.data),
+  update: (id, payload) => api.patch(`/inventory/${id}`, payload).then((r) => r.data),
+  remove: (id) => api.delete(`/inventory/${id}`).then((r) => r.data),
   adjust: (id, delta) => api.patch(`/inventory/${id}/adjust`, { delta }).then((r) => r.data),
   reorder: (id) => api.post(`/inventory/${id}/reorder`).then((r) => r.data),
 };

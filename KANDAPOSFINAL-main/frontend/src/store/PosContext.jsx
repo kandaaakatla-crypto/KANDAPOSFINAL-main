@@ -228,6 +228,30 @@ export function PosProvider({ children }) {
     }
   }, []);
 
+  const upsertInventoryItem = useCallback(async (item) => {
+    try {
+      if (item.id) {
+        const updated = await inventoryApi.update(item.id, item);
+        setInventory((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+        return updated;
+      }
+      const created = await inventoryApi.create(item);
+      setInventory((prev) => [...prev, created]);
+      return created;
+    } catch {
+      toast.error("Could not save inventory item");
+    }
+  }, []);
+
+  const deleteInventoryItem = useCallback(async (id) => {
+    try {
+      await inventoryApi.remove(id);
+      setInventory((prev) => prev.filter((i) => i.id !== id));
+    } catch {
+      toast.error("Could not delete inventory item");
+    }
+  }, []);
+
   // ----- Menu -----
   const upsertMenuItem = useCallback(async (item) => {
     try {
@@ -266,7 +290,7 @@ export function PosProvider({ children }) {
     orders, placeOrder, appendToOrder, updateOrderStatus, assignDriver, reloadOrders,
     customers, upsertCustomer, deleteCustomer, refreshCustomers, refreshTables, refreshMenu,
     tables, setTableStatus,
-    inventory, adjustStock, reorderStock,
+    inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem,
   };
 
   return <PosContext.Provider value={value}>{children}</PosContext.Provider>;

@@ -270,6 +270,24 @@ class InventoryItem(BaseModel):
     stock: float
     reorder: float
     supplier: str
+    cost_per_unit: float = 0.0
+
+
+class InventoryItemCreate(BaseModel):
+    name: str
+    unit: str
+    stock: float = 0
+    reorder: float = 0
+    supplier: str = ""
+    cost_per_unit: float = 0.0
+
+
+class InventoryItemUpdate(BaseModel):
+    name: Optional[str] = None
+    unit: Optional[str] = None
+    reorder: Optional[float] = None
+    supplier: Optional[str] = None
+    cost_per_unit: Optional[float] = None
 
 
 class AdjustStockPayload(BaseModel):

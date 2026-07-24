@@ -97,18 +97,18 @@ def _table_seed():
 
 
 INVENTORY = [
-    {"id": "i1",  "name": "Pizza Dough Balls",  "unit": "pcs",  "stock": 84,   "reorder": 40,  "supplier": "FreshBake Ltd"},
-    {"id": "i2",  "name": "Mozzarella Cheese",  "unit": "kg",   "stock": 12.5, "reorder": 8,   "supplier": "DairyDirect"},
-    {"id": "i3",  "name": "Tomato Sauce",       "unit": "ltr",  "stock": 18,   "reorder": 10,  "supplier": "ItalFoods"},
-    {"id": "i4",  "name": "Pepperoni",          "unit": "kg",   "stock": 4.2,  "reorder": 5,   "supplier": "MeatCo"},
-    {"id": "i5",  "name": "Chicken Breast",     "unit": "kg",   "stock": 9,    "reorder": 6,   "supplier": "MeatCo"},
-    {"id": "i6",  "name": "Mushrooms",          "unit": "kg",   "stock": 3.1,  "reorder": 3,   "supplier": "GreenGrocer"},
-    {"id": "i7",  "name": "Pizza Boxes 12\"",  "unit": "pcs",  "stock": 220,  "reorder": 100, "supplier": "PackRight"},
-    {"id": "i8",  "name": "Pizza Boxes 15\"",  "unit": "pcs",  "stock": 64,   "reorder": 80,  "supplier": "PackRight"},
-    {"id": "i9",  "name": "Coca-Cola 330ml",    "unit": "cans", "stock": 96,   "reorder": 48,  "supplier": "DrinksWholesale"},
-    {"id": "i10", "name": "Burger Buns",        "unit": "pcs",  "stock": 38,   "reorder": 30,  "supplier": "FreshBake Ltd"},
-    {"id": "i11", "name": "Potato Wedges",      "unit": "kg",   "stock": 14,   "reorder": 8,   "supplier": "FrozenFoods"},
-    {"id": "i12", "name": "Jalapenos",          "unit": "kg",   "stock": 1.4,  "reorder": 2,   "supplier": "ItalFoods"},
+    {"id": "i1",  "name": "Pizza Dough Balls",  "unit": "pcs",  "stock": 84,   "reorder": 40,  "supplier": "FreshBake Ltd",       "cost_per_unit": 18},
+    {"id": "i2",  "name": "Mozzarella Cheese",  "unit": "kg",   "stock": 12.5, "reorder": 8,   "supplier": "DairyDirect",         "cost_per_unit": 420},
+    {"id": "i3",  "name": "Tomato Sauce",       "unit": "ltr",  "stock": 18,   "reorder": 10,  "supplier": "ItalFoods",           "cost_per_unit": 160},
+    {"id": "i4",  "name": "Pepperoni",          "unit": "kg",   "stock": 4.2,  "reorder": 5,   "supplier": "MeatCo",              "cost_per_unit": 650},
+    {"id": "i5",  "name": "Chicken Breast",     "unit": "kg",   "stock": 9,    "reorder": 6,   "supplier": "MeatCo",              "cost_per_unit": 280},
+    {"id": "i6",  "name": "Mushrooms",          "unit": "kg",   "stock": 3.1,  "reorder": 3,   "supplier": "GreenGrocer",         "cost_per_unit": 120},
+    {"id": "i7",  "name": "Pizza Boxes 12\"",  "unit": "pcs",  "stock": 220,  "reorder": 100, "supplier": "PackRight",           "cost_per_unit": 14},
+    {"id": "i8",  "name": "Pizza Boxes 15\"",  "unit": "pcs",  "stock": 64,   "reorder": 80,  "supplier": "PackRight",           "cost_per_unit": 18},
+    {"id": "i9",  "name": "Coca-Cola 330ml",    "unit": "cans", "stock": 96,   "reorder": 48,  "supplier": "DrinksWholesale",     "cost_per_unit": 35},
+    {"id": "i10", "name": "Burger Buns",        "unit": "pcs",  "stock": 38,   "reorder": 30,  "supplier": "FreshBake Ltd",       "cost_per_unit": 12},
+    {"id": "i11", "name": "Potato Wedges",      "unit": "kg",   "stock": 14,   "reorder": 8,   "supplier": "FrozenFoods",         "cost_per_unit": 140},
+    {"id": "i12", "name": "Jalapenos",          "unit": "kg",   "stock": 1.4,  "reorder": 2,   "supplier": "ItalFoods",           "cost_per_unit": 220},
 ]
 
 
