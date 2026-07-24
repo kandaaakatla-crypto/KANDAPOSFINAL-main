@@ -9,11 +9,11 @@ export const PIZZA_SIZES = [
 
 export const TOPPINGS = [
   "Pepperoni", "Mushrooms", "Red Onions", "Green Peppers", "Sweetcorn",
-  "Jalapenos", "Pineapple", "Ham", "BBQ Chicken", "Spicy Beef",
-  "Smoked Bacon", "Black Olives", "Fresh Tomatoes", "Extra Cheese",
+  "Jalapenos", "Pineapple", "Chicken Sausage", "BBQ Chicken", "Chicken Keema",
+  "Paneer", "Black Olives", "Fresh Tomatoes", "Extra Cheese",
 ];
 
-export const TOPPING_PRICE = { sm: 0.9, md: 1.2, lg: 1.5 };
+export const TOPPING_PRICE = { sm: 20, md: 30, lg: 40 };
 
 // Mirror of seeded categories used for static colour theming + order.
 // Backend /api/menu/categories returns the same set; this is purely for UI tokens.
@@ -27,12 +27,19 @@ export const CATEGORIES = [
   { id: "desserts", name: "Desserts",          color: "#ec4899" },
 ];
 
-export const DELIVERY_FEE = 2.5;
+export const DELIVERY_FEE = 49;
 
 // Demo PIN hints rendered on the login screen (matches seeded staff for first boot).
 export const DEMO_STAFF_HINTS = [
-  { id: "s1", name: "Aarav Reddy",  pin: "1234", role: "Manager" },
-  { id: "s2", name: "Priya Iyer",   pin: "2345", role: "Cashier" },
-  { id: "s3", name: "Rohan Sharma", pin: "3456", role: "Cashier" },
-  { id: "s4", name: "Karthik Rao",  pin: "4567", role: "Driver" },
+  { id: "s1",  name: "Aarav Reddy",  pin: "1234", role: "Manager" },
+  { id: "s2",  name: "Priya Iyer",   pin: "2345", role: "Cashier" },
+  { id: "s3",  name: "Rohan Sharma", pin: "3456", role: "Cashier" },
+  { id: "s7",  name: "Ananya Gupta", pin: "7890", role: "Cashier" },
+  { id: "s8",  name: "Rahul Verma",  pin: "8901", role: "Cashier" },
+  { id: "s5",  name: "Meera Nair",   pin: "5678", role: "Kitchen" },
+  { id: "s6",  name: "Vikram Desai", pin: "6789", role: "Kitchen" },
+  { id: "s4",  name: "Karthik Rao",  pin: "4567", role: "Driver" },
+  { id: "s9",  name: "Sanjay Kumar", pin: "9012", role: "Driver" },
+  { id: "s10", name: "Divya Menon",  pin: "1235", role: "Driver" },
+  { id: "s11", name: "Arjun Nair",   pin: "1236", role: "Driver" },
 ];

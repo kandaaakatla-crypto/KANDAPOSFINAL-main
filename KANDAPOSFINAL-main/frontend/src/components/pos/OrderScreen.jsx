@@ -4,7 +4,9 @@ import { CATEGORIES, DELIVERY_FEE } from "../../data/mock";
 import ItemModal from "./ItemModal";
 import CartPanel from "./CartPanel";
 import PaymentModal from "./PaymentModal";
-import { Bike, ShoppingBag, UtensilsCrossed, Search, UserPlus, X, Phone, Info } from "lucide-react";
+import { CashDrawerPanel, TipPoolPanel } from "./OpsPanels";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Bike, ShoppingBag, UtensilsCrossed, Search, UserPlus, X, Phone, Info, DollarSign, Coins } from "lucide-react";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
@@ -19,7 +21,7 @@ const ORDER_TYPES = [
 ];
 
 export default function OrderScreen() {
-  const { menuItems, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus } = usePos();
+  const { menuItems, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser } = usePos();
   const navigate = useNavigate();
   const [orderType, setOrderType] = useState("delivery");
   const [orderSource, setOrderSource] = useState("in-store");
@@ -28,6 +30,8 @@ export default function OrderScreen() {
   const [discount, setDiscount] = useState(0); // percent
   const [modalItem, setModalItem] = useState(null);
   const [payOpen, setPayOpen] = useState(false);
+  const [zReportOpen, setZReportOpen] = useState(false);
+  const [tipPoolOpen, setTipPoolOpen] = useState(false);
   // new — checkout enhancements
   const [tipPct, setTipPct] = useState(0);
   const [coupon, setCoupon] = useState(null); // {code, kind, value, discount}
@@ -277,6 +281,21 @@ export default function OrderScreen() {
           ))}
         </div>
 
+        {staffUser?.role === "Manager" && (
+          <div className="grid grid-cols-2 gap-2">
+            <button data-testid="open-zreport" onClick={() => setZReportOpen(true)}
+              className="pos-btn flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold"
+              style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+              <DollarSign className="w-3.5 h-3.5" /> Z-Report
+            </button>
+            <button data-testid="open-tippool" onClick={() => setTipPoolOpen(true)}
+              className="pos-btn flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold"
+              style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+              <Coins className="w-3.5 h-3.5" /> Tip Pool
+            </button>
+          </div>
+        )}
+
         <div className="rounded-xl p-2" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="text-[10px] uppercase tracking-wider mb-1.5 font-semibold px-1" style={{ color: "var(--pos-muted)" }}>Source</div>
           <div className="grid grid-cols-5 gap-1">
@@ -427,6 +446,19 @@ export default function OrderScreen() {
 
       <ItemModal item={modalItem} onClose={() => setModalItem(null)} onAdd={addLine} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName={orderCustomer()?.name} onCreateOrder={onCreateOrder} onPaid={onPaid} />
+
+      <Dialog open={zReportOpen} onOpenChange={setZReportOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto pos-scroll border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+          <DialogHeader><DialogTitle className="text-white">Z-Report · Cash Drawer</DialogTitle></DialogHeader>
+          <CashDrawerPanel />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={tipPoolOpen} onOpenChange={setTipPoolOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pos-scroll border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+          <DialogHeader><DialogTitle className="text-white">Tip Pool</DialogTitle></DialogHeader>
+          <TipPoolPanel />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

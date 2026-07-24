@@ -5,10 +5,17 @@ from auth import hash_pin
 
 
 STAFF = [
-    {"id": "s1", "name": "Aarav Reddy",     "pin": "1234", "role": "Manager", "initials": "AR"},
-    {"id": "s2", "name": "Priya Iyer",      "pin": "2345", "role": "Cashier", "initials": "PI"},
-    {"id": "s3", "name": "Rohan Sharma",    "pin": "3456", "role": "Cashier", "initials": "RS"},
-    {"id": "s4", "name": "Karthik Rao",     "pin": "4567", "role": "Driver",  "initials": "KR"},
+    {"id": "s1",  "name": "Aarav Reddy",     "pin": "1234", "role": "Manager", "initials": "AR"},
+    {"id": "s2",  "name": "Priya Iyer",      "pin": "2345", "role": "Cashier", "initials": "PI"},
+    {"id": "s3",  "name": "Rohan Sharma",    "pin": "3456", "role": "Cashier", "initials": "RS"},
+    {"id": "s7",  "name": "Ananya Gupta",    "pin": "7890", "role": "Cashier", "initials": "AG"},
+    {"id": "s8",  "name": "Rahul Verma",     "pin": "8901", "role": "Cashier", "initials": "RV"},
+    {"id": "s5",  "name": "Meera Nair",      "pin": "5678", "role": "Kitchen", "initials": "MN"},
+    {"id": "s6",  "name": "Vikram Desai",    "pin": "6789", "role": "Kitchen", "initials": "VD"},
+    {"id": "s4",  "name": "Karthik Rao",     "pin": "4567", "role": "Driver",  "initials": "KR"},
+    {"id": "s9",  "name": "Sanjay Kumar",    "pin": "9012", "role": "Driver",  "initials": "SK"},
+    {"id": "s10", "name": "Divya Menon",     "pin": "1235", "role": "Driver",  "initials": "DM"},
+    {"id": "s11", "name": "Arjun Nair",      "pin": "1236", "role": "Driver",  "initials": "AN"},
 ]
 
 CATEGORIES = [

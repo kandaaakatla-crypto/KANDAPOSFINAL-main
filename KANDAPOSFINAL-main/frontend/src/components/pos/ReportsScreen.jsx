@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { usePos } from "../../store/PosContext";
 import { reportsApi, labourApi } from "../../api/client";
-import { IndianRupee, ReceiptText, TrendingUp, Bike, Users, DollarSign, Coins, ChevronDown, ChevronUp } from "lucide-react";
-import { CashDrawerPanel, TipPoolPanel } from "./OpsPanels";
+import { IndianRupee, ReceiptText, TrendingUp, Bike, Users, RefreshCcw } from "lucide-react";
+import PeakHoursHeatmap from "../dash/PeakHoursHeatmap";
+
+const RANGE_OPTIONS = [7, 14, 30];
 
 export default function ReportsScreen() {
   const { orders, staffUser } = usePos();
   const [summary, setSummary] = useState(null);
   const [labour, setLabour] = useState(null);
+  const [range, setRange] = useState(7);
+  const [rollups, setRollups] = useState([]);
+  const [rollupsLoading, setRollupsLoading] = useState(true);
 
   useEffect(() => {
     let cancel = false;
@@ -22,6 +27,13 @@ export default function ReportsScreen() {
     return () => { cancel = true; };
   }, [orders.length, staffUser?.role]);
 
+  useEffect(() => {
+    let cancel = false;
+    setRollupsLoading(true);
+    reportsApi.dailyRollup(range).then((r) => { if (!cancel) setRollups(r.rollups || []); }).finally(() => { if (!cancel) setRollupsLoading(false); });
+    return () => { cancel = true; };
+  }, [range, orders.length]);
+
   const todayOrders = orders;
   const todaySales = summary?.todaySales ?? 0;
   const avgOrder = summary?.avgOrder ?? 0;
@@ -29,17 +41,24 @@ export default function ReportsScreen() {
   const cashTotal = summary?.cashTotal ?? 0;
   const cardTotal = summary?.cardTotal ?? 0;
   const unpaidTotal = summary?.unpaidTotal ?? 0;
-  const weekly = summary?.weeklySales ?? [];
   const topItems = summary?.topItems ?? [];
 
-  const maxSales = weekly.length ? Math.max(...weekly.map((d) => d.sales)) : 1;
+  const refundedInRange = rollups.reduce((s, r) => s + (r.refunded || 0), 0);
+  const maxSales = rollups.length ? Math.max(...rollups.map((d) => d.gross_sales || 0), 1) : 1;
   const payTotal = cashTotal + cardTotal + unpaidTotal || 1;
+  const fmtLabel = (dateStr) => {
+    const d = new Date(dateStr + "T00:00:00Z");
+    return range <= 7
+      ? d.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })
+      : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  };
 
   const STATS = [
     { label: "Today's Sales", value: `₹${todaySales.toFixed(2)}`, icon: IndianRupee, color: "#22c55e" },
     { label: "Orders Today", value: summary?.ordersToday ?? todayOrders.length, icon: ReceiptText, color: "#3b82f6" },
     { label: "Avg Order Value", value: `₹${avgOrder.toFixed(2)}`, icon: TrendingUp, color: "#f59e0b" },
     { label: "Deliveries", value: deliveries, icon: Bike, color: "#a855f7" },
+    { label: `Refunds (${range}d)`, value: `₹${refundedInRange.toFixed(2)}`, icon: RefreshCcw, color: "#f87171" },
   ];
 
   return (
@@ -77,7 +96,7 @@ export default function ReportsScreen() {
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {STATS.map((s) => (
           <div key={s.label} className="rounded-xl p-4 flex items-center gap-3" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid={`stat-${s.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}>
             <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${s.color}22` }}>
@@ -92,19 +111,36 @@ export default function ReportsScreen() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Weekly chart */}
+        {/* Sales trend — adjustable range */}
         <div className="lg:col-span-2 rounded-xl p-5" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid="weekly-chart">
-          <div className="font-semibold text-white mb-1">Weekly Sales</div>
-          <div className="text-xs mb-5" style={{ color: "var(--pos-muted)" }}>Last 7 days · ₹{weekly.reduce((s, d) => s + d.sales, 0).toFixed(0)} total</div>
-          <div className="flex items-end gap-3 h-44">
-            {weekly.map((d) => (
-              <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5">
-                <span className="text-[10px] tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{d.sales.toFixed(0)}</span>
-                <div className="w-full rounded-t-md" style={{ height: `${(d.sales / maxSales) * 100}%`, background: d.sales === maxSales ? "var(--pos-accent)" : "#2c3d61", minHeight: 8, transition: "height 0.4s ease" }} />
-                <span className="text-xs font-medium" style={{ color: "var(--pos-muted)" }}>{d.day}</span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-1">
+            <div className="font-semibold text-white">Sales Trend</div>
+            <div className="flex gap-1">
+              {RANGE_OPTIONS.map((r) => (
+                <button key={r} data-testid={`range-${r}d`} onClick={() => setRange(r)}
+                  className="pos-btn h-7 px-2.5 rounded-md text-[11px] font-bold"
+                  style={{ background: range === r ? "var(--pos-accent)" : "var(--pos-panel-2)", color: range === r ? "#fff" : "var(--pos-muted)" }}>
+                  {r}d
+                </button>
+              ))}
+            </div>
           </div>
+          <div className="text-xs mb-5" style={{ color: "var(--pos-muted)" }}>
+            Last {range} days · ₹{rollups.reduce((s, d) => s + (d.gross_sales || 0), 0).toFixed(0)} total
+          </div>
+          {rollupsLoading ? (
+            <div className="h-44 flex items-center justify-center text-xs" style={{ color: "var(--pos-muted)" }}>Loading…</div>
+          ) : (
+            <div className="flex items-end gap-[3px] h-44 overflow-x-auto pos-scroll">
+              {rollups.map((d) => (
+                <div key={d.date} className="flex-1 min-w-[18px] flex flex-col items-center gap-1.5" title={`${d.date} · ₹${(d.gross_sales || 0).toFixed(2)}`}>
+                  {range <= 7 && <span className="text-[10px] tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(d.gross_sales || 0).toFixed(0)}</span>}
+                  <div className="w-full rounded-t-md" style={{ height: `${((d.gross_sales || 0) / maxSales) * 100}%`, background: (d.gross_sales || 0) === maxSales ? "var(--pos-accent)" : "#2c3d61", minHeight: 4, transition: "height 0.4s ease" }} />
+                  <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: "var(--pos-muted)" }}>{fmtLabel(d.date)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Payment split + top items */}
@@ -142,44 +178,8 @@ export default function ReportsScreen() {
         </div>
       </div>
 
-      {staffUser?.role === "Manager" && (
-        <>
-          <CollapsibleSection
-            title="Z-Report · Cash Drawer"
-            icon={DollarSign}
-            testid="reports-zreport"
-            defaultOpen={false}
-          >
-            <CashDrawerPanel />
-          </CollapsibleSection>
-          <CollapsibleSection
-            title="Tip Pool"
-            icon={Coins}
-            testid="reports-tippool"
-            defaultOpen={false}
-          >
-            <TipPoolPanel />
-          </CollapsibleSection>
-        </>
-      )}
-    </div>
-  );
-}
-
-function CollapsibleSection({ title, icon: Icon, testid, defaultOpen, children }) {
-  const [open, setOpen] = useState(!!defaultOpen);
-  return (
-    <div className="rounded-xl" data-testid={testid}
-      style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-      <button onClick={() => setOpen((v) => !v)} data-testid={`${testid}-toggle`}
-        className="pos-btn w-full flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2 text-sm font-bold text-white">
-          <Icon className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-          {title}
-        </div>
-        {open ? <ChevronUp className="w-4 h-4" style={{ color: "var(--pos-muted)" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "var(--pos-muted)" }} />}
-      </button>
-      {open && <div className="px-4 pb-4">{children}</div>}
+      {/* Peak hours — busiest weekday × hour buckets */}
+      <PeakHoursHeatmap days={28} />
     </div>
   );
 }
