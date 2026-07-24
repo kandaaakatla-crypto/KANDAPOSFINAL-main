@@ -12,6 +12,7 @@ Soft-delete pattern (added 2026-02-20 after data-loss incident):
 """
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -101,7 +102,7 @@ async def delete_customer(customer_id: str, user: dict = Depends(get_current_use
     """Soft delete — the row is hidden from list/search/order flows but kept
     in DB. Use `POST /api/customers/{id}/restore` to bring it back."""
     db = get_db()
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     res = await db.customers.find_one_and_update(
         _active_filter(user, {"id": customer_id}),
         {"$set": {"deleted_at": now, "deleted_by": user.get("id")}},

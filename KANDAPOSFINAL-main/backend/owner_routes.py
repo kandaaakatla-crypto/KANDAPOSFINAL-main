@@ -8,6 +8,7 @@ import base64
 import io
 import uuid
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import List, Optional, Literal
 
 import qrcode
@@ -105,7 +106,7 @@ def _clean(d: dict) -> dict:
 
 
 async def _platform_kpis(db) -> dict:
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
 
@@ -182,7 +183,7 @@ async def list_tenants(owner: dict = Depends(get_current_owner)):
     db = get_db()
     tenants = await db.tenants.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
     # decorate with quick stats
-    now_iso = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    now_iso = now_ist().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     for t in tenants:
         t["ordersToday"] = await db.orders.count_documents({"tenant_id": t["id"], "placedAt": {"$gte": now_iso}})
         t["staffCount"] = await db.users.count_documents({"tenant_id": t["id"]})
@@ -196,7 +197,7 @@ async def tenant_detail(tenant_id: str, owner: dict = Depends(get_current_owner)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
     last_order_doc = await db.orders.find({"tenant_id": tenant_id}, {"_id": 0, "placedAt": 1, "number": 1, "total": 1}).sort("placedAt", -1).limit(1).to_list(1)
@@ -248,7 +249,7 @@ async def create_tenant(payload: TenantCreateRequest, owner: dict = Depends(get_
         raise HTTPException(status_code=400, detail="Manager PIN must be 4-6 digits")
 
     tenant_id = slug
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = now_ist().isoformat()
     tenant_doc = {
         "id": tenant_id,
         "slug": slug,
@@ -300,7 +301,7 @@ async def impersonate_tenant(tenant_id: str, payload: ImpersonateRequest, owner:
         "tenant_id": tenant_id,
         "mode": payload.mode,
         "reason": (payload.reason or "").strip()[:500],
-        "at": datetime.now(timezone.utc).isoformat(),
+        "at": now_ist().isoformat(),
     })
     return ImpersonateResponse(
         token=token, tenantSlug=tenant["slug"], tenantName=tenant["name"], mode=payload.mode,

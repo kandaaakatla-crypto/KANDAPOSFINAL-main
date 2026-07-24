@@ -1,6 +1,7 @@
 """JWT + bcrypt auth utilities for staff PIN login."""
 import os
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 import bcrypt
 import jwt
 from fastapi import Request, HTTPException, Depends
@@ -26,7 +27,7 @@ def create_access_token(user_id: str, role: str, tenant_id: str) -> str:
         "sub": user_id,
         "role": role,
         "tenant_id": tenant_id,
-        "exp": datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_HOURS),
+        "exp": now_ist() + timedelta(hours=ACCESS_TOKEN_HOURS),
         "type": "access",
     }
     return jwt.encode(payload, _secret(), algorithm=JWT_ALG)

@@ -26,6 +26,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 
 import razorpay
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -133,8 +134,8 @@ async def purchase_location(user: dict = Depends(require_role("Manager"))):
         "user_name": user.get("name"),
         "status": "initiated",
         "payment_status": "pending",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
+        "updated_at": now_ist().isoformat(),
     })
     return {
         "order_id": order["id"],
@@ -187,7 +188,7 @@ async def _apply_paid(db, order_id: str, payment_id: str, record: dict) -> None:
         {"$set": {
             "status": "completed", "payment_status": "paid",
             "razorpay_payment_id": payment_id,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": now_ist().isoformat(),
         }},
     )
     # Only credit slot if THIS call actually flipped the status (guards against
@@ -196,7 +197,7 @@ async def _apply_paid(db, order_id: str, payment_id: str, record: dict) -> None:
         await db.tenants.update_one(
             {"id": tenant_id},
             {"$inc": {"paid_slots": 1},
-             "$set": {"last_slot_purchased_at": datetime.now(timezone.utc).isoformat()}},
+             "$set": {"last_slot_purchased_at": now_ist().isoformat()}},
         )
         logger.info("Tenant %s granted +1 location slot via Razorpay", tenant_id)
 

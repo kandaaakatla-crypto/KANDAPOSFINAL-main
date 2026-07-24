@@ -1,6 +1,7 @@
 """Reservations — book a table for a future time slot."""
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -79,7 +80,7 @@ async def create_reservation(payload: ReservationCreate, user: dict = Depends(ge
         "notes": payload.notes or "",
         "created_by": user.get("id"),
         "status": "booked",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.reservations.insert_one(doc)
     return clean(doc)

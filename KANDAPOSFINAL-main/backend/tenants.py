@@ -10,6 +10,7 @@ Frontend derives the slug from the subdomain (e.g. `xyzpizza.kanda.app` →
 `xyzpizza`) and falls back to `demo` in non-subdomain environments.
 """
 from datetime import datetime, timezone
+from tz import now_ist
 from fastapi import Request, HTTPException
 from typing import Optional
 
@@ -62,7 +63,7 @@ async def seed_default_tenant(db) -> None:
     """Idempotently insert the demo tenant and backfill legacy single-tenant rows."""
     if await db.tenants.count_documents({"id": DEMO_TENANT["id"]}) == 0:
         doc = dict(DEMO_TENANT)
-        doc["created_at"] = datetime.now(timezone.utc).isoformat()
+        doc["created_at"] = now_ist().isoformat()
         await db.tenants.insert_one(doc)
 
     # Backfill any rows that pre-date multi-tenancy.

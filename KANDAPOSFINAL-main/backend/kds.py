@@ -14,6 +14,7 @@ import os
 import secrets
 import logging
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import Optional, Literal, List
 
 from fastapi import APIRouter, HTTPException, Request, Depends, Query
@@ -84,7 +85,7 @@ def _compute_lane(order: dict) -> str:
         # Stay in recall only for RECALL_WINDOW_MIN minutes.
         try:
             ts = datetime.fromisoformat(order["kds_recalled_at"].replace("Z", "+00:00"))
-            if datetime.now(timezone.utc) - ts <= timedelta(minutes=RECALL_WINDOW_MIN):
+            if now_ist() - ts <= timedelta(minutes=RECALL_WINDOW_MIN):
                 return "recall"
         except Exception:
             pass
@@ -162,7 +163,7 @@ async def list_tickets(
         raise HTTPException(status_code=400, detail=f"Unknown station '{station}'")
     db = get_db()
     # Only show orders from the last 12 hours that aren't completed or already on the road.
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=12)).isoformat()
+    cutoff = (now_ist() - timedelta(hours=12)).isoformat()
     cursor = db.orders.find(
         {
             "tenant_id": tenant["id"],
@@ -235,7 +236,7 @@ async def update_item_status(
 @kds_router.patch("/orders/{order_id}/recall")
 async def recall_order(order_id: str, tenant: dict = Depends(kds_tenant)):
     db = get_db()
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     res = await db.orders.find_one_and_update(
         {"tenant_id": tenant["id"], "id": order_id},
         {"$set": {"kds_recalled_at": now, "status": "in-kitchen"}},

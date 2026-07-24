@@ -13,6 +13,7 @@ import logging
 import traceback
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, Depends, Request
@@ -51,7 +52,7 @@ class TicketStatusUpdate(BaseModel):
 async def create_ticket(payload: TicketCreate, request: Request, user: dict = Depends(get_current_user)):
     db = get_db()
     tenant = await get_tenant(user, db)
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     ticket = {
         "id": f"tk_{uuid.uuid4().hex[:10]}",
         "tenant_id": user["tenant_id"],
@@ -121,7 +122,7 @@ async def list_all_tickets(owner: dict = Depends(get_current_owner), status: Opt
 @ops_router.post("/support/{ticket_id}/reply")
 async def reply_to_ticket(ticket_id: str, payload: TicketReply, owner: dict = Depends(get_current_owner)):
     db = get_db()
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     reply = {
         "id": f"r_{uuid.uuid4().hex[:8]}",
         "by": owner["id"],
@@ -145,7 +146,7 @@ async def update_ticket_status(ticket_id: str, payload: TicketStatusUpdate, owne
     db = get_db()
     res = await db.support_tickets.find_one_and_update(
         {"id": ticket_id},
-        {"$set": {"status": payload.status, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": {"status": payload.status, "updated_at": now_ist().isoformat()}},
         return_document=True,
     )
     if not res:
@@ -213,7 +214,7 @@ def install_ops_middleware(app):
         path = request.url.path
         method = request.method
         actor = _identify_actor(request)
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = now_ist().isoformat()
 
         try:
             response = await call_next(request)

@@ -7,6 +7,7 @@ and `active`.
 """
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -65,7 +66,7 @@ async def create_staff(payload: StaffCreate, user: dict = Depends(require_role("
         "monthly_pay": float(payload.monthly_pay or 0),
         "hourly_rate": float(payload.hourly_rate or 0),
         "active": bool(payload.active),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.users.insert_one(doc)
     return _to_public(doc)

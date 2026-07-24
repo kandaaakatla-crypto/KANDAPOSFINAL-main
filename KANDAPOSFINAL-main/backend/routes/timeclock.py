@@ -20,6 +20,7 @@ import io
 import csv
 import uuid
 from datetime import datetime, timezone, timedelta
+from tz import now_ist, IST
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
@@ -38,7 +39,7 @@ OVERTIME_THRESHOLD_HOURS = 40.0
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return now_ist().isoformat()
 
 
 def _parse(s: Optional[str]) -> Optional[datetime]:
@@ -47,7 +48,7 @@ def _parse(s: Optional[str]) -> Optional[datetime]:
     try:
         dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=IST)
         return dt
     except Exception:
         return None
@@ -211,7 +212,7 @@ def _pair_punches(punches: list[dict]) -> list[tuple[datetime, datetime]]:
                 pairs.append((current_in, ts))
             current_in = None
     if current_in is not None:
-        pairs.append((current_in, datetime.now(timezone.utc)))
+        pairs.append((current_in, now_ist()))
     return pairs
 
 
@@ -223,8 +224,8 @@ async def timesheet(
 ):
     """Aggregate punches into per-employee total/overtime/gross-pay rows."""
     db = get_db()
-    start_dt = _parse(start) or (datetime.now(timezone.utc) - timedelta(days=7))
-    end_dt = _parse(end) or datetime.now(timezone.utc)
+    start_dt = _parse(start) or (now_ist() - timedelta(days=7))
+    end_dt = _parse(end) or now_ist()
 
     users = await db.users.find(tenant_filter(user), {"_id": 0, "pin_hash": 0}).to_list(500)
     rows: list[dict] = []

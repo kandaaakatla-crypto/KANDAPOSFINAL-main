@@ -1,7 +1,7 @@
 """Background scheduled tasks.
 
 Currently:
-  - daily_rollup_cron_loop: at 00:05 UTC every day, materialise "yesterday's"
+  - daily_rollup_cron_loop: at 00:05 IST every day, materialise "yesterday's"
     sales aggregate for every tenant so Reports & Digest read from cache
     instead of scanning orders.
 """
@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 
 logger = logging.getLogger("kanda.cron")
 
@@ -31,7 +32,7 @@ async def _compute_day_rollup(db, tenant_id: str, day: datetime) -> dict:
         total = float(o.get("total", 0) or 0)
         gross += total
         refunded += float(o.get("refunded_amount", 0) or 0)
-        # Hourly bucket by UTC hour of placedAt.
+        # Hourly bucket by IST hour of placedAt.
         placed = o.get("placedAt") or ""
         try:
             hr = int(placed[11:13])
@@ -62,7 +63,7 @@ async def _compute_day_rollup(db, tenant_id: str, day: datetime) -> dict:
         "avg_ticket": round(gross / len(docs), 2) if docs else 0.0,
         "hourly_revenue": [round(h, 2) for h in hourly],
         "top_items": top_items,
-        "computed_at": datetime.now(timezone.utc).isoformat(),
+        "computed_at": now_ist().isoformat(),
         "is_final": True,
     }
 
@@ -70,7 +71,7 @@ async def _compute_day_rollup(db, tenant_id: str, day: datetime) -> dict:
 async def _rollup_yesterday_for_all_tenants(db) -> int:
     """Materialise yesterday's rollup for every tenant. Idempotent — replaces
     an existing row for that (tenant, date)."""
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     yesterday = today - timedelta(days=1)
 
@@ -85,29 +86,29 @@ async def _rollup_yesterday_for_all_tenants(db) -> int:
     return count
 
 
-async def daily_rollup_cron_loop(get_db_fn, target_hour_utc: int = 0,
-                                 target_minute_utc: int = 5,
+async def daily_rollup_cron_loop(get_db_fn, target_hour_ist: int = 0,
+                                 target_minute_ist: int = 5,
                                  interval_sec: int = 60):
-    """Fire once per UTC day around the configured hour:minute. Uses the
+    """Fire once per IST day around the configured hour:minute. Uses the
     `report_rollups` cache doc's presence to dedupe within a day so a bounce
     of the process won't double-fire."""
-    logger.info("Daily rollup cron loop started (target=%02d:%02d UTC)",
-                target_hour_utc, target_minute_utc)
+    logger.info("Daily rollup cron loop started (target=%02d:%02d IST)",
+                target_hour_ist, target_minute_ist)
     while True:
         try:
             db = get_db_fn()
-            now = datetime.now(timezone.utc)
-            today_utc = now.strftime("%Y-%m-%d")
-            target = now.replace(hour=target_hour_utc, minute=target_minute_utc,
+            now = now_ist()
+            today_ist = now.strftime("%Y-%m-%d")
+            target = now.replace(hour=target_hour_ist, minute=target_minute_ist,
                                  second=0, microsecond=0)
             if now >= target:
                 # Have we already produced a rollup with today's `computed_at` date?
                 last = await db.cron_state.find_one({"id": "daily_rollup"}, {"_id": 0})
-                if not last or (last.get("last_run_date") != today_utc):
+                if not last or (last.get("last_run_date") != today_ist):
                     count = await _rollup_yesterday_for_all_tenants(db)
                     await db.cron_state.replace_one(
                         {"id": "daily_rollup"},
-                        {"id": "daily_rollup", "last_run_date": today_utc,
+                        {"id": "daily_rollup", "last_run_date": today_ist,
                          "last_run_at": now.isoformat(), "tenant_count": count},
                         upsert=True,
                     )

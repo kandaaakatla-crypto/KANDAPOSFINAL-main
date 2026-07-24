@@ -22,6 +22,7 @@ import logging
 import hmac
 import hashlib
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import Optional
 
 import razorpay
@@ -73,7 +74,7 @@ def grace_state(tenant: dict) -> dict:
     status = tenant.get("subscription_status", "none")
     grace_until = tenant.get("grace_until")
     cpe = tenant.get("current_period_end")
-    now = datetime.now(timezone.utc)
+    now = now_ist()
 
     # Tenants without a plan yet: read-only access until they subscribe.
     if plan == "none" or status in ("none",):
@@ -139,7 +140,7 @@ async def ensure_plan_id(plan_key: str) -> str:
             "amount_paise": cfg["amount_paise"],
             "name": cfg["name"],
             "currency": cfg["currency"],
-            "created_at": _utc_iso(datetime.now(timezone.utc)),
+            "created_at": _utc_iso(now_ist()),
         }},
         upsert=True,
     )
@@ -175,14 +176,14 @@ async def subscribe_tenant(tenant_id: str, plan_key: str) -> dict:
         "notes": {"tenant_id": tenant_id, "tenant_slug": tenant.get("slug", "")},
     })
 
-    now_iso = _utc_iso(datetime.now(timezone.utc))
+    now_iso = _utc_iso(now_ist())
     update = {
         "plan": plan_key,
         "subscription_id": sub["id"],
         "razorpay_plan_id": razor_plan_id,
         "subscription_status": sub.get("status", "created"),
         # On `created` Razorpay hasn't billed yet; give a 7-day grace from now so the tenant can pay.
-        "grace_until": _utc_iso(datetime.now(timezone.utc) + timedelta(days=GRACE_DAYS)),
+        "grace_until": _utc_iso(now_ist() + timedelta(days=GRACE_DAYS)),
         "subscribed_at": now_iso,
     }
     await db.tenants.update_one({"id": tenant_id}, {"$set": update})
@@ -208,7 +209,7 @@ async def cancel_tenant_subscription(tenant_id: str, immediate: bool = False) ->
         raise HTTPException(status_code=400, detail="Tenant has no active subscription")
     client = _get_client()
     res = client.subscription.cancel(sub_id, {"cancel_at_cycle_end": 0 if immediate else 1})
-    now_iso = _utc_iso(datetime.now(timezone.utc))
+    now_iso = _utc_iso(now_ist())
     await db.tenants.update_one({"id": tenant_id}, {"$set": {
         "subscription_status": res.get("status", "cancelled"),
         "cancelled_at": now_iso,
@@ -250,7 +251,7 @@ async def razorpay_webhook(request: Request):
         logger.warning("Webhook %s for unknown subscription %s", event, sub_id)
         return {"ok": True, "skipped": "unknown_subscription"}
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     update: dict = {}
     if event in ("subscription.activated", "subscription.charged"):
         update["subscription_status"] = "active"

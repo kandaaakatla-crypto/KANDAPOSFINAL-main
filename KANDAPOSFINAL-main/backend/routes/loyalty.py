@@ -16,6 +16,7 @@ This module exposes the read/write surface for the UI:
 """
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -29,7 +30,7 @@ router = APIRouter()
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return now_ist().isoformat()
 
 
 def _tier_for(lifetime_spend: float) -> str:

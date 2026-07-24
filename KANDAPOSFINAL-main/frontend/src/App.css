@@ -62,6 +62,45 @@
 }
 .live-dot { animation: pulse-dot 1.6s infinite; }
 
+/* ---- Landing page ---- */
+@keyframes blobFloatA {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(6%, -10%) scale(1.12); }
+  66% { transform: translate(-8%, 6%) scale(0.92); }
+}
+@keyframes blobFloatB {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(-10%, 8%) scale(1.08); }
+  70% { transform: translate(8%, -6%) scale(0.94); }
+}
+.land-blob-a { animation: blobFloatA 16s ease-in-out infinite; }
+.land-blob-b { animation: blobFloatB 20s ease-in-out infinite; }
+
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.land-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll 26s linear infinite;
+}
+
+.land-gradient-text {
+  background: linear-gradient(90deg, #ffffff 0%, #fdba74 50%, #f97316 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.land-card {
+  transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+}
+.land-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--pos-accent) !important;
+}
+
 
 /* Receipt printing — when print() is invoked, hide the entire app shell and
    render only the receipt body. The receipt block uses fixed dimensions to

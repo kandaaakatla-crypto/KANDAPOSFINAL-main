@@ -1,5 +1,6 @@
 """Reports — rolling 7-day weekly chart + today KPIs + top items + labour cost."""
 from datetime import datetime, timezone, timedelta
+from tz import now_ist, IST
 from typing import List
 
 from fastapi import APIRouter, Depends
@@ -21,7 +22,7 @@ def _parse_iso(s: str | None) -> datetime | None:
     try:
         dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=IST)
         return dt
     except Exception:
         return None
@@ -36,7 +37,7 @@ async def labour_cost(user: dict = Depends(require_role("Manager"))):
     Uses `effective_hourly_rate` so monthly-paid staff are normalised.
     """
     db = get_db()
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     users = await db.users.find(tenant_filter(user), {"_id": 0, "pin_hash": 0}).to_list(500)
@@ -127,7 +128,7 @@ async def daily_rollup(user: dict = Depends(get_current_user), days: int = 30):
     is always computed fresh.
     """
     db = get_db()
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0).date()
 
     rollups: list[dict] = []
@@ -142,8 +143,8 @@ async def daily_rollup(user: dict = Depends(get_current_user), days: int = 30):
         if cached:
             rollups.append({k: v for k, v in cached.items() if k != "tenant_id"})
             continue
-        start_iso = datetime(d.year, d.month, d.day, tzinfo=timezone.utc).isoformat()
-        end_iso = (datetime(d.year, d.month, d.day, tzinfo=timezone.utc) + timedelta(days=1)).isoformat()
+        start_iso = datetime(d.year, d.month, d.day, tzinfo=IST).isoformat()
+        end_iso = (datetime(d.year, d.month, d.day, tzinfo=IST) + timedelta(days=1)).isoformat()
         docs = await db.orders.find(
             tenant_filter(user, {"placedAt": {"$gte": start_iso, "$lt": end_iso}, "voided": {"$ne": True}}),
             {"_id": 0, "total": 1, "refunded_amount": 1},
@@ -174,7 +175,7 @@ async def rebuild_rollups(user: dict = Depends(require_role("Manager")), days: i
     a large historical import or when the schema changes."""
     from background_tasks import _compute_day_rollup
     db = get_db()
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     count = 0
     for back in range(1, days + 1):
@@ -191,11 +192,11 @@ async def rebuild_rollups(user: dict = Depends(require_role("Manager")), days: i
 async def report_summary(user: dict = Depends(get_current_user)):
     db = get_db()
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=6)
 
-    # `placedAt` is stored as an ISO-8601 UTC string (`datetime.isoformat()`),
+    # `placedAt` is stored as an ISO-8601 IST string (`datetime.isoformat()`),
     # which sorts lexicographically — so a string $gte filter at the DB layer
     # is correct and lets the (tenant_id, placedAt) index do the heavy lifting
     # instead of pulling the whole order history into Python.
@@ -209,7 +210,7 @@ async def report_summary(user: dict = Depends(get_current_user)):
         if not ts:
             continue
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=IST)
         if ts >= today_start:
             today_orders.append(o)
         week_orders.append((ts, o))

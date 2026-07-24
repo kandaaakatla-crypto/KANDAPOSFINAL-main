@@ -1,6 +1,7 @@
 """Wastage / spoilage log — decrements inventory and records why."""
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -47,7 +48,7 @@ async def log_waste(payload: WasteCreate, user: dict = Depends(get_current_user)
         "reason": payload.reason.strip(),
         "by_user_id": user["id"],
         "by_user_name": user["name"],
-        "at": datetime.now(timezone.utc).isoformat(),
+        "at": now_ist().isoformat(),
     }
     await db.waste_entries.insert_one(doc)
     await db.inventory.update_one(

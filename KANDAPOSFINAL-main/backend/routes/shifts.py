@@ -2,6 +2,7 @@
 import io
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -157,7 +158,7 @@ def _render_rota_pdf(store_name: str, start: str, end: str, shifts: list[dict]) 
     story = []
     story.append(Paragraph(f"{store_name} — Rota", title_st))
     story.append(Paragraph(
-        f"Week: {_fmt_dt(start)[0]} → {_fmt_dt(end)[0]} · Generated {datetime.now(timezone.utc).strftime('%d %b %Y %H:%M UTC')}",
+        f"Week: {_fmt_dt(start)[0]} → {_fmt_dt(end)[0]} · Generated {now_ist().strftime('%d %b %Y %H:%M UTC')}",
         sub_st,
     ))
     story.append(Spacer(1, 6 * mm))

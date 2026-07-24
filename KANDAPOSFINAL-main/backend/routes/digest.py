@@ -12,6 +12,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -38,8 +39,8 @@ router = APIRouter()
 # ===================================================================
 class DigestConfig(BaseModel):
     enabled: bool = False
-    send_hour_utc: int = Field(default=1, ge=0, le=23)  # 01:00 UTC ≈ 06:30 IST
-    send_minute: int = Field(default=30, ge=0, le=59)
+    send_hour_ist: int = Field(default=7, ge=0, le=23)  # 07:00 IST
+    send_minute: int = Field(default=0, ge=0, le=59)
     channels_sms: bool = False
     channels_email: bool = True
     sms_recipients: List[str] = []
@@ -58,7 +59,7 @@ class DigestPayload(BaseModel):
 # Data gathering — reuse assistant tools + a yesterday comparison
 # ===================================================================
 async def _yesterday_sales(db, tenant_id: str) -> dict:
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     yesterday = today - timedelta(days=1)
     pipe = [
@@ -97,7 +98,7 @@ async def _gather_digest_data(db, tenant_id: str) -> dict:
         "low_stock": low_stock,
         "active_orders": active_orders,
         "staff_on_duty": len(on_duty),
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": now_ist().isoformat(),
     }
 
 
@@ -119,7 +120,7 @@ async def _ai_digest_text(tenant_name: str, data: dict) -> str:
         chat = (
             LlmChat(
                 api_key=os.environ["EMERGENT_LLM_KEY"],
-                session_id=f"digest-{datetime.now(timezone.utc).timestamp()}",
+                session_id=f"digest-{now_ist().timestamp()}",
                 system_message=system,
             )
             .with_model("anthropic", "claude-sonnet-4-5")
@@ -170,7 +171,7 @@ def _digest_html(tenant_name: str, ai_text: str, data: dict) -> str:
         f'<div style="max-width:560px;margin:0 auto;background:#181820;border:1px solid #2a2a35;border-radius:14px;padding:24px">'
         f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px">'
         f'<h2 style="margin:0;color:#fff">Daily digest · {tenant_name}</h2>'
-        f'<div style="color:#8a8aa0;font-size:11px">{datetime.now(timezone.utc).strftime("%d %b %Y")}</div></div>'
+        f'<div style="color:#8a8aa0;font-size:11px">{now_ist().strftime("%d %b %Y")}</div></div>'
         f'<div style="background:#22222d;border-radius:10px;padding:12px;margin-bottom:16px">'
         f'<div style="color:#c9c9d5;font-size:12px;margin-bottom:4px">Revenue today</div>'
         f'<div style="color:#fff;font-size:28px;font-weight:700">₹{t["revenue"]:.2f}</div>'
@@ -219,7 +220,7 @@ async def _save_config(db, tenant_id: str, cfg: DigestConfig) -> None:
     await db.digest_configs.update_one(
         {"tenant_id": tenant_id},
         {"$set": {**cfg.model_dump(), "tenant_id": tenant_id,
-                  "updated_at": datetime.now(timezone.utc).isoformat()}},
+                  "updated_at": now_ist().isoformat()}},
         upsert=True,
     )
 
@@ -252,7 +253,7 @@ async def _do_send(db, tenant_id: str, override: Optional[DigestPayload] = None)
             sent_sms.append({"to": phone, "ok": ok})
 
     if cfg.channels_email:
-        subject = f"Kanda daily digest · {tenant['name']} · {datetime.now(timezone.utc).strftime('%d %b')}"
+        subject = f"Kanda daily digest · {tenant['name']} · {now_ist().strftime('%d %b')}"
         html = _digest_html(tenant["name"], text, data)
         for email in cfg.email_recipients:
             res = await send_email(email, subject, html)
@@ -260,7 +261,7 @@ async def _do_send(db, tenant_id: str, override: Optional[DigestPayload] = None)
 
     await db.digest_configs.update_one(
         {"tenant_id": tenant_id},
-        {"$set": {"last_sent_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": {"last_sent_at": now_ist().isoformat()}},
         upsert=True,
     )
     return {
@@ -311,29 +312,29 @@ async def send_now(payload: DigestPayload, u: dict = Depends(get_dash_user)):
 
 # ===================================================================
 # Background scheduler — polls every 60s, sends when hour+minute matches.
-# One send per tenant per UTC day, tracked via `last_sent_at`.
+# One send per tenant per IST day, tracked via `last_sent_at`.
 # ===================================================================
 async def digest_scheduler_loop(get_db_fn, interval_sec: int = 60):
     logger.info("Digest scheduler loop started (interval=%ss)", interval_sec)
     while True:
         try:
             db = get_db_fn()
-            now = datetime.now(timezone.utc)
-            today_utc = now.strftime("%Y-%m-%d")
+            now = now_ist()
+            today_ist = now.strftime("%Y-%m-%d")
             cursor = db.digest_configs.find(
                 {"enabled": True},
-                {"_id": 0, "tenant_id": 1, "send_hour_utc": 1, "send_minute": 1, "last_sent_at": 1},
+                {"_id": 0, "tenant_id": 1, "send_hour_ist": 1, "send_minute": 1, "last_sent_at": 1},
             )
             async for cfg in cursor:
-                hh = int(cfg.get("send_hour_utc", 1))
-                mm = int(cfg.get("send_minute", 30))
+                hh = int(cfg.get("send_hour_ist", 7))
+                mm = int(cfg.get("send_minute", 0))
                 # Fire when the wall-clock is at or just past the target and we
                 # haven't already sent today.
                 target = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
                 if now < target:
                     continue
                 last = cfg.get("last_sent_at") or ""
-                if last.startswith(today_utc):
+                if last.startswith(today_ist):
                     continue
                 try:
                     await _do_send(db, cfg["tenant_id"], None)

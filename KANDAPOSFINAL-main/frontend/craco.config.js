@@ -85,7 +85,11 @@ webpackConfig.devServer = (devServerConfig) => {
 if (isDevServer) {
   try {
     const { withVisualEdits } = require("@emergentbase/visual-edits/craco");
-    webpackConfig = withVisualEdits(webpackConfig);
+    // Disabled for local/standalone dev: the babel plugin's DOM instrumentation
+    // (wrapper spans around dynamic expressions) interferes with Framer Motion
+    // animation lifecycles, and the overlay itself only activates inside the
+    // emergent.sh cloud editor iframe anyway.
+    webpackConfig = withVisualEdits(webpackConfig, { enableVisualEdits: false });
   } catch (err) {
     if (err.code === 'MODULE_NOT_FOUND' && err.message.includes('@emergentbase/visual-edits/craco')) {
       console.warn(

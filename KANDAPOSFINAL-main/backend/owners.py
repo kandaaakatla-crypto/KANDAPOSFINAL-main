@@ -14,6 +14,7 @@ The access JWT carries `role: "PlatformOwner"` and `iss: "owner"`. The
 """
 import os
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import Optional
 
 import bcrypt
@@ -74,7 +75,7 @@ def create_pre2fa_token(owner_id: str) -> str:
         "sub": owner_id,
         "iss": ISSUER,
         "type": "pre_2fa",
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=PRE2FA_TOKEN_MINUTES),
+        "exp": now_ist() + timedelta(minutes=PRE2FA_TOKEN_MINUTES),
     })
 
 
@@ -84,7 +85,7 @@ def create_owner_access_token(owner_id: str) -> str:
         "iss": ISSUER,
         "role": "PlatformOwner",
         "type": "access",
-        "exp": datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_HOURS),
+        "exp": now_ist() + timedelta(hours=ACCESS_TOKEN_HOURS),
     })
 
 
@@ -105,7 +106,7 @@ def create_impersonation_token(owner_id: str, tenant_id: str, target_user: dict,
         "imp": True,
         "imp_owner": owner_id,
         "auditor": mode == "auditor",
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=30),
+        "exp": now_ist() + timedelta(minutes=30),
     })
 
 
@@ -164,7 +165,7 @@ async def create_owner(db, email: str, password: str, name: str = "Owner") -> di
         "password_hash": hash_password(password),
         "totp_secret": secret,
         "totp_enabled": True,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.platform_owners.insert_one(doc)
     await db.platform_owners.create_index("email", unique=True)

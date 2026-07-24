@@ -23,6 +23,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import Any, Optional
 
 import websockets
@@ -55,7 +56,7 @@ def register_bridge(call_doc_id: str, tenant_id: str, openai_ws) -> None:
     LIVE_BRIDGES[call_doc_id] = {
         "tenant_id": tenant_id,
         "openai_ws": openai_ws,
-        "started_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": now_ist().isoformat(),
         "whispers": [],
     }
 
@@ -137,7 +138,7 @@ def _mint_stream_token(*, tenant_id: str, direction: str, call_sid: str = "",
         "to": to_number,
         "purpose": purpose[:64] if purpose else "",
         "message": message[:240] if message else "",
-        "exp": datetime.now(timezone.utc) + timedelta(seconds=STREAM_TOKEN_TTL_SECONDS),
+        "exp": now_ist() + timedelta(seconds=STREAM_TOKEN_TTL_SECONDS),
         "iss": "kanda-voice",
     }
     return jwt.encode(payload, os.environ["JWT_SECRET"], algorithm="HS256")
@@ -596,7 +597,7 @@ async def whisper_into_call(call_id: str, payload: WhisperPayload,
         logger.exception("whisper send failed")
         raise HTTPException(status_code=502, detail=f"Whisper delivery failed: {exc}")
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     entry = {"at": now, "by": manager_name, "text": msg}
     bridge.setdefault("whispers", []).append(entry)
 
@@ -981,7 +982,7 @@ async def _tool_place_order(db, tenant: dict, args: dict, ctx: dict) -> dict:
         return {"ok": False, "error": f"None of the requested items matched the menu: {unmatched}"}
 
     number = await next_order_number(db, tenant_id)
-    placed_at = datetime.now(timezone.utc).isoformat()
+    placed_at = now_ist().isoformat()
     order_type = args.get("type") or "collection"
     from kds import annotate_order_items_for_kds
     order = {
@@ -1058,7 +1059,7 @@ async def _tool_book_reservation(db, tenant: dict, args: dict, ctx: dict) -> dic
         "at": args.get("at"),
         "notes": args.get("notes"),
         "status": "booked",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
         "reminded_at": None,
         "reminder_sent": False,
         "source": "phone",
@@ -1093,13 +1094,13 @@ async def twilio_stream(ws: WebSocket):
     call_doc_id: Optional[str] = None
     openai_ws: Optional[websockets.WebSocketClientProtocol] = None
     transcript: list[dict] = []  # [{role, text, at}]
-    started_at = datetime.now(timezone.utc)
+    started_at = now_ist()
 
     async def _persist_transcript_chunk(role: str, text: str):
         text = (text or "").strip()
         if not text:
             return
-        entry = {"role": role, "text": text, "at": datetime.now(timezone.utc).isoformat()}
+        entry = {"role": role, "text": text, "at": now_ist().isoformat()}
         transcript.append(entry)
         # Push live transcript delta so the dashboard's active-call panel can
         # render it in real time (tenant-scoped fan-out).
@@ -1111,7 +1112,7 @@ async def twilio_stream(ws: WebSocket):
     async def _finalise_call(intent: Optional[str] = None, extra: Optional[dict] = None):
         if not call_doc_id:
             return
-        ended = datetime.now(timezone.utc)
+        ended = now_ist()
         update = {
             "ended_at": ended.isoformat(),
             "duration_seconds": int((ended - started_at).total_seconds()),

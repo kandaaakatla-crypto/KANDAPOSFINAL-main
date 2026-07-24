@@ -1,6 +1,7 @@
 """Coupons / promotions — Manager-managed promo codes consumed at checkout."""
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -17,7 +18,7 @@ router = APIRouter()
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return now_ist().isoformat()
 
 
 def _normalize(code: str) -> str:

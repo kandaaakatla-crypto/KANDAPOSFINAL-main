@@ -23,6 +23,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -75,7 +76,7 @@ async def _upsert_conversation(db, tenant_id: str, phone: str,
                                inc_unread: int = 0) -> dict:
     """Insert or update the conversation row. Returns the current doc
     (without Mongo's internal `_id`)."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     existing = await db.wa_conversations.find_one(
         {"tenant_id": tenant_id, "phone": phone}, {"_id": 0}
     )
@@ -133,7 +134,7 @@ async def _insert_message(db, *, tenant_id: str, conversation_id: str, phone: st
         "twilio_sid": twilio_sid,
         "status": "delivered" if direction == "in" else ("sent" if not error and twilio_sid else "failed"),
         "error": error,
-        "at": datetime.now(timezone.utc).isoformat(),
+        "at": now_ist().isoformat(),
         "read": direction == "out",
     }
     # Copy before insert so the returned dict stays JSON-clean.

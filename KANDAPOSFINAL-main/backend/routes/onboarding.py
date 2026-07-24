@@ -10,6 +10,7 @@ Once the manager dismisses the checklist (or all items are complete) the
 banner stops appearing.
 """
 from datetime import datetime, timezone
+from tz import now_ist
 
 from fastapi import APIRouter, Depends
 
@@ -60,6 +61,6 @@ async def dismiss(user: dict = Depends(require_role("Manager"))):
     db = get_db()
     await db.tenants.update_one(
         {"id": user["tenant_id"]},
-        {"$set": {"onboarding_dismissed_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": {"onboarding_dismissed_at": now_ist().isoformat()}},
     )
     return {"ok": True}

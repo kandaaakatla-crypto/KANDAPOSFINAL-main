@@ -1,6 +1,7 @@
 """Tip pool — distribute tips by hours worked across staff on a given day."""
 import uuid
 from datetime import datetime, timezone, timedelta
+from tz import now_ist, IST
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -16,7 +17,7 @@ router = APIRouter()
 def _parse(s: str) -> datetime:
     dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=IST)
     return dt
 
 
@@ -97,7 +98,7 @@ async def create_tip_pool(payload: TipPoolCreate, user: dict = Depends(require_r
         "total_pool": float(payload.total_pool),
         "allocations": allocations,
         "created_by": user["name"],
-        "at": datetime.now(timezone.utc).isoformat(),
+        "at": now_ist().isoformat(),
         "notes": payload.notes,
     }
     await db.tip_pools.insert_one(doc)

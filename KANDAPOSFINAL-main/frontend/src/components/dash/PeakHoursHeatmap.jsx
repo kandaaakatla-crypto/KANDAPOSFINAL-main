@@ -5,7 +5,7 @@ import { Flame, Loader2, RefreshCw } from "lucide-react";
 /**
  * Peak-hours heatmap.
  *
- * Grid: 7 rows (Sun-Sat) × 24 columns (0-23 UTC hour) with cell intensity
+ * Grid: 7 rows (Sun-Sat) × 24 columns (0-23 IST hour) with cell intensity
  * derived from summed revenue for that day-of-week × hour across the last
  * N days. Pulls from /api/reports/daily-rollup which is materialised each
  * night by the daily_rollup_cron_loop, so this is fast at any order volume.
@@ -33,25 +33,18 @@ export default function PeakHoursHeatmap({ days = 28 }) {
     const weekT = Array(7).fill(0);
     const hourT = Array(24).fill(0);
     let mx = 0, peakVal = 0, peakDay = -1, peakHr = -1;
-    // India Standard Time is UTC + 5:30. Each UTC-hour bucket's midpoint
-    // (H:30 UTC) lands in IST hour (H + 6) mod 24. When (H + 6) >= 24 the
-    // bucket also rolls into the next IST calendar day, so we shift dow +1.
-    const IST_HOUR_SHIFT = 6;
     for (const r of rollups) {
       const hourly = r.hourly_revenue || [];
       if (!hourly.length) continue;
-      const d = new Date(r.date + "T00:00:00Z");
-      const dowUtc = d.getUTCDay();
+      const dow = new Date(r.date + "T00:00:00Z").getUTCDay();
       for (let h = 0; h < 24; h++) {
         const v = Number(hourly[h] || 0);
-        const istHour = (h + IST_HOUR_SHIFT) % 24;
-        const dowIst = (h + IST_HOUR_SHIFT >= 24) ? (dowUtc + 1) % 7 : dowUtc;
-        g[dowIst][istHour] += v;
-        weekT[dowIst] += v;
-        hourT[istHour] += v;
+        g[dow][h] += v;
+        weekT[dow] += v;
+        hourT[h] += v;
         if (v > mx) mx = v;
-        if (g[dowIst][istHour] > peakVal) {
-          peakVal = g[dowIst][istHour]; peakDay = dowIst; peakHr = istHour;
+        if (g[dow][h] > peakVal) {
+          peakVal = g[dow][h]; peakDay = dow; peakHr = h;
         }
       }
     }
@@ -69,7 +62,7 @@ export default function PeakHoursHeatmap({ days = 28 }) {
             <Flame className="w-4 h-4" style={{ color: "#f97316" }} /> Peak hours
           </div>
           <div className="text-[10px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
-            Revenue intensity across the last {days} days (IST · UTC+05:30). {hasData && peak.day >= 0 && (
+            Revenue intensity across the last {days} days (IST). {hasData && peak.day >= 0 && (
               <>Busiest: <span className="text-white font-bold">{DOW[peak.day]} · {String(peak.hour).padStart(2, "0")}:00 IST</span></>
             )}
           </div>

@@ -1,4 +1,5 @@
 """Safe cleanup of QA detritus.
+from tz import now_ist
 
 ⚠️  RULES (added 2026-02-20 after a misfire that nuked a real customer):
 1. **Dry-run by default.** Re-run with `--apply` to actually delete.
@@ -109,7 +110,7 @@ async def cleanup_qa_audit_noise(db, apply: bool) -> int:
     """Trim audit/error log rows older than 90 days (was 30; widened so we don't
     lose forensic context if we need to investigate a real bug)."""
     from datetime import datetime, timezone, timedelta
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+    cutoff = (now_ist() - timedelta(days=90)).isoformat()
     a_count = await db.audit_logs.count_documents({"at": {"$lt": cutoff}})
     e_count = await db.error_logs.count_documents({"at": {"$lt": cutoff}})
     log.info("[%s] would prune audit_logs:%s error_logs:%s older than 90d",

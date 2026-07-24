@@ -151,15 +151,12 @@ export default function DashDigest() {
 
                 <div>
                   <label className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>
-                    <Clock className="w-3 h-3 inline mr-1" /> Send at (UTC)
+                    <Clock className="w-3 h-3 inline mr-1" /> Send at (IST)
                   </label>
                   <div className="flex gap-2 mt-1.5">
-                    <NumInput testid="digest-hour" value={cfg.send_hour_utc} min={0} max={23} onChange={(v) => setCfg({ ...cfg, send_hour_utc: v })} />
+                    <NumInput testid="digest-hour" value={cfg.send_hour_ist} min={0} max={23} onChange={(v) => setCfg({ ...cfg, send_hour_ist: v })} />
                     <span className="text-white self-center">:</span>
                     <NumInput testid="digest-minute" value={cfg.send_minute} min={0} max={59} onChange={(v) => setCfg({ ...cfg, send_minute: v })} />
-                  </div>
-                  <div className="text-[10px] mt-1" style={{ color: "var(--pos-muted)" }}>
-                    Tip: 01:30 UTC ≈ 07:00 IST
                   </div>
                 </div>
 

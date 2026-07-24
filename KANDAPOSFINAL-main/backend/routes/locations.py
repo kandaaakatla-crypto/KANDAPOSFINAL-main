@@ -7,6 +7,7 @@ location is auto-seeded on first read so every tenant starts with one.
 """
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -34,7 +35,7 @@ async def _ensure_default(db, user: dict) -> None:
         "store_number": "0001",
         "active": True,
         "is_default": True,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     })
 
 
@@ -79,7 +80,7 @@ async def create_location(payload: LocationCreate, user: dict = Depends(require_
         "store_number": (payload.store_number or "").strip(),
         "active": bool(payload.active),
         "is_default": bool(payload.is_default),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.locations.insert_one(doc)
     return doc

@@ -8,6 +8,7 @@ import os
 import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 
 from twilio.rest import Client
 
@@ -152,7 +153,7 @@ async def reservation_reminder_loop(get_db_fn, interval_sec: int = 300):
     while True:
         try:
             db = get_db_fn()
-            now = datetime.now(timezone.utc)
+            now = now_ist()
             window_start = (now + timedelta(minutes=55)).isoformat()
             window_end = (now + timedelta(minutes=65)).isoformat()
             cursor = db.reservations.find(
@@ -178,7 +179,7 @@ async def reservation_reminder_loop(get_db_fn, interval_sec: int = 300):
                 await db.reservations.update_one(
                     {"id": r["id"]},
                     {"$set": {
-                        "reminded_at": datetime.now(timezone.utc).isoformat(),
+                        "reminded_at": now_ist().isoformat(),
                         "reminder_sent": ok,
                     }},
                 )

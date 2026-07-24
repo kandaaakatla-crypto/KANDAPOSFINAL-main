@@ -5,6 +5,7 @@ inventory item (derived from the recipes ↔ menu_items ↔ orders chain).
 Anything where `on_hand < demand_horizon` is reported as a prep task.
 """
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, Depends, Query
@@ -18,7 +19,7 @@ router = APIRouter()
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return now_ist()
 
 
 @router.get("/prep-list", response_model=PrepListResponse)

@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -55,7 +56,7 @@ async def _log_and_send(db, *, tenant_id: str, sent_by: str, to: str, body: str,
         "to": to,
         "body": body,
         "sent_by": sent_by,
-        "sent_at": datetime.now(timezone.utc).isoformat(),
+        "sent_at": now_ist().isoformat(),
         "status": "queued",
         "error": None,
     }

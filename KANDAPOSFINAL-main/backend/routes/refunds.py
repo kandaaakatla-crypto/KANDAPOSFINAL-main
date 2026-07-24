@@ -12,6 +12,7 @@ audit-logged.
 """
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -26,7 +27,7 @@ router = APIRouter()
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return now_ist().isoformat()
 
 
 async def _log(db, user: dict, order: dict, kind: str, amount: float, reason: str, notes: str | None) -> dict:

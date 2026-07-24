@@ -3,6 +3,7 @@ import asyncio
 import uuid
 import logging
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -86,7 +87,7 @@ async def list_orders(user: dict = Depends(get_current_user)):
 async def create_order(payload: OrderCreate, user: dict = Depends(get_current_user)):
     db = get_db()
     number = await next_order_number(db, user["tenant_id"])
-    placed_at = datetime.now(timezone.utc).isoformat()
+    placed_at = now_ist().isoformat()
     raw_items = [it.model_dump() for it in payload.items]
 
     # Validate splits if provided — must sum (±1¢) to total.

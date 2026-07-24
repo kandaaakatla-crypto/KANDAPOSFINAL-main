@@ -9,6 +9,7 @@ tokens transparently — no widespread route changes needed.
 import os
 import uuid
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import List, Literal, Optional
 
 import bcrypt
@@ -81,7 +82,7 @@ def _create_dash_token(u: dict) -> str:
         "dash": True,
         "dash_role": u["dash_role"],
         "location_ids": u.get("location_ids") or [],
-        "exp": datetime.now(timezone.utc) + timedelta(hours=DASH_TOKEN_HOURS),
+        "exp": now_ist() + timedelta(hours=DASH_TOKEN_HOURS),
         "type": "access",
     }
     return jwt.encode(payload, _secret(), algorithm=JWT_ALG)
@@ -163,7 +164,7 @@ async def dash_change_password(payload: DashChangePassword, u: dict = Depends(ge
         {"id": u["id"]},
         {"$set": {"password_hash": _hash_pw(payload.new_password),
                   "must_change_password": False,
-                  "password_changed_at": datetime.now(timezone.utc).isoformat()}},
+                  "password_changed_at": now_ist().isoformat()}},
     )
     return {"ok": True}
 
@@ -224,5 +225,5 @@ async def ensure_demo_dashboard_users(db) -> None:
             continue
         a["password_hash"] = _hash_pw(pw)
         a["active"] = True
-        a["created_at"] = datetime.now(timezone.utc).isoformat()
+        a["created_at"] = now_ist().isoformat()
         await db.dashboard_users.insert_one(a)

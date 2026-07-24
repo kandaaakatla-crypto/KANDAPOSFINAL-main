@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { PosProvider, usePos } from "./store/PosContext";
 import { OwnerProvider, useOwner } from "./store/OwnerContext";
+import LandingPage from "./components/LandingPage";
 import LoginScreen from "./components/pos/LoginScreen";
 import POSLayout from "./components/pos/POSLayout";
 import OrderScreen from "./components/pos/OrderScreen";
@@ -50,7 +51,7 @@ function Protected({ children }) {
       </div>
     );
   }
-  if (!staffUser) return <Navigate to="/login" replace />;
+  if (!staffUser) return <Navigate to="/start" replace />;
   return children;
 }
 
@@ -110,6 +111,9 @@ function App() {
 
                 {/* Driver stripped POS view */}
                 <Route path="/driver" element={<Protected><DriverScreen /></Protected>} />
+
+                {/* Public marketing landing page + portal picker */}
+                <Route path="/start" element={<LandingPage />} />
 
                 {/* Tenant POS */}
                 <Route path="/login" element={<LoginScreen />} />

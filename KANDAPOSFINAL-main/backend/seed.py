@@ -1,5 +1,6 @@
 """Seed Kanda POS Mongo with mock data on first boot. Idempotent."""
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from auth import hash_pin
 
 
@@ -21,48 +22,48 @@ CATEGORIES = [
 ]
 
 MENU_ITEMS = [
-    {"id": "d1", "cat_id": "deals", "name": "Family Feast", "desc": "2 Large Pizzas + 2 Sides + 1.5L Drink", "price": 29.99, "available": True, "is_pizza": False},
-    {"id": "d2", "cat_id": "deals", "name": "Duo Deal", "desc": "2 Medium Pizzas + Garlic Bread", "price": 21.99, "available": True, "is_pizza": False},
-    {"id": "d3", "cat_id": "deals", "name": "Lunch Special", "desc": "Any Small Pizza + Can", "price": 7.99, "available": True, "is_pizza": False},
-    {"id": "d4", "cat_id": "deals", "name": "Big Night In", "desc": "1 Large Pizza + Wings + Wedges + Drink", "price": 24.99, "available": True, "is_pizza": False},
+    {"id": "d1", "cat_id": "deals", "name": "Family Feast", "desc": "2 Large Pizzas + 2 Sides + 1.5L Drink", "price": 899, "available": True, "is_pizza": False},
+    {"id": "d2", "cat_id": "deals", "name": "Duo Deal", "desc": "2 Medium Pizzas + Garlic Bread", "price": 649, "available": True, "is_pizza": False},
+    {"id": "d3", "cat_id": "deals", "name": "Lunch Special", "desc": "Any Small Pizza + Can", "price": 199, "available": True, "is_pizza": False},
+    {"id": "d4", "cat_id": "deals", "name": "Big Night In", "desc": "1 Large Pizza + Wings + Wedges + Drink", "price": 749, "available": True, "is_pizza": False},
 
-    {"id": "p1", "cat_id": "pizzas", "name": "Margherita", "desc": "Tomato base, mozzarella", "sizes": {"sm": 7.49, "md": 9.99, "lg": 12.99}, "available": True, "is_pizza": True},
-    {"id": "p2", "cat_id": "pizzas", "name": "Pepperoni Passion", "desc": "Double pepperoni, extra cheese", "sizes": {"sm": 8.99, "md": 11.49, "lg": 14.49}, "available": True, "is_pizza": True},
-    {"id": "p3", "cat_id": "pizzas", "name": "Meat Feast", "desc": "Pepperoni, ham, beef, bacon", "sizes": {"sm": 9.49, "md": 12.49, "lg": 15.49}, "available": True, "is_pizza": True},
-    {"id": "p4", "cat_id": "pizzas", "name": "BBQ Chicken Classic", "desc": "BBQ base, chicken, onions, peppers", "sizes": {"sm": 9.49, "md": 12.49, "lg": 15.49}, "available": True, "is_pizza": True},
-    {"id": "p5", "cat_id": "pizzas", "name": "Veggie Supreme", "desc": "Mushrooms, onions, peppers, sweetcorn, tomatoes", "sizes": {"sm": 8.49, "md": 10.99, "lg": 13.99}, "available": True, "is_pizza": True},
-    {"id": "p6", "cat_id": "pizzas", "name": "Hawaiian", "desc": "Ham & pineapple", "sizes": {"sm": 8.49, "md": 10.99, "lg": 13.99}, "available": True, "is_pizza": True},
-    {"id": "p7", "cat_id": "pizzas", "name": "Hot & Spicy", "desc": "Spicy beef, jalapenos, onions", "sizes": {"sm": 8.99, "md": 11.49, "lg": 14.49}, "available": True, "is_pizza": True},
-    {"id": "p8", "cat_id": "pizzas", "name": "Tandoori Sizzler", "desc": "Tandoori chicken, peppers, red onions", "sizes": {"sm": 9.49, "md": 12.49, "lg": 15.49}, "available": True, "is_pizza": True},
-    {"id": "p9", "cat_id": "pizzas", "name": "Four Cheese", "desc": "Mozzarella, cheddar, blue cheese, parmesan", "sizes": {"sm": 8.99, "md": 11.49, "lg": 14.49}, "available": False, "is_pizza": True},
+    {"id": "p1", "cat_id": "pizzas", "name": "Margherita", "desc": "Tomato base, mozzarella", "sizes": {"sm": 199, "md": 349, "lg": 499}, "available": True, "is_pizza": True},
+    {"id": "p2", "cat_id": "pizzas", "name": "Pepperoni Passion", "desc": "Double pepperoni, extra cheese", "sizes": {"sm": 249, "md": 399, "lg": 599}, "available": True, "is_pizza": True},
+    {"id": "p3", "cat_id": "pizzas", "name": "Non-Veg Supreme", "desc": "Chicken tikka, chicken sausage, keema, extra cheese", "sizes": {"sm": 299, "md": 449, "lg": 649}, "available": True, "is_pizza": True},
+    {"id": "p4", "cat_id": "pizzas", "name": "BBQ Chicken Classic", "desc": "BBQ base, chicken, onions, peppers", "sizes": {"sm": 279, "md": 429, "lg": 629}, "available": True, "is_pizza": True},
+    {"id": "p5", "cat_id": "pizzas", "name": "Veggie Supreme", "desc": "Mushrooms, onions, peppers, sweetcorn, tomatoes", "sizes": {"sm": 229, "md": 379, "lg": 549}, "available": True, "is_pizza": True},
+    {"id": "p6", "cat_id": "pizzas", "name": "Tropical Chicken", "desc": "Chicken & pineapple", "sizes": {"sm": 229, "md": 379, "lg": 549}, "available": True, "is_pizza": True},
+    {"id": "p7", "cat_id": "pizzas", "name": "Hot & Spicy", "desc": "Spicy chicken, jalapenos, onions", "sizes": {"sm": 259, "md": 409, "lg": 599}, "available": True, "is_pizza": True},
+    {"id": "p8", "cat_id": "pizzas", "name": "Tandoori Sizzler", "desc": "Tandoori chicken, peppers, red onions", "sizes": {"sm": 279, "md": 429, "lg": 629}, "available": True, "is_pizza": True},
+    {"id": "p9", "cat_id": "pizzas", "name": "Four Cheese", "desc": "Mozzarella, cheddar, blue cheese, parmesan", "sizes": {"sm": 259, "md": 409, "lg": 599}, "available": False, "is_pizza": True},
 
-    {"id": "si1", "cat_id": "sides", "name": "Garlic Bread (4pc)", "price": 3.99, "available": True, "is_pizza": False},
-    {"id": "si2", "cat_id": "sides", "name": "Cheesy Garlic Bread", "price": 4.99, "available": True, "is_pizza": False},
-    {"id": "si3", "cat_id": "sides", "name": "Potato Wedges", "price": 3.49, "available": True, "is_pizza": False},
-    {"id": "si4", "cat_id": "sides", "name": "Onion Rings (8pc)", "price": 3.49, "available": True, "is_pizza": False},
-    {"id": "si5", "cat_id": "sides", "name": "Coleslaw", "price": 2.49, "available": True, "is_pizza": False},
-    {"id": "si6", "cat_id": "sides", "name": "Fries", "price": 2.99, "available": True, "is_pizza": False},
+    {"id": "si1", "cat_id": "sides", "name": "Garlic Bread (4pc)", "price": 129, "available": True, "is_pizza": False},
+    {"id": "si2", "cat_id": "sides", "name": "Cheesy Garlic Bread", "price": 169, "available": True, "is_pizza": False},
+    {"id": "si3", "cat_id": "sides", "name": "Potato Wedges", "price": 119, "available": True, "is_pizza": False},
+    {"id": "si4", "cat_id": "sides", "name": "Onion Rings (8pc)", "price": 129, "available": True, "is_pizza": False},
+    {"id": "si5", "cat_id": "sides", "name": "Coleslaw", "price": 89, "available": True, "is_pizza": False},
+    {"id": "si6", "cat_id": "sides", "name": "Fries", "price": 99, "available": True, "is_pizza": False},
 
-    {"id": "c1", "cat_id": "chicken", "name": "BBQ Wings (6pc)", "price": 5.49, "available": True, "is_pizza": False},
-    {"id": "c2", "cat_id": "chicken", "name": "Hot Wings (6pc)", "price": 5.49, "available": True, "is_pizza": False},
-    {"id": "c3", "cat_id": "chicken", "name": "Chicken Strips (5pc)", "price": 5.99, "available": True, "is_pizza": False},
-    {"id": "c4", "cat_id": "chicken", "name": "Popcorn Chicken", "price": 4.99, "available": True, "is_pizza": False},
+    {"id": "c1", "cat_id": "chicken", "name": "BBQ Wings (6pc)", "price": 199, "available": True, "is_pizza": False},
+    {"id": "c2", "cat_id": "chicken", "name": "Hot Wings (6pc)", "price": 199, "available": True, "is_pizza": False},
+    {"id": "c3", "cat_id": "chicken", "name": "Chicken Strips (5pc)", "price": 219, "available": True, "is_pizza": False},
+    {"id": "c4", "cat_id": "chicken", "name": "Popcorn Chicken", "price": 179, "available": True, "is_pizza": False},
 
-    {"id": "b1", "cat_id": "burgers", "name": "Classic Beef Burger", "price": 6.49, "available": True, "is_pizza": False},
-    {"id": "b2", "cat_id": "burgers", "name": "Chicken Fillet Burger", "price": 6.49, "available": True, "is_pizza": False},
-    {"id": "b3", "cat_id": "burgers", "name": "Peri Peri Wrap", "price": 5.99, "available": True, "is_pizza": False},
-    {"id": "b4", "cat_id": "burgers", "name": "Veggie Burger", "price": 5.99, "available": True, "is_pizza": False},
+    {"id": "b1", "cat_id": "burgers", "name": "Classic Chicken Burger", "price": 169, "available": True, "is_pizza": False},
+    {"id": "b2", "cat_id": "burgers", "name": "Chicken Fillet Burger", "price": 169, "available": True, "is_pizza": False},
+    {"id": "b3", "cat_id": "burgers", "name": "Peri Peri Wrap", "price": 159, "available": True, "is_pizza": False},
+    {"id": "b4", "cat_id": "burgers", "name": "Aloo Tikki Burger", "price": 149, "available": True, "is_pizza": False},
 
-    {"id": "dr1", "cat_id": "drinks", "name": "Coca-Cola 330ml", "price": 1.29, "available": True, "is_pizza": False},
-    {"id": "dr2", "cat_id": "drinks", "name": "Diet Coke 330ml", "price": 1.29, "available": True, "is_pizza": False},
-    {"id": "dr3", "cat_id": "drinks", "name": "Fanta 330ml", "price": 1.29, "available": True, "is_pizza": False},
-    {"id": "dr4", "cat_id": "drinks", "name": "Coca-Cola 1.5L", "price": 2.99, "available": True, "is_pizza": False},
-    {"id": "dr5", "cat_id": "drinks", "name": "Water 500ml", "price": 0.99, "available": True, "is_pizza": False},
+    {"id": "dr1", "cat_id": "drinks", "name": "Coca-Cola 330ml", "price": 60, "available": True, "is_pizza": False},
+    {"id": "dr2", "cat_id": "drinks", "name": "Coke Zero 330ml", "price": 60, "available": True, "is_pizza": False},
+    {"id": "dr3", "cat_id": "drinks", "name": "Fanta 330ml", "price": 60, "available": True, "is_pizza": False},
+    {"id": "dr4", "cat_id": "drinks", "name": "Coca-Cola 1.5L", "price": 99, "available": True, "is_pizza": False},
+    {"id": "dr5", "cat_id": "drinks", "name": "Water 500ml", "price": 20, "available": True, "is_pizza": False},
 
-    {"id": "de1", "cat_id": "desserts", "name": "Chocolate Fudge Cake", "price": 3.99, "available": True, "is_pizza": False},
-    {"id": "de2", "cat_id": "desserts", "name": "Ben & Jerry's 465ml", "price": 5.99, "available": True, "is_pizza": False},
-    {"id": "de3", "cat_id": "desserts", "name": "Cookie Dough", "price": 4.49, "available": True, "is_pizza": False},
-    {"id": "de4", "cat_id": "desserts", "name": "Cinnamon Bites", "price": 3.99, "available": True, "is_pizza": False},
+    {"id": "de1", "cat_id": "desserts", "name": "Chocolate Fudge Cake", "price": 149, "available": True, "is_pizza": False},
+    {"id": "de2", "cat_id": "desserts", "name": "Choco Lava Cake", "price": 99, "available": True, "is_pizza": False},
+    {"id": "de3", "cat_id": "desserts", "name": "Choco Chip Cookie", "price": 129, "available": True, "is_pizza": False},
+    {"id": "de4", "cat_id": "desserts", "name": "Cinnamon Bites", "price": 99, "available": True, "is_pizza": False},
 ]
 
 CUSTOMERS = [
@@ -105,7 +106,7 @@ INVENTORY = [
 
 
 def _orders_seed():
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     def mins_ago(m): return (now - timedelta(minutes=m)).isoformat()
     def days_ago(d, h=12, m=0): return (now - timedelta(days=d, hours=now.hour - h, minutes=now.minute - m)).isoformat()
     cust = {c["id"]: c for c in CUSTOMERS}
@@ -115,22 +116,22 @@ def _orders_seed():
     historic = []
     # 6 days of historic completed orders to populate weekly chart
     day_specs = [
-        (6, [(28.5, "card", "delivery"), (15.99, "cash", "collection"), (42.0, "card", "delivery")]),
-        (5, [(19.49, "cash", "collection"), (22.99, "card", "delivery")]),
-        (4, [(31.99, "card", "delivery"), (12.49, "cash", "collection"), (17.99, "card", "dine-in"), (24.5, "card", "delivery")]),
-        (3, [(14.99, "cash", "collection"), (27.49, "card", "delivery")]),
-        (2, [(33.99, "card", "delivery"), (18.49, "cash", "collection"), (21.99, "card", "delivery"), (29.99, "card", "delivery"), (16.49, "cash", "collection")]),
-        (1, [(38.49, "card", "delivery"), (22.99, "card", "delivery"), (19.99, "cash", "collection"), (44.5, "card", "delivery"), (15.49, "cash", "collection"), (28.99, "card", "delivery")]),
+        (6, [(570, "card", "delivery"), (320, "cash", "collection"), (840, "card", "delivery")]),
+        (5, [(390, "cash", "collection"), (460, "card", "delivery")]),
+        (4, [(640, "card", "delivery"), (250, "cash", "collection"), (360, "card", "dine-in"), (490, "card", "delivery")]),
+        (3, [(300, "cash", "collection"), (550, "card", "delivery")]),
+        (2, [(680, "card", "delivery"), (370, "cash", "collection"), (440, "card", "delivery"), (600, "card", "delivery"), (330, "cash", "collection")]),
+        (1, [(770, "card", "delivery"), (460, "card", "delivery"), (400, "cash", "collection"), (890, "card", "delivery"), (310, "cash", "collection"), (580, "card", "delivery")]),
     ]
     base_num = 1000
     seed_items_pool = [
-        [{"name": 'Pepperoni Passion 12"', "qty": 1, "price": 11.49, "mods": []}, {"name": "Fries", "qty": 1, "price": 2.99, "mods": []}],
-        [{"name": "Meat Feast 15\"", "qty": 1, "price": 15.49, "mods": ["+ Jalapenos"]}, {"name": "BBQ Wings (6pc)", "qty": 1, "price": 5.49, "mods": []}],
-        [{"name": "Family Feast", "qty": 1, "price": 29.99, "mods": []}],
-        [{"name": "Margherita 12\"", "qty": 1, "price": 9.99, "mods": []}, {"name": "Coca-Cola 1.5L", "qty": 1, "price": 2.99, "mods": []}],
-        [{"name": "Duo Deal", "qty": 1, "price": 21.99, "mods": []}],
-        [{"name": "BBQ Chicken Classic 15\"", "qty": 1, "price": 15.49, "mods": []}, {"name": "Garlic Bread (4pc)", "qty": 1, "price": 3.99, "mods": []}],
-        [{"name": "Hawaiian 12\"", "qty": 1, "price": 10.99, "mods": []}, {"name": "Chocolate Fudge Cake", "qty": 1, "price": 3.99, "mods": []}],
+        [{"name": 'Pepperoni Passion 12"', "qty": 1, "price": 399, "mods": []}, {"name": "Fries", "qty": 1, "price": 99, "mods": []}],
+        [{"name": 'Non-Veg Supreme 15"', "qty": 1, "price": 649, "mods": ["+ Jalapenos"]}, {"name": "BBQ Wings (6pc)", "qty": 1, "price": 199, "mods": []}],
+        [{"name": "Family Feast", "qty": 1, "price": 899, "mods": []}],
+        [{"name": 'Margherita 12"', "qty": 1, "price": 349, "mods": []}, {"name": "Coca-Cola 1.5L", "qty": 1, "price": 99, "mods": []}],
+        [{"name": "Duo Deal", "qty": 1, "price": 649, "mods": []}],
+        [{"name": 'BBQ Chicken Classic 15"', "qty": 1, "price": 629, "mods": []}, {"name": "Garlic Bread (4pc)", "qty": 1, "price": 129, "mods": []}],
+        [{"name": 'Tropical Chicken 12"', "qty": 1, "price": 379, "mods": []}, {"name": "Chocolate Fudge Cake", "qty": 1, "price": 149, "mods": []}],
     ]
     for days, rows in day_specs:
         for idx, (total, pay, otype) in enumerate(rows):
@@ -141,48 +142,48 @@ def _orders_seed():
                 "customer": {"name": f"Walk-in — Hist {days}d", "phone": ""}, "table": None,
                 "placedAt": ts, "payment": pay, "driver": None,
                 "items": seed_items_pool[(days + idx) % len(seed_items_pool)],
-                "deliveryFee": 2.5 if otype == "delivery" else 0, "discount": 0, "total": total,
+                "deliveryFee": 49 if otype == "delivery" else 0, "discount": 0, "total": total,
             })
 
     today = [
         {"id": "o1", "number": 1042, "type": "delivery", "status": "out-for-delivery", "customer": oc(cust["cu3"]), "table": None,
          "placedAt": mins_ago(38), "payment": "card", "driver": "Karthik Rao",
-         "items": [{"name": 'Meat Feast 15"', "qty": 1, "price": 15.49, "mods": ["+ Jalapenos"]},
-                   {"name": "BBQ Wings (6pc)", "qty": 1, "price": 5.49, "mods": []},
-                   {"name": "Coca-Cola 1.5L", "qty": 1, "price": 2.99, "mods": []}],
-         "deliveryFee": 2.5, "discount": 0, "total": 26.47},
+         "items": [{"name": 'Non-Veg Supreme 15"', "qty": 1, "price": 649, "mods": ["+ Jalapenos"]},
+                   {"name": "BBQ Wings (6pc)", "qty": 1, "price": 199, "mods": []},
+                   {"name": "Coca-Cola 1.5L", "qty": 1, "price": 99, "mods": []}],
+         "deliveryFee": 49, "discount": 0, "total": 996},
         {"id": "o2", "number": 1043, "type": "collection", "status": "ready",
          "customer": {"name": "Walk-in — Vikram", "phone": "+919000711122"}, "table": None,
          "placedAt": mins_ago(22), "payment": "cash",
-         "items": [{"name": 'Pepperoni Passion 12"', "qty": 1, "price": 11.49, "mods": []},
-                   {"name": "Fries", "qty": 1, "price": 2.99, "mods": []}],
-         "deliveryFee": 0, "discount": 0, "total": 14.48},
+         "items": [{"name": 'Pepperoni Passion 12"', "qty": 1, "price": 399, "mods": []},
+                   {"name": "Fries", "qty": 1, "price": 99, "mods": []}],
+         "deliveryFee": 0, "discount": 0, "total": 498},
         {"id": "o3", "number": 1044, "type": "dine-in", "status": "in-kitchen",
          "customer": {"name": "Table 3"}, "table": 3,
          "placedAt": mins_ago(15), "payment": "unpaid",
-         "items": [{"name": 'Hawaiian 12"', "qty": 1, "price": 10.99, "mods": []},
-                   {"name": "Veggie Burger", "qty": 1, "price": 5.99, "mods": []},
-                   {"name": "Diet Coke 330ml", "qty": 2, "price": 1.29, "mods": []}],
-         "deliveryFee": 0, "discount": 0, "total": 19.56},
+         "items": [{"name": 'Tropical Chicken 12"', "qty": 1, "price": 379, "mods": []},
+                   {"name": "Aloo Tikki Burger", "qty": 1, "price": 149, "mods": []},
+                   {"name": "Coke Zero 330ml", "qty": 2, "price": 60, "mods": []}],
+         "deliveryFee": 0, "discount": 0, "total": 648},
         {"id": "o4", "number": 1045, "type": "delivery", "status": "in-kitchen", "customer": oc(cust["cu1"]), "table": None,
          "placedAt": mins_ago(9), "payment": "card",
-         "items": [{"name": "Family Feast", "qty": 1, "price": 29.99, "mods": ["Large: BBQ Chicken Classic", "Large: Veggie Supreme"]}],
-         "deliveryFee": 2.5, "discount": 0, "total": 32.49},
+         "items": [{"name": "Family Feast", "qty": 1, "price": 899, "mods": ["Large: BBQ Chicken Classic", "Large: Veggie Supreme"]}],
+         "deliveryFee": 49, "discount": 0, "total": 948},
         {"id": "o5", "number": 1046, "type": "dine-in", "status": "new",
          "customer": {"name": "Table 6"}, "table": 6,
          "placedAt": mins_ago(4), "payment": "unpaid",
-         "items": [{"name": 'Hot & Spicy 9.5"', "qty": 2, "price": 8.99, "mods": []}],
-         "deliveryFee": 0, "discount": 0, "total": 17.98},
+         "items": [{"name": 'Hot & Spicy 9.5"', "qty": 2, "price": 259, "mods": []}],
+         "deliveryFee": 0, "discount": 0, "total": 518},
         {"id": "o6", "number": 1041, "type": "collection", "status": "completed",
          "customer": {"name": "Walk-in — Neha", "phone": "+919000711133"}, "table": None,
          "placedAt": mins_ago(95), "payment": "cash",
-         "items": [{"name": "Duo Deal", "qty": 1, "price": 21.99, "mods": []}],
-         "deliveryFee": 0, "discount": 2.2, "total": 19.79},
+         "items": [{"name": "Duo Deal", "qty": 1, "price": 649, "mods": []}],
+         "deliveryFee": 0, "discount": 65, "total": 584},
         {"id": "o7", "number": 1040, "type": "delivery", "status": "completed", "customer": oc(cust["cu5"]), "table": None,
          "placedAt": mins_ago(130), "payment": "card",
-         "items": [{"name": 'Margherita 12"', "qty": 1, "price": 9.99, "mods": ["+ Extra Cheese"]},
-                   {"name": "Chocolate Fudge Cake", "qty": 1, "price": 3.99, "mods": []}],
-         "deliveryFee": 2.5, "discount": 0, "total": 17.68},
+         "items": [{"name": 'Margherita 12"', "qty": 1, "price": 349, "mods": ["+ Extra Cheese"]},
+                   {"name": "Chocolate Fudge Cake", "qty": 1, "price": 149, "mods": []}],
+         "deliveryFee": 49, "discount": 0, "total": 547},
     ]
     return historic + today
 
@@ -200,7 +201,7 @@ async def seed_all(db):
                 "id": s["id"], "tenant_id": tid,
                 "name": s["name"], "role": s["role"], "initials": s["initials"],
                 "pin_hash": hash_pin(s["pin"]),
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": now_ist().isoformat(),
             })
         await db.users.insert_many(docs)
 

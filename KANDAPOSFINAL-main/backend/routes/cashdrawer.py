@@ -1,6 +1,7 @@
 """Cash drawer / Z-Report — open with float, close with counted cash, variance recorded."""
 import uuid
 from datetime import datetime, timezone
+from tz import now_ist
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -14,11 +15,11 @@ router = APIRouter()
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return now_ist().isoformat()
 
 
 def _today() -> str:
-    return datetime.now(timezone.utc).date().isoformat()
+    return now_ist().date().isoformat()
 
 
 def _doc(d: dict) -> dict:

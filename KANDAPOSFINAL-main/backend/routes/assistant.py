@@ -15,6 +15,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone, timedelta
+from tz import now_ist
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -75,7 +76,7 @@ KNOWLEDGE_BASE = """
 # Tool implementations — return live data for the AI to fold into answers
 # ===================================================================
 async def _tool_todays_sales(db, tenant_id: str) -> dict:
-    start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    start = now_ist().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     pipe = [
         {"$match": {"tenant_id": tenant_id, "placedAt": {"$gte": start}, "voided": {"$ne": True}}},
         {"$group": {"_id": None, "count": {"$sum": 1}, "revenue": {"$sum": "$total"}}},
@@ -87,7 +88,7 @@ async def _tool_todays_sales(db, tenant_id: str) -> dict:
 
 
 async def _tool_top_items(db, tenant_id: str, days: int = 7, limit: int = 5) -> list:
-    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    since = (now_ist() - timedelta(days=days)).isoformat()
     pipe = [
         {"$match": {"tenant_id": tenant_id, "placedAt": {"$gte": since}, "voided": {"$ne": True}}},
         {"$unwind": "$items"},
@@ -130,7 +131,7 @@ async def _tool_staff_on_duty(db, tenant_id: str) -> list:
 
 
 async def _tool_pending_reservations(db, tenant_id: str) -> list:
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     rows = await db.reservations.find(
         {"tenant_id": tenant_id, "status": "booked", "at": {"$gte": now}},
         {"_id": 0, "customer_name": 1, "party_size": 1, "at": 1, "phone": 1},
@@ -215,7 +216,7 @@ async def _llm_reply(system: str, messages: list[dict]) -> str:
     chat = (
         LlmChat(
             api_key=os.environ["EMERGENT_LLM_KEY"],
-            session_id=f"assistant-{datetime.now(timezone.utc).timestamp()}",
+            session_id=f"assistant-{now_ist().timestamp()}",
             system_message=system,
         )
         .with_model("anthropic", "claude-sonnet-4-5")
