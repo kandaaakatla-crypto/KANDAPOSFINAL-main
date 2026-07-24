@@ -66,6 +66,26 @@ def support_ticket_email(ticket: dict, tenant: dict) -> tuple[str, str]:
     )
 
 
+def purchase_order_email(item: dict, tenant: dict, qty_ordered: float) -> tuple[str, str]:
+    """Render a reorder notification email sent to a supplier's contact address."""
+    store_name = tenant.get("store", {}).get("name") or tenant.get("name") or "Kanda POS"
+    subject = f"Purchase order — {item['name']} × {qty_ordered:g} {item['unit']} — {store_name}"
+    return subject, (
+        f'<div style="font-family:Inter,Arial,sans-serif;background:#fafafa;padding:24px">'
+        f'<div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #eee;border-radius:12px;padding:24px">'
+        f'<h2 style="margin:0 0 4px;color:#111">Purchase order from {store_name}</h2>'
+        f'<p style="color:#666;font-size:13px;margin:0 0 16px">Hi {item.get("supplier","there")}, please arrange the following delivery:</p>'
+        f'<table style="border-collapse:collapse;width:100%;margin-bottom:16px">'
+        f'<tr><td style="padding:4px 12px 4px 0;color:#888;font-size:12px">Item</td>'
+        f'<td style="padding:4px 0;color:#111;font-size:13px"><b>{item["name"]}</b></td></tr>'
+        f'<tr><td style="padding:4px 12px 4px 0;color:#888;font-size:12px">Quantity</td>'
+        f'<td style="padding:4px 0;color:#111;font-size:13px"><b>{qty_ordered:g} {item["unit"]}</b></td></tr>'
+        f'</table>'
+        f'<p style="color:#999;font-size:11px;margin-top:24px">Sent automatically by Kanda POS inventory management.</p>'
+        f'</div></div>'
+    )
+
+
 def order_receipt_email(order: dict, tenant: dict) -> tuple[str, str]:
     """Render a customer-facing receipt email for a paid POS order."""
     store_name = tenant.get("store", {}).get("name") or tenant.get("name") or "Kanda POS"

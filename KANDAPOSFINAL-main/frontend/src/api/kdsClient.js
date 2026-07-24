@@ -14,6 +14,8 @@ export const kdsApi = {
     axios.patch(`${API}/kds/orders/${orderId}/items/${itemIndex}`, { status }, { params: { token } }).then((r) => r.data),
   recall: (token, orderId) =>
     axios.patch(`${API}/kds/orders/${orderId}/recall`, {}, { params: { token } }).then((r) => r.data),
+  display: (token) =>
+    axios.get(`${API}/kds/display`, { params: { token } }).then((r) => r.data),
 };
 
 export const KDS_WS_URL = (token) => {

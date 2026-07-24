@@ -6,9 +6,10 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from db import get_db
 from auth import get_current_user, require_role
-from tenants import tenant_filter
+from tenants import tenant_filter, get_tenant
 from ws import schedule_broadcast
 from models import InventoryItem, InventoryItemCreate, InventoryItemUpdate, AdjustStockPayload
+from email_service import send_email, purchase_order_email
 from ._shared import PROJECTION, clean
 
 router = APIRouter()
@@ -78,16 +79,33 @@ async def adjust_inventory(item_id: str, payload: AdjustStockPayload, user: dict
     return cleaned
 
 
-@router.post("/inventory/{item_id}/reorder", response_model=InventoryItem)
+@router.post("/inventory/{item_id}/reorder")
 async def reorder_inventory(item_id: str, user: dict = Depends(require_role("Manager"))):
     db = get_db()
     item = await db.inventory.find_one(tenant_filter(user, {"id": item_id}), PROJECTION)
     if not item:
         raise HTTPException(status_code=404, detail="Inventory item not found")
-    new_stock = item["stock"] + item["reorder"] * 2
+    qty_ordered = item["reorder"] * 2
+    new_stock = item["stock"] + qty_ordered
     res = await db.inventory.find_one_and_update(
         tenant_filter(user, {"id": item_id}), {"$set": {"stock": new_stock}}, return_document=True,
     )
     cleaned = clean(res)
     schedule_broadcast("inventory.updated", {"item": cleaned, "low": False}, user["tenant_id"])
-    return cleaned
+
+    # Best-effort supplier notification — never blocks the reorder itself.
+    supplier_emailed = False
+    supplier_email = None
+    supplier_name = (item.get("supplier") or "").strip()
+    if supplier_name:
+        supplier = await db.suppliers.find_one(
+            tenant_filter(user, {"name": {"$regex": f"^{supplier_name}$", "$options": "i"}}), PROJECTION,
+        )
+        if supplier and supplier.get("email"):
+            supplier_email = supplier["email"]
+            tenant = await get_tenant(user, db)
+            subject, html = purchase_order_email(item, tenant, qty_ordered)
+            result = await send_email(supplier_email, subject, html)
+            supplier_emailed = not result.get("error") and not result.get("skipped")
+
+    return {**cleaned, "supplier_emailed": supplier_emailed, "supplier_email": supplier_email}

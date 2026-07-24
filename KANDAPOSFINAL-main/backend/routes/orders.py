@@ -14,7 +14,7 @@ from tenants import tenant_filter, get_tenant
 from ws import schedule_broadcast
 from kds import annotate_order_items_for_kds
 from email_service import send_email, order_receipt_email
-from models import Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload
+from models import Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload
 from . import loyalty as loyalty_mod
 from ._shared import PROJECTION, clean, next_order_number, table_doc_to_response
 
@@ -246,6 +246,19 @@ async def set_order_status(order_id: str, payload: OrderStatusPayload, user: dic
             tenant_filter(user, {"order_id": None, "status": "available"}), PROJECTION,
         ):
             schedule_broadcast("table.updated", table_doc_to_response(t), user["tenant_id"])
+    cleaned = clean(res)
+    schedule_broadcast("order.upserted", cleaned, user["tenant_id"])
+    return cleaned
+
+
+@router.patch("/orders/{order_id}/pack", response_model=Order)
+async def set_order_packed(order_id: str, payload: OrderPackedPayload, user: dict = Depends(get_current_user)):
+    db = get_db()
+    res = await db.orders.find_one_and_update(
+        tenant_filter(user, {"id": order_id}), {"$set": {"packed": payload.packed}}, return_document=True,
+    )
+    if not res:
+        raise HTTPException(status_code=404, detail="Order not found")
     cleaned = clean(res)
     schedule_broadcast("order.upserted", cleaned, user["tenant_id"])
     return cleaned

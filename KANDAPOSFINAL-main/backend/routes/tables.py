@@ -1,17 +1,28 @@
 """Tables + floor layout routes."""
+import base64
+import io
+import os
 import uuid
 from typing import List
 
+import qrcode
 from fastapi import APIRouter, HTTPException, Depends
 
 from db import get_db
 from auth import get_current_user, require_role
-from tenants import tenant_filter
+from tenants import tenant_filter, get_tenant
 from ws import schedule_broadcast
 from models import Table, TableUpdate, TablePosition, TableCreate, FloorElement, FloorElementCreate, FloorElementUpdate
 from ._shared import PROJECTION, clean, table_doc_to_response
 
 router = APIRouter()
+
+
+def _qr_response(url: str) -> dict:
+    img = qrcode.make(url)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return {"url": url, "qrPngBase64": base64.b64encode(buf.getvalue()).decode("ascii")}
 
 
 @router.get("/tables", response_model=List[Table])
@@ -100,6 +111,32 @@ async def update_position(table_id: str, payload: TablePosition, user: dict = De
     response = table_doc_to_response(clean(res))
     schedule_broadcast("table.updated", response, user["tenant_id"])
     return response
+
+
+# -------------------- QR ordering codes --------------------
+@router.get("/tables/{table_id}/qr")
+async def table_qr(table_id: str, user: dict = Depends(require_role("Manager"))):
+    """QR code linking to the customer-facing table-ordering page, table
+    pre-selected — print this and stick it on the table."""
+    db = get_db()
+    table = await db.tables.find_one(tenant_filter(user, {"id": table_id}), PROJECTION)
+    if not table:
+        raise HTTPException(status_code=404, detail="Table not found")
+    tenant = await get_tenant(user, db)
+    base = os.environ.get("PUBLIC_BASE_URL") or ""
+    url = f"{base}/order/{tenant.get('slug')}/table/{table['number']}"
+    return _qr_response(url)
+
+
+@router.get("/tables/pickup-qr")
+async def pickup_qr(user: dict = Depends(require_role("Manager"))):
+    """QR code linking to the customer-facing pickup-ordering page (name +
+    phone, OTP-verified) — print this near the counter / on takeaway bags."""
+    db = get_db()
+    tenant = await get_tenant(user, db)
+    base = os.environ.get("PUBLIC_BASE_URL") or ""
+    url = f"{base}/order/{tenant.get('slug')}/pickup"
+    return _qr_response(url)
 
 
 # -------------------- Floor elements (walls, room labels) --------------------

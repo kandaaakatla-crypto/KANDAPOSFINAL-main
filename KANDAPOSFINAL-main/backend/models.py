@@ -8,7 +8,7 @@ OrderType = Literal["delivery", "collection", "dine-in"]
 OrderStatus = Literal["new", "in-kitchen", "ready", "out-for-delivery", "completed"]
 OrderPayment = Literal["cash", "card", "unpaid"]
 TableStatus = Literal["available", "occupied", "reserved"]
-OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other"]
+OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr"]
 TableShape = Literal["round", "square", "rect"]
 
 
@@ -384,10 +384,15 @@ class Order(BaseModel):
     loyalty_earned: int = 0
     loyalty_redeemed: int = 0
     splits: Optional[List[OrderSplit]] = None
+    packed: bool = False
 
 
 class OrderStatusPayload(BaseModel):
     status: OrderStatus
+
+
+class OrderPackedPayload(BaseModel):
+    packed: bool
 
 
 class OrderAppendPayload(BaseModel):

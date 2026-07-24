@@ -142,6 +142,16 @@ export function PosProvider({ children }) {
     }
   }, []);
 
+  const setOrderPacked = useCallback(async (orderId, packed) => {
+    try {
+      const updated = await ordersApi.setPacked(orderId, packed);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+      return updated;
+    } catch {
+      toast.error("Could not update packed status");
+    }
+  }, []);
+
   const assignDriver = useCallback(async (orderId, driverName) => {
     try {
       const updated = await ordersApi.assignDriver(orderId, driverName);
@@ -223,8 +233,10 @@ export function PosProvider({ children }) {
     try {
       const updated = await inventoryApi.reorder(id);
       setInventory((prev) => prev.map((i) => (i.id === id ? updated : i)));
+      return updated;
     } catch {
       toast.error("Could not place reorder");
+      return null;
     }
   }, []);
 
@@ -287,7 +299,7 @@ export function PosProvider({ children }) {
     bootState, staffUser, login, logout,
     categories,
     menuItems, upsertMenuItem, toggleItemAvailability,
-    orders, placeOrder, appendToOrder, updateOrderStatus, assignDriver, reloadOrders,
+    orders, placeOrder, appendToOrder, updateOrderStatus, setOrderPacked, assignDriver, reloadOrders,
     customers, upsertCustomer, deleteCustomer, refreshCustomers, refreshTables, refreshMenu,
     tables, setTableStatus,
     inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem,

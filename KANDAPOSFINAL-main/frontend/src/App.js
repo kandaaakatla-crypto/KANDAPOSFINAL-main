@@ -15,6 +15,10 @@ import InventoryScreen from "./components/pos/InventoryScreen";
 import MenuScreen from "./components/pos/MenuScreen";
 import ReportsScreen from "./components/pos/ReportsScreen";
 import DispatchScreen from "./components/pos/DispatchScreen";
+import PackingScreen from "./components/pos/PackingScreen";
+import CustomerDisplayScreen from "./components/pos/CustomerDisplayScreen";
+import TableOrderPage from "./components/storefront/TableOrderPage";
+import PickupOrderPage from "./components/storefront/PickupOrderPage";
 import StaffScreen from "./components/pos/StaffScreen";
 import WorkforceScreen from "./components/pos/WorkforceScreen";
 import TimeClockScreen from "./components/pos/TimeClockScreen";
@@ -109,6 +113,13 @@ function App() {
                 <Route path="/kds" element={<KDSBoard />} />
                 <Route path="/kds/:station" element={<KDSBoard />} />
 
+                {/* Customer-facing order-status display — no auth, long-lived ?token= */}
+                <Route path="/display" element={<CustomerDisplayScreen />} />
+
+                {/* Customer-facing QR ordering — fully public, no auth */}
+                <Route path="/order/:slug/table/:number" element={<TableOrderPage />} />
+                <Route path="/order/:slug/pickup" element={<PickupOrderPage />} />
+
                 {/* Driver stripped POS view */}
                 <Route path="/driver" element={<Protected><DriverScreen /></Protected>} />
 
@@ -126,6 +137,7 @@ function App() {
                   <Route path="/inventory" element={<InventoryScreen />} />
                   <Route path="/menu" element={<MenuScreen />} />
                   <Route path="/dispatch" element={<DispatchScreen />} />
+                  <Route path="/packing" element={<PackingScreen />} />
                   <Route path="/reports" element={<ReportsScreen />} />
                   <Route path="/workforce" element={<WorkforceScreen />} />
                 </Route>

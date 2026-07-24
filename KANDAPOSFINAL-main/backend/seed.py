@@ -130,6 +130,17 @@ INVENTORY = [
     {"id": "i12", "name": "Jalapenos",          "unit": "kg",   "stock": 1.4,  "reorder": 2,   "supplier": "ItalFoods",           "cost_per_unit": 220},
 ]
 
+SUPPLIERS = [
+    {"id": "sup1", "name": "FreshBake Ltd",     "email": "orders@freshbake.example.com",     "phone": "+914023456701"},
+    {"id": "sup2", "name": "DairyDirect",       "email": "orders@dairydirect.example.com",   "phone": "+914023456702"},
+    {"id": "sup3", "name": "ItalFoods",         "email": "orders@italfoods.example.com",     "phone": "+914023456703"},
+    {"id": "sup4", "name": "MeatCo",            "email": "orders@meatco.example.com",        "phone": "+914023456704"},
+    {"id": "sup5", "name": "GreenGrocer",       "email": "orders@greengrocer.example.com",   "phone": "+914023456705"},
+    {"id": "sup6", "name": "PackRight",         "email": "orders@packright.example.com",     "phone": "+914023456706"},
+    {"id": "sup7", "name": "DrinksWholesale",   "email": "orders@drinkswholesale.example.com", "phone": "+914023456707"},
+    {"id": "sup8", "name": "FrozenFoods",       "email": "orders@frozenfoods.example.com",   "phone": "+914023456708"},
+]
+
 
 def _orders_seed():
     now = now_ist()
@@ -246,6 +257,9 @@ async def seed_all(db):
     if await db.inventory.count_documents({"tenant_id": tid}) == 0:
         await db.inventory.insert_many([{**i, "tenant_id": tid} for i in INVENTORY])
 
+    if await db.suppliers.count_documents({"tenant_id": tid}) == 0:
+        await db.suppliers.insert_many([{**s, "tenant_id": tid} for s in SUPPLIERS])
+
     if await db.orders.count_documents({"tenant_id": tid}) == 0:
         await db.orders.insert_many([{**o, "tenant_id": tid} for o in _orders_seed()])
 
@@ -305,6 +319,7 @@ async def seed_all(db):
     await db.report_rollups.create_index([("tenant_id", 1), ("date", 1)], unique=True)
     await db.dashboard_users.create_index("email", unique=True)
     await db.dashboard_users.create_index([("tenant_id", 1), ("dash_role", 1)])
+    await db.suppliers.create_index([("tenant_id", 1), ("id", 1)], unique=True)
 
     # Seed the 3 demo dashboard accounts (owner / manager / area_manager).
     from routes.dash_auth import ensure_demo_dashboard_users

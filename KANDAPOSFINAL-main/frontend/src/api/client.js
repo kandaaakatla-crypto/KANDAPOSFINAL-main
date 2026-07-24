@@ -116,6 +116,12 @@ export const tablesApi = {
   createFloor: (payload) => api.post("/tables/floor", payload).then((r) => r.data),
   updateFloor: (id, payload) => api.patch(`/tables/floor/${id}`, payload).then((r) => r.data),
   removeFloor: (id) => api.delete(`/tables/floor/${id}`).then((r) => r.data),
+  qr: (id) => api.get(`/tables/${id}/qr`).then((r) => r.data),
+  pickupQr: () => api.get("/tables/pickup-qr").then((r) => r.data),
+};
+
+export const kioskApi = {
+  myToken: () => api.get("/kds/my-token").then((r) => r.data),
 };
 
 export const reservationsApi = {
@@ -144,6 +150,13 @@ export const inventoryApi = {
   reorder: (id) => api.post(`/inventory/${id}/reorder`).then((r) => r.data),
 };
 
+export const suppliersApi = {
+  list: () => api.get("/suppliers").then((r) => r.data),
+  create: (payload) => api.post("/suppliers", payload).then((r) => r.data),
+  update: (id, payload) => api.patch(`/suppliers/${id}`, payload).then((r) => r.data),
+  remove: (id) => api.delete(`/suppliers/${id}`).then((r) => r.data),
+};
+
 export const ordersApi = {
   list: () => api.get("/orders").then((r) => r.data),
   create: (payload) => api.post("/orders", payload).then((r) => r.data),
@@ -152,6 +165,7 @@ export const ordersApi = {
   assignDriver: (id, driver) => api.patch(`/orders/${id}/driver`, { driver }).then((r) => r.data),
   setPayment: (id, payment) => api.patch(`/orders/${id}/payment`, { payment }).then((r) => r.data),
   claim: (id) => api.post(`/orders/${id}/claim`).then((r) => r.data),
+  setPacked: (id, packed) => api.patch(`/orders/${id}/pack`, { packed }).then((r) => r.data),
 };
 
 export const usersApi = {

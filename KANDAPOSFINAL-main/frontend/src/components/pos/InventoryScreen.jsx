@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { usePos } from "../../store/PosContext";
-import { Minus, Plus, AlertTriangle, PackageCheck, Truck, Trash, Search, PlusCircle, Pencil, Trash2, IndianRupee } from "lucide-react";
+import { Minus, Plus, AlertTriangle, PackageCheck, Truck, Trash, Search, PlusCircle, Pencil, Trash2, IndianRupee, Mail, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { WastePanel } from "./OpsPanels";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { suppliersApi } from "../../api/client";
 
 const emptyForm = { name: "", unit: "", stock: "", reorder: "", supplier: "", cost_per_unit: "" };
+const emptySupplierForm = { name: "", email: "", phone: "" };
 
 export default function InventoryScreen() {
   const { inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem, staffUser } = usePos();
@@ -16,6 +18,50 @@ export default function InventoryScreen() {
   const [editing, setEditing] = useState(null); // null | {} (new) | item (edit)
   const [form, setForm] = useState(emptyForm);
   const isManager = staffUser?.role === "Manager";
+
+  const [suppliers, setSuppliers] = useState([]);
+  const [suppliersOpen, setSuppliersOpen] = useState(false);
+  const [supplierEditing, setSupplierEditing] = useState(null); // null | {} | supplier
+  const [supplierForm, setSupplierForm] = useState(emptySupplierForm);
+
+  const loadSuppliers = () => suppliersApi.list().then(setSuppliers).catch(() => {});
+  useEffect(() => { loadSuppliers(); }, []);
+
+  const openNewSupplier = () => { setSupplierForm(emptySupplierForm); setSupplierEditing({}); };
+  const openEditSupplier = (s) => { setSupplierForm({ name: s.name, email: s.email || "", phone: s.phone || "" }); setSupplierEditing(s); };
+  const saveSupplier = async () => {
+    if (!supplierForm.name.trim()) { toast.error("Supplier name is required"); return; }
+    try {
+      if (supplierEditing?.id) {
+        await suppliersApi.update(supplierEditing.id, supplierForm);
+        toast.success("Supplier updated");
+      } else {
+        await suppliersApi.create(supplierForm);
+        toast.success("Supplier added");
+      }
+      setSupplierEditing(null);
+      loadSuppliers();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not save supplier");
+    }
+  };
+  const removeSupplier = async (s) => {
+    if (!window.confirm(`Delete supplier "${s.name}"?`)) return;
+    try { await suppliersApi.remove(s.id); loadSuppliers(); toast.success("Supplier removed"); }
+    catch (e) { toast.error(e?.response?.data?.detail || "Could not delete supplier"); }
+  };
+
+  const doReorder = async (item) => {
+    const res = await reorderStock(item.id);
+    if (!res) return; // reorderStock already toasted the failure
+    if (res.supplier_emailed) {
+      toast.success(`Purchase order sent for ${item.name} — emailed ${res.supplier_email}`);
+    } else {
+      toast.success(`Purchase order sent for ${item.name}`, {
+        description: "No supplier email on file — add one in Manage Suppliers to auto-email next time.",
+      });
+    }
+  };
 
   const lowItems = inventory.filter((i) => i.stock <= i.reorder);
   const filtered = (view === "low" ? lowItems : inventory).filter((i) =>
@@ -80,9 +126,15 @@ export default function InventoryScreen() {
             <Trash className="w-3.5 h-3.5" /> Wastage log
           </button>
           {isManager && (
-            <button data-testid="inv-add-btn" onClick={openNew} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5" style={{ background: "var(--pos-accent)" }}>
-              <PlusCircle className="w-3.5 h-3.5" /> Add Item
-            </button>
+            <>
+              <button data-testid="inv-manage-suppliers-btn" onClick={() => setSuppliersOpen(true)} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+                style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+                <Building2 className="w-3.5 h-3.5" /> Suppliers
+              </button>
+              <button data-testid="inv-add-btn" onClick={openNew} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5" style={{ background: "var(--pos-accent)" }}>
+                <PlusCircle className="w-3.5 h-3.5" /> Add Item
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -151,7 +203,7 @@ export default function InventoryScreen() {
                       <button data-testid={`stock-minus-${i.id}`} onClick={() => adjustStock(i.id, -1)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Minus className="w-3.5 h-3.5 text-white" /></button>
                       <button data-testid={`stock-plus-${i.id}`} onClick={() => adjustStock(i.id, 1)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Plus className="w-3.5 h-3.5 text-white" /></button>
                       {low && (
-                        <button data-testid={`reorder-${i.id}`} onClick={() => { reorderStock(i.id); toast.success(`Purchase order sent for ${i.name}`); }}
+                        <button data-testid={`reorder-${i.id}`} onClick={() => doReorder(i)}
                           className="pos-btn h-8 px-3 rounded-lg text-xs font-bold text-white flex items-center gap-1" style={{ background: "var(--pos-blue)" }}>
                           <Truck className="w-3.5 h-3.5" /> Reorder
                         </button>
@@ -186,10 +238,59 @@ export default function InventoryScreen() {
               <Input data-testid="inv-form-reorder" type="number" placeholder="Reorder level" value={form.reorder} onChange={(e) => setForm({ ...form, reorder: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
               <Input data-testid="inv-form-cost" type="number" placeholder="Cost per unit (₹)" value={form.cost_per_unit} onChange={(e) => setForm({ ...form, cost_per_unit: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
             </div>
-            <Input data-testid="inv-form-supplier" placeholder="Supplier" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <Input data-testid="inv-form-supplier" list="supplier-names" placeholder="Supplier" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <datalist id="supplier-names">
+              {suppliers.map((s) => <option key={s.id} value={s.name} />)}
+            </datalist>
             <div className="flex justify-end gap-2">
               <button onClick={() => setEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
               <button data-testid="inv-form-save" onClick={save} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={suppliersOpen} onOpenChange={setSuppliersOpen}>
+        <DialogContent className="max-w-lg border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+          <DialogHeader><DialogTitle className="text-white">Suppliers</DialogTitle></DialogHeader>
+          <p className="text-xs -mt-2" style={{ color: "var(--pos-muted)" }}>
+            Add a supplier's email so clicking <b>Reorder</b> on a matching item auto-sends them a purchase order.
+          </p>
+          <div className="space-y-2 max-h-64 overflow-y-auto pos-scroll">
+            {suppliers.length === 0 && <p className="text-sm text-center py-6" style={{ color: "var(--pos-muted)" }}>No suppliers yet.</p>}
+            {suppliers.map((s) => (
+              <div key={s.id} data-testid={`supplier-row-${s.id}`} className="rounded-lg p-3 flex items-center justify-between gap-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-white">{s.name}</div>
+                  <div className="text-xs flex items-center gap-1 mt-0.5" style={{ color: s.email ? "var(--pos-muted)" : "#f87171" }}>
+                    <Mail className="w-3 h-3 shrink-0" /> {s.email || "No email on file"}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button data-testid={`supplier-edit-${s.id}`} onClick={() => openEditSupplier(s)} className="pos-btn w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}><Pencil className="w-3.5 h-3.5 text-white" /></button>
+                  <button data-testid={`supplier-delete-${s.id}`} onClick={() => removeSupplier(s)} className="pos-btn w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button data-testid="supplier-add-btn" onClick={openNewSupplier}
+            className="pos-btn w-full h-9 rounded-md text-xs font-bold flex items-center justify-center gap-1.5"
+            style={{ background: "var(--pos-panel-2)", color: "var(--pos-accent)", border: "1px dashed var(--pos-border)" }}>
+            <PlusCircle className="w-3.5 h-3.5" /> Add supplier
+          </button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!supplierEditing} onOpenChange={(o) => !o && setSupplierEditing(null)}>
+        <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+          <DialogHeader><DialogTitle className="text-white">{supplierEditing?.id ? "Edit supplier" : "New supplier"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input data-testid="supplier-form-name" placeholder="Supplier name" value={supplierForm.name} onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <Input data-testid="supplier-form-email" type="email" placeholder="Email address" value={supplierForm.email} onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <Input data-testid="supplier-form-phone" placeholder="Phone (optional)" value={supplierForm.phone} onChange={(e) => setSupplierForm({ ...supplierForm, phone: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setSupplierEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+              <button data-testid="supplier-form-save" onClick={saveSupplier} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
             </div>
           </div>
         </DialogContent>

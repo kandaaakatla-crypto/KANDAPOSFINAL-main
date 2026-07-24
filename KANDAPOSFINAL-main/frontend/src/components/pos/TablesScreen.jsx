@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
 import { tablesApi } from "../../api/client";
-import { Users, CircleDot, LayoutGrid, CalendarClock, IndianRupee } from "lucide-react";
+import { Users, CircleDot, LayoutGrid, CalendarClock, IndianRupee, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import TableLayoutEditor from "./TableLayoutEditor";
 import ReservationModal from "./ReservationModal";
+import QrCodesModal from "./QrCodesModal";
 
 const STATUS_STYLE = {
   available: { color: "#22c55e", bg: "#13271a", border: "#2e7d4f", label: "Available" },
@@ -21,11 +22,13 @@ const STATUS_STYLE = {
  * are clickable to jump straight into New Order for that table.
  */
 export default function TablesScreen() {
-  const { tables, orders, setTableStatus } = usePos();
+  const { tables, orders, setTableStatus, staffUser } = usePos();
   const navigate = useNavigate();
   const [layoutMode, setLayoutMode] = useState(false);
   const [resModalOpen, setResModalOpen] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
   const [floor, setFloor] = useState([]);
+  const isManager = staffUser?.role === "Manager";
 
   useEffect(() => { tablesApi.listFloor().then(setFloor).catch(() => {}); }, [layoutMode]);
 
@@ -70,9 +73,17 @@ export default function TablesScreen() {
             style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <LayoutGrid className="w-3.5 h-3.5" /> Edit layout
           </button>
+          {isManager && (
+            <button data-testid="open-qr-codes" onClick={() => setQrModalOpen(true)}
+              className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
+              style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+              <QrCode className="w-3.5 h-3.5" /> QR Codes
+            </button>
+          )}
         </div>
       </div>
       <ReservationModal open={resModalOpen} onClose={() => setResModalOpen(false)} />
+      <QrCodesModal open={qrModalOpen} onClose={() => setQrModalOpen(false)} />
 
       {/* Spatial floor plan — tables rendered at their saved x/y/shape/rotation. */}
       <div className="relative flex-1 overflow-auto rounded-xl pos-scroll"

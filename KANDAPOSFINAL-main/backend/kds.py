@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from db import get_db
 from ws import schedule_broadcast
 from owners import get_current_owner
+from auth import require_role
 
 logger = logging.getLogger("kanda.kds")
 
@@ -194,6 +195,34 @@ async def list_tickets(
     }
 
 
+@kds_router.get("/display")
+async def customer_display(tenant: dict = Depends(kds_tenant)):
+    """Public, no-auth feed for a customer-facing screen — collection/dine-in
+    orders only, collapsed to a simple preparing/ready status. Reuses the
+    same long-lived kds_token as the kitchen tablet."""
+    db = get_db()
+    cutoff = (now_ist() - timedelta(hours=6)).isoformat()
+    cursor = db.orders.find(
+        {
+            "tenant_id": tenant["id"],
+            "type": {"$in": ["collection", "dine-in"]},
+            "status": {"$in": ["new", "in-kitchen", "ready"]},
+            "voided": {"$ne": True},
+            "placedAt": {"$gte": cutoff},
+        },
+        {"_id": 0, "number": 1, "type": 1, "status": 1, "table": 1, "customer": 1, "placedAt": 1},
+    ).sort("placedAt", 1)
+    raw = await cursor.to_list(200)
+    orders = [{
+        "number": o["number"],
+        "type": o["type"],
+        "table": o.get("table"),
+        "name": (o.get("customer") or {}).get("name"),
+        "status": "ready" if o["status"] == "ready" else "preparing",
+    } for o in raw]
+    return {"tenant": {"name": tenant.get("name")}, "orders": orders}
+
+
 class ItemStatusPayload(BaseModel):
     status: ItemStatus
 
@@ -247,6 +276,23 @@ async def recall_order(order_id: str, tenant: dict = Depends(kds_tenant)):
     res.pop("_id", None)
     schedule_broadcast("kds.updated", {"orderId": order_id, "lane": "recall"}, tenant["id"])
     return _kds_view(res, None)
+
+
+# ------------------- Manager-facing: self-serve kiosk links -------------------
+@kds_router.get("/my-token")
+async def my_kds_token(user: dict = Depends(require_role("Manager"))):
+    """Lets a tenant's own Manager fetch (and lazily create) their kiosk
+    token without needing the Platform Owner — used for the KDS tablet URL
+    and the customer-facing order-status display."""
+    db = get_db()
+    tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    token = tenant.get("kds_token")
+    if not token:
+        token = f"kds_{user['tenant_id']}_{secrets.token_urlsafe(24)}"
+        await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"kds_token": token}})
+    return {"token": token}
 
 
 # ------------------- Owner-facing: KDS token management -------------------
