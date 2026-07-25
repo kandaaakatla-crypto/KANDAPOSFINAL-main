@@ -105,7 +105,7 @@ function TimesheetTab({ weekStart, weekEnd, apiBase }) {
           <Download className="w-4 h-4" /> Export CSV
         </button>
       </div>
-      <table className="w-full text-sm">
+      <table className="w-full text-sm hidden md:table">
         <thead style={{ color: "var(--pos-muted)" }}>
           <tr style={{ borderBottom: "1px solid var(--pos-border)" }}>
             <th className="text-left py-2 px-3 uppercase text-[11px] tracking-wider">Employee</th>
@@ -133,6 +133,29 @@ function TimesheetTab({ weekStart, weekEnd, apiBase }) {
           ))}
         </tbody>
       </table>
+
+      {/* Mobile card list */}
+      <div className="md:hidden">
+        {loading && <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
+        {!loading && rows.length === 0 && <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>No data for this week.</div>}
+        <div className="space-y-2">
+          {rows.map((r) => (
+            <div key={r.user_id} data-testid={`ts-row-${r.user_id}`} className="rounded-lg p-3 text-white" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+              <div className="flex items-center justify-between">
+                <div className="font-medium">{r.user_name}</div>
+                <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{r.role}</div>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs mt-2" style={{ color: "var(--pos-muted)" }}>
+                <span>Days: <b className="text-white">{r.days_worked}</b></span>
+                <span>Hours: <b className="text-white">{r.total_hours.toFixed(2)}</b></span>
+                <span>Overtime: <b style={{ color: r.overtime_hours > 0 ? "#fcd34d" : "var(--pos-muted)" }}>{r.overtime_hours.toFixed(2)}</b></span>
+                <span>Rate: <b className="text-white">₹{r.hourly_rate.toFixed(2)}</b></span>
+              </div>
+              <div className="text-right font-bold tabular-nums mt-2">₹{r.gross_pay.toFixed(2)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

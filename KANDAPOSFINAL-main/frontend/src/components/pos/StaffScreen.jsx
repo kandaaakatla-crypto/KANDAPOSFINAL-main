@@ -93,7 +93,7 @@ export default function StaffScreen() {
       </div>
 
       <div className="flex-1 overflow-auto px-5 pb-5">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm hidden md:table">
           <thead style={{ color: "var(--pos-muted)" }}>
             <tr style={{ borderBottom: "1px solid var(--pos-border)" }}>
               <th className="text-left py-2 px-3 uppercase text-[11px] tracking-wider">Name</th>
@@ -144,6 +144,52 @@ export default function StaffScreen() {
             ))}
           </tbody>
         </table>
+
+        {/* Mobile card list */}
+        <div className="md:hidden">
+          {loading && <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
+          {!loading && visible.length === 0 && (
+            <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>No employees yet — tap Add to create one.</div>
+          )}
+          <div className="divide-y" style={{ borderColor: "var(--pos-border)" }}>
+            {visible.map((s) => (
+              <div key={s.id} data-testid={`staff-row-${s.id}`} className="py-3 flex flex-col gap-2 text-white">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ background: "var(--pos-blue)" }}>{s.initials}</div>
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{s.name}</div>
+                      <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{s.role}{s.phone ? ` · ${s.phone}` : ""}</div>
+                    </div>
+                  </div>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full shrink-0" style={{
+                    background: s.active ? "#0e2515" : "#2b1212",
+                    color: s.active ? "#86efac" : "#fca5a5",
+                  }}>{s.active ? "Active" : "Inactive"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm tabular-nums" style={{ color: "var(--pos-muted)" }}>
+                    {s.pay_type === "monthly"
+                      ? (s.monthly_pay ? `₹${s.monthly_pay.toLocaleString("en-IN")}/mo` : "—")
+                      : (s.hourly_rate ? `₹${s.hourly_rate.toFixed(2)}/hr` : "—")}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button data-testid={`staff-edit-${s.id}`} onClick={() => openEdit(s)}
+                      className="pos-btn w-10 h-10 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}>
+                      <Pencil className="w-4 h-4 text-white" />
+                    </button>
+                    {s.active && (
+                      <button data-testid={`staff-deactivate-${s.id}`} onClick={() => deactivate(s)}
+                        className="pos-btn w-10 h-10 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}>
+                        <Trash2 className="w-4 h-4 text-white" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>

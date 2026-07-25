@@ -170,7 +170,7 @@ export default function InventoryScreen() {
       )}
 
       <div className="flex-1 overflow-y-auto pos-scroll rounded-xl" style={{ border: "1px solid var(--pos-border)" }}>
-        <table className="w-full text-sm">
+        <table className="w-full text-sm hidden md:table">
           <thead>
             <tr style={{ background: "var(--pos-panel)" }}>
               {["Item", "In Stock", "Reorder Level", "Value", "Supplier", "Status", "Adjust"].map((h) => (
@@ -221,6 +221,50 @@ export default function InventoryScreen() {
             })}
           </tbody>
         </table>
+
+        {/* Mobile card list */}
+        <div className="md:hidden divide-y" style={{ borderColor: "var(--pos-border)" }}>
+          {filtered.length === 0 && (
+            <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>No items match.</div>
+          )}
+          {filtered.map((i) => {
+            const low = i.stock <= i.reorder;
+            return (
+              <div key={i.id} data-testid={`inv-row-${i.id}`} className="p-3 flex flex-col gap-2" style={{ background: low ? "#2a141077" : "transparent", borderColor: "var(--pos-border)" }}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-medium text-white text-sm">{i.name}</div>
+                  {low ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase shrink-0" style={{ background: "#3a1515", color: "#f87171" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase shrink-0" style={{ background: "#13271a", color: "#22c55e" }}><PackageCheck className="w-3 h-3" /> OK</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: "var(--pos-muted)" }}>
+                  <span>Stock: <b style={{ color: low ? "#f87171" : "#7ee2a8" }}>{i.stock} {i.unit}</b></span>
+                  <span>Reorder at: {i.reorder} {i.unit}</span>
+                  <span>Value: ₹{(i.stock * (i.cost_per_unit || 0)).toFixed(0)}</span>
+                  {i.supplier && <span>Supplier: {i.supplier}</span>}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <button data-testid={`stock-minus-${i.id}`} onClick={() => adjustStock(i.id, -1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Minus className="w-4 h-4 text-white" /></button>
+                  <button data-testid={`stock-plus-${i.id}`} onClick={() => adjustStock(i.id, 1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Plus className="w-4 h-4 text-white" /></button>
+                  {low && (
+                    <button data-testid={`reorder-${i.id}`} onClick={() => doReorder(i)}
+                      className="pos-btn h-10 px-3 rounded-lg text-xs font-bold text-white flex items-center gap-1" style={{ background: "var(--pos-blue)" }}>
+                      <Truck className="w-4 h-4" /> Reorder
+                    </button>
+                  )}
+                  {isManager && (
+                    <>
+                      <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-4 h-4 text-white" /></button>
+                      <button data-testid={`inv-delete-${i.id}`} onClick={() => remove(i)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Trash2 className="w-4 h-4 text-red-400" /></button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>

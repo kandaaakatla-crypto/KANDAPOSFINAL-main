@@ -6,7 +6,7 @@ import CartPanel from "./CartPanel";
 import PaymentModal from "./PaymentModal";
 import { CashDrawerPanel, TipPoolPanel } from "./OpsPanels";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Bike, ShoppingBag, UtensilsCrossed, Search, UserPlus, X, Phone, Info, DollarSign, Coins } from "lucide-react";
+import { Bike, ShoppingBag, UtensilsCrossed, Search, UserPlus, X, Phone, Info, DollarSign, Coins, ShoppingCart } from "lucide-react";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ export default function OrderScreen() {
   const [payOpen, setPayOpen] = useState(false);
   const [zReportOpen, setZReportOpen] = useState(false);
   const [tipPoolOpen, setTipPoolOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   // new — checkout enhancements
   const [tipPct, setTipPct] = useState(0);
   const [coupon, setCoupon] = useState(null); // {code, kind, value, discount}
@@ -46,6 +47,24 @@ export default function OrderScreen() {
   const [newCust, setNewCust] = useState(null); // {name, address, postcode}
   const [collectionName, setCollectionName] = useState("");
   const [tableNo, setTableNo] = useState("");
+  const [suggestOpen, setSuggestOpen] = useState(false);
+
+  useEffect(() => { setSuggestOpen(false); }, [orderType]);
+
+  const matchCustomers = (query) => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return customers.filter((c) =>
+      c.name.toLowerCase().includes(q) || c.phone.replace(/\s/g, "").includes(q.replace(/\s/g, ""))
+    ).slice(0, 6);
+  };
+  const deliveryMatches = suggestOpen ? matchCustomers(phoneQuery) : [];
+  const collectionMatches = suggestOpen ? matchCustomers(collectionName) : [];
+
+  const pickCustomer = (found) => {
+    setCustomer(found); setNewCust(null); setSuggestOpen(false);
+    loyaltyApi.lookup(found.phone).then((r) => setLoyaltyBalance(r.found ? (r.loyalty_points || 0) : 0)).catch(() => setLoyaltyBalance(0));
+  };
 
   // Editing an existing unpaid order (occupied table / running tab).
   const [editingOrderId, setEditingOrderId] = useState(null);
@@ -93,14 +112,7 @@ export default function OrderScreen() {
   const lookupCustomer = () => {
     if (phoneQuery.trim().length < 5) { toast.error("Enter a phone number to search"); return; }
     const found = customers.find((c) => c.phone.replace(/\s/g, "").includes(phoneQuery.replace(/\s/g, "")));
-    if (found) {
-      setCustomer(found); setNewCust(null); toast.success(`Customer found: ${found.name}`);
-      // Look up loyalty balance for redeem suggestions
-      loyaltyApi.lookup(found.phone).then((r) => {
-        if (r.found) setLoyaltyBalance(r.loyalty_points || 0);
-        else setLoyaltyBalance(0);
-      }).catch(() => setLoyaltyBalance(0));
-    }
+    if (found) { pickCustomer(found); toast.success(`Customer found: ${found.name}`); }
     else { setCustomer(null); setNewCust({ phone: phoneQuery, name: "", address: "", postcode: "" }); toast.info("No customer found — add new"); }
   };
 
@@ -158,7 +170,7 @@ export default function OrderScreen() {
     setPhoneQuery(""); setCollectionName(""); setTableNo("");
     setTipPct(0); setCoupon(null); setCustomerEmail(""); setSendReceipt(false);
     setLoyaltyBalance(0); setRedeemPoints(0);
-    setEditingOrderId(null);
+    setEditingOrderId(null); setCartOpen(false); setSuggestOpen(false);
   };
 
   const sendToKitchen = async () => {
@@ -248,9 +260,9 @@ export default function OrderScreen() {
   const availableTables = tables.filter((t) => t.status === "available");
 
   return (
-    <div className="flex h-full" data-testid="order-screen">
+    <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden pos-scroll pb-24 md:pb-0" data-testid="order-screen">
       {/* Left: order type + customer */}
-      <div className="w-[270px] shrink-0 flex flex-col gap-3 p-3 overflow-y-auto pos-scroll" style={{ borderRight: "1px solid var(--pos-border)" }}>
+      <div className="w-full md:w-[270px] md:shrink-0 flex flex-col gap-3 p-3 overflow-visible md:overflow-y-auto pos-scroll border-b md:border-b-0 md:border-r" style={{ borderColor: "var(--pos-border)" }}>
         {editingOrder && (
           <div className="rounded-xl p-3 flex items-start gap-2 fade-in" data-testid="reopen-banner"
             style={{ background: "#14233f", border: "1px solid #3b82f6" }}>
@@ -323,13 +335,31 @@ export default function OrderScreen() {
         {orderType === "delivery" && (
           <div className="rounded-xl p-3 fade-in" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
             <div className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: "var(--pos-muted)" }}>Customer Lookup</div>
-            <div className="flex gap-2">
-              <Input data-testid="phone-input" value={phoneQuery} onChange={(e) => setPhoneQuery(e.target.value)} placeholder="Phone number..."
-                onKeyDown={(e) => e.key === "Enter" && lookupCustomer()}
-                className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-              <button data-testid="phone-search-btn" onClick={lookupCustomer} className="pos-btn h-10 w-10 shrink-0 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-blue)" }}>
-                <Search className="w-4 h-4 text-white" />
-              </button>
+            <div className="relative">
+              <div className="flex gap-2">
+                <Input data-testid="phone-input" value={phoneQuery}
+                  onChange={(e) => { setPhoneQuery(e.target.value); setSuggestOpen(true); }}
+                  onFocus={() => setSuggestOpen(true)}
+                  placeholder="Name or phone number..."
+                  onKeyDown={(e) => e.key === "Enter" && lookupCustomer()}
+                  className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                <button data-testid="phone-search-btn" onClick={lookupCustomer} className="pos-btn h-10 w-10 shrink-0 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-blue)" }}>
+                  <Search className="w-4 h-4 text-white" />
+                </button>
+              </div>
+              {suggestOpen && !customer && deliveryMatches.length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 z-10 rounded-lg overflow-hidden fade-in" data-testid="customer-suggestions"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                  {deliveryMatches.map((c) => (
+                    <button key={c.id} data-testid={`customer-suggestion-${c.id}`} type="button" onClick={() => pickCustomer(c)}
+                      className="pos-btn w-full text-left px-3 py-2.5 text-sm flex items-center justify-between gap-2"
+                      style={{ color: "white", borderBottom: "1px solid var(--pos-border)" }}>
+                      <span className="truncate">{c.name}</span>
+                      <span className="text-xs shrink-0" style={{ color: "var(--pos-muted)" }}>{c.phone}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {customer && (
@@ -362,7 +392,26 @@ export default function OrderScreen() {
         {orderType === "collection" && (
           <div className="rounded-xl p-3 fade-in space-y-2" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
             <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--pos-muted)" }}>Collection Details</div>
-            <Input data-testid="collection-name" placeholder="Customer name (optional)" value={collectionName} onChange={(e) => setCollectionName(e.target.value)} className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <div className="relative">
+              <Input data-testid="collection-name" placeholder="Customer name (optional)" value={collectionName}
+                onChange={(e) => { setCollectionName(e.target.value); setSuggestOpen(true); }}
+                onFocus={() => setSuggestOpen(true)}
+                className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              {suggestOpen && collectionMatches.length > 0 && (
+                <div className="absolute left-0 right-0 mt-1 z-10 rounded-lg overflow-hidden fade-in" data-testid="collection-suggestions"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                  {collectionMatches.map((c) => (
+                    <button key={c.id} data-testid={`collection-suggestion-${c.id}`} type="button"
+                      onClick={() => { setCollectionName(c.name); setPhoneQuery(c.phone); setSuggestOpen(false); }}
+                      className="pos-btn w-full text-left px-3 py-2.5 text-sm flex items-center justify-between gap-2"
+                      style={{ color: "white", borderBottom: "1px solid var(--pos-border)" }}>
+                      <span className="truncate">{c.name}</span>
+                      <span className="text-xs shrink-0" style={{ color: "var(--pos-muted)" }}>{c.phone}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Input data-testid="collection-phone" placeholder="Phone (optional)" value={phoneQuery} onChange={(e) => setPhoneQuery(e.target.value)} className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
             <div className="text-xs" style={{ color: "var(--pos-muted)" }}>Est. ready in <span className="text-white font-semibold">15–20 min</span></div>
           </div>
@@ -385,14 +434,14 @@ export default function OrderScreen() {
           </div>
         )}
 
-        {/* Categories */}
-        <div className="rounded-xl p-3 flex-1" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+        {/* Categories — horizontal chip scroll on mobile, vertical list on desktop */}
+        <div className="rounded-xl p-3 md:flex-1" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: "var(--pos-muted)" }}>Categories</div>
-          <div className="space-y-1.5">
+          <div className="flex gap-1.5 overflow-x-auto pos-scroll pb-1 -mx-1 px-1 md:mx-0 md:px-0 md:flex-col md:gap-0 md:space-y-1.5 md:overflow-visible md:pb-0">
             {CATEGORIES.map((c) => (
               <button key={c.id} data-testid={`cat-${c.id}`} onClick={() => setActiveCat(c.id)}
-                className="cat-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-left"
-                style={{ background: activeCat === c.id ? "var(--pos-panel-2)" : "transparent", color: activeCat === c.id ? "#fff" : "var(--pos-muted)", border: `1px solid ${activeCat === c.id ? c.color : "transparent"}` }}>
+                className="cat-btn shrink-0 md:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-left whitespace-nowrap md:whitespace-normal"
+                style={{ background: activeCat === c.id ? "var(--pos-panel-2)" : "transparent", color: activeCat === c.id ? "#fff" : "var(--pos-muted)", border: `1px solid ${activeCat === c.id ? c.color : "var(--pos-border)"}` }}>
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
                 {c.name}
               </button>
@@ -402,7 +451,7 @@ export default function OrderScreen() {
       </div>
 
       {/* Center: item grid */}
-      <div className="flex-1 min-w-0 p-3 overflow-y-auto pos-scroll">
+      <div className="w-full md:flex-1 md:min-w-0 p-3 overflow-visible md:overflow-y-auto pos-scroll">
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3" data-testid="item-grid">
           {items.map((item) => {
             const cat = CATEGORIES.find((c) => c.id === item.catId);
@@ -428,8 +477,19 @@ export default function OrderScreen() {
         </div>
       </div>
 
+      {/* Mobile-only: persistent bar to open the cart sheet */}
+      {(cart.length > 0 || editingOrder) && !cartOpen && (
+        <button data-testid="open-cart-bar" onClick={() => setCartOpen(true)}
+          className="md:hidden fixed bottom-16 inset-x-0 z-40 h-14 flex items-center justify-between px-5 font-bold text-white"
+          style={{ background: "var(--pos-accent)" }}>
+          <span className="flex items-center gap-2"><ShoppingCart className="w-4 h-4" /> {cart.length} item{cart.length === 1 ? "" : "s"}</span>
+          <span>₹{total.toFixed(2)} · View Cart</span>
+        </button>
+      )}
+
       {/* Right: cart */}
       <CartPanel
+        open={cartOpen} onClose={() => setCartOpen(false)}
         cart={cart} orderType={orderType} customer={orderCustomer()}
         subtotal={subtotal} deliveryFee={deliveryFee} discount={discount} discountAmt={discountAmt} total={total}
         onQty={updateQty} onRemove={removeLine} onDiscount={setDiscount}

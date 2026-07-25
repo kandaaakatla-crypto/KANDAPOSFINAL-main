@@ -169,7 +169,7 @@ export default function MenuScreen() {
       </div>
 
       <div className="flex-1 overflow-y-auto pos-scroll rounded-xl" style={{ border: "1px solid var(--pos-border)" }}>
-        <table className="w-full text-sm">
+        <table className="w-full text-sm hidden md:table">
           <thead>
             <tr style={{ background: "var(--pos-panel)" }}>
               {["Item", "Description", "Price", "Available", "actions"].map((h) => (
@@ -206,6 +206,38 @@ export default function MenuScreen() {
             ))}
           </tbody>
         </table>
+
+        {/* Mobile card list */}
+        <div className="md:hidden divide-y" style={{ borderColor: "var(--pos-border)" }}>
+          {items.map((m) => (
+            <div key={m.id} data-testid={`menu-row-${m.id}`} className="p-3 flex flex-col gap-2" style={{ opacity: m.available ? 1 : 0.55 }}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="font-medium text-white text-sm">{m.name}</div>
+                  {m.desc && <div className="text-xs truncate mt-0.5" style={{ color: "var(--pos-muted)" }}>{m.desc}</div>}
+                </div>
+                <Switch data-testid={`toggle-${m.id}`} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} className="shrink-0" />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-semibold tabular-nums" style={{ color: "var(--pos-accent)" }}>
+                  {m.isPizza ? `₹${m.sizes.sm.toFixed(2)} / ₹${m.sizes.md.toFixed(2)} / ₹${m.sizes.lg.toFixed(2)}` : `₹${(m.price || 0).toFixed(2)}`}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {editable && isManager && (
+                    <button data-testid={`recipe-btn-${m.id}`} onClick={() => setRecipeFor(m)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", color: "var(--pos-accent)" }} title="Manage recipe">
+                      <ChefHat className="w-4 h-4" />
+                    </button>
+                  )}
+                  {editable && (
+                    <button data-testid={`edit-menu-${m.id}`} onClick={() => openEdit(m)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>

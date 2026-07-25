@@ -102,6 +102,9 @@ function App() {
                   <Route path="menu" element={<MenuScreen />} />
                   <Route path="staff" element={<StaffScreen />} />
                   <Route path="workforce" element={<WorkforceScreen />} />
+                  <Route path="customers" element={<CustomersScreen />} />
+                  <Route path="reports" element={<ReportsScreen />} />
+                  <Route path="inventory" element={<InventoryScreen />} />
                   <Route path="voice" element={<DashVoice />} />
                   <Route path="digest" element={<DashDigest />} />
                   <Route path="sms" element={<DashSms />} />
@@ -133,12 +136,9 @@ function App() {
                   <Route path="/" element={<OrderScreen />} />
                   <Route path="/orders" element={<OrdersScreen />} />
                   <Route path="/tables" element={<TablesScreen />} />
-                  <Route path="/customers" element={<CustomersScreen />} />
-                  <Route path="/inventory" element={<InventoryScreen />} />
                   <Route path="/menu" element={<MenuScreen />} />
                   <Route path="/dispatch" element={<DispatchScreen />} />
                   <Route path="/packing" element={<PackingScreen />} />
-                  <Route path="/reports" element={<ReportsScreen />} />
                   <Route path="/workforce" element={<WorkforceScreen />} />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />

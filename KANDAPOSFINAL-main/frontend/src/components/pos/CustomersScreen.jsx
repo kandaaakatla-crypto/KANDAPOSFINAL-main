@@ -50,21 +50,21 @@ export default function CustomersScreen() {
 
   return (
     <div className="h-full flex flex-col p-4 gap-4" data-testid="customers-screen">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-white">Customers</h2>
-        <div className="flex gap-2">
-          <div className="relative">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[180px] sm:flex-none">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
             <Input data-testid="customer-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, phone, address..."
-              className="h-10 pl-9 w-72 text-white" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+              className="h-10 pl-9 w-full sm:w-72 text-white" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
           </div>
           <button data-testid="add-customer-btn" onClick={() => setEditing({ ...EMPTY })}
-            className="pos-btn h-10 px-4 rounded-lg text-sm font-bold text-white flex items-center gap-2" style={{ background: "var(--pos-accent)" }}>
+            className="pos-btn h-10 px-4 rounded-lg text-sm font-bold text-white flex items-center gap-2 shrink-0" style={{ background: "var(--pos-accent)" }}>
             <UserPlus className="w-4 h-4" /> Add Customer
           </button>
           {isManager && (
             <button data-testid="open-trash-btn" onClick={openTrash}
-              className="pos-btn h-10 px-3 rounded-lg text-sm font-bold flex items-center gap-2"
+              className="pos-btn h-10 px-3 rounded-lg text-sm font-bold flex items-center gap-2 shrink-0"
               style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
               <Undo2 className="w-4 h-4" /> Recently deleted
             </button>

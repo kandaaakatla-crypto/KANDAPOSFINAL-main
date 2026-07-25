@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { Pizza, ShoppingCart, ClipboardList, LayoutGrid, Users, Boxes, BookOpen, BarChart3, Bike, PackageCheck, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X } from "lucide-react";
+import { Pizza, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, PackageCheck, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
@@ -18,12 +18,10 @@ const PRIMARY_NAV = [
 ];
 
 // Secondary — visible in the desktop sidebar and inside the mobile "More" sheet.
+// Customers / Inventory / Reports live in the manager Dashboard only (/biz/*).
 const SECONDARY_NAV = [
   { to: "/dispatch", label: "Dispatch", icon: Bike },
   { to: "/packing", label: "Packing", icon: PackageCheck },
-  { to: "/customers", label: "Customers", icon: Users },
-  { to: "/inventory", label: "Inventory", icon: Boxes },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
 ];
 
 const ALL_STAFF_WORKFORCE = { to: "/workforce", label: "My Rota", icon: CalendarDays };

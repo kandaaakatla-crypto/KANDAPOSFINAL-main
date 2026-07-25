@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Minus, Plus, Trash2, Percent, Send, CreditCard, Bike, ShoppingBag, UtensilsCrossed, Tag, Gift, Mail, Coins } from "lucide-react";
+import { Minus, Plus, Trash2, Percent, Send, CreditCard, Bike, ShoppingBag, UtensilsCrossed, Tag, Gift, Mail, Coins, X } from "lucide-react";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { couponsApi, loyaltyApi } from "../../api/client";
@@ -18,6 +18,9 @@ export default function CartPanel({
   loyaltyBalance, redeemPoints, onRedeemPoints,
   // editing an existing (unpaid) order — occupied table / running tab
   runningBill = null,
+  // mobile: cart renders as a full-screen sheet, gated by open/onClose.
+  // Desktop (md+) ignores these and stays a permanent sidebar.
+  open = false, onClose,
 }) {
   const TypeIcon = TYPE_ICON[orderType];
 
@@ -41,10 +44,17 @@ export default function CartPanel({
   };
 
   return (
-    <div className="w-[340px] shrink-0 flex flex-col h-full" style={{ background: "var(--pos-panel)", borderLeft: "1px solid var(--pos-border)" }} data-testid="cart-panel">
+    <div
+      className={`${open ? "fixed inset-0 z-50 flex" : "hidden"} md:static md:z-auto md:flex md:w-[340px] md:shrink-0 flex-col h-full`}
+      style={{ background: "var(--pos-panel)", borderLeft: "1px solid var(--pos-border)" }}
+      data-testid="cart-panel"
+    >
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
+      <div className="px-4 py-3 flex items-center justify-between shrink-0" style={{ borderBottom: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-2">
+          <button data-testid="cart-close-btn" onClick={onClose} className="pos-btn -ml-2 w-11 h-11 flex items-center justify-center rounded-lg md:hidden">
+            <X className="w-5 h-5 text-white" />
+          </button>
           <TypeIcon className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
           <span className="font-bold text-white text-sm capitalize">{orderType} Order</span>
         </div>
