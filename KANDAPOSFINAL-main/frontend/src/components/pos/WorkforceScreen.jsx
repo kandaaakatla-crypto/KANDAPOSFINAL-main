@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { ChevronLeft, ChevronRight, Download, PlusCircle, Trash2, CheckCircle2, Clock, FileText } from "lucide-react";
 import { toast } from "sonner";
 
-function startOfWeek(d) {
+export function startOfWeek(d) {
   const r = new Date(d);
   const day = (r.getUTCDay() + 6) % 7; // Mon=0
   r.setUTCDate(r.getUTCDate() - day);
@@ -371,7 +371,7 @@ function LiveTab() {
   );
 }
 
-function MyRotaTab({ weekStart, weekEnd }) {
+export function MyRotaTab({ weekStart, weekEnd }) {
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(true);
 

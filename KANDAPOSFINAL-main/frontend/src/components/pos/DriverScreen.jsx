@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
 import { ordersApi } from "../../api/client";
 import { toast } from "sonner";
 import { Bike, Phone, MapPin, CheckCircle2, IndianRupee, Loader2, LogOut, Plus, RefreshCw, CalendarDays } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { MyRotaTab, startOfWeek } from "./WorkforceScreen";
 
 const Card = ({ order, mine, busy, onClaim, onOnTheWay, onCash, onDelivered }) => {
   const c = order.customer || {};
@@ -95,6 +97,9 @@ export default function DriverScreen() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [busy, setBusy] = useState(true);
+  const [rotaOpen, setRotaOpen] = useState(false);
+  const weekStart = useMemo(() => startOfWeek(new Date()), []);
+  const weekEnd = useMemo(() => { const d = new Date(weekStart); d.setUTCDate(d.getUTCDate() + 7); return d; }, [weekStart]);
 
   // If a non-Driver lands here, send them home.
   useEffect(() => {
@@ -145,7 +150,7 @@ export default function DriverScreen() {
           </div>
         </div>
         <div className="flex items-center gap-1.5">
-          <button data-testid="driver-rota-btn" onClick={() => navigate("/workforce")}
+          <button data-testid="driver-rota-btn" onClick={() => setRotaOpen(true)}
             className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
             style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <CalendarDays className="w-3.5 h-3.5" /> My Rota
@@ -191,6 +196,13 @@ export default function DriverScreen() {
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       )}
+
+      <Dialog open={rotaOpen} onOpenChange={setRotaOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+          <DialogHeader><DialogTitle className="text-white">My Rota</DialogTitle></DialogHeader>
+          <MyRotaTab weekStart={weekStart} weekEnd={weekEnd} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

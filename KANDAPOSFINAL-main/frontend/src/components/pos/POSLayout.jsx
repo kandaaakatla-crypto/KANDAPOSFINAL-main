@@ -38,6 +38,12 @@ export default function POSLayout() {
     return () => clearInterval(t);
   }, []);
 
+  // Drivers get their own stripped-down app (deliveries + rota only) — never
+  // the full POS chrome, even if they hit one of these routes directly.
+  useEffect(() => {
+    if (staffUser?.role === "Driver") navigate("/driver", { replace: true });
+  }, [staffUser, navigate]);
+
   const activeCount = orders.filter((o) => ["new", "in-kitchen", "ready", "out-for-delivery"].includes(o.status)).length;
 
   // Reused nav pill for the desktop rail.
