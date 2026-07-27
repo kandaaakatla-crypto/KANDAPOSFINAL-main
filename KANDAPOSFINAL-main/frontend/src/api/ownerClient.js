@@ -60,6 +60,9 @@ export const ownerData = {
   // KDS token
   kdsToken: (id) => ownerApi.get(`/tenants/${id}/kds-token`).then((r) => r.data),
   rotateKdsToken: (id) => ownerApi.post(`/tenants/${id}/kds-token/rotate`).then((r) => r.data),
+  // Features / business type
+  updateFeatures: (id, payload) => ownerApi.patch(`/tenants/${id}/features`, payload).then((r) => r.data),
+  updateBusinessType: (id, businessType) => ownerApi.patch(`/tenants/${id}/business-type`, null, { params: { business_type: businessType } }).then((r) => r.data),
   // Ops
   errors: (params = {}) => ownerApi.get("/ops/errors", { params }).then((r) => r.data),
   audit: (params = {}) => ownerApi.get("/ops/audit", { params }).then((r) => r.data),

@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDash, canAddLocation } from "../../store/DashContext";
-import { Lock, ShoppingBag, IndianRupee, Users, Boxes, MapPin, Plus, AlertCircle } from "lucide-react";
+import { Lock, ShoppingBag, IndianRupee, Users, Boxes, MapPin, Plus, AlertCircle, Settings2 } from "lucide-react";
+import { toast } from "sonner";
+import { Switch } from "../ui/switch";
 import PeakHoursHeatmap from "./PeakHoursHeatmap";
+
+const FEATURE_LABELS = [
+  { key: "tables", label: "Tables / floor plan", desc: "Dine-in seating, table QR ordering." },
+  { key: "kitchen_display", label: "Kitchen display (KDS)", desc: "Kitchen tablet ticket screen." },
+  { key: "packing_station", label: "Packing station", desc: "Pack-and-check screen for collection/delivery." },
+  { key: "dispatch", label: "Dispatch & drivers", desc: "Delivery driver assignment and tracking." },
+  { key: "meal_deals", label: "Meal deals", desc: "Pick-N-per-category bundle pricing." },
+  { key: "pizza_sizing", label: "Multi-size items", desc: "Small/medium/large pricing on a menu item." },
+];
 
 /**
  * Multi-store overview — one card per location the user can see.
@@ -16,6 +27,8 @@ export default function DashHome() {
   const [summary, setSummary] = useState(null);
   const [staffCount, setStaffCount] = useState(0);
   const [lowCount, setLowCount] = useState(0);
+  const [tenantInfo, setTenantInfo] = useState(null);
+  const [savingFeature, setSavingFeature] = useState(null);
 
   useEffect(() => {
     api.get("/locations").then((r) => {
@@ -27,7 +40,18 @@ export default function DashHome() {
     api.get("/reports/summary").then((r) => setSummary(r.data)).catch(() => {});
     api.get("/staff").then((r) => setStaffCount(r.data.filter((s) => s.active).length)).catch(() => {});
     api.get("/inventory").then((r) => setLowCount(r.data.filter((i) => i.stock <= i.reorder).length)).catch(() => {});
+    api.get("/tenant/info").then((r) => setTenantInfo(r.data)).catch(() => {});
   }, [api, user.location_ids]);
+
+  const toggleFeature = async (key, value) => {
+    setSavingFeature(key);
+    try {
+      const r = await api.patch("/tenant/features", { [key]: value });
+      setTenantInfo(r.data);
+    } catch {
+      toast.error("Could not update that setting");
+    } finally { setSavingFeature(null); }
+  };
 
   const roleLabel = { owner: "Owner", area_manager: "Area Manager", manager: "Manager" }[user.dash_role];
 
@@ -50,6 +74,34 @@ export default function DashHome() {
 
       {/* Peak hours heatmap — reveals your busiest weekday × hour buckets */}
       <PeakHoursHeatmap days={28} />
+
+      {/* Store type + feature toggles */}
+      {tenantInfo && (
+        <div className="rounded-xl p-4" data-testid="store-features-card" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+          <div className="flex items-center gap-2 mb-1">
+            <Settings2 className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
+            <h2 className="text-base font-bold text-white">Store features</h2>
+            <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
+              {tenantInfo.businessType === "retail" ? "Retail store" : "Restaurant"}
+            </span>
+          </div>
+          <p className="text-xs mb-4" style={{ color: "var(--pos-muted)" }}>
+            Turn any of these on or off for this store — none of them are locked to restaurant or retail.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {FEATURE_LABELS.map(({ key, label, desc }) => (
+              <div key={key} data-testid={`feature-row-${key}`} className="flex items-center justify-between gap-3 rounded-lg p-3" style={{ background: "var(--pos-panel-2)" }}>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-white">{label}</div>
+                  <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{desc}</div>
+                </div>
+                <Switch data-testid={`feature-toggle-${key}`} checked={!!tenantInfo.features?.[key]} disabled={savingFeature === key}
+                  onCheckedChange={(v) => toggleFeature(key, v)} className="shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Store cards */}
       <div>

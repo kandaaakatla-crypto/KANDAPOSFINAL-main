@@ -24,6 +24,7 @@ from owners import (
 )
 from tenants import DEMO_TENANT
 from subscriptions import subscribe_tenant, cancel_tenant_subscription, PLANS, grace_state
+from models import default_features, BusinessType, TenantFeaturesUpdate, TenantInfo
 
 
 owner_router = APIRouter(prefix="/owner")
@@ -72,6 +73,8 @@ class TenantPublic(BaseModel):
     contact_email: Optional[str] = None
     store: Optional[dict] = None
     created_at: Optional[str] = None
+    business_type: Optional[str] = "restaurant"
+    features: Optional[dict] = None
 
 
 class TenantCreateRequest(BaseModel):
@@ -82,6 +85,7 @@ class TenantCreateRequest(BaseModel):
     manager_name: str = "Manager"
     manager_pin: str  # 4-digit PIN for the seeded Manager
     plan: str = "trial"
+    business_type: BusinessType = "restaurant"
 
 
 class ImpersonateRequest(BaseModel):
@@ -237,6 +241,38 @@ async def tenant_detail(tenant_id: str, owner: dict = Depends(get_current_owner)
     }
 
 
+@owner_router.patch("/tenants/{tenant_id}/features", response_model=TenantInfo)
+async def update_tenant_features_as_owner(tenant_id: str, payload: TenantFeaturesUpdate, owner: dict = Depends(get_current_owner)):
+    """Platform Owner control panel — flip any feature on/off for any client
+    store without touching code. Independent of business_type and plan; the
+    Owner can hand-tune exactly what a given client's subscription includes."""
+    db = get_db()
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    business_type = tenant.get("business_type", "restaurant")
+    update = payload.model_dump(exclude_none=True)
+    merged = {**default_features(business_type), **(tenant.get("features") or {}), **update}
+    await db.tenants.update_one({"id": tenant_id}, {"$set": {"features": merged}})
+    return TenantInfo(id=tenant["id"], slug=tenant.get("slug", tenant["id"]), name=tenant.get("name", ""),
+                       businessType=business_type, features=merged)
+
+
+@owner_router.patch("/tenants/{tenant_id}/business-type", response_model=TenantPublic)
+async def update_tenant_business_type(tenant_id: str, business_type: BusinessType, owner: dict = Depends(get_current_owner)):
+    """Switch a store between restaurant and retail after the fact. Doesn't
+    touch features already set — only re-derives defaults for any feature
+    that's never been explicitly toggled."""
+    db = get_db()
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    merged = {**default_features(business_type), **(tenant.get("features") or {})}
+    await db.tenants.update_one({"id": tenant_id}, {"$set": {"business_type": business_type, "features": merged}})
+    updated = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    return TenantPublic(**updated)
+
+
 @owner_router.post("/tenants", response_model=TenantPublic)
 async def create_tenant(payload: TenantCreateRequest, owner: dict = Depends(get_current_owner)):
     db = get_db()
@@ -259,6 +295,8 @@ async def create_tenant(payload: TenantCreateRequest, owner: dict = Depends(get_
         "contact_email": payload.contact_email,
         "store": payload.store.model_dump(),
         "created_at": now_iso,
+        "business_type": payload.business_type,
+        "features": default_features(payload.business_type),
     }
     await db.tenants.insert_one(tenant_doc)
 

@@ -16,6 +16,10 @@ export const kdsApi = {
     axios.patch(`${API}/kds/orders/${orderId}/recall`, {}, { params: { token } }).then((r) => r.data),
   display: (token) =>
     axios.get(`${API}/kds/display`, { params: { token } }).then((r) => r.data),
+  packing: (token) =>
+    axios.get(`${API}/kds/packing`, { params: { token } }).then((r) => r.data),
+  setPacked: (token, orderId, packed) =>
+    axios.patch(`${API}/kds/packing/${orderId}/pack`, { packed }, { params: { token } }).then((r) => r.data),
 };
 
 export const KDS_WS_URL = (token) => {

@@ -4,10 +4,10 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends, Request
 
 from db import get_db
-from auth import verify_pin, create_access_token, get_current_user
+from auth import verify_pin, create_access_token, get_current_user, require_role
 from tenants import resolve_tenant_from_request, tenant_filter
 from subscriptions import grace_state
-from models import LoginRequest, LoginResponse, UserPublic
+from models import LoginRequest, LoginResponse, UserPublic, TenantInfo, TenantFeaturesUpdate, default_features
 
 router = APIRouter()
 
@@ -45,6 +45,38 @@ async def login(payload: LoginRequest, request: Request):
 @router.get("/auth/me", response_model=UserPublic)
 async def me(user: dict = Depends(get_current_user)):
     return UserPublic(id=user["id"], name=user["name"], role=user["role"], initials=user["initials"])
+
+
+@router.get("/tenant/info", response_model=TenantInfo)
+async def tenant_info(user: dict = Depends(get_current_user)):
+    """Business type + feature flags — drives which nav items/screens the POS
+    and Dashboard show (Tables/KDS/Packing/Dispatch/meal deals/pizza sizing)."""
+    db = get_db()
+    tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    business_type = tenant.get("business_type", "restaurant")
+    features = {**default_features(business_type), **(tenant.get("features") or {})}
+    return TenantInfo(id=tenant["id"], slug=tenant.get("slug", tenant["id"]), name=tenant.get("name", ""),
+                       businessType=business_type, features=features)
+
+
+@router.patch("/tenant/features", response_model=TenantInfo)
+async def update_tenant_features(payload: TenantFeaturesUpdate, user: dict = Depends(require_role("Manager"))):
+    """Lets a tenant's own Manager/Owner/Area Manager turn individual
+    restaurant-only features on or off, independent of business_type."""
+    db = get_db()
+    update = payload.model_dump(exclude_none=True)
+    if not update:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    business_type = tenant.get("business_type", "restaurant")
+    merged = {**default_features(business_type), **(tenant.get("features") or {}), **update}
+    await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"features": merged}})
+    return TenantInfo(id=tenant["id"], slug=tenant.get("slug", tenant["id"]), name=tenant.get("name", ""),
+                       businessType=business_type, features=merged)
 
 
 @router.get("/billing/status")

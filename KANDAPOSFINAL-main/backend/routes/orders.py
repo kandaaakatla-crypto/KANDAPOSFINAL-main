@@ -142,14 +142,17 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
 
     # Loyalty: burn requested points first (so earn is computed on the
     # already-discounted total), then credit on the resulting paid amount.
+    # Skipped entirely if the tenant has the loyalty feature turned off.
+    tenant_doc = await get_tenant(user, db)
+    loyalty_on = (tenant_doc.get("features") or {}).get("loyalty", True)
     redeemed = 0
-    if payload.redeem_loyalty_points and payload.redeem_loyalty_points > 0:
+    if loyalty_on and payload.redeem_loyalty_points and payload.redeem_loyalty_points > 0:
         try:
             redeemed = await loyalty_mod.burn_for_order(db, user, doc, int(payload.redeem_loyalty_points))
         except HTTPException:
             redeemed = 0  # surfaces in toast at frontend; don't fail the order
     earned = 0
-    if payload.payment in ("cash", "card"):
+    if loyalty_on and payload.payment in ("cash", "card"):
         earned = await loyalty_mod.credit_for_order(db, user, doc)
     if earned or redeemed:
         await db.orders.update_one(

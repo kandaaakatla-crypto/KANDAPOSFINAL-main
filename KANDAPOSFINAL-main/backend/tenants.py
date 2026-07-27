@@ -32,6 +32,13 @@ DEMO_TENANT = {
     "contact_email": "owner@demorestaurant.in",
     "plan": "trial",
     "status": "active",
+    "business_type": "restaurant",
+    "features": {
+        "tables": True, "kitchen_display": True, "packing_station": True,
+        "dispatch": True, "meal_deals": True, "pizza_sizing": True,
+        "qr_ordering": True, "online_payments": True, "loyalty": True, "customer_display": True,
+        "voice_agent": True, "customer_sms": True, "whatsapp": True, "daily_digest": True,
+    },
 }
 
 
@@ -72,3 +79,10 @@ async def seed_default_tenant(db) -> None:
             {"tenant_id": {"$exists": False}},
             {"$set": {"tenant_id": DEMO_TENANT["id"]}},
         )
+
+    # Backfill any tenant that pre-dates business_type/feature flags — default
+    # to "restaurant" with everything on, so existing stores see no change.
+    await db.tenants.update_many(
+        {"business_type": {"$exists": False}},
+        {"$set": {"business_type": "restaurant", "features": DEMO_TENANT["features"]}},
+    )

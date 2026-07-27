@@ -5,11 +5,22 @@ const DashContext = createContext(null);
 const STORAGE_TOKEN = "kanda_dash_token_v1";
 const STORAGE_USER = "kanda_dash_user_v1";
 
+const DEFAULT_FEATURES = {
+  tables: true, kitchen_display: true, packing_station: true, dispatch: true, meal_deals: true, pizza_sizing: true,
+  qr_ordering: true, online_payments: true, loyalty: true, customer_display: true,
+  voice_agent: true, customer_sms: true, whatsapp: true, daily_digest: true,
+};
+
 export function DashProvider({ children }) {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_USER) || "null"); } catch { return null; }
   });
   const [boot, setBoot] = useState(user ? "ready" : "anon");
+  const [tenantInfo, setTenantInfo] = useState(null);
+
+  const loadTenantInfo = useCallback(() => {
+    dashApi.get("/tenant/info").then((r) => setTenantInfo(r.data)).catch(() => {});
+  }, []);
 
   // Re-validate the saved token at startup; if expired, clear it.
   useEffect(() => {
@@ -19,6 +30,7 @@ export function DashProvider({ children }) {
       setUser(r.data);
       localStorage.setItem(STORAGE_USER, JSON.stringify(r.data));
       setBoot("ready");
+      loadTenantInfo();
     }).catch(() => { logout(); });
   }, []); // eslint-disable-line
 
@@ -37,14 +49,16 @@ export function DashProvider({ children }) {
     }
     setUser(r.data.user);
     setBoot("ready");
+    loadTenantInfo();
     return r.data;
-  }, []);
+  }, [loadTenantInfo]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_TOKEN);
     localStorage.removeItem(STORAGE_USER);
     localStorage.removeItem("kanda_pos_token_v1");
     setUser(null);
+    setTenantInfo(null);
     setBoot("anon");
   }, []);
 
@@ -56,8 +70,11 @@ export function DashProvider({ children }) {
     localStorage.setItem(STORAGE_USER, JSON.stringify(me.data));
   }, []);
 
+  const features = { ...DEFAULT_FEATURES, ...(tenantInfo?.features || {}) };
+  const businessType = tenantInfo?.businessType || "restaurant";
+
   return (
-    <DashContext.Provider value={{ user, boot, login, logout, changePassword, api: dashApi }}>
+    <DashContext.Provider value={{ user, boot, login, logout, changePassword, api: dashApi, tenantInfo, features, businessType }}>
       {children}
     </DashContext.Provider>
   );

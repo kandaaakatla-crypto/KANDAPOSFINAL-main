@@ -22,7 +22,7 @@ const STATUS_STYLE = {
  * are clickable to jump straight into New Order for that table.
  */
 export default function TablesScreen() {
-  const { tables, orders, setTableStatus, staffUser } = usePos();
+  const { tables, orders, setTableStatus, staffUser, features } = usePos();
   const navigate = useNavigate();
   const [layoutMode, setLayoutMode] = useState(false);
   const [resModalOpen, setResModalOpen] = useState(false);
@@ -73,7 +73,7 @@ export default function TablesScreen() {
             style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <LayoutGrid className="w-3.5 h-3.5" /> Edit layout
           </button>
-          {isManager && (
+          {isManager && features.qr_ordering && (
             <button data-testid="open-qr-codes" onClick={() => setQrModalOpen(true)}
               className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
               style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>

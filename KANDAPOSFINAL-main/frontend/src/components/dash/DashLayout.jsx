@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, NavLink, useNavigate, Navigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation } from "../../store/DashContext";
 import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
@@ -12,22 +12,30 @@ const NAV_ITEMS = [
   { to: "/biz/customers", label: "Customers", icon: UserCircle, allow: () => true },
   { to: "/biz/inventory", label: "Inventory", icon: Boxes, allow: () => true },
   { to: "/biz/reports", label: "Reports", icon: BarChart3, allow: () => true },
-  { to: "/biz/voice", label: "Voice Agent", icon: PhoneCall, allow: () => true },
-  { to: "/biz/sms", label: "Customer SMS", icon: MessageSquare, allow: () => true },
-  { to: "/biz/whatsapp", label: "WhatsApp", icon: MessageCircle, allow: () => true },
-  { to: "/biz/digest", label: "Daily Digest", icon: Sparkles, allow: () => true },
+  { to: "/biz/voice", label: "Voice Agent", icon: PhoneCall, allow: () => true, feature: "voice_agent" },
+  { to: "/biz/sms", label: "Customer SMS", icon: MessageSquare, allow: () => true, feature: "customer_sms" },
+  { to: "/biz/whatsapp", label: "WhatsApp", icon: MessageCircle, allow: () => true, feature: "whatsapp" },
+  { to: "/biz/digest", label: "Daily Digest", icon: Sparkles, allow: () => true, feature: "daily_digest" },
   { to: "/biz/locations", label: "Locations", icon: MapPin, allow: () => true },
 ];
 
 export default function DashLayout() {
-  const { user, logout } = useDash();
+  const { user, logout, features } = useDash();
   const navigate = useNavigate();
+  const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
+
+  const items = NAV_ITEMS.filter((i) => i.allow(user) && (!i.feature || features[i.feature]));
+
+  // A feature turned off shouldn't be reachable by direct URL either.
+  useEffect(() => {
+    if (!user) return;
+    const disabled = NAV_ITEMS.find((i) => i.feature && location.pathname.startsWith(i.to) && !features[i.feature]);
+    if (disabled) navigate("/biz", { replace: true });
+  }, [location.pathname, features, user, navigate]);
 
   if (!user) return <Navigate to="/biz/login" replace />;
   if (user.must_change_password) return <Navigate to="/biz/account/password" replace />;
-
-  const items = NAV_ITEMS.filter((i) => i.allow(user));
   const roleLabel = { owner: "Restaurant Owner", area_manager: "Area Manager", manager: "Store Manager" }[user.dash_role] || user.dash_role;
 
   const NavItems = ({ onNavigate }) => (

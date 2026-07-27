@@ -13,8 +13,10 @@ export const tokenStore = {
 /**
  * Resolve the tenant slug for the current browser session.
  * 1. If the hostname looks like `<slug>.kanda.<tld>` (production) → return slug.
- * 2. Else honour an explicit override in localStorage.
- * 3. Else default to "demo" (preview / local dev / single-tenant deployments).
+ * 2. Else honour a `?tenant=slug` query param (persisted so it survives once set —
+ *    lets a single shareable link pin a tenant on hosts without subdomains, e.g. local/LAN dev).
+ * 3. Else honour an explicit override in localStorage.
+ * 4. Else default to "demo" (preview / local dev / single-tenant deployments).
  */
 function detectTenantSlug() {
   if (typeof window === "undefined") return "demo";
@@ -22,6 +24,12 @@ function detectTenantSlug() {
   const parts = host.split(".");
   if (parts.length >= 3 && parts[1] === "kanda") {
     return parts[0].toLowerCase();
+  }
+  const fromQuery = new URLSearchParams(window.location.search).get("tenant");
+  if (fromQuery) {
+    const slug = fromQuery.toLowerCase();
+    localStorage.setItem(TENANT_KEY, slug);
+    return slug;
   }
   return (localStorage.getItem(TENANT_KEY) || "demo").toLowerCase();
 }
@@ -88,6 +96,11 @@ dashApi.interceptors.response.use(
 export const auth = {
   login: (pin) => api.post("/auth/login", { pin }).then((r) => r.data),
   me: () => api.get("/auth/me").then((r) => r.data),
+};
+
+export const tenantApi = {
+  info: () => api.get("/tenant/info").then((r) => r.data),
+  updateFeatures: (payload) => api.patch("/tenant/features", payload).then((r) => r.data),
 };
 
 export const menuApi = {

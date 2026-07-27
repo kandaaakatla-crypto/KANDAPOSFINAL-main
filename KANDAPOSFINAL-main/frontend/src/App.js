@@ -7,7 +7,7 @@ import { OwnerProvider, useOwner } from "./store/OwnerContext";
 import LandingPage from "./components/LandingPage";
 import LoginScreen from "./components/pos/LoginScreen";
 import POSLayout from "./components/pos/POSLayout";
-import OrderScreen from "./components/pos/OrderScreen";
+import HomeScreen from "./components/pos/HomeScreen";
 import OrdersScreen from "./components/pos/OrdersScreen";
 import TablesScreen from "./components/pos/TablesScreen";
 import CustomersScreen from "./components/pos/CustomersScreen";
@@ -119,6 +119,9 @@ function App() {
                 {/* Customer-facing order-status display — no auth, long-lived ?token= */}
                 <Route path="/display" element={<CustomerDisplayScreen />} />
 
+                {/* Packing station — no auth, long-lived ?token= (same as KDS/Display) */}
+                <Route path="/packing" element={<PackingScreen />} />
+
                 {/* Customer-facing QR ordering — fully public, no auth */}
                 <Route path="/order/:slug/table/:number" element={<TableOrderPage />} />
                 <Route path="/order/:slug/pickup" element={<PickupOrderPage />} />
@@ -133,12 +136,11 @@ function App() {
                 <Route path="/login" element={<LoginScreen />} />
                 <Route path="/clock" element={<TimeClockScreen />} />
                 <Route element={<Protected><POSLayout /></Protected>}>
-                  <Route path="/" element={<OrderScreen />} />
+                  <Route path="/" element={<HomeScreen />} />
                   <Route path="/orders" element={<OrdersScreen />} />
                   <Route path="/tables" element={<TablesScreen />} />
                   <Route path="/menu" element={<MenuScreen />} />
                   <Route path="/dispatch" element={<DispatchScreen />} />
-                  <Route path="/packing" element={<PackingScreen />} />
                   <Route path="/workforce" element={<WorkforceScreen />} />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />

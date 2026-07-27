@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { Pizza, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, PackageCheck, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X } from "lucide-react";
+import { Pizza, Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
@@ -9,29 +9,31 @@ import OnboardingBanner from "./OnboardingBanner";
 import LocationSwitcher from "./LocationSwitcher";
 import { Sheet, SheetContent } from "../ui/sheet";
 
-// Primary tabs — always visible in the mobile bottom bar (max 5).
-const PRIMARY_NAV = [
-  { to: "/", label: "Order", icon: ShoppingCart, end: true },
-  { to: "/orders", label: "Orders", icon: ClipboardList },
-  { to: "/tables", label: "Tables", icon: LayoutGrid },
-  { to: "/menu", label: "Menu", icon: BookOpen },
-];
-
-// Secondary — visible in the desktop sidebar and inside the mobile "More" sheet.
-// Customers / Inventory / Reports live in the manager Dashboard only (/biz/*).
-const SECONDARY_NAV = [
-  { to: "/dispatch", label: "Dispatch", icon: Bike },
-  { to: "/packing", label: "Packing", icon: PackageCheck },
-];
-
 const ALL_STAFF_WORKFORCE = { to: "/workforce", label: "My Rota", icon: CalendarDays };
 
 export default function POSLayout() {
-  const { staffUser, logout, orders } = usePos();
+  const { staffUser, logout, orders, businessType, features } = usePos();
   const navigate = useNavigate();
+  const location = useLocation();
   const [time, setTime] = useState(new Date());
   const [supportOpen, setSupportOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+
+  // Primary tabs — always visible in the mobile bottom bar. Tables only
+  // makes sense for dine-in businesses, so retail tenants skip it.
+  const PRIMARY_NAV = [
+    { to: "/", label: businessType === "retail" ? "Sale" : "Order", icon: ShoppingCart, end: true },
+    { to: "/orders", label: "Orders", icon: ClipboardList },
+    ...(features.tables ? [{ to: "/tables", label: "Tables", icon: LayoutGrid }] : []),
+    { to: "/menu", label: businessType === "retail" ? "Products" : "Menu", icon: BookOpen },
+  ];
+
+  // Secondary — visible in the desktop sidebar and inside the mobile "More" sheet.
+  // Customers / Inventory / Reports live in the manager Dashboard only (/biz/*).
+  // Packing and Customer Display are separate no-login screens (like KDS) — see QrCodesModal.
+  const SECONDARY_NAV = [
+    ...(features.dispatch ? [{ to: "/dispatch", label: "Dispatch", icon: Bike }] : []),
+  ];
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -43,6 +45,14 @@ export default function POSLayout() {
   useEffect(() => {
     if (staffUser?.role === "Driver") navigate("/driver", { replace: true });
   }, [staffUser, navigate]);
+
+  // A tenant with a feature turned off shouldn't be able to reach its screen
+  // by direct URL either, not just have it hidden from nav.
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === "/tables" && !features.tables) navigate("/", { replace: true });
+    if (path === "/dispatch" && !features.dispatch) navigate("/", { replace: true });
+  }, [location.pathname, features, navigate]);
 
   const activeCount = orders.filter((o) => ["new", "in-kitchen", "ready", "out-for-delivery"].includes(o.status)).length;
 
@@ -69,7 +79,7 @@ export default function POSLayout() {
         {/* Desktop sidebar — hidden on mobile in favour of the bottom nav. */}
         <aside className="hidden md:flex w-[92px] flex-col items-center py-4 shrink-0" style={{ background: "var(--pos-panel)", borderRight: "1px solid var(--pos-border)" }} data-testid="sidebar">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-6" style={{ background: "var(--pos-accent)" }}>
-            <Pizza className="w-6 h-6 text-white" />
+            {businessType === "retail" ? <Store className="w-6 h-6 text-white" /> : <Pizza className="w-6 h-6 text-white" />}
           </div>
           <nav className="flex flex-col gap-1.5 flex-1 w-full px-2 overflow-y-auto">
             {[...PRIMARY_NAV, ...SECONDARY_NAV].map((n) => (
@@ -112,7 +122,7 @@ export default function POSLayout() {
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
               {/* Mobile brand mark */}
               <div className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--pos-accent)" }}>
-                <Pizza className="w-4 h-4 text-white" />
+                {businessType === "retail" ? <Store className="w-4 h-4 text-white" /> : <Pizza className="w-4 h-4 text-white" />}
               </div>
               <span className="hidden md:inline font-bold text-white tracking-tight">KANDA POS</span>
               <LocationSwitcher storeName="Store" isManager={staffUser?.role === "Manager"} />
@@ -138,9 +148,9 @@ export default function POSLayout() {
       </div>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-5 h-16"
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 grid h-16"
         data-testid="mobile-bottom-nav"
-        style={{ background: "var(--pos-panel)", borderTop: "1px solid var(--pos-border)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+        style={{ background: "var(--pos-panel)", borderTop: "1px solid var(--pos-border)", paddingBottom: "env(safe-area-inset-bottom)", gridTemplateColumns: `repeat(${PRIMARY_NAV.length + 1}, minmax(0, 1fr))` }}>
         {PRIMARY_NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end} data-testid={`mnav-${label.toLowerCase()}`}
             className={({ isActive }) => `relative flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${isActive ? "text-white" : ""}`}

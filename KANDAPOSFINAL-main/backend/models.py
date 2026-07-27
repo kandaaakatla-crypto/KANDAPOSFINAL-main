@@ -4,12 +4,74 @@ from typing import List, Literal, Optional
 from pydantic import BaseModel, ConfigDict
 
 
-OrderType = Literal["delivery", "collection", "dine-in"]
+OrderType = Literal["delivery", "collection", "dine-in", "sale"]
 OrderStatus = Literal["new", "in-kitchen", "ready", "out-for-delivery", "completed"]
 OrderPayment = Literal["cash", "card", "unpaid"]
 TableStatus = Literal["available", "occupied", "reserved"]
 OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr"]
 TableShape = Literal["round", "square", "rect"]
+
+# ---------- Business type / feature flags ----------
+BusinessType = Literal["restaurant", "retail"]
+
+# Every screen/concept a tenant can turn on or off independent of business_type.
+# Restaurant tenants default the dine-in-only ones on; retail tenants default
+# them off. Everything in _UNIVERSAL_KEYS is generically useful either way and
+# defaults on for both — the Platform Owner can always override per client.
+_DINE_IN_KEYS = ["tables", "kitchen_display", "packing_station", "dispatch", "meal_deals", "pizza_sizing"]
+_UNIVERSAL_KEYS = ["qr_ordering", "online_payments", "loyalty", "customer_display",
+                   "voice_agent", "customer_sms", "whatsapp", "daily_digest"]
+_FEATURE_KEYS = _DINE_IN_KEYS + _UNIVERSAL_KEYS
+
+
+class TenantFeatures(BaseModel):
+    tables: bool = True
+    kitchen_display: bool = True
+    packing_station: bool = True
+    dispatch: bool = True
+    meal_deals: bool = True
+    pizza_sizing: bool = True
+    qr_ordering: bool = True
+    online_payments: bool = True
+    loyalty: bool = True
+    customer_display: bool = True
+    voice_agent: bool = True
+    customer_sms: bool = True
+    whatsapp: bool = True
+    daily_digest: bool = True
+
+
+def default_features(business_type: str) -> dict:
+    dine_in_default = business_type != "retail"
+    return {
+        **{k: dine_in_default for k in _DINE_IN_KEYS},
+        **{k: True for k in _UNIVERSAL_KEYS},
+    }
+
+
+class TenantInfo(BaseModel):
+    id: str
+    slug: str
+    name: str
+    businessType: BusinessType = "restaurant"
+    features: TenantFeatures = TenantFeatures()
+
+
+class TenantFeaturesUpdate(BaseModel):
+    tables: Optional[bool] = None
+    kitchen_display: Optional[bool] = None
+    packing_station: Optional[bool] = None
+    dispatch: Optional[bool] = None
+    meal_deals: Optional[bool] = None
+    pizza_sizing: Optional[bool] = None
+    qr_ordering: Optional[bool] = None
+    online_payments: Optional[bool] = None
+    loyalty: Optional[bool] = None
+    customer_display: Optional[bool] = None
+    voice_agent: Optional[bool] = None
+    customer_sms: Optional[bool] = None
+    whatsapp: Optional[bool] = None
+    daily_digest: Optional[bool] = None
 
 
 # ---------- Users ----------
@@ -76,6 +138,16 @@ class DealGroup(BaseModel):
     size: Optional[str] = None
 
 
+class ProductVariant(BaseModel):
+    """A generic product variant (e.g. size/colour for retail) — independent
+    of the restaurant-only pizza sizes/deal groups above. Each variant has its
+    own price and, optionally, its own barcode/SKU."""
+    label: str
+    price: float
+    sku: Optional[str] = None
+    available: bool = True
+
+
 class MenuItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
@@ -87,6 +159,9 @@ class MenuItem(BaseModel):
     available: bool = True
     isPizza: bool = False
     dealGroups: Optional[List[DealGroup]] = None
+    imageUrl: Optional[str] = None
+    barcode: Optional[str] = None
+    variants: Optional[List[ProductVariant]] = None
 
 
 class MenuItemCreate(BaseModel):
@@ -98,6 +173,9 @@ class MenuItemCreate(BaseModel):
     available: bool = True
     isPizza: bool = False
     dealGroups: Optional[List[DealGroup]] = None
+    imageUrl: Optional[str] = None
+    barcode: Optional[str] = None
+    variants: Optional[List[ProductVariant]] = None
 
 
 class MenuItemUpdate(BaseModel):
@@ -109,6 +187,9 @@ class MenuItemUpdate(BaseModel):
     available: Optional[bool] = None
     isPizza: Optional[bool] = None
     dealGroups: Optional[List[DealGroup]] = None
+    imageUrl: Optional[str] = None
+    barcode: Optional[str] = None
+    variants: Optional[List[ProductVariant]] = None
 
 
 class AvailabilityPayload(BaseModel):

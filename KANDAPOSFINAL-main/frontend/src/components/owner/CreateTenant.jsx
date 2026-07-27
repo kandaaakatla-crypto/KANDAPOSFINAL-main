@@ -11,6 +11,7 @@ export default function CreateTenant() {
     slug: "", name: "", contact_email: "", manager_name: "Manager", manager_pin: "",
     store: { name: "", address: "", phone: "", tax_id: "", footer: "Thank you for ordering!" },
     plan: "trial",
+    business_type: "restaurant",
   });
   const [busy, setBusy] = useState(false);
 
@@ -36,6 +37,26 @@ export default function CreateTenant() {
   return (
     <form onSubmit={onSubmit} className="max-w-2xl space-y-5" data-testid="create-tenant">
       <h1 className="text-2xl font-bold text-white">Provision a new tenant</h1>
+
+      <div className="rounded-xl p-4 space-y-3" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+        <div className="text-sm font-semibold text-white">Business type</div>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { id: "restaurant", label: "Restaurant", desc: "Tables, kitchen display, packing, delivery dispatch, meal deals." },
+            { id: "retail", label: "Retail store", desc: "Basket + barcode checkout. No tables or kitchen routing." },
+          ].map((opt) => (
+            <button key={opt.id} type="button" data-testid={`business-type-${opt.id}`} onClick={() => set("business_type", opt.id)}
+              className="text-left rounded-lg p-3"
+              style={{ background: form.business_type === opt.id ? "var(--pos-panel-2)" : "transparent", border: `1px solid ${form.business_type === opt.id ? "var(--pos-accent)" : "var(--pos-border)"}` }}>
+              <div className="text-sm font-bold text-white">{opt.label}</div>
+              <div className="text-[11px] mt-1" style={{ color: "var(--pos-muted)" }}>{opt.desc}</div>
+            </button>
+          ))}
+        </div>
+        <div className="text-[10px]" style={{ color: "var(--pos-muted)" }}>
+          Every feature stays available afterwards — the store's own Manager/Owner can turn Tables, Kitchen Display, Packing, Dispatch, Meal Deals, or Pizza Sizing on or off independently from their Dashboard.
+        </div>
+      </div>
 
       <div className="rounded-xl p-4 space-y-3" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
         <div className="text-sm font-semibold text-white">Identity</div>

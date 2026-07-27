@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  Pizza, Store, Building2, ShieldCheck, ShoppingCart, LayoutGrid, ChefHat,
+  Pizza, Store, ShoppingCart, LayoutGrid, ChefHat,
   Truck, Boxes, Users, BarChart3, MessageCircle, Mic, MapPin, Mail, Phone,
-  ArrowRight, CheckCircle2, Sparkles,
+  ArrowRight, CheckCircle2, Sparkles, ShoppingBag,
 } from "lucide-react";
 
 const CYCLE_WORDS = ["order", "ticket", "table", "delivery", "refund"];
@@ -37,8 +37,7 @@ const NAV_LINKS = [
 
 const PORTALS = [
   { label: "Demo Restaurant POS", desc: "Staff terminal — orders, tables, kitchen, dispatch", icon: Store, to: "/login" },
-  { label: "Demo Restaurant Owner Portal", desc: "Reporting dashboard for the restaurant owner / managers", icon: Building2, to: "/biz/login" },
-  { label: "Kanda POS Owner Portal", desc: "Platform admin — manage tenants, billing, support", icon: ShieldCheck, to: "/owner/login" },
+  { label: "Demo Retail POS — Urban Mart", desc: "Staff terminal — basket checkout, barcode scan, variants", icon: ShoppingBag, to: "/login?tenant=urbanmart" },
 ];
 
 const GET_STARTED_ID = "get-started";
@@ -212,13 +211,13 @@ export default function LandingPage() {
               style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", boxShadow: "0 20px 60px -20px rgba(249,115,22,0.25)" }}
             >
               <div className="flex items-center justify-between mb-4 pb-4" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
-                <span className="font-bold text-sm">Order #0042</span>
+                <span className="font-bold text-sm">Order #1042</span>
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(249,115,22,0.15)", color: "var(--pos-accent)" }}>Dine-In</span>
               </div>
               {[
-                ["2× Pepperoni Passion", "₹17.98"],
-                ["1× Veggie Supreme", "₹8.49"],
-                ["3× Garlic Bread", "₹5.97"],
+                ["2× Pepperoni Passion (M)", "₹798"],
+                ["1× Veggie Supreme (M)", "₹379"],
+                ["3× Garlic Bread (4pc)", "₹387"],
               ].map(([item, price], i) => (
                 <motion.div
                   key={item}
@@ -234,7 +233,7 @@ export default function LandingPage() {
               ))}
               <div className="flex items-center justify-between mt-4 pt-4 font-bold" style={{ borderTop: "1px dashed var(--pos-border)" }}>
                 <span>Total</span>
-                <span style={{ color: "var(--pos-accent)" }}>₹32.44</span>
+                <span style={{ color: "var(--pos-accent)" }}>₹1,564</span>
               </div>
             </motion.div>
           </Reveal>

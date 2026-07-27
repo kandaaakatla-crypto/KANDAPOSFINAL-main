@@ -223,6 +223,45 @@ async def customer_display(tenant: dict = Depends(kds_tenant)):
     return {"tenant": {"name": tenant.get("name")}, "orders": orders}
 
 
+@kds_router.get("/packing")
+async def packing_board(tenant: dict = Depends(kds_tenant)):
+    """Public, no-auth feed for the packing station — every order that's
+    ready for packing/collection, packed or not. Reuses the same long-lived
+    kds_token as the kitchen tablet and customer display."""
+    db = get_db()
+    cutoff = (now_ist() - timedelta(hours=12)).isoformat()
+    cursor = db.orders.find(
+        {
+            "tenant_id": tenant["id"],
+            "status": "ready",
+            "voided": {"$ne": True},
+            "placedAt": {"$gte": cutoff},
+        },
+        {"_id": 0, "id": 1, "number": 1, "type": 1, "table": 1, "customer": 1, "items": 1, "packed": 1},
+    ).sort("placedAt", 1)
+    raw = await cursor.to_list(200)
+    return {"tenant": {"name": tenant.get("name")}, "orders": raw}
+
+
+class PackedPayload(BaseModel):
+    packed: bool
+
+
+@kds_router.patch("/packing/{order_id}/pack")
+async def set_packed(order_id: str, payload: PackedPayload, tenant: dict = Depends(kds_tenant)):
+    db = get_db()
+    res = await db.orders.find_one_and_update(
+        {"tenant_id": tenant["id"], "id": order_id},
+        {"$set": {"packed": payload.packed}},
+        return_document=True,
+    )
+    if not res:
+        raise HTTPException(status_code=404, detail="Order not found")
+    res.pop("_id", None)
+    schedule_broadcast("order.upserted", res, tenant["id"])
+    return {"id": res["id"], "packed": res.get("packed", False)}
+
+
 class ItemStatusPayload(BaseModel):
     status: ItemStatus
 

@@ -1,0 +1,68 @@
+/* Modern customer-facing ordering theme — deliberately distinct from the
+   staff POS's dark-only `--pos-*` theme. Light by default, full dark-mode
+   support, toggleable. Scoped under `.sf` so it never leaks into the POS. */
+
+.sf {
+  --sf-bg: #f7f5f2;
+  --sf-bg-elevated: #ffffff;
+  --sf-bg-sunken: #f0ede8;
+  --sf-text: #1a1a1a;
+  --sf-text-muted: #6b6b6b;
+  --sf-border: #e7e3dc;
+  --sf-accent: #d9480f;
+  --sf-accent-text: #ffffff;
+  --sf-success: #15803d;
+  --sf-success-bg: #ecfdf3;
+  --sf-danger: #b91c1c;
+  --sf-danger-bg: #fef2f2;
+  --sf-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
+  --sf-overlay: rgba(20,16,12,0.55);
+
+  background: var(--sf-bg);
+  color: var(--sf-text);
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.sf.sf-dark {
+  --sf-bg: #14110d;
+  --sf-bg-elevated: #211c16;
+  --sf-bg-sunken: #1a1611;
+  --sf-text: #f5f1ea;
+  --sf-text-muted: #a8a096;
+  --sf-border: #332c22;
+  --sf-accent: #ff7a33;
+  --sf-accent-text: #14110d;
+  --sf-success: #4ade80;
+  --sf-success-bg: rgba(74,222,128,0.12);
+  --sf-danger: #f87171;
+  --sf-danger-bg: rgba(248,113,113,0.12);
+  --sf-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.4);
+  --sf-overlay: rgba(0,0,0,0.7);
+}
+
+.sf-card {
+  background: var(--sf-bg-elevated);
+  border: 1px solid var(--sf-border);
+  box-shadow: var(--sf-shadow);
+}
+
+.sf-input {
+  background: var(--sf-bg-elevated);
+  border: 1px solid var(--sf-border);
+  color: var(--sf-text);
+}
+.sf-input::placeholder { color: var(--sf-text-muted); }
+.sf-input:focus { outline: none; border-color: var(--sf-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sf-accent) 20%, transparent); }
+
+.sf-btn-accent {
+  background: var(--sf-accent);
+  color: var(--sf-accent-text);
+}
+.sf-btn-accent:disabled { opacity: 0.45; }
+
+.sf-item-img {
+  background: var(--sf-bg-sunken);
+}
+
+.sf-scroll::-webkit-scrollbar { height: 0; width: 0; }

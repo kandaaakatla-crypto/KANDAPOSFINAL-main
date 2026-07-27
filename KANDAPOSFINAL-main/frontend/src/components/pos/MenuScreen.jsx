@@ -6,13 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Pencil, PlusCircle, ChefHat, LayoutGrid, Download, Upload, FileText, Eye, Trash2 } from "lucide-react";
+import { Pencil, PlusCircle, ChefHat, LayoutGrid, Download, Upload, FileText, Eye, Trash2, ScanLine, Layers } from "lucide-react";
 import { toast } from "sonner";
 import RecipeModal from "./RecipeModal";
 import CategoryManagerModal from "./CategoryManagerModal";
 
 export default function MenuScreen() {
-  const { menuItems, upsertMenuItem, toggleItemAvailability, refreshMenu, staffUser } = usePos();
+  const { menuItems, upsertMenuItem, toggleItemAvailability, refreshMenu, staffUser, features } = usePos();
   const location = useLocation();
   // Edit affordances live in the Restaurant Dashboard at /biz/menu. The /menu
   // route inside the POS is intentionally read-only — managers go to the
@@ -40,6 +40,10 @@ export default function MenuScreen() {
       toast.error("Every deal group needs a category, label, and count of at least 1");
       return;
     }
+    if ((editing.variants || []).some((v) => !v.label.trim())) {
+      toast.error("Every variant needs a label");
+      return;
+    }
     const item = { ...editing };
     if (item.isPizza) {
       item.sizes = { sm: parseFloat(item.sm) || 0, md: parseFloat(item.md) || 0, lg: parseFloat(item.lg) || 0 };
@@ -47,6 +51,10 @@ export default function MenuScreen() {
     } else {
       item.price = parseFloat(item.price) || 0;
     }
+    item.variants = (item.variants || []).length
+      ? item.variants.map((v) => ({ ...v, price: parseFloat(v.price) || 0 }))
+      : null;
+    item.barcode = (item.barcode || "").trim() || null;
     upsertMenuItem(item);
     toast.success(editing.id ? "Item updated" : "Item added to menu");
     setEditing(null);
@@ -56,17 +64,29 @@ export default function MenuScreen() {
     const e = { ...item };
     if (item.isPizza) { e.sm = item.sizes.sm; e.md = item.sizes.md; e.lg = item.sizes.lg; }
     e.dealGroups = item.dealGroups || [];
+    e.variants = item.variants || [];
+    e.barcode = item.barcode || "";
     setEditing(e);
   };
 
   const openNew = () => {
-    setEditing({ name: "", desc: "", catId: activeCat, price: "", available: true, isPizza: false, sm: "", md: "", lg: "", dealGroups: [] });
+    setEditing({ name: "", desc: "", catId: activeCat, price: "", available: true, isPizza: false, sm: "", md: "", lg: "", dealGroups: [], imageUrl: "", barcode: "", variants: [] });
   };
 
   const isDealsCat = editing?.catId === "deals";
   const addDealGroup = () => setEditing({ ...editing, dealGroups: [...(editing.dealGroups || []), { cat_id: cats.find((c) => c.id !== "deals")?.id || "", label: "", count: 1, size: null }] });
   const updateDealGroup = (i, patch) => setEditing({ ...editing, dealGroups: editing.dealGroups.map((g, gi) => (gi === i ? { ...g, ...patch } : g)) });
   const removeDealGroup = (i) => setEditing({ ...editing, dealGroups: editing.dealGroups.filter((_, gi) => gi !== i) });
+
+  const addVariant = () => setEditing({ ...editing, variants: [...(editing.variants || []), { label: "", price: "", sku: "", available: true }] });
+  const updateVariant = (i, patch) => setEditing({ ...editing, variants: editing.variants.map((v, vi) => (vi === i ? { ...v, ...patch } : v)) });
+  const removeVariant = (i) => setEditing({ ...editing, variants: editing.variants.filter((_, vi) => vi !== i) });
+
+  const priceLabel = (m) => {
+    if (m.isPizza) return `₹${m.sizes.sm.toFixed(2)} / ₹${m.sizes.md.toFixed(2)} / ₹${m.sizes.lg.toFixed(2)}`;
+    if (Array.isArray(m.variants) && m.variants.length) return `From ₹${Math.min(...m.variants.map((v) => v.price)).toFixed(2)}`;
+    return `₹${(m.price || 0).toFixed(2)}`;
+  };
 
   const [importPreview, setImportPreview] = useState(null); // { file, body }
   const apiBase = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -183,7 +203,7 @@ export default function MenuScreen() {
                 <td className="px-4 py-3 font-medium text-white">{m.name}</td>
                 <td className="px-4 py-3 max-w-xs truncate" style={{ color: "var(--pos-muted)" }}>{m.desc || "—"}</td>
                 <td className="px-4 py-3 tabular-nums font-semibold" style={{ color: "var(--pos-accent)" }}>
-                  {m.isPizza ? `₹${m.sizes.sm.toFixed(2)} / ₹${m.sizes.md.toFixed(2)} / ₹${m.sizes.lg.toFixed(2)}` : `₹${(m.price || 0).toFixed(2)}`}
+                  {priceLabel(m)}
                 </td>
                 <td className="px-4 py-3">
                   <Switch data-testid={`toggle-${m.id}`} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} />
@@ -220,7 +240,7 @@ export default function MenuScreen() {
               </div>
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm font-semibold tabular-nums" style={{ color: "var(--pos-accent)" }}>
-                  {m.isPizza ? `₹${m.sizes.sm.toFixed(2)} / ₹${m.sizes.md.toFixed(2)} / ₹${m.sizes.lg.toFixed(2)}` : `₹${(m.price || 0).toFixed(2)}`}
+                  {priceLabel(m)}
                 </div>
                 <div className="flex items-center gap-1.5">
                   {editable && isManager && (
@@ -249,6 +269,19 @@ export default function MenuScreen() {
                 className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
               <Input data-testid="menu-field-desc" placeholder="Description" value={editing.desc || ""} onChange={(e) => setEditing({ ...editing, desc: e.target.value })}
                 className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              <div className="flex items-center gap-2">
+                <Input data-testid="menu-field-image" placeholder="Image URL — shown on the QR ordering menu" value={editing.imageUrl || ""} onChange={(e) => setEditing({ ...editing, imageUrl: e.target.value })}
+                  className="h-10 text-white flex-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                {editing.imageUrl && (
+                  <img src={editing.imageUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" style={{ border: "1px solid var(--pos-border)" }}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                )}
+              </div>
+              <div className="relative">
+                <ScanLine className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
+                <Input data-testid="menu-field-barcode" placeholder="Barcode / SKU (optional)" value={editing.barcode || ""} onChange={(e) => setEditing({ ...editing, barcode: e.target.value })}
+                  className="h-10 pl-9 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              </div>
               <Select value={editing.catId} onValueChange={(v) => setEditing({ ...editing, catId: v })}>
                 <SelectTrigger data-testid="menu-field-cat" className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
                   <SelectValue placeholder="Category" />
@@ -257,11 +290,13 @@ export default function MenuScreen() {
                   {cats.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <label className="flex items-center gap-2 text-xs text-white">
-                <Switch data-testid="menu-field-ispizza" checked={!!editing.isPizza} onCheckedChange={(v) => setEditing({ ...editing, isPizza: v })} />
-                Sized item (3 prices)
-              </label>
-              {editing.isPizza ? (
+              {features.pizza_sizing && (
+                <label className="flex items-center gap-2 text-xs text-white">
+                  <Switch data-testid="menu-field-ispizza" checked={!!editing.isPizza} onCheckedChange={(v) => setEditing({ ...editing, isPizza: v })} />
+                  Sized item (3 prices)
+                </label>
+              )}
+              {editing.isPizza && features.pizza_sizing ? (
                 <div className="grid grid-cols-3 gap-2">
                   {[{ k: "sm", l: 'Small ₹' }, { k: "md", l: 'Medium ₹' }, { k: "lg", l: 'Large ₹' }].map((s) => (
                     <Input key={s.k} data-testid={`menu-field-${s.k}`} type="number" placeholder={s.l} value={editing[s.k]} onChange={(e) => setEditing({ ...editing, [s.k]: e.target.value })}
@@ -273,7 +308,33 @@ export default function MenuScreen() {
                   className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
               )}
 
-              {isDealsCat && (
+              {!editing.isPizza && (
+                <div className="rounded-lg p-3 space-y-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                  <div className="text-xs uppercase tracking-wider font-semibold flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}>
+                    <Layers className="w-3.5 h-3.5" /> Variants (size, colour, etc. — optional)
+                  </div>
+                  {(editing.variants || []).map((v, i) => (
+                    <div key={i} className="flex items-center gap-1.5" data-testid={`variant-row-${i}`}>
+                      <Input data-testid={`variant-label-${i}`} placeholder="Label (e.g. Medium, Red)" value={v.label} onChange={(e) => updateVariant(i, { label: e.target.value })}
+                        className="h-9 text-white text-xs flex-1" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                      <Input data-testid={`variant-price-${i}`} type="number" placeholder="₹" value={v.price} onChange={(e) => updateVariant(i, { price: e.target.value })}
+                        className="h-9 text-white text-xs w-20 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                      <Input data-testid={`variant-sku-${i}`} placeholder="SKU" value={v.sku || ""} onChange={(e) => updateVariant(i, { sku: e.target.value })}
+                        className="h-9 text-white text-xs w-20 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                      <button type="button" data-testid={`variant-remove-${i}`} onClick={() => removeVariant(i)} className="pos-btn w-9 h-9 shrink-0 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}>
+                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      </button>
+                    </div>
+                  ))}
+                  <button type="button" data-testid="variant-add" onClick={addVariant}
+                    className="pos-btn w-full h-9 rounded-md text-xs font-bold flex items-center justify-center gap-1.5"
+                    style={{ background: "var(--pos-panel)", color: "var(--pos-accent)", border: "1px dashed var(--pos-border)" }}>
+                    <PlusCircle className="w-3.5 h-3.5" /> Add variant
+                  </button>
+                </div>
+              )}
+
+              {isDealsCat && features.meal_deals && (
                 <div className="rounded-lg p-3 space-y-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                   <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--pos-muted)" }}>
                     Deal components — what the customer picks

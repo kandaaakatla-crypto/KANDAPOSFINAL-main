@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
-import { usePos } from "../../store/PosContext";
-import { PackageCheck, Package, Bike, ShoppingBag, UtensilsCrossed, CheckCircle2 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { kdsApi } from "../../api/kdsClient";
+import { PackageCheck, Package, Bike, ShoppingBag, UtensilsCrossed, CheckCircle2, Pizza } from "lucide-react";
 import { toast } from "sonner";
 
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
@@ -46,58 +47,105 @@ function OrderCard({ order, onPacked }) {
   );
 }
 
+/** Public, no-auth packing station screen — put it on a tablet by the pass.
+ *  /packing?token=<kds_token>  (same long-lived kiosk token as the KDS tablet
+ *  and customer display).
+ */
 export default function PackingScreen() {
-  const { orders, setOrderPacked } = usePos();
+  const [search] = useSearchParams();
+  const token = search.get("token") || "";
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
 
-  const toPack = useMemo(() => orders.filter((o) => o.status === "ready" && !o.packed), [orders]);
-  const packed = useMemo(() => orders.filter((o) => o.status === "ready" && o.packed), [orders]);
+  const refresh = useCallback(async () => {
+    if (!token) { setError("Missing ?token= in the URL"); return; }
+    try {
+      const d = await kdsApi.packing(token);
+      setData(d);
+      setError("");
+    } catch (e) {
+      setError(e?.response?.data?.detail || "Could not load orders");
+    }
+  }, [token]);
+
+  useEffect(() => {
+    refresh();
+    const id = setInterval(refresh, 5000);
+    return () => clearInterval(id);
+  }, [refresh]);
+
+  const orders = data?.orders || [];
+  const toPack = useMemo(() => orders.filter((o) => !o.packed), [orders]);
+  const packed = useMemo(() => orders.filter((o) => o.packed), [orders]);
 
   const handlePacked = async (order) => {
-    const updated = await setOrderPacked(order.id, true);
-    if (updated) toast.success(`Order #${order.number} packed`);
+    try {
+      await kdsApi.setPacked(token, order.id, true);
+      toast.success(`Order #${order.number} packed`);
+      refresh();
+    } catch {
+      toast.error("Could not update — check the connection");
+    }
   };
   const undoPacked = async (order) => {
-    await setOrderPacked(order.id, false);
+    try { await kdsApi.setPacked(token, order.id, false); refresh(); }
+    catch { toast.error("Could not update"); }
   };
 
   return (
-    <div className="h-full overflow-y-auto pos-scroll p-4 space-y-6" data-testid="packing-screen">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Packing</h2>
+    <div className="min-h-screen p-4" style={{ background: "var(--pos-bg)" }} data-testid="packing-screen">
+      <div className="flex items-center justify-between mb-6 max-w-5xl mx-auto">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
+            <Pizza className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="text-lg font-bold text-white">{data?.tenant?.name || "Kanda POS"}</div>
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Packing station</div>
+          </div>
+        </div>
         <div className="text-xs px-2 py-1 rounded-full" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
           {toPack.length} to pack
         </div>
       </div>
 
-      <div>
-        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: "var(--pos-muted)" }}>To pack</div>
-        {toPack.length === 0 ? (
-          <div className="rounded-xl p-8 text-center text-sm" style={{ background: "var(--pos-panel)", border: "1px dashed var(--pos-border)", color: "var(--pos-muted)" }}>
-            Nothing waiting to be packed. Orders show up here once the kitchen marks them ready.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {toPack.map((o) => <OrderCard key={o.id} order={o} onPacked={handlePacked} />)}
-          </div>
-        )}
-      </div>
+      {error && (
+        <div className="max-w-md mx-auto text-center text-sm p-4 rounded-xl" style={{ background: "rgba(220,38,38,0.15)", color: "#fca5a5" }}>{error}</div>
+      )}
 
-      {packed.length > 0 && (
-        <div>
-          <div className="text-xs uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}>
-            <PackageCheck className="w-3.5 h-3.5" /> Packed &amp; ready
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {packed.map((o) => (
-              <div key={o.id} data-testid={`packed-card-${o.number}`} className="rounded-xl p-3 flex items-center justify-between" style={{ background: "var(--pos-panel)", border: "1px solid #2e7d4f" }}>
-                <div>
-                  <span className="font-bold text-white">#{o.number}</span>
-                  <span className="text-xs ml-2" style={{ color: "var(--pos-muted)" }}>{o.customer?.name}</span>
-                </div>
-                <button data-testid={`pack-undo-${o.number}`} onClick={() => undoPacked(o)} className="text-[11px] font-bold" style={{ color: "var(--pos-muted)" }}>Undo</button>
+      {!error && (
+        <div className="max-w-5xl mx-auto space-y-6">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: "var(--pos-muted)" }}>To pack</div>
+            {toPack.length === 0 ? (
+              <div className="rounded-xl p-8 text-center text-sm" style={{ background: "var(--pos-panel)", border: "1px dashed var(--pos-border)", color: "var(--pos-muted)" }}>
+                Nothing waiting to be packed. Orders show up here once the kitchen marks them ready.
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {toPack.map((o) => <OrderCard key={o.id} order={o} onPacked={handlePacked} />)}
+              </div>
+            )}
           </div>
+
+          {packed.length > 0 && (
+            <div>
+              <div className="text-xs uppercase tracking-wider font-semibold mb-2 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}>
+                <PackageCheck className="w-3.5 h-3.5" /> Packed &amp; ready
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {packed.map((o) => (
+                  <div key={o.id} data-testid={`packed-card-${o.number}`} className="rounded-xl p-3 flex items-center justify-between" style={{ background: "var(--pos-panel)", border: "1px solid #2e7d4f" }}>
+                    <div>
+                      <span className="font-bold text-white">#{o.number}</span>
+                      <span className="text-xs ml-2" style={{ color: "var(--pos-muted)" }}>{o.customer?.name}</span>
+                    </div>
+                    <button data-testid={`pack-undo-${o.number}`} onClick={() => undoPacked(o)} className="text-[11px] font-bold" style={{ color: "var(--pos-muted)" }}>Undo</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -5,6 +5,7 @@ import { ArrowLeft, IndianRupee, ShoppingCart, Boxes, Users, Loader2, LogIn } fr
 import ImpersonateModal from "./ImpersonateModal";
 import TenantBillingCard from "./TenantBillingCard";
 import KdsTokenCard from "./KdsTokenCard";
+import TenantFeaturesCard from "./TenantFeaturesCard";
 
 export default function TenantDetail() {
   const { id } = useParams();
@@ -72,6 +73,7 @@ export default function TenantDetail() {
       </div>
 
       <TenantBillingCard tenantId={tenant.id} />
+      <TenantFeaturesCard tenant={tenant} onChanged={(t) => setData((prev) => ({ ...prev, tenant: { ...prev.tenant, business_type: t.business_type ?? t.businessType ?? prev.tenant.business_type, features: t.features ?? prev.tenant.features } }))} />
       <KdsTokenCard tenantId={tenant.id} />
 
       <div className="rounded-xl" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>

@@ -20,6 +20,7 @@ export default function LoginScreen() {
   // Owner Portal exited impersonation.
   useEffect(() => {
     if (impersonationCtx.get()) return;  // legit impersonation context, leave alone
+    if (new URLSearchParams(window.location.search).get("tenant")) return;  // explicit ?tenant= link, leave alone
     const host = window.location.hostname.split(".");
     const onSubdomain = host.length >= 3 && host[1] === "kanda";
     if (!onSubdomain) tenantStore.clear();

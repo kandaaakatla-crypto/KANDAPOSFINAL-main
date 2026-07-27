@@ -1,16 +1,19 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
   auth, tokenStore, menuApi, tablesApi, customersApi,
-  inventoryApi, ordersApi,
+  inventoryApi, ordersApi, tenantApi,
 } from "../api/client";
 import { connectWs } from "../api/ws";
 import { toast } from "sonner";
 
 const PosContext = createContext(null);
 
+const DEFAULT_FEATURES = { tables: true, kitchen_display: true, packing_station: true, dispatch: true, meal_deals: true, pizza_sizing: true };
+
 export function PosProvider({ children }) {
   const [bootState, setBootState] = useState("loading"); // loading | ready
   const [staffUser, setStaffUser] = useState(null);
+  const [tenantInfo, setTenantInfo] = useState(null); // { businessType, features, name, slug }
 
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
@@ -22,9 +25,10 @@ export function PosProvider({ children }) {
   // Load all resources after auth confirmed
   const loadAll = useCallback(async () => {
     try {
-      const [cats, items, ords, custs, tbls, inv] = await Promise.all([
+      const [cats, items, ords, custs, tbls, inv, tenant] = await Promise.all([
         menuApi.categories(), menuApi.items(), ordersApi.list(),
         customersApi.list(), tablesApi.list(), inventoryApi.list(),
+        tenantApi.info().catch(() => null),
       ]);
       setCategories(cats);
       setMenuItems(items);
@@ -32,12 +36,17 @@ export function PosProvider({ children }) {
       setCustomers(custs);
       setTables(tbls);
       setInventory(inv);
+      if (tenant) setTenantInfo(tenant);
     } catch (e) {
       // 401 handled by interceptor; surface other errors
       if (e?.response?.status !== 401) {
         toast.error("Could not load POS data");
       }
     }
+  }, []);
+
+  const refreshTenantInfo = useCallback(async () => {
+    try { setTenantInfo(await tenantApi.info()); } catch { /* ignore */ }
   }, []);
 
   // Boot: if token, fetch me + data
@@ -295,8 +304,12 @@ export function PosProvider({ children }) {
     try { const fresh = await ordersApi.list(); setOrders(fresh); } catch {}
   }, []);
 
+  const businessType = tenantInfo?.businessType || "restaurant";
+  const features = { ...DEFAULT_FEATURES, ...(tenantInfo?.features || {}) };
+
   const value = {
     bootState, staffUser, login, logout,
+    tenantInfo, businessType, features, refreshTenantInfo,
     categories,
     menuItems, upsertMenuItem, toggleItemAvailability,
     orders, placeOrder, appendToOrder, updateOrderStatus, setOrderPacked, assignDriver, reloadOrders,

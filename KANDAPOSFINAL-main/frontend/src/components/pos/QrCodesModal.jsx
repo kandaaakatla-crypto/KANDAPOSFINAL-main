@@ -3,7 +3,7 @@ import { usePos } from "../../store/PosContext";
 import { tablesApi, kioskApi } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { QrCode, Copy, ExternalLink, ShoppingBag, ChefHat, Monitor } from "lucide-react";
+import { QrCode, Copy, ExternalLink, ShoppingBag, ChefHat, Monitor, Package } from "lucide-react";
 import { toast } from "sonner";
 
 function QrBlock({ title, icon: Icon, loading, data, testid }) {
@@ -54,7 +54,7 @@ function LinkBlock({ title, icon: Icon, url, testid }) {
 }
 
 export default function QrCodesModal({ open, onClose }) {
-  const { tables } = usePos();
+  const { tables, features } = usePos();
   const [pickup, setPickup] = useState(null);
   const [pickupLoading, setPickupLoading] = useState(true);
   const [tableId, setTableId] = useState("");
@@ -80,6 +80,7 @@ export default function QrCodesModal({ open, onClose }) {
   const origin = window.location.origin;
   const kdsUrl = kioskToken ? `${origin}/kds?token=${kioskToken}` : "";
   const displayUrl = kioskToken ? `${origin}/display?token=${kioskToken}` : "";
+  const packingUrl = kioskToken ? `${origin}/packing?token=${kioskToken}` : "";
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -108,8 +109,9 @@ export default function QrCodesModal({ open, onClose }) {
           <div>
             <div className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: "var(--pos-muted)" }}>Screens</div>
             <div className="space-y-2">
-              <LinkBlock title="Kitchen Display" icon={ChefHat} url={kdsUrl} testid="kds-link-block" />
-              <LinkBlock title="Customer Display" icon={Monitor} url={displayUrl} testid="display-link-block" />
+              {features.kitchen_display && <LinkBlock title="Kitchen Display" icon={ChefHat} url={kdsUrl} testid="kds-link-block" />}
+              {features.packing_station && <LinkBlock title="Packing Station" icon={Package} url={packingUrl} testid="packing-link-block" />}
+              {features.customer_display && <LinkBlock title="Customer Display" icon={Monitor} url={displayUrl} testid="display-link-block" />}
             </div>
           </div>
         </div>
