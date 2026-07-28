@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { useDash, canManageStaff, canAddLocation } from "../../store/DashContext";
-import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon } from "lucide-react";
+import { useDash, canManageStaff, canAddLocation, canManagePayroll } from "../../store/DashContext";
+import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 
 const NAV_ITEMS = [
   { to: "/biz", end: true, label: "Overview", icon: LayoutDashboard, allow: () => true },
   { to: "/biz/menu", label: "Menu", icon: BookOpen, allow: () => true },
   { to: "/biz/staff", label: "Staff", icon: Users, allow: (u) => canManageStaff(u) || u?.dash_role === "manager" },
+  { to: "/biz/payroll", label: "Payroll", icon: Banknote, allow: (u) => canManagePayroll(u), feature: "payroll" },
   { to: "/biz/workforce", label: "Rota", icon: CalendarDays, allow: () => true },
   { to: "/biz/customers", label: "Customers", icon: UserCircle, allow: () => true },
   { to: "/biz/inventory", label: "Inventory", icon: Boxes, allow: () => true },

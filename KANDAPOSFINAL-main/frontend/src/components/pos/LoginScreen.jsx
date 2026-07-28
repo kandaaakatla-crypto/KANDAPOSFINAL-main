@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { DEMO_STAFF_HINTS } from "../../data/mock";
+import { DEMO_STAFF_HINTS_BY_TENANT } from "../../data/mock";
 import { Pizza, Delete, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { tenantStore } from "../../api/client";
@@ -25,6 +25,8 @@ export default function LoginScreen() {
     const onSubdomain = host.length >= 3 && host[1] === "kanda";
     if (!onSubdomain) tenantStore.clear();
   }, []);
+
+  const staffHints = DEMO_STAFF_HINTS_BY_TENANT[tenantStore.get()] || [];
 
   const press = (d) => {
     if (pin.length >= 4 || busy) return;
@@ -119,20 +121,22 @@ export default function LoginScreen() {
             </button>
           </div>
 
-          {/* Quick staff hint */}
-          <div className="rounded-xl p-4" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-            <div className="text-xs uppercase tracking-wider mb-3" style={{ color: "var(--pos-muted)" }}>Demo staff PINs</div>
-            <div className="grid grid-cols-2 gap-2">
-              {DEMO_STAFF_HINTS.map((s) => (
-                <button key={s.id} data-testid={`staff-quick-${s.id}`} onClick={() => submit(s.pin)}
-                  className="pos-btn text-left rounded-lg px-3 py-2"
-                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-                  <div className="text-sm font-medium text-white">{s.name}</div>
-                  <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{s.role} · PIN {s.pin}</div>
-                </button>
-              ))}
+          {/* Quick staff hint — only for tenants we have known demo PINs for */}
+          {staffHints.length > 0 && (
+            <div className="rounded-xl p-4" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+              <div className="text-xs uppercase tracking-wider mb-3" style={{ color: "var(--pos-muted)" }}>Demo staff PINs</div>
+              <div className="grid grid-cols-2 gap-2">
+                {staffHints.map((s) => (
+                  <button key={s.id} data-testid={`staff-quick-${s.id}`} onClick={() => submit(s.pin)}
+                    className="pos-btn text-left rounded-lg px-3 py-2"
+                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                    <div className="text-sm font-medium text-white">{s.name}</div>
+                    <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{s.role} · PIN {s.pin}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <button data-testid="open-timeclock-btn" onClick={() => navigate("/clock")}
             className="pos-btn w-full mt-4 h-10 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-2"

@@ -28,6 +28,7 @@ const GROUPS = [
       { key: "customer_sms", label: "Customer SMS", desc: "SMS marketing / order notifications." },
       { key: "whatsapp", label: "WhatsApp", desc: "WhatsApp ordering/notifications integration." },
       { key: "daily_digest", label: "Daily digest", desc: "End-of-day summary email/report." },
+      { key: "payroll", label: "Payroll", desc: "Wage + tips summary in the Dashboard, from hours worked or salary." },
     ],
   },
 ];

@@ -42,6 +42,7 @@ def menu_doc_to_response(doc: dict) -> dict:
         "imageUrl": doc.get("image_url"),
         "barcode": doc.get("barcode"),
         "variants": doc.get("variants"),
+        "tax_rate": doc.get("tax_rate"),
     }
 
 

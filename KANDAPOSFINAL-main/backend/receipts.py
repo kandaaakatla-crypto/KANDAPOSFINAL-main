@@ -93,8 +93,15 @@ def _build_escpos(order: dict, store: dict, kind: str) -> bytes:
 
     if kind != "kitchen":
         out += _line("-" * 32)
-        subtotal = sum(it["qty"] * it["price"] for it in order.get("items", []))
+        subtotal = order.get("subtotal")
+        if subtotal is None:
+            subtotal = sum(it["qty"] * it["price"] for it in order.get("items", []))
         out += _row("Subtotal", _money(subtotal))
+        if order.get("taxTotal"):
+            tax_label = "GST (incl.)" if order.get("taxInclusive") else "GST"
+            out += _row(tax_label, _money(order["taxTotal"]))
+            out += _row("  CGST", _money(order.get("cgst", 0)))
+            out += _row("  SGST", _money(order.get("sgst", 0)))
         if order.get("deliveryFee"):
             out += _row("Delivery", _money(order["deliveryFee"]))
         if order.get("discount"):
@@ -125,11 +132,19 @@ async def _load_order_and_store(order_id: str, user: dict):
 @receipts_router.get("/orders/{order_id}/receipt")
 async def receipt_json(order_id: str, user: dict = Depends(get_current_user)):
     order, store = await _load_order_and_store(order_id, user)
-    subtotal = round(sum(it["qty"] * it["price"] for it in order.get("items", [])), 2)
+    # Prefer the authoritative GST breakdown stamped at checkout (see tax.py).
+    # Falls back to a naive re-sum for pre-tax-feature orders that predate it.
+    subtotal = order.get("subtotal")
+    if subtotal is None:
+        subtotal = round(sum(it["qty"] * it["price"] for it in order.get("items", [])), 2)
     return {
         "store": store,
         "order": order,
         "subtotal": subtotal,
+        "taxTotal": order.get("taxTotal", 0),
+        "cgst": order.get("cgst", 0),
+        "sgst": order.get("sgst", 0),
+        "taxInclusive": order.get("taxInclusive", False),
         "issuedAt": order.get("placedAt"),
         "cashier": user.get("name"),
     }

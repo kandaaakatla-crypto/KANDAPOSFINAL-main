@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import PaymentModal from "./PaymentModal";
 import { ScanLine, Minus, Plus, X, ShoppingCart, Package } from "lucide-react";
 import { toast } from "sonner";
+import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
 
 /** Retail checkout — basket + barcode/SKU lookup. No order type, no tables,
  *  no kitchen routing. Products with variants (e.g. size/colour) get a quick
@@ -31,22 +32,33 @@ export default function RetailSaleScreen() {
   const discountAmt = +(subtotal * (discountPct / 100)).toFixed(2);
   const total = +(subtotal - discountAmt).toFixed(2);
 
-  const addLine = (name, price, sku) => {
+  // GST is already included in retail prices (MRP) by law — this just
+  // discloses the breakdown for the receipt, it doesn't change the total.
+  const gst = useMemo(() => {
+    const lineAmounts = cart.map((l) => {
+      const cat = categories.find((c) => c.id === l.catId);
+      const rate = effectiveTaxRate({ tax_rate: l.taxRate }, cat);
+      return computeLineTax(l.price, l.qty, rate, true);
+    });
+    return computeOrderTax(lineAmounts);
+  }, [cart, categories]);
+
+  const addLine = (name, price, sku, catId, taxRate) => {
     setCart((prev) => {
       const existing = prev.find((l) => l.name === name && l.price === price);
       if (existing) return prev.map((l) => (l === existing ? { ...l, qty: l.qty + 1 } : l));
-      return [...prev, { lineId: `l_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name, price, qty: 1, sku: sku || null }];
+      return [...prev, { lineId: `l_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name, price, qty: 1, sku: sku || null, catId, taxRate }];
     });
   };
 
   const handleItemClick = (item) => {
     if (!item.available) return;
     if (Array.isArray(item.variants) && item.variants.length > 0) { setVariantItem(item); return; }
-    addLine(item.name, item.price || 0, item.barcode);
+    addLine(item.name, item.price || 0, item.barcode, item.catId, item.tax_rate);
   };
 
   const addVariant = (item, variant) => {
-    addLine(`${item.name} — ${variant.label}`, variant.price, variant.sku);
+    addLine(`${item.name} — ${variant.label}`, variant.price, variant.sku, item.catId, item.tax_rate);
     setVariantItem(null);
   };
 
@@ -199,6 +211,11 @@ export default function RetailSaleScreen() {
               <div className="flex justify-between" style={{ color: "var(--pos-muted)" }}><span>Subtotal</span><span className="tabular-nums">₹{subtotal.toFixed(2)}</span></div>
               {discountAmt > 0 && <div className="flex justify-between" style={{ color: "var(--pos-muted)" }}><span>Discount</span><span className="tabular-nums">-₹{discountAmt.toFixed(2)}</span></div>}
               <div className="flex justify-between text-base font-bold text-white pt-1"><span>Total</span><span className="tabular-nums">₹{total.toFixed(2)}</span></div>
+              {gst.taxTotal > 0 && (
+                <div className="text-[11px] pt-1" style={{ color: "var(--pos-muted)" }}>
+                  Includes GST ₹{gst.taxTotal.toFixed(2)} (CGST ₹{gst.cgst.toFixed(2)} + SGST ₹{gst.sgst.toFixed(2)})
+                </div>
+              )}
             </div>
             <button data-testid="retail-pay-btn" onClick={() => setPayOpen(true)} disabled={cart.length === 0}
               className="pos-btn w-full h-14 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 text-white"

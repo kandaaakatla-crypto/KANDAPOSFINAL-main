@@ -8,7 +8,7 @@ const STORAGE_USER = "kanda_dash_user_v1";
 const DEFAULT_FEATURES = {
   tables: true, kitchen_display: true, packing_station: true, dispatch: true, meal_deals: true, pizza_sizing: true,
   qr_ordering: true, online_payments: true, loyalty: true, customer_display: true,
-  voice_agent: true, customer_sms: true, whatsapp: true, daily_digest: true,
+  voice_agent: true, customer_sms: true, whatsapp: true, daily_digest: true, payroll: true,
 };
 
 export function DashProvider({ children }) {
@@ -92,3 +92,4 @@ export const canEditMenu = (u) => !!u; // all 3 roles can edit menu (per user sp
 export const canManageCoupons = (u) => !!u;
 export const canManageWorkforce = (u) => !!u; // all roles see workforce; scope filtered by location_ids
 export const canAddLocation = (u) => u && u.dash_role === "owner"; // payment-gated, owner only
+export const canManagePayroll = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // wage data — same trust level as staff management

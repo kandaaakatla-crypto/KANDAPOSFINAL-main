@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { storefrontApi } from "../../api/storefrontClient";
 import { useStorefrontTheme } from "./useStorefrontTheme";
+import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
 import StorefrontItemModal from "./StorefrontItemModal";
 import "./storefront.css";
 import {
@@ -78,7 +79,18 @@ export default function TableOrderPage() {
   }, [slug, number]);
 
   const items = useMemo(() => (menu?.items || []).filter((m) => m.catId === activeCat), [menu, activeCat]);
-  const total = useMemo(() => cart.reduce((s, l) => s + l.displayPrice * l.qty, 0), [cart]);
+  const subtotal = useMemo(() => cart.reduce((s, l) => s + l.displayPrice * l.qty, 0), [cart]);
+  // GST is added on top of restaurant menu pricing (exclusive) — preview only;
+  // the backend recomputes and charges the authoritative amount at checkout.
+  const gst = useMemo(() => {
+    const lineAmounts = cart.map((l) => {
+      const item = menu?.items?.find((i) => i.id === l.item_id);
+      const cat = menu?.categories?.find((c) => c.id === item?.catId);
+      return computeLineTax(l.displayPrice, l.qty, effectiveTaxRate(item, cat), false);
+    });
+    return computeOrderTax(lineAmounts);
+  }, [cart, menu]);
+  const total = +(subtotal + gst.taxTotal).toFixed(2);
 
   const handleItemClick = (item) => {
     if (!item.available) return;
@@ -286,6 +298,11 @@ export default function TableOrderPage() {
                 {!sessionToken && (
                   <input placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)}
                     className="w-full h-11 px-3.5 rounded-xl text-sm mb-3 sf-input" />
+                )}
+                {gst.taxTotal > 0 && (
+                  <div className="flex items-center justify-between text-xs mb-1" style={{ color: "var(--sf-text-muted)" }}>
+                    <span>GST (CGST ₹{gst.cgst.toFixed(2)} + SGST ₹{gst.sgst.toFixed(2)})</span><span>₹{gst.taxTotal.toFixed(2)}</span>
+                  </div>
                 )}
                 <div className="flex items-center justify-between text-base font-bold mb-4">
                   <span>Total</span><span>₹{total.toFixed(2)}</span>

@@ -345,3 +345,20 @@ async def seed_all(db):
         {"tenant_id": tid, "active": {"$exists": False}},
         {"$set": {"active": True, "hourly_rate": 0.0, "phone": ""}},
     )
+
+    # Backfill GST auto-suggestion onto any category created before the tax
+    # feature existed, across every tenant (not just the demo one above).
+    # Price-banded categories (e.g. apparel) are deliberately left unset so
+    # each item's own price re-derives the rate at order time instead of
+    # freezing the whole category to one rate — see tax.is_price_banded.
+    from tax import suggest_tax_rate, is_price_banded
+    business_type_by_tenant = {
+        t["id"]: t.get("business_type", "restaurant")
+        async for t in db.tenants.find({}, {"_id": 0, "id": 1, "business_type": 1})
+    }
+    async for cat in db.categories.find({"tax_rate": {"$exists": False}}, {"_id": 0, "id": 1, "tenant_id": 1, "name": 1}):
+        business_type = business_type_by_tenant.get(cat["tenant_id"], "restaurant")
+        if is_price_banded(cat["name"], business_type):
+            continue
+        rate = suggest_tax_rate(cat["name"], business_type)
+        await db.categories.update_one({"tenant_id": cat["tenant_id"], "id": cat["id"]}, {"$set": {"tax_rate": rate}})

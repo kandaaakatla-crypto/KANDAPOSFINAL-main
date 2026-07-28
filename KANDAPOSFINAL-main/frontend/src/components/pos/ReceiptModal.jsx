@@ -77,6 +77,13 @@ export default function ReceiptModal({ orderId, open, onClose }) {
               ))}
               <div className="border-t border-dashed border-black my-2" />
               <div className="flex justify-between"><span>Subtotal</span><span className="tabular-nums">₹{data.subtotal.toFixed(2)}</span></div>
+              {data.taxTotal > 0 && (
+                <>
+                  <div className="flex justify-between"><span>{data.taxInclusive ? "GST (incl.)" : "GST"}</span><span className="tabular-nums">₹{data.taxTotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between pl-3 text-[11px]"><span>CGST</span><span className="tabular-nums">₹{data.cgst.toFixed(2)}</span></div>
+                  <div className="flex justify-between pl-3 text-[11px]"><span>SGST</span><span className="tabular-nums">₹{data.sgst.toFixed(2)}</span></div>
+                </>
+              )}
               {data.order.deliveryFee > 0 && (
                 <div className="flex justify-between"><span>Delivery</span><span className="tabular-nums">₹{data.order.deliveryFee.toFixed(2)}</span></div>
               )}

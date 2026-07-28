@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from db import get_db
 from auth import get_current_user, require_role
-from tenants import tenant_filter
+from tenants import tenant_filter, get_tenant
+from tax import suggest_tax_rate, is_price_banded
 from models import (
     Category, CategoryCreate, CategoryUpdate, CategoryReorder,
     MenuItem, MenuItemCreate, MenuItemUpdate, AvailabilityPayload,
@@ -28,6 +29,14 @@ async def list_categories(user: dict = Depends(get_current_user)):
 @router.post("/menu/categories", response_model=Category)
 async def create_category(payload: CategoryCreate, user: dict = Depends(require_role("Manager"))):
     db = get_db()
+    tax_rate = payload.tax_rate
+    if tax_rate is None:
+        tenant = await get_tenant(user, db)
+        business_type = tenant.get("business_type", "restaurant")
+        # Price-banded categories (e.g. apparel) don't get a frozen category
+        # rate — leave it unset so each item's own price re-derives the rate.
+        if not is_price_banded(payload.name, business_type):
+            tax_rate = suggest_tax_rate(payload.name, business_type)
     doc = {
         "id": f"cat_{uuid.uuid4().hex[:8]}",
         "tenant_id": user["tenant_id"],
@@ -35,6 +44,7 @@ async def create_category(payload: CategoryCreate, user: dict = Depends(require_
         "color": payload.color,
         "sort_order": payload.sort_order,
         "station": payload.station,
+        "tax_rate": tax_rate,
     }
     await db.categories.insert_one(doc)
     return clean(doc)
@@ -101,6 +111,7 @@ async def create_menu_item(payload: MenuItemCreate, user: dict = Depends(require
         "image_url": payload.imageUrl,
         "barcode": payload.barcode,
         "variants": [v.model_dump() for v in payload.variants] if payload.variants else None,
+        "tax_rate": payload.tax_rate,
     }
     await db.menu_items.insert_one(doc)
     return menu_doc_to_response(doc)

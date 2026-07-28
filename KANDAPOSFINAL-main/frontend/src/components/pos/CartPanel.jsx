@@ -11,6 +11,7 @@ const TIP_PRESETS = [0, 5, 10, 15];
 
 export default function CartPanel({
   cart, orderType, customer, subtotal, deliveryFee, discount, discountAmt, total: providedTotal,
+  gst = { taxTotal: 0, cgst: 0, sgst: 0 },
   onQty, onRemove, onDiscount, onClear, onSend, onPay,
   // new
   tipPct, onTipPct, coupon, onCoupon, customerEmail, onCustomerEmail,
@@ -27,8 +28,8 @@ export default function CartPanel({
   const tipAmt = +(subtotal * (tipPct || 0) / 100).toFixed(2);
   const couponDiscount = coupon?.discount || 0;
   const loyaltyDiscount = Math.min(redeemPoints || 0, subtotal);
-  // Total: subtotal − %-discount − coupon − loyalty + delivery + tip (+ running bill from earlier rounds)
-  const newRoundTotal = +Math.max(0, subtotal - discountAmt - couponDiscount - loyaltyDiscount + deliveryFee + tipAmt).toFixed(2);
+  // Total: subtotal + GST − %-discount − coupon − loyalty + delivery + tip (+ running bill from earlier rounds)
+  const newRoundTotal = +Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDiscount - loyaltyDiscount + deliveryFee + tipAmt).toFixed(2);
   const total = +(newRoundTotal + (runningBill?.total || 0)).toFixed(2);
 
   const applyCoupon = async (code) => {
@@ -200,6 +201,12 @@ export default function CartPanel({
           </div>
         )}
         <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>{runningBill ? "New subtotal" : "Subtotal"}</span><span className="text-white tabular-nums" data-testid="cart-subtotal">₹{subtotal.toFixed(2)}</span></div>
+        {gst.taxTotal > 0 && (
+          <div className="flex justify-between text-sm" data-testid="cart-gst">
+            <span style={{ color: "var(--pos-muted)" }}>GST (CGST ₹{gst.cgst.toFixed(2)} + SGST ₹{gst.sgst.toFixed(2)})</span>
+            <span className="text-white tabular-nums">₹{gst.taxTotal.toFixed(2)}</span>
+          </div>
+        )}
         {deliveryFee > 0 && <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Delivery fee</span><span className="text-white tabular-nums">₹{deliveryFee.toFixed(2)}</span></div>}
         <div className="flex justify-between items-center text-sm">
           <span className="flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}>

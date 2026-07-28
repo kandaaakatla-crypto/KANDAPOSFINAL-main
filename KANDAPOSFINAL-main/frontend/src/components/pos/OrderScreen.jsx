@@ -11,6 +11,7 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
 import { loyaltyApi, ordersApi } from "../../api/client";
+import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
 
 import { useSearchParams, useNavigate } from "react-router-dom";
 
@@ -21,7 +22,7 @@ const ORDER_TYPES = [
 ];
 
 export default function OrderScreen() {
-  const { menuItems, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser } = usePos();
+  const { menuItems, categories, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser } = usePos();
   const navigate = useNavigate();
   const [orderType, setOrderType] = useState("delivery");
   const [orderSource, setOrderSource] = useState("in-store");
@@ -133,7 +134,7 @@ export default function OrderScreen() {
   const handleItemClick = (item) => {
     if (!item.available) { toast.error(`${item.name} is unavailable`); return; }
     if (item.isPizza || item.catId === "deals") { setModalItem(item); }
-    else { addLine({ name: item.name, qty: 1, price: item.price, mods: [], note: "" }); }
+    else { addLine({ name: item.name, qty: 1, price: item.price, mods: [], note: "", catId: item.catId, taxRate: item.tax_rate }); }
   };
 
   const updateQty = (lineId, delta) => {
@@ -142,13 +143,23 @@ export default function OrderScreen() {
   const removeLine = (lineId) => setCart((prev) => prev.filter((l) => l.lineId !== lineId));
 
   const subtotal = cart.reduce((s, l) => s + l.price * l.qty, 0);
+  // GST is added on top of restaurant menu pricing (exclusive) — mirrors the
+  // authoritative calculation the backend performs at order creation.
+  const gst = useMemo(() => {
+    const lineAmounts = cart.map((l) => {
+      const cat = categories.find((c) => c.id === l.catId);
+      const rate = effectiveTaxRate({ tax_rate: l.taxRate }, cat);
+      return computeLineTax(l.price, l.qty, rate, false);
+    });
+    return computeOrderTax(lineAmounts);
+  }, [cart, categories]);
   // In edit mode, delivery fee was already captured on the original order — don't double it.
   const deliveryFee = !editingOrderId && orderType === "delivery" && cart.length > 0 ? DELIVERY_FEE : 0;
   const discountAmt = (subtotal * discount) / 100;
   const tipAmt = +(subtotal * tipPct / 100).toFixed(2);
   const couponDisc = coupon?.discount || 0;
   const loyaltyDisc = Math.min(redeemPoints || 0, subtotal);
-  const newRoundTotal = Math.max(0, subtotal - discountAmt - couponDisc - loyaltyDisc + deliveryFee + tipAmt);
+  const newRoundTotal = Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDisc - loyaltyDisc + deliveryFee + tipAmt);
   const total = editingOrder ? +(newRoundTotal + editingOrder.total).toFixed(2) : newRoundTotal;
 
   const orderCustomer = () => {
@@ -491,7 +502,7 @@ export default function OrderScreen() {
       <CartPanel
         open={cartOpen} onClose={() => setCartOpen(false)}
         cart={cart} orderType={orderType} customer={orderCustomer()}
-        subtotal={subtotal} deliveryFee={deliveryFee} discount={discount} discountAmt={discountAmt} total={total}
+        subtotal={subtotal} deliveryFee={deliveryFee} discount={discount} discountAmt={discountAmt} total={total} gst={gst}
         onQty={updateQty} onRemove={removeLine} onDiscount={setDiscount}
         onClear={() => { setCart([]); setDiscount(0); setTipPct(0); setCoupon(null); setRedeemPoints(0); }}
         onSend={sendToKitchen}

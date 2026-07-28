@@ -29,6 +29,7 @@ from kds import annotate_order_items_for_kds
 from sms_service import send_sms, normalize_phone
 from routes.orders import _apply_recipes
 from payments import _get_client as _get_razorpay_client
+from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
 from ._shared import PROJECTION, clean, menu_doc_to_response, next_order_number, table_doc_to_response
 import razorpay
 
@@ -89,17 +90,22 @@ class CartLine(BaseModel):
     note: Optional[str] = None
 
 
-async def _resolve_lines(db, tenant_id: str, lines: List[CartLine]) -> list[dict]:
+async def _resolve_lines(db, tenant_id: str, lines: List[CartLine], business_type: str = "restaurant") -> list[dict]:
     if not lines:
         raise HTTPException(status_code=400, detail="Cart is empty")
     ids = list({ln.item_id for ln in lines})
     docs = await db.menu_items.find({"tenant_id": tenant_id, "id": {"$in": ids}}, PROJECTION).to_list(500)
     by_id = {d["id"]: d for d in docs}
+    cat_ids = list({d["cat_id"] for d in docs if d.get("cat_id")})
+    cats = await db.categories.find({"tenant_id": tenant_id, "id": {"$in": cat_ids}}, PROJECTION).to_list(200)
+    cat_by_id = {c["id"]: c for c in cats}
+    inclusive = business_type == "retail"
     out = []
     for ln in lines:
         item = by_id.get(ln.item_id)
         if not item or not item.get("available", True):
             raise HTTPException(status_code=400, detail=f"Item no longer available")
+        cat = cat_by_id.get(item.get("cat_id"))
         qty = max(1, int(ln.qty))
         if item.get("is_pizza"):
             size = ln.size if ln.size in ("sm", "md", "lg") else "md"
@@ -120,12 +126,25 @@ async def _resolve_lines(db, tenant_id: str, lines: List[CartLine]) -> list[dict
             out.append({"name": item["name"], "qty": qty, "price": float(price), "mods": ln.mods[:20], "size": None})
         if ln.note:
             out[-1]["mods"] = out[-1]["mods"] + [f"Note: {ln.note.strip()[:200]}"]
+        rate, _source = resolve_effective_rate(
+            item.get("tax_rate"), cat.get("tax_rate") if cat else None,
+            cat["name"] if cat else "", business_type, out[-1]["price"],
+        )
+        _, tax_amt = compute_line_tax(out[-1]["price"], out[-1]["qty"], rate, inclusive)
+        out[-1]["tax_rate"] = rate
+        out[-1]["tax_amount"] = tax_amt
     return out
 
 
 def _order_doc(tenant_id: str, number: int, order_type: str, customer: dict, table: Optional[int],
-                items: list[dict], source: str = "qr") -> dict:
-    total = round(sum(it["price"] * it["qty"] for it in items), 2)
+                items: list[dict], source: str = "qr", business_type: str = "restaurant") -> dict:
+    inclusive = business_type == "retail"
+    line_amounts = [
+        compute_line_tax(it["price"], it["qty"], it.get("tax_rate", 0) or 0, inclusive)
+        for it in items
+    ]
+    tax = compute_order_tax(line_amounts)
+    total = tax["items_total"]
     return {
         "id": f"o_{uuid.uuid4().hex[:10]}",
         "tenant_id": tenant_id,
@@ -138,6 +157,11 @@ def _order_doc(tenant_id: str, number: int, order_type: str, customer: dict, tab
         "deliveryFee": 0,
         "discount": 0,
         "total": total,
+        "subtotal": tax["subtotal"],
+        "taxTotal": tax["tax_total"],
+        "cgst": tax["cgst"],
+        "sgst": tax["sgst"],
+        "taxInclusive": inclusive,
         "payment": "unpaid",
         "placedAt": now_ist().isoformat(),
         "driver": None,
@@ -184,8 +208,9 @@ async def place_table_order(slug: str, number: int, payload: TableOrderRequest, 
     if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
+    business_type = tenant.get("business_type", "restaurant")
     session = await _optional_storefront_session(request, slug, db)
-    raw_items = await _resolve_lines(db, tenant["id"], payload.items)
+    raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type)
     items = await annotate_order_items_for_kds(db, tenant["id"], raw_items)
     numbr = await next_order_number(db, tenant["id"])
     if session:
@@ -193,7 +218,7 @@ async def place_table_order(slug: str, number: int, payload: TableOrderRequest, 
     else:
         customer_name = (payload.customer_name or "").strip() or f"Table {number}"
         customer = {"id": None, "name": customer_name, "phone": None, "address": None, "postcode": None}
-    doc = _order_doc(tenant["id"], numbr, "dine-in", customer, number, items)
+    doc = _order_doc(tenant["id"], numbr, "dine-in", customer, number, items, business_type=business_type)
     await db.orders.insert_one(doc)
     await _apply_recipes(db, tenant["id"], raw_items)
 
@@ -291,12 +316,13 @@ async def place_pickup_order(slug: str, payload: PickupOrderRequest, request: Re
     db = get_db()
     session = await _storefront_session(request, slug, db)
     tenant = session["tenant"]
+    business_type = tenant.get("business_type", "restaurant")
 
-    raw_items = await _resolve_lines(db, tenant["id"], payload.items)
+    raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type)
     items = await annotate_order_items_for_kds(db, tenant["id"], raw_items)
     numbr = await next_order_number(db, tenant["id"])
     customer = {"id": None, "name": session["name"], "phone": session["phone"], "address": None, "postcode": None}
-    doc = _order_doc(tenant["id"], numbr, "collection", customer, None, items)
+    doc = _order_doc(tenant["id"], numbr, "collection", customer, None, items, business_type=business_type)
     await db.orders.insert_one(doc)
     await _apply_recipes(db, tenant["id"], raw_items)
 

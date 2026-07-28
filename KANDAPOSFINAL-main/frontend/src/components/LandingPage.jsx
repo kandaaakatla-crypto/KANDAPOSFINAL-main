@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
-  Pizza, Store, ShoppingCart, LayoutGrid, ChefHat,
+  Store, ShoppingCart, LayoutGrid, ChefHat,
   Truck, Boxes, Users, BarChart3, MessageCircle, Mic, MapPin, Mail, Phone,
   ArrowRight, CheckCircle2, Sparkles, ShoppingBag,
 } from "lucide-react";
+import KandaMark from "./KandaMark";
 
-const CYCLE_WORDS = ["order", "ticket", "table", "delivery", "refund"];
+const CYCLE_WORDS = ["order", "ticket", "sale", "table", "delivery", "refund"];
 
 const FEATURES = [
   { icon: ShoppingCart, title: "Order Management", desc: "Delivery, collection & dine-in orders on one fast, built-for-busy-shifts screen.", big: true },
+  { icon: ShoppingBag, title: "Retail Checkout", desc: "Barcode scanning, product variants, and basket-first checkout for shops." },
   { icon: ChefHat, title: "Kitchen Display", desc: "Real-time ticket routing by station, with prep timers." },
   { icon: LayoutGrid, title: "Tables & Floor Plan", desc: "Drag-and-drop layout, live status, reservations." },
   { icon: Truck, title: "Dispatch & Delivery", desc: "Driver assignment and live order tracking." },
@@ -23,10 +25,33 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: "3", label: "Order channels — dine-in, collection, delivery" },
-  { value: "9", label: "Core modules, one login" },
-  { value: "24/7", label: "Kitchen-to-counter sync" },
+  { value: "4", label: "Order & sale channels: dine-in, collection, delivery, retail" },
+  { value: "10", label: "Core modules, one login" },
+  { value: "24/7", label: "Live sync across every till & station" },
   { value: "1", label: "Owner portal for every location" },
+];
+
+const TICKET_MOCKS = [
+  {
+    tag: "Dine-In",
+    orderId: "Order #1042",
+    lines: [
+      ["2× Pepperoni Passion (M)", "₹798"],
+      ["1× Veggie Supreme (M)", "₹379"],
+      ["3× Garlic Bread (4pc)", "₹387"],
+    ],
+    total: "₹1,564",
+  },
+  {
+    tag: "Retail Sale",
+    orderId: "Sale #R-0231",
+    lines: [
+      ["1× Wireless Earbuds", "₹1,999"],
+      ["1× 20000mAh Power Bank", "₹1,499"],
+      ["2× USB-C Cable 1m", "₹598"],
+    ],
+    total: "₹4,096",
+  },
 ];
 
 const NAV_LINKS = [
@@ -36,8 +61,8 @@ const NAV_LINKS = [
 ];
 
 const PORTALS = [
-  { label: "Demo Restaurant POS", desc: "Staff terminal — orders, tables, kitchen, dispatch", icon: Store, to: "/login" },
-  { label: "Demo Retail POS — Urban Mart", desc: "Staff terminal — basket checkout, barcode scan, variants", icon: ShoppingBag, to: "/login?tenant=urbanmart" },
+  { label: "Demo Restaurant POS", desc: "Staff terminal: orders, tables, kitchen, dispatch", icon: Store, to: "/login" },
+  { label: "Demo Retail POS: Urban Mart", desc: "Staff terminal: basket checkout, barcode scan, variants", icon: ShoppingBag, to: "/login?tenant=urbanmart" },
 ];
 
 const GET_STARTED_ID = "get-started";
@@ -67,14 +92,22 @@ function SectionLabel({ children }) {
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", phone: "", restaurant: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [wordIdx, setWordIdx] = useState(0);
+  const [ticketIdx, setTicketIdx] = useState(0);
 
   useEffect(() => {
     const t = setInterval(() => setWordIdx((i) => (i + 1) % CYCLE_WORDS.length), 1800);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setTicketIdx((i) => (i + 1) % TICKET_MOCKS.length), 3600);
+    return () => clearInterval(t);
+  }, []);
+
+  const ticket = TICKET_MOCKS[ticketIdx];
 
   const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -94,10 +127,11 @@ export default function LandingPage() {
       <header className="sticky top-0 z-20" style={{ background: "rgba(11,18,32,0.75)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <motion.div whileHover={{ rotate: -18 }} className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
-              <Pizza className="w-5 h-5 text-white" />
+            <motion.div whileHover={{ rotate: -8 }}>
+              <KandaMark size={36} />
             </motion.div>
-            <span className="font-bold tracking-tight">KANDA POS</span>
+            <span className="font-bold tracking-tight text-xl">Kanda</span>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: "#F2B33D", color: "#1a1a1a" }}>POS</span>
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm" style={{ color: "var(--pos-muted)" }}>
             {NAV_LINKS.map((l) => (
@@ -117,7 +151,7 @@ export default function LandingPage() {
 
         <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <SectionLabel>Point of sale, built for restaurants</SectionLabel>
+            <SectionLabel>Point of sale, built for restaurants &amp; retail</SectionLabel>
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
@@ -139,8 +173,9 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg max-w-2xl mx-auto mb-10" style={{ color: "var(--pos-muted)" }}
           >
-            Kanda POS runs delivery, collection and dine-in orders, kitchen tickets, staff,
-            inventory and reporting for busy pizza &amp; fast-food restaurants — all from one system.
+            Kanda POS runs dine-in, collection, delivery and in-store retail sales, handling
+            kitchen tickets, barcode checkout, staff, inventory and reporting for busy
+            restaurants and retail stores, all from one system.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
@@ -160,9 +195,9 @@ export default function LandingPage() {
           <div className="land-marquee-track">
             {[...Array(2)].map((_, rep) => (
               <div key={rep} className="flex items-center gap-10 pr-10 shrink-0">
-                {["Dine-in", "Delivery", "Collection", "Kitchen Display", "Inventory", "Payroll", "Loyalty", "Reports", "Multi-location"].map((w) => (
+                {["Dine-in", "Delivery", "Collection", "Retail Checkout", "Kitchen Display", "Inventory", "Payroll", "Loyalty", "Reports", "Multi-location"].map((w) => (
                   <span key={w} className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap" style={{ color: "var(--pos-muted)" }}>
-                    <Pizza className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> {w}
+                    <Store className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> {w}
                   </span>
                 ))}
               </div>
@@ -188,54 +223,58 @@ export default function LandingPage() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <Reveal>
             <SectionLabel>About Kanda POS</SectionLabel>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">One system, every part of the restaurant</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">One system, every part of the business</h2>
             <p style={{ color: "var(--pos-muted)" }} className="leading-relaxed mb-4">
-              Kanda POS was built for busy, high-volume restaurants that can't afford a
-              terminal that freezes or a kitchen ticket that gets lost. It brings the front
-              of house, the kitchen, delivery drivers, and the back office onto a single
+              Kanda POS was built for busy, high-volume restaurants and retail stores that
+              can't afford a terminal that freezes, a kitchen ticket that gets lost, or a
+              till that can't keep up. It brings the front of house or shop floor, the
+              kitchen or stockroom, delivery drivers, and the back office onto a single
               connected platform.
             </p>
             <p style={{ color: "var(--pos-muted)" }} className="leading-relaxed">
-              Multi-location and multi-tenant from day one — a restaurant group can run
-              every store from one owner portal, while each location's staff only ever see
-              their own till.
+              Multi-location and multi-tenant from day one, a restaurant group or retail
+              chain can run every store from one owner portal, while each location's staff
+              only ever see their own till.
             </p>
           </Reveal>
 
-          {/* Stylized ticket mockup */}
+          {/* Stylized ticket mockup — alternates between a restaurant order and a retail sale */}
           <Reveal delay={0.15}>
-            <motion.div
-              whileHover={{ rotate: 0 }}
-              initial={{ rotate: -3 }}
-              className="rounded-2xl p-6 mx-auto max-w-sm"
-              style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", boxShadow: "0 20px 60px -20px rgba(249,115,22,0.25)" }}
-            >
-              <div className="flex items-center justify-between mb-4 pb-4" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
-                <span className="font-bold text-sm">Order #1042</span>
-                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(249,115,22,0.15)", color: "var(--pos-accent)" }}>Dine-In</span>
-              </div>
-              {[
-                ["2× Pepperoni Passion (M)", "₹798"],
-                ["1× Veggie Supreme (M)", "₹379"],
-                ["3× Garlic Bread (4pc)", "₹387"],
-              ].map(([item, price], i) => (
+            <div className="mx-auto max-w-sm">
+              <AnimatePresence mode="wait">
                 <motion.div
-                  key={item}
-                  initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 + i * 0.12 }}
-                  className="flex items-center justify-between text-sm py-1.5"
+                  key={ticket.tag}
+                  whileHover={{ rotate: 0 }}
+                  initial={{ opacity: 0, y: 10, rotate: -3 }}
+                  animate={{ opacity: 1, y: 0, rotate: -3 }}
+                  exit={{ opacity: 0, y: -10, rotate: -3 }}
+                  transition={{ duration: 0.3 }}
+                  className="rounded-2xl p-6"
+                  style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", boxShadow: "0 20px 60px -20px rgba(249,115,22,0.25)" }}
                 >
-                  <span>{item}</span>
-                  <span style={{ color: "var(--pos-muted)" }}>{price}</span>
+                  <div className="flex items-center justify-between mb-4 pb-4" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                    <span className="font-bold text-sm">{ticket.orderId}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(249,115,22,0.15)", color: "var(--pos-accent)" }}>{ticket.tag}</span>
+                  </div>
+                  {ticket.lines.map(([item, price], i) => (
+                    <motion.div
+                      key={item}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + i * 0.1 }}
+                      className="flex items-center justify-between text-sm py-1.5"
+                    >
+                      <span>{item}</span>
+                      <span style={{ color: "var(--pos-muted)" }}>{price}</span>
+                    </motion.div>
+                  ))}
+                  <div className="flex items-center justify-between mt-4 pt-4 font-bold" style={{ borderTop: "1px dashed var(--pos-border)" }}>
+                    <span>Total</span>
+                    <span style={{ color: "var(--pos-accent)" }}>{ticket.total}</span>
+                  </div>
                 </motion.div>
-              ))}
-              <div className="flex items-center justify-between mt-4 pt-4 font-bold" style={{ borderTop: "1px dashed var(--pos-border)" }}>
-                <span>Total</span>
-                <span style={{ color: "var(--pos-accent)" }}>₹1,564</span>
-              </div>
-            </motion.div>
+              </AnimatePresence>
+            </div>
           </Reveal>
         </div>
       </section>
@@ -244,7 +283,7 @@ export default function LandingPage() {
       <section id="features" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <Reveal className="text-center mb-14">
           <SectionLabel>Features</SectionLabel>
-          <h2 className="text-3xl md:text-4xl font-bold">Everything a restaurant needs to run</h2>
+          <h2 className="text-3xl md:text-4xl font-bold">Everything a restaurant or retail store needs to run</h2>
         </Reveal>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-fr">
           {FEATURES.map(({ icon: Icon, title, desc, big }, i) => (
@@ -268,21 +307,21 @@ export default function LandingPage() {
           <Reveal className="p-10 flex flex-col justify-between" style={{ background: "linear-gradient(160deg, var(--pos-accent) 0%, #c2410c 100%)" }}>
             <div>
               <div className="text-xs font-bold tracking-[0.3em] uppercase mb-4 text-white/80">Contact &amp; Demo</div>
-              <h2 className="text-3xl font-bold mb-4 text-white">Let's get your restaurant on Kanda POS</h2>
+              <h2 className="text-3xl font-bold mb-4 text-white">Let's get your business on Kanda POS</h2>
               <p className="text-white/85 leading-relaxed">
-                Tell us about your restaurant and we'll set up a walkthrough — or reach us
-                directly using the details below.
+                Tell us about your restaurant or retail store and we'll set up a walkthrough,
+                or reach us directly using the details below.
               </p>
             </div>
             <div className="flex flex-col gap-4 mt-10">
-              <a href="mailto:hello@kandapos.com" className="flex items-center gap-3 text-white">
-                <Mail className="w-5 h-5 shrink-0" /> hello@kandapos.com
+              <a href="mailto:connect@kandapos.com" className="flex items-center gap-3 text-white">
+                <Mail className="w-5 h-5 shrink-0" /> connect@kandapos.com
               </a>
-              <a href="tel:+914012345678" className="flex items-center gap-3 text-white">
-                <Phone className="w-5 h-5 shrink-0" /> +91 40 1234 5678
+              <a href="tel:+919000990209" className="flex items-center gap-3 text-white">
+                <Phone className="w-5 h-5 shrink-0" /> +91 90009 90209
               </a>
               <div className="flex items-center gap-3 text-white">
-                <MapPin className="w-5 h-5 shrink-0" /> HiTech City, Hyderabad, India
+                <MapPin className="w-5 h-5 shrink-0" /> Hyderabad, India
               </div>
             </div>
           </Reveal>
@@ -304,7 +343,7 @@ export default function LandingPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <input placeholder="Phone number" value={form.phone} onChange={update("phone")}
                     className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                  <input placeholder="Restaurant name" value={form.restaurant} onChange={update("restaurant")}
+                  <input placeholder="Business name" value={form.business} onChange={update("business")}
                     className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
                 </div>
                 <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}
@@ -354,7 +393,7 @@ export default function LandingPage() {
         </div>
         <div className="relative max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm" style={{ color: "var(--pos-muted)" }}>
           <div className="flex items-center gap-2">
-            <Pizza className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
+            <Store className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
             <span>© {new Date().getFullYear()} Kanda POS. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6">

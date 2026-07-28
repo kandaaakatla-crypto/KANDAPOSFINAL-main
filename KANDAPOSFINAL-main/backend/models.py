@@ -20,7 +20,7 @@ BusinessType = Literal["restaurant", "retail"]
 # defaults on for both — the Platform Owner can always override per client.
 _DINE_IN_KEYS = ["tables", "kitchen_display", "packing_station", "dispatch", "meal_deals", "pizza_sizing"]
 _UNIVERSAL_KEYS = ["qr_ordering", "online_payments", "loyalty", "customer_display",
-                   "voice_agent", "customer_sms", "whatsapp", "daily_digest"]
+                   "voice_agent", "customer_sms", "whatsapp", "daily_digest", "payroll"]
 _FEATURE_KEYS = _DINE_IN_KEYS + _UNIVERSAL_KEYS
 
 
@@ -39,6 +39,7 @@ class TenantFeatures(BaseModel):
     customer_sms: bool = True
     whatsapp: bool = True
     daily_digest: bool = True
+    payroll: bool = True
 
 
 def default_features(business_type: str) -> dict:
@@ -72,6 +73,7 @@ class TenantFeaturesUpdate(BaseModel):
     customer_sms: Optional[bool] = None
     whatsapp: Optional[bool] = None
     daily_digest: Optional[bool] = None
+    payroll: Optional[bool] = None
 
 
 # ---------- Users ----------
@@ -100,6 +102,7 @@ class Category(BaseModel):
     color: str
     sort_order: int = 0
     station: Optional[str] = None
+    tax_rate: Optional[float] = None  # GST % applied to items in this category unless overridden per-item
 
 
 class CategoryCreate(BaseModel):
@@ -107,6 +110,7 @@ class CategoryCreate(BaseModel):
     color: str = "#3b82f6"
     sort_order: int = 100
     station: Optional[str] = None
+    tax_rate: Optional[float] = None  # None = auto-suggest from name + tenant business type
 
 
 class CategoryUpdate(BaseModel):
@@ -114,6 +118,7 @@ class CategoryUpdate(BaseModel):
     color: Optional[str] = None
     sort_order: Optional[int] = None
     station: Optional[str] = None
+    tax_rate: Optional[float] = None
 
 
 class CategoryReorder(BaseModel):
@@ -162,6 +167,7 @@ class MenuItem(BaseModel):
     imageUrl: Optional[str] = None
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
+    tax_rate: Optional[float] = None  # GST % override; None = inherit the category's rate
 
 
 class MenuItemCreate(BaseModel):
@@ -176,6 +182,7 @@ class MenuItemCreate(BaseModel):
     imageUrl: Optional[str] = None
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
+    tax_rate: Optional[float] = None
 
 
 class MenuItemUpdate(BaseModel):
@@ -190,6 +197,7 @@ class MenuItemUpdate(BaseModel):
     imageUrl: Optional[str] = None
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
+    tax_rate: Optional[float] = None
 
 
 class AvailabilityPayload(BaseModel):
@@ -406,6 +414,8 @@ class OrderItem(BaseModel):
     price: float
     mods: List[str] = []
     size: Optional[str] = None
+    tax_rate: Optional[float] = None  # resolved GST % for this line, stamped server-side
+    tax_amount: Optional[float] = None  # resolved GST amount for this line, stamped server-side
 
 
 class OrderCreate(BaseModel):
@@ -466,6 +476,12 @@ class Order(BaseModel):
     loyalty_redeemed: int = 0
     splits: Optional[List[OrderSplit]] = None
     packed: bool = False
+    # GST breakdown, computed server-side at checkout (see tax.py).
+    subtotal: float = 0
+    taxTotal: float = 0
+    cgst: float = 0
+    sgst: float = 0
+    taxInclusive: bool = False  # True when item prices already included tax (retail MRP) and it was extracted, not added on top
 
 
 class OrderStatusPayload(BaseModel):
@@ -606,6 +622,21 @@ class TimesheetRow(BaseModel):
     overtime_hours: float
     gross_pay: float
     days_worked: int
+
+
+# ---------- Payroll ----------
+class PayrollRow(BaseModel):
+    user_id: str
+    user_name: str
+    role: StaffRole
+    pay_type: PayType
+    hourly_rate: float
+    monthly_pay: float
+    total_hours: float
+    overtime_hours: float
+    wage_pay: float   # hours-based (hourly staff) or period-prorated (monthly staff)
+    tips: float
+    gross_pay: float  # wage_pay + tips
 
 
 # ---------- Shifts / Rota ----------

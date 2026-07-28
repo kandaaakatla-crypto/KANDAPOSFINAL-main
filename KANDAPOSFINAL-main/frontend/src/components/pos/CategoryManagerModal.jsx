@@ -20,7 +20,9 @@ export default function CategoryManagerModal({ open, onClose, onChanged }) {
 
   const save = async (c) => {
     try {
-      await menuApi.updateCategory(c.id, { name: c.name, color: c.color, station: c.station || null });
+      const payload = { name: c.name, color: c.color, station: c.station || null };
+      if (c.tax_rate !== "" && c.tax_rate != null) payload.tax_rate = parseFloat(c.tax_rate);
+      await menuApi.updateCategory(c.id, payload);
       toast.success("Category saved");
       load();
       onChanged && onChanged();
@@ -66,6 +68,9 @@ export default function CategoryManagerModal({ open, onClose, onChanged }) {
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2"><LayoutGrid className="w-4 h-4" /> Manage categories</DialogTitle>
         </DialogHeader>
+        <p className="text-[11px] -mt-2" style={{ color: "var(--pos-muted)" }}>
+          The last field is each category's GST %, auto-suggested for you — leave a row blank to keep it auto-resolved, or type a number to override. Confirm the correct rate for your products with your CA.
+        </p>
         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {cats.map((c, i) => (
             <div key={c.id} data-testid={`category-row-${c.id}`} className="flex items-center gap-2 rounded-md p-2"
@@ -82,6 +87,9 @@ export default function CategoryManagerModal({ open, onClose, onChanged }) {
                 className="h-9 px-2 rounded text-xs text-white" style={{ background: "var(--pos-bg)", border: "1px solid var(--pos-border)" }}>
                 {STATIONS.map((s) => <option key={s || "auto"} value={s}>{s || "auto-route"}</option>)}
               </select>
+              <Input data-testid={`category-tax-${c.id}`} type="number" placeholder="Auto" title="GST % for items in this category (blank = auto-resolved per item)"
+                value={c.tax_rate ?? ""} onChange={(e) => patch(c.id, { tax_rate: e.target.value })}
+                className="w-16 h-9 text-white text-xs" style={{ background: "var(--pos-bg)", borderColor: "var(--pos-border)" }} />
               <button data-testid={`category-save-${c.id}`} onClick={() => save(c)} className="pos-btn h-9 w-9 rounded-md flex items-center justify-center"
                 style={{ background: "var(--pos-accent)", color: "#fff" }}>
                 <Save className="w-3.5 h-3.5" />

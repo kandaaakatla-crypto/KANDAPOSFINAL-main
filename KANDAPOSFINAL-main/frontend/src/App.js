@@ -44,6 +44,7 @@ import DashVoice from "./components/dash/DashVoice";
 import DashDigest from "./components/dash/DashDigest";
 import DashSms from "./components/dash/DashSms";
 import DashWhatsApp from "./components/dash/DashWhatsApp";
+import PayrollScreen from "./components/dash/PayrollScreen";
 import AIAssistant from "./components/AIAssistant";
 
 function Protected({ children }) {
@@ -101,6 +102,7 @@ function App() {
                   <Route index element={<DashHome />} />
                   <Route path="menu" element={<MenuScreen />} />
                   <Route path="staff" element={<StaffScreen />} />
+                  <Route path="payroll" element={<PayrollScreen />} />
                   <Route path="workforce" element={<WorkforceScreen />} />
                   <Route path="customers" element={<CustomersScreen />} />
                   <Route path="reports" element={<ReportsScreen />} />

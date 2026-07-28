@@ -234,6 +234,10 @@ export const timeclockApi = {
   timesheet: (params = {}) => api.get("/timeclock/timesheet", { params }).then((r) => r.data),
 };
 
+export const payrollApi = {
+  summary: (params = {}) => api.get("/payroll/summary", { params }).then((r) => r.data),
+};
+
 export const shiftsApi = {
   list: (params = {}) => api.get("/shifts", { params }).then((r) => r.data),
   create: (payload) => api.post("/shifts", payload).then((r) => r.data),

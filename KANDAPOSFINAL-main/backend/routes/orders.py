@@ -15,6 +15,7 @@ from ws import schedule_broadcast
 from kds import annotate_order_items_for_kds
 from email_service import send_email, order_receipt_email
 from models import Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload
+from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
 from . import loyalty as loyalty_mod
 from ._shared import PROJECTION, clean, next_order_number, table_doc_to_response
 
@@ -76,6 +77,55 @@ async def _apply_recipes(db, tenant_id: str, items: list[dict]):
             logger.exception("Failed to decrement inventory %s by %s", inv_id, total)
 
 
+def _base_item_name(name: str) -> str:
+    """Strip known suffixes so a cart line still matches its base menu item:
+    - Pizza sizes are serialised like 'Pepperoni Passion 12"'.
+    - Retail variants are serialised like 'Round Neck T-Shirt — Medium'
+      (see RetailSaleScreen.jsx's addVariant)."""
+    if '"' in name:
+        return name.split('"')[0].rsplit(" ", 1)[0]
+    if " — " in name:
+        return name.split(" — ", 1)[0]
+    return name
+
+
+async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[dict]) -> list[tuple]:
+    """Resolve each order item's effective GST rate via its menu item/category,
+    stamp tax_rate/tax_amount onto the item dict in place, and return the
+    (taxable_value, tax_amount) pairs for the order-level GST breakdown.
+
+    Matches items back to their menu item by name (orders don't carry a menu
+    item id today), same best-effort approach already used for KDS station
+    routing and recipe-based inventory decrement elsewhere in this file."""
+    menu = await db.menu_items.find(
+        {"tenant_id": tenant_id}, {"_id": 0, "name": 1, "cat_id": 1, "tax_rate": 1},
+    ).to_list(2000)
+    by_name = {m["name"]: m for m in menu}
+    cats = await db.categories.find(
+        {"tenant_id": tenant_id}, {"_id": 0, "id": 1, "name": 1, "tax_rate": 1},
+    ).to_list(200)
+    cat_by_id = {c["id"]: c for c in cats}
+    inclusive = business_type == "retail"
+
+    line_amounts: list[tuple] = []
+    for it in items:
+        name = it.get("name", "")
+        menu_item = by_name.get(name) or by_name.get(_base_item_name(name))
+        cat = cat_by_id.get(menu_item["cat_id"]) if menu_item else None
+        rate, _source = resolve_effective_rate(
+            menu_item.get("tax_rate") if menu_item else None,
+            cat.get("tax_rate") if cat else None,
+            cat["name"] if cat else "",
+            business_type,
+            it.get("price"),
+        )
+        taxable, tax_amt = compute_line_tax(it.get("price", 0) or 0, it.get("qty", 0) or 0, rate, inclusive)
+        it["tax_rate"] = rate
+        it["tax_amount"] = tax_amt
+        line_amounts.append((taxable, tax_amt))
+    return line_amounts
+
+
 @router.get("/orders", response_model=List[Order])
 async def list_orders(user: dict = Depends(get_current_user)):
     db = get_db()
@@ -90,14 +140,25 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     placed_at = now_ist().isoformat()
     raw_items = [it.model_dump() for it in payload.items]
 
-    # Validate splits if provided — must sum (±1¢) to total.
+    tenant_doc = await get_tenant(user, db)
+    business_type = tenant_doc.get("business_type", "restaurant")
+
+    # GST: resolve each line's effective rate via its menu item/category,
+    # stamp tax_rate/tax_amount onto the item, and derive the authoritative
+    # order total server-side — the whole point of "tax compliant" is that
+    # these numbers are computed here, not merely trusted from the client.
+    line_amounts = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
+    tax = compute_order_tax(line_amounts)
+    grand_total = round(tax["items_total"] - float(payload.discount or 0) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
+
+    # Validate splits if provided — must sum (±1¢) to the server-computed total.
     splits_payload = None
     if payload.splits:
         ssum = round(sum(float(s.amount) for s in payload.splits), 2)
-        if abs(ssum - round(float(payload.total), 2)) > 0.01:
+        if abs(ssum - grand_total) > 0.01:
             raise HTTPException(
                 status_code=400,
-                detail=f"Split amounts ({ssum}) must sum to total ({payload.total})",
+                detail=f"Split amounts ({ssum}) must sum to total ({grand_total})",
             )
         splits_payload = [{"method": s.method, "amount": float(s.amount)} for s in payload.splits]
 
@@ -112,7 +173,12 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         "items": await annotate_order_items_for_kds(db, user["tenant_id"], raw_items),
         "deliveryFee": payload.deliveryFee,
         "discount": payload.discount,
-        "total": payload.total,
+        "total": grand_total,
+        "subtotal": tax["subtotal"],
+        "taxTotal": tax["tax_total"],
+        "cgst": tax["cgst"],
+        "sgst": tax["sgst"],
+        "taxInclusive": business_type == "retail",
         "payment": payload.payment,
         "placedAt": placed_at,
         "driver": payload.driver,
@@ -143,7 +209,6 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     # Loyalty: burn requested points first (so earn is computed on the
     # already-discounted total), then credit on the resulting paid amount.
     # Skipped entirely if the tenant has the loyalty feature turned off.
-    tenant_doc = await get_tenant(user, db)
     loyalty_on = (tenant_doc.get("features") or {}).get("loyalty", True)
     redeemed = 0
     if loyalty_on and payload.redeem_loyalty_points and payload.redeem_loyalty_points > 0:
@@ -211,17 +276,29 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
     if existing.get("payment") in ("cash", "card"):
         raise HTTPException(status_code=400, detail="Order already paid — start a new order")
 
+    tenant_doc = await get_tenant(user, db)
+    business_type = tenant_doc.get("business_type", "restaurant")
+
     raw_items = [it.model_dump() for it in payload.items]
+    line_amounts = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
+    add_tax = compute_order_tax(line_amounts)
     annotated = await annotate_order_items_for_kds(db, user["tenant_id"], raw_items)
-    add_subtotal = round(sum((it.get("price", 0) or 0) * (it.get("qty", 0) or 0) for it in raw_items), 2)
-    new_total = round(float(existing.get("total", 0) or 0) + add_subtotal, 2)
+    new_total = round(float(existing.get("total", 0) or 0) + add_tax["items_total"], 2)
+    new_subtotal = round(float(existing.get("subtotal", 0) or 0) + add_tax["subtotal"], 2)
+    new_tax_total = round(float(existing.get("taxTotal", 0) or 0) + add_tax["tax_total"], 2)
+    new_cgst = round(float(existing.get("cgst", 0) or 0) + add_tax["cgst"], 2)
+    new_sgst = round(float(existing.get("sgst", 0) or 0) + add_tax["sgst"], 2)
 
     # Drop status back to 'new' so KDS re-alerts staff to the freshly-added items.
     res = await db.orders.find_one_and_update(
         tenant_filter(user, {"id": order_id}),
         {
             "$push": {"items": {"$each": annotated}},
-            "$set": {"total": new_total, "status": "new"},
+            "$set": {
+                "total": new_total, "status": "new",
+                "subtotal": new_subtotal, "taxTotal": new_tax_total,
+                "cgst": new_cgst, "sgst": new_sgst,
+            },
         },
         return_document=True,
     )

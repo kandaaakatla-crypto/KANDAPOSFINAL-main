@@ -50,7 +50,7 @@ export default function ItemModal({ item, menuItems = [], onClose, onAdd }) {
           return `${g.label.replace(/^Choose\s*/i, "")}: ${m ? m.name : "?"}${sizeTag}`;
         });
       });
-      onAdd({ name: item.name, qty, price: item.price, mods, note: note ? `${note}` : "" });
+      onAdd({ name: item.name, qty, price: item.price, mods, note: note ? `${note}` : "", catId: item.catId, taxRate: item.tax_rate });
       onClose();
       return;
     }
@@ -61,6 +61,8 @@ export default function ItemModal({ item, menuItems = [], onClose, onAdd }) {
       price: Math.round(unitPrice * 100) / 100,
       mods: [...toppings.map((t) => `+ ${t}`), ...(note ? [`Note: ${note}`] : [])],
       note,
+      catId: item.catId,
+      taxRate: item.tax_rate,
     });
     onClose();
   };

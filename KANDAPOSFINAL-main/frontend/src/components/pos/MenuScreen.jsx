@@ -55,6 +55,8 @@ export default function MenuScreen() {
       ? item.variants.map((v) => ({ ...v, price: parseFloat(v.price) || 0 }))
       : null;
     item.barcode = (item.barcode || "").trim() || null;
+    item.tax_rate = item.tax_rate === "" || item.tax_rate == null ? null : parseFloat(item.tax_rate);
+    if (Number.isNaN(item.tax_rate)) item.tax_rate = null;
     upsertMenuItem(item);
     toast.success(editing.id ? "Item updated" : "Item added to menu");
     setEditing(null);
@@ -66,14 +68,16 @@ export default function MenuScreen() {
     e.dealGroups = item.dealGroups || [];
     e.variants = item.variants || [];
     e.barcode = item.barcode || "";
+    e.tax_rate = item.tax_rate ?? "";
     setEditing(e);
   };
 
   const openNew = () => {
-    setEditing({ name: "", desc: "", catId: activeCat, price: "", available: true, isPizza: false, sm: "", md: "", lg: "", dealGroups: [], imageUrl: "", barcode: "", variants: [] });
+    setEditing({ name: "", desc: "", catId: activeCat, price: "", available: true, isPizza: false, sm: "", md: "", lg: "", dealGroups: [], imageUrl: "", barcode: "", variants: [], tax_rate: "" });
   };
 
   const isDealsCat = editing?.catId === "deals";
+  const activeCatTaxRate = editing ? cats.find((c) => c.id === editing.catId)?.tax_rate ?? null : null;
   const addDealGroup = () => setEditing({ ...editing, dealGroups: [...(editing.dealGroups || []), { cat_id: cats.find((c) => c.id !== "deals")?.id || "", label: "", count: 1, size: null }] });
   const updateDealGroup = (i, patch) => setEditing({ ...editing, dealGroups: editing.dealGroups.map((g, gi) => (gi === i ? { ...g, ...patch } : g)) });
   const removeDealGroup = (i) => setEditing({ ...editing, dealGroups: editing.dealGroups.filter((_, gi) => gi !== i) });
@@ -86,6 +90,12 @@ export default function MenuScreen() {
     if (m.isPizza) return `₹${m.sizes.sm.toFixed(2)} / ₹${m.sizes.md.toFixed(2)} / ₹${m.sizes.lg.toFixed(2)}`;
     if (Array.isArray(m.variants) && m.variants.length) return `From ₹${Math.min(...m.variants.map((v) => v.price)).toFixed(2)}`;
     return `₹${(m.price || 0).toFixed(2)}`;
+  };
+
+  const taxLabel = (m) => {
+    if (m.tax_rate != null) return `${m.tax_rate}%`;
+    const cat = cats.find((c) => c.id === m.catId);
+    return cat?.tax_rate != null ? `${cat.tax_rate}% (auto)` : "auto";
   };
 
   const [importPreview, setImportPreview] = useState(null); // { file, body }
@@ -192,7 +202,7 @@ export default function MenuScreen() {
         <table className="w-full text-sm hidden md:table">
           <thead>
             <tr style={{ background: "var(--pos-panel)" }}>
-              {["Item", "Description", "Price", "Available", "actions"].map((h) => (
+              {["Item", "Description", "Price", "GST", "Available", "actions"].map((h) => (
                 <th key={h} className="text-left px-4 py-3 text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--pos-muted)", borderBottom: "1px solid var(--pos-border)" }}>{h === "actions" ? "" : h}</th>
               ))}
             </tr>
@@ -204,6 +214,9 @@ export default function MenuScreen() {
                 <td className="px-4 py-3 max-w-xs truncate" style={{ color: "var(--pos-muted)" }}>{m.desc || "—"}</td>
                 <td className="px-4 py-3 tabular-nums font-semibold" style={{ color: "var(--pos-accent)" }}>
                   {priceLabel(m)}
+                </td>
+                <td className="px-4 py-3 text-xs tabular-nums" style={{ color: "var(--pos-muted)" }}>
+                  {taxLabel(m)}
                 </td>
                 <td className="px-4 py-3">
                   <Switch data-testid={`toggle-${m.id}`} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} />
@@ -239,8 +252,11 @@ export default function MenuScreen() {
                 <Switch data-testid={`toggle-${m.id}`} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} className="shrink-0" />
               </div>
               <div className="flex items-center justify-between gap-2">
-                <div className="text-sm font-semibold tabular-nums" style={{ color: "var(--pos-accent)" }}>
-                  {priceLabel(m)}
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold tabular-nums" style={{ color: "var(--pos-accent)" }}>
+                    {priceLabel(m)}
+                  </div>
+                  <div className="text-[11px] tabular-nums" style={{ color: "var(--pos-muted)" }}>GST {taxLabel(m)}</div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {editable && isManager && (
@@ -307,6 +323,15 @@ export default function MenuScreen() {
                 <Input data-testid="menu-field-price" type="number" placeholder="Price ₹ *" value={editing.price} onChange={(e) => setEditing({ ...editing, price: e.target.value })}
                   className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
               )}
+
+              <label className="block">
+                <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--pos-muted)" }}>
+                  GST % — {activeCatTaxRate != null ? `auto: ${activeCatTaxRate}% from category` : "auto-resolved per item"}
+                </div>
+                <Input data-testid="menu-field-tax-rate" type="number" placeholder="Auto" value={editing.tax_rate}
+                  onChange={(e) => setEditing({ ...editing, tax_rate: e.target.value })}
+                  className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              </label>
 
               {!editing.isPizza && (
                 <div className="rounded-lg p-3 space-y-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
