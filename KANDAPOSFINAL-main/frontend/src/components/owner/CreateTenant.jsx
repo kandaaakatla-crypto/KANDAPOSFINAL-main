@@ -2,8 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ownerData } from "../../api/ownerClient";
 import { Input } from "../ui/input";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Copy, CheckCircle2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+
+const DASH_ROLE_LABEL = { owner: "Owner", area_manager: "Area Manager", manager: "Manager" };
 
 export default function CreateTenant() {
   const nav = useNavigate();
@@ -14,6 +16,7 @@ export default function CreateTenant() {
     business_type: "restaurant",
   });
   const [busy, setBusy] = useState(false);
+  const [created, setCreated] = useState(null);
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
   const setStore = (k, v) => setForm((p) => ({ ...p, store: { ...p.store, [k]: v } }));
@@ -25,7 +28,7 @@ export default function CreateTenant() {
     try {
       const t = await ownerData.createTenant(form);
       toast.success(`${t.name} provisioned`);
-      nav(`/owner/tenants/${t.id}`);
+      setCreated(t); // show the one-time dashboard credentials before navigating away
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Could not create tenant");
     } finally { setBusy(false); }
@@ -33,6 +36,44 @@ export default function CreateTenant() {
 
   const fld = "h-10 text-white";
   const fldStyle = { background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" };
+
+  if (created) {
+    return (
+      <div className="max-w-2xl space-y-5" data-testid="create-tenant-success">
+        <div>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+            <CheckCircle2 className="w-6 h-6" style={{ color: "var(--pos-accent)" }} /> {created.name} provisioned
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>
+            Dashboard accounts were created automatically. These passwords are shown <b>only here, once</b> —
+            copy them down now and hand them to the client. Each account is forced to set its own password on first login.
+          </p>
+        </div>
+        <div className="rounded-xl p-4 space-y-2" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+          {(created.dashboard_accounts || []).map((a) => (
+            <div key={a.email} className="flex items-center justify-between gap-3 rounded-lg p-3" style={{ background: "var(--pos-panel-2)" }}>
+              <div className="min-w-0">
+                <div className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--pos-accent)" }}>{DASH_ROLE_LABEL[a.dash_role] || a.dash_role}</div>
+                <div className="text-sm text-white font-mono truncate">{a.email}</div>
+                <div className="text-sm text-white font-mono truncate">{a.password}</div>
+              </div>
+              <button type="button"
+                onClick={() => { navigator.clipboard.writeText(`${a.email} / ${a.password}`); toast.success("Copied"); }}
+                className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5 shrink-0"
+                style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+                <Copy className="w-3.5 h-3.5" /> Copy
+              </button>
+            </div>
+          ))}
+        </div>
+        <button data-testid="create-tenant-continue" onClick={() => nav(`/owner/tenants/${created.id}`)}
+          className="pos-btn h-11 px-5 rounded-lg font-bold text-white flex items-center gap-2"
+          style={{ background: "var(--pos-accent)" }}>
+          Continue to tenant <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={onSubmit} className="max-w-2xl space-y-5" data-testid="create-tenant">

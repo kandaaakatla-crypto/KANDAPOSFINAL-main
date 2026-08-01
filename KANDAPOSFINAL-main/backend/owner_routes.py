@@ -25,6 +25,7 @@ from owners import (
 from tenants import DEMO_TENANT
 from subscriptions import subscribe_tenant, cancel_tenant_subscription, PLANS, grace_state
 from models import default_features, BusinessType, TenantFeaturesUpdate, TenantInfo
+from routes.dash_auth import provision_tenant_dashboard
 
 
 owner_router = APIRouter(prefix="/owner")
@@ -75,6 +76,10 @@ class TenantPublic(BaseModel):
     created_at: Optional[str] = None
     business_type: Optional[str] = "restaurant"
     features: Optional[dict] = None
+    brand_id: Optional[str] = None
+    # Only populated on the create_tenant response — the plaintext temp
+    # passwords are generated once and never stored/retrievable again.
+    dashboard_accounts: Optional[List[dict]] = None
 
 
 class TenantCreateRequest(BaseModel):
@@ -315,6 +320,11 @@ async def create_tenant(payload: TenantCreateRequest, owner: dict = Depends(get_
         {"_id": f"{tenant_id}:order_number"},
         {"$setOnInsert": {"seq": 1000}}, upsert=True,
     )
+
+    # Every tenant gets a working Dashboard login the moment it's created —
+    # the plaintext temp passwords only exist in this response, so the
+    # frontend must show them to the Platform Owner right now.
+    tenant_doc["dashboard_accounts"] = await provision_tenant_dashboard(db, tenant_doc)
     return TenantPublic(**tenant_doc)
 
 

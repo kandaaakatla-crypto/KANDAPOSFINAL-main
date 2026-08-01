@@ -1,12 +1,13 @@
 """Shifts / Rota — Manager creates a shift schedule, employees see theirs."""
 import io
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from tz import now_ist
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from db import get_db
 from auth import require_role, get_current_user
@@ -106,6 +107,66 @@ async def delete_shift(shift_id: str, user: dict = Depends(require_role("Manager
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Shift not found")
     return {"ok": True, "id": shift_id}
+
+
+class CopyWeekRequest(BaseModel):
+    source_start: str  # ISO — start of the week to copy from
+    target_start: str  # ISO — start of the week to copy into
+
+
+@router.post("/shifts/copy-week")
+async def copy_week(payload: CopyWeekRequest, user: dict = Depends(require_role("Manager"))):
+    """Copy every shift from one week onto another (e.g. last week → this
+    week), as unpublished drafts so the manager can adjust before publishing.
+    Shifts already present in the target week (same employee, same shifted
+    start time) are skipped so re-running this is safe."""
+    db = get_db()
+    try:
+        src_start = datetime.fromisoformat(payload.source_start.replace("Z", "+00:00"))
+        tgt_start = datetime.fromisoformat(payload.target_start.replace("Z", "+00:00"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid date")
+    src_end = src_start + timedelta(days=7)
+    offset = tgt_start - src_start
+
+    source_shifts = await db.shifts.find(
+        tenant_filter(user, {"start": {"$gte": src_start.isoformat(), "$lt": src_end.isoformat()}}),
+        {"_id": 0},
+    ).to_list(2000)
+    if not source_shifts:
+        return {"copied": 0, "skipped": 0}
+
+    tgt_end = tgt_start + timedelta(days=7)
+    existing = await db.shifts.find(
+        tenant_filter(user, {"start": {"$gte": tgt_start.isoformat(), "$lt": tgt_end.isoformat()}}),
+        {"_id": 0, "user_id": 1, "start": 1},
+    ).to_list(2000)
+    existing_keys = {(e["user_id"], e["start"]) for e in existing}
+
+    new_docs = []
+    for sh in source_shifts:
+        sh_start = datetime.fromisoformat(sh["start"].replace("Z", "+00:00"))
+        sh_end = datetime.fromisoformat(sh["end"].replace("Z", "+00:00"))
+        new_start = (sh_start + offset).isoformat()
+        new_end = (sh_end + offset).isoformat()
+        if (sh["user_id"], new_start) in existing_keys:
+            continue
+        new_docs.append({
+            "id": f"sh_{uuid.uuid4().hex[:10]}",
+            "tenant_id": user["tenant_id"],
+            "user_id": sh["user_id"],
+            "user_name": sh.get("user_name", ""),
+            "role": sh.get("role", "Cashier"),
+            "start": new_start,
+            "end": new_end,
+            "station": sh.get("station"),
+            "notes": sh.get("notes"),
+            "location_id": sh.get("location_id"),
+            "published": False,
+        })
+    if new_docs:
+        await db.shifts.insert_many(new_docs)
+    return {"copied": len(new_docs), "skipped": len(source_shifts) - len(new_docs)}
 
 
 @router.post("/shifts/publish")

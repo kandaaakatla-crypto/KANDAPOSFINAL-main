@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
   auth, tokenStore, menuApi, tablesApi, customersApi,
-  inventoryApi, ordersApi, tenantApi,
+  inventoryApi, ordersApi, tenantApi, loyaltyApi,
 } from "../api/client";
 import { connectWs } from "../api/ws";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 const PosContext = createContext(null);
 
 const DEFAULT_FEATURES = { tables: true, kitchen_display: true, packing_station: true, dispatch: true, meal_deals: true, pizza_sizing: true };
+const DEFAULT_LOYALTY_CONFIG = { earn_rate: 100, redeem_value: 1, silver_threshold: 5000, gold_threshold: 20000, welcome_bonus_points: 0, silver_multiplier: 1, gold_multiplier: 1, birthday_bonus_points: 0 };
 
 export function PosProvider({ children }) {
   const [bootState, setBootState] = useState("loading"); // loading | ready
@@ -21,14 +22,16 @@ export function PosProvider({ children }) {
   const [customers, setCustomers] = useState([]);
   const [tables, setTables] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [loyaltyConfig, setLoyaltyConfig] = useState(DEFAULT_LOYALTY_CONFIG);
 
   // Load all resources after auth confirmed
   const loadAll = useCallback(async () => {
     try {
-      const [cats, items, ords, custs, tbls, inv, tenant] = await Promise.all([
+      const [cats, items, ords, custs, tbls, inv, tenant, loyaltyCfg] = await Promise.all([
         menuApi.categories(), menuApi.items(), ordersApi.list(),
         customersApi.list(), tablesApi.list(), inventoryApi.list(),
         tenantApi.info().catch(() => null),
+        loyaltyApi.getConfig().catch(() => null),
       ]);
       setCategories(cats);
       setMenuItems(items);
@@ -37,6 +40,7 @@ export function PosProvider({ children }) {
       setTables(tbls);
       setInventory(inv);
       if (tenant) setTenantInfo(tenant);
+      if (loyaltyCfg) setLoyaltyConfig(loyaltyCfg);
     } catch (e) {
       // 401 handled by interceptor; surface other errors
       if (e?.response?.status !== 401) {
@@ -316,6 +320,7 @@ export function PosProvider({ children }) {
     customers, upsertCustomer, deleteCustomer, refreshCustomers, refreshTables, refreshMenu,
     tables, setTableStatus,
     inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem,
+    loyaltyConfig,
   };
 
   return <PosContext.Provider value={value}>{children}</PosContext.Provider>;

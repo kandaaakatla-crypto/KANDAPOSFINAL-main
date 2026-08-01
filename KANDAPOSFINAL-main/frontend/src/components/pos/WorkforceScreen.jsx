@@ -4,7 +4,7 @@ import { timeclockApi, shiftsApi, staffApi } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { ChevronLeft, ChevronRight, Download, PlusCircle, Trash2, CheckCircle2, Clock, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, PlusCircle, Trash2, CheckCircle2, Clock, FileText, CopyPlus } from "lucide-react";
 import { toast } from "sonner";
 
 export function startOfWeek(d) {
@@ -164,6 +164,7 @@ function RotaTab({ weekStart, apiBase }) {
   const [staff, setStaff] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [confirmState, setConfirmState] = useState(null); // { message, onConfirm }
 
   const weekEnd = useMemo(() => { const d = new Date(weekStart); d.setUTCDate(d.getUTCDate() + 7); return d; }, [weekStart]);
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setUTCDate(d.getUTCDate() + i); return d; }), [weekStart]);
@@ -197,17 +198,43 @@ function RotaTab({ weekStart, apiBase }) {
 
   const del = async () => {
     if (!editing?.id) return;
-    if (!window.confirm("Delete this shift?")) return;
-    await shiftsApi.remove(editing.id);
-    setEditing(null); load();
-    toast.success("Shift deleted");
+    setConfirmState({
+      message: "Delete this shift?",
+      onConfirm: async () => {
+        await shiftsApi.remove(editing.id);
+        setEditing(null); load();
+        toast.success("Shift deleted");
+      },
+    });
   };
 
-  const publishWeek = async () => {
-    if (!window.confirm("Publish all shifts this week to employees?")) return;
-    const r = await shiftsApi.publish(weekStart.toISOString(), weekEnd.toISOString());
-    toast.success(`Published ${r.published} shifts`);
-    load();
+  const publishWeek = () => {
+    setConfirmState({
+      message: "Publish all shifts this week to employees?",
+      onConfirm: async () => {
+        const r = await shiftsApi.publish(weekStart.toISOString(), weekEnd.toISOString());
+        toast.success(`Published ${r.published} shifts`);
+        load();
+      },
+    });
+  };
+
+  const copyLastWeek = () => {
+    setConfirmState({
+      message: "Copy last week's rota into this week as drafts? You can edit before publishing.",
+      onConfirm: async () => {
+        const sourceStart = new Date(weekStart);
+        sourceStart.setUTCDate(sourceStart.getUTCDate() - 7);
+        try {
+          const r = await shiftsApi.copyWeek(sourceStart.toISOString(), weekStart.toISOString());
+          if (r.copied === 0) toast.info(r.skipped ? "Those shifts already exist this week" : "No shifts to copy from last week");
+          else toast.success(`Copied ${r.copied} shift${r.copied === 1 ? "" : "s"} as drafts${r.skipped ? ` (${r.skipped} already existed)` : ""}`);
+          load();
+        } catch (e) {
+          toast.error(e?.response?.data?.detail || "Copy failed");
+        }
+      },
+    });
   };
 
   const downloadPdf = async () => {
@@ -244,6 +271,10 @@ function RotaTab({ weekStart, apiBase }) {
   return (
     <div>
       <div className="flex justify-end gap-2 mb-3">
+        <button data-testid="rota-copy-week-btn" onClick={copyLastWeek} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+          <CopyPlus className="w-4 h-4" /> Copy last week
+        </button>
         <button data-testid="rota-pdf-btn" onClick={downloadPdf} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2"
           style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
           <FileText className="w-4 h-4" /> Download PDF
@@ -330,6 +361,23 @@ function RotaTab({ weekStart, apiBase }) {
                   <button onClick={() => setEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
                   <button onClick={save} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
                 </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirmState} onOpenChange={(o) => !o && setConfirmState(null)}>
+        <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+          <DialogHeader><DialogTitle className="text-white">Are you sure?</DialogTitle></DialogHeader>
+          {confirmState && (
+            <div className="space-y-4">
+              <p className="text-sm" style={{ color: "var(--pos-muted)" }}>{confirmState.message}</p>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setConfirmState(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+                <button
+                  onClick={async () => { const fn = confirmState.onConfirm; setConfirmState(null); await fn(); }}
+                  className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Confirm</button>
               </div>
             </div>
           )}

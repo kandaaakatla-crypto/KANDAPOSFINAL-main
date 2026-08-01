@@ -5,6 +5,7 @@ import { Lock, ShoppingBag, IndianRupee, Users, Boxes, MapPin, Plus, AlertCircle
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 import PeakHoursHeatmap from "./PeakHoursHeatmap";
+import PendingBrandInviteBanner from "./PendingBrandInviteBanner";
 
 const FEATURE_LABELS = [
   { key: "tables", label: "Tables / floor plan", desc: "Dine-in seating, table QR ordering." },
@@ -13,6 +14,7 @@ const FEATURE_LABELS = [
   { key: "dispatch", label: "Dispatch & drivers", desc: "Delivery driver assignment and tracking." },
   { key: "meal_deals", label: "Meal deals", desc: "Pick-N-per-category bundle pricing." },
   { key: "pizza_sizing", label: "Multi-size items", desc: "Small/medium/large pricing on a menu item." },
+  { key: "loyalty", label: "Loyalty program", desc: "Points earned/redeemed at checkout — customize rates under Loyalty." },
 ];
 
 /**
@@ -57,6 +59,7 @@ export default function DashHome() {
 
   return (
     <div className="p-6 space-y-6" data-testid="dash-home">
+      <PendingBrandInviteBanner />
       <div>
         <h1 className="text-2xl font-bold text-white">Welcome back, {user.name.split(" ")[0]}</h1>
         <p className="text-sm" style={{ color: "var(--pos-muted)" }}>

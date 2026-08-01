@@ -2,12 +2,19 @@ import React, { useEffect, useState } from "react";
 import { usePos } from "../../store/PosContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { Search, UserPlus, Pencil, Trash2, Phone, MapPin, Undo2, MessageSquare } from "lucide-react";
+import { Search, UserPlus, Pencil, Trash2, Phone, MapPin, Undo2, MessageSquare, Cake } from "lucide-react";
 import { toast } from "sonner";
 import { customersApi } from "../../api/client";
 import SmsComposer from "../SmsComposer";
 
-const EMPTY = { name: "", phone: "", address: "", postcode: "", notes: "" };
+const EMPTY = { name: "", phone: "", address: "", postcode: "", notes: "", birthday: "" };
+
+function fmtBirthday(md) {
+  if (!md) return null;
+  const [m, d] = md.split("-").map(Number);
+  if (!m || !d) return null;
+  return new Date(2000, m - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
 
 export default function CustomersScreen() {
   const { customers, upsertCustomer, deleteCustomer, refreshCustomers, staffUser } = usePos();
@@ -81,6 +88,7 @@ export default function CustomersScreen() {
                   <div className="font-semibold text-white">{c.name}</div>
                   <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><Phone className="w-3 h-3" /> {c.phone}</div>
                   <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><MapPin className="w-3 h-3" /> {c.address}{c.postcode ? `, ${c.postcode}` : ""}</div>
+                  {c.birthday && <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><Cake className="w-3 h-3" /> {fmtBirthday(c.birthday)}</div>}
                   {c.notes && <div className="text-xs mt-1.5 italic text-amber-400">⚠ {c.notes}</div>}
                 </div>
                 <div className="flex gap-1 shrink-0">
@@ -118,6 +126,13 @@ export default function CustomersScreen() {
                   onChange={(e) => setEditing({ ...editing, [f.key]: e.target.value })}
                   className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
               ))}
+              <div>
+                <label className="text-xs" style={{ color: "var(--pos-muted)" }}>Birthday (optional)</label>
+                <Input data-testid="cust-field-birthday" type="date"
+                  value={editing.birthday ? `2000-${editing.birthday}` : ""}
+                  onChange={(e) => setEditing({ ...editing, birthday: e.target.value ? e.target.value.slice(5) : "" })}
+                  className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              </div>
               <button data-testid="save-customer-btn" onClick={save} className="pos-btn w-full h-11 rounded-lg font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
             </div>
           )}

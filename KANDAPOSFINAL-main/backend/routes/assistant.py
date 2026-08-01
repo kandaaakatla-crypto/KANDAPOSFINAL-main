@@ -69,6 +69,7 @@ KNOWLEDGE_BASE = """
 ## Inventory
 - **Log waste**: Inventory → Waste tab → "Log waste" → pick item, qty, reason. Managers only.
 - **Reorder low stock**: Inventory → items below reorder point are highlighted → click Reorder → creates a PO placeholder.
+- **Track expiry dates**: Inventory → Add/Edit item → set the Expiry date field. Items expiring within 7 days (or already expired) show under the "Expiring" tab and are included in the daily digest email/SMS.
 """
 
 
@@ -103,9 +104,23 @@ async def _tool_top_items(db, tenant_id: str, days: int = 7, limit: int = 5) -> 
 
 async def _tool_low_stock(db, tenant_id: str) -> list:
     rows = await db.inventory.find(
-        {"tenant_id": tenant_id, "$expr": {"$lte": ["$stock", "$reorder_at"]}},
-        {"_id": 0, "name": 1, "stock": 1, "unit": 1, "reorder_at": 1},
+        {"tenant_id": tenant_id, "$expr": {"$lte": ["$stock", "$reorder"]}},
+        {"_id": 0, "name": 1, "stock": 1, "unit": 1, "reorder": 1},
     ).to_list(50)
+    return rows
+
+
+async def _tool_expiring_stock(db, tenant_id: str, days: int = 7) -> list:
+    """Inventory items already expired or expiring within `days` days,
+    soonest first. Items with no expiry_date set are excluded."""
+    cutoff = (now_ist() + timedelta(days=days)).strftime("%Y-%m-%d")
+    rows = await db.inventory.find(
+        {"tenant_id": tenant_id, "expiry_date": {"$ne": None, "$lte": cutoff}},
+        {"_id": 0, "name": 1, "stock": 1, "unit": 1, "expiry_date": 1},
+    ).sort("expiry_date", 1).to_list(50)
+    today = now_ist().strftime("%Y-%m-%d")
+    for r in rows:
+        r["expired"] = r["expiry_date"] < today
     return rows
 
 
@@ -122,12 +137,12 @@ async def _tool_staff_on_duty(db, tenant_id: str) -> list:
     # People clocked in with no matching clock-out yet.
     rows = await db.time_punches.aggregate([
         {"$match": {"tenant_id": tenant_id}},
-        {"$sort": {"timestamp": -1}},
+        {"$sort": {"at": -1}},
         {"$group": {"_id": "$user_id", "last": {"$first": "$$ROOT"}}},
         {"$match": {"last.type": "in"}},
         {"$replaceRoot": {"newRoot": "$last"}},
     ]).to_list(50)
-    return [{"user_id": r["user_id"], "user_name": r.get("user_name"), "since": r["timestamp"]} for r in rows]
+    return [{"user_id": r["user_id"], "user_name": r.get("user_name"), "since": r["at"]} for r in rows]
 
 
 async def _tool_pending_reservations(db, tenant_id: str) -> list:
@@ -143,6 +158,7 @@ TOOLS = [
     {"name": "get_todays_sales", "description": "Total orders + revenue since midnight today (in local timezone approx)."},
     {"name": "get_top_items", "description": "Best-selling menu items in the last 7 days (top 5 by qty)."},
     {"name": "get_low_stock", "description": "Inventory items at or below their reorder threshold — needs restocking."},
+    {"name": "get_expiring_stock", "description": "Inventory items already expired or expiring within the next 7 days."},
     {"name": "get_active_orders", "description": "Currently pending orders (new / preparing / ready)."},
     {"name": "get_staff_on_duty", "description": "Employees currently clocked in (with no matching clock-out)."},
     {"name": "get_pending_reservations", "description": "Upcoming table reservations that haven't happened yet."},
@@ -152,6 +168,7 @@ TOOL_RUNNERS = {
     "get_todays_sales": _tool_todays_sales,
     "get_top_items": _tool_top_items,
     "get_low_stock": _tool_low_stock,
+    "get_expiring_stock": _tool_expiring_stock,
     "get_active_orders": _tool_active_orders,
     "get_staff_on_duty": _tool_staff_on_duty,
     "get_pending_reservations": _tool_pending_reservations,

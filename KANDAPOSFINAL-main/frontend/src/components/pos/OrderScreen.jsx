@@ -22,7 +22,8 @@ const ORDER_TYPES = [
 ];
 
 export default function OrderScreen() {
-  const { menuItems, categories, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser } = usePos();
+  const { menuItems, categories, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser, loyaltyConfig } = usePos();
+  const redeemValue = loyaltyConfig?.redeem_value || 1;
   const navigate = useNavigate();
   const [orderType, setOrderType] = useState("delivery");
   const [orderSource, setOrderSource] = useState("in-store");
@@ -158,7 +159,7 @@ export default function OrderScreen() {
   const discountAmt = (subtotal * discount) / 100;
   const tipAmt = +(subtotal * tipPct / 100).toFixed(2);
   const couponDisc = coupon?.discount || 0;
-  const loyaltyDisc = Math.min(redeemPoints || 0, subtotal);
+  const loyaltyDisc = Math.min((redeemPoints || 0) * redeemValue, subtotal);
   const newRoundTotal = Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDisc - loyaltyDisc + deliveryFee + tipAmt);
   const total = editingOrder ? +(newRoundTotal + editingOrder.total).toFixed(2) : newRoundTotal;
 
@@ -511,7 +512,7 @@ export default function OrderScreen() {
         coupon={coupon} onCoupon={setCoupon}
         customerEmail={customerEmail} onCustomerEmail={setCustomerEmail}
         sendReceipt={sendReceipt} onSendReceiptToggle={setSendReceipt}
-        loyaltyBalance={loyaltyBalance} redeemPoints={redeemPoints} onRedeemPoints={setRedeemPoints}
+        loyaltyBalance={loyaltyBalance} redeemPoints={redeemPoints} onRedeemPoints={setRedeemPoints} redeemValue={redeemValue}
         runningBill={editingOrder}
       />
 

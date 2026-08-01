@@ -4,13 +4,19 @@ Currently:
   - daily_rollup_cron_loop: at 00:05 IST every day, materialise "yesterday's"
     sales aggregate for every tenant so Reports & Digest read from cache
     instead of scanning orders.
+  - birthday_bonus_loop: at 09:00 IST every day, credit each tenant's
+    configured birthday-bonus loyalty points to customers whose birthday
+    (month+day) is today, and text them a happy-birthday message.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
+import uuid
 from datetime import datetime, timezone, timedelta
 from tz import now_ist
+from routes.loyalty import _get_config as _get_loyalty_config
+from sms_service import send_sms
 
 logger = logging.getLogger("kanda.cron")
 
@@ -115,4 +121,96 @@ async def daily_rollup_cron_loop(get_db_fn, target_hour_ist: int = 0,
                     logger.info("Daily rollup cron completed for %d tenant(s)", count)
         except Exception:
             logger.exception("daily_rollup_cron_loop tick failed")
+        await asyncio.sleep(interval_sec)
+
+
+async def _birthday_bonus_for_all(db) -> int:
+    """Credit each tenant's configured birthday bonus to every customer
+    whose `birthday` (stored as "MM-DD") matches today, once per calendar
+    year (tracked via `last_birthday_bonus_year` on the customer doc).
+    Birthday matches are rare per day, so this scans across all tenants in
+    one query rather than looping tenant-by-tenant like the sales rollup."""
+    today_md = now_ist().strftime("%m-%d")
+    year = now_ist().year
+    customers = await db.customers.find(
+        {"birthday": today_md, "$or": [{"deleted_at": {"$exists": False}}, {"deleted_at": None}]},
+        {"_id": 0},
+    ).to_list(5000)
+    if not customers:
+        return 0
+
+    feature_cache: dict[str, bool] = {}
+    cfg_cache: dict[str, dict] = {}
+    credited = 0
+    for cust in customers:
+        if cust.get("last_birthday_bonus_year") == year:
+            continue
+        tenant_id = cust["tenant_id"]
+        if tenant_id not in feature_cache:
+            tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0, "features": 1})
+            feature_cache[tenant_id] = ((tenant or {}).get("features") or {}).get("loyalty", True)
+        if not feature_cache[tenant_id]:
+            continue
+        if tenant_id not in cfg_cache:
+            cfg_cache[tenant_id] = await _get_loyalty_config(db, tenant_id)
+        bonus = int(cfg_cache[tenant_id].get("birthday_bonus_points") or 0)
+        if bonus <= 0:
+            continue
+
+        await db.customers.update_one(
+            {"tenant_id": tenant_id, "id": cust["id"]},
+            {"$inc": {"loyalty_points": bonus}, "$set": {"last_birthday_bonus_year": year}},
+        )
+        await db.loyalty_txns.insert_one({
+            "id": f"lt_{uuid.uuid4().hex[:10]}",
+            "tenant_id": tenant_id,
+            "customer_id": cust["id"],
+            "customer_name": cust["name"],
+            "kind": "bonus",
+            "points": bonus,
+            "order_id": None,
+            "note": "Happy birthday! 🎂",
+            "by_user_id": None,
+            "by_user_name": "Birthday bonus (automatic)",
+            "at": now_ist().isoformat(),
+        })
+        if cust.get("phone"):
+            first = (cust.get("name") or "there").split(" ")[0]
+            try:
+                await send_sms(cust["phone"], f"Happy Birthday {first}! 🎂 We've added {bonus} bonus loyalty points to your account. Treat yourself soon!")
+            except Exception:
+                logger.exception("Birthday SMS failed for customer %s", cust["id"])
+        credited += 1
+    return credited
+
+
+async def birthday_bonus_loop(get_db_fn, target_hour_ist: int = 9,
+                              target_minute_ist: int = 0,
+                              interval_sec: int = 60):
+    """Fire once per IST day around the configured hour:minute. Dedupes
+    within a day via `cron_state` (same pattern as the sales rollup); the
+    per-customer `last_birthday_bonus_year` field is the real once-a-year
+    guarantee, so a re-run this same day is still harmless."""
+    logger.info("Birthday bonus cron loop started (target=%02d:%02d IST)",
+                target_hour_ist, target_minute_ist)
+    while True:
+        try:
+            db = get_db_fn()
+            now = now_ist()
+            today_ist = now.strftime("%Y-%m-%d")
+            target = now.replace(hour=target_hour_ist, minute=target_minute_ist,
+                                 second=0, microsecond=0)
+            if now >= target:
+                last = await db.cron_state.find_one({"id": "birthday_bonus"}, {"_id": 0})
+                if not last or (last.get("last_run_date") != today_ist):
+                    count = await _birthday_bonus_for_all(db)
+                    await db.cron_state.replace_one(
+                        {"id": "birthday_bonus"},
+                        {"id": "birthday_bonus", "last_run_date": today_ist,
+                         "last_run_at": now.isoformat(), "credited_count": count},
+                        upsert=True,
+                    )
+                    logger.info("Birthday bonus cron completed — %d customer(s) credited", count)
+        except Exception:
+            logger.exception("birthday_bonus_loop tick failed")
         await asyncio.sleep(interval_sec)

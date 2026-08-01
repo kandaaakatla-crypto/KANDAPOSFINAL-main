@@ -1,12 +1,15 @@
 """Inventory routes — list + create/update/delete + adjust + reorder."""
+import io
 import uuid
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi.responses import StreamingResponse
 
 from db import get_db
 from auth import get_current_user, require_role
 from tenants import tenant_filter, get_tenant
+from tz import now_ist
 from ws import schedule_broadcast
 from models import InventoryItem, InventoryItemCreate, InventoryItemUpdate, AdjustStockPayload
 from email_service import send_email, purchase_order_email
@@ -35,7 +38,7 @@ async def create_inventory(payload: InventoryItemCreate, user: dict = Depends(re
 @router.patch("/inventory/{item_id}", response_model=InventoryItem)
 async def update_inventory(item_id: str, payload: InventoryItemUpdate, user: dict = Depends(require_role("Manager"))):
     db = get_db()
-    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    updates = payload.model_dump(exclude_unset=True)
     if not updates:
         item = await db.inventory.find_one(tenant_filter(user, {"id": item_id}), PROJECTION)
         if not item:
@@ -109,3 +112,100 @@ async def reorder_inventory(item_id: str, user: dict = Depends(require_role("Man
             supplier_emailed = not result.get("error") and not result.get("skipped")
 
     return {**cleaned, "supplier_emailed": supplier_emailed, "supplier_email": supplier_email}
+
+
+def _render_po_pdf(item: dict, supplier: Optional[dict], store_name: str, qty: float, po_no: str) -> bytes:
+    """One-page portrait purchase order — same visual style as the tax
+    invoice (receipts.py) and rota PDF (routes/shifts.py). Generated
+    on demand from current inventory state rather than a persisted PO
+    record — there's no separate purchase_orders collection (yet)."""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.enums import TA_LEFT, TA_RIGHT
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=15 * mm, rightMargin=15 * mm,
+        topMargin=15 * mm, bottomMargin=15 * mm,
+        title=f"Purchase Order — {item['name']}",
+    )
+    styles = getSampleStyleSheet()
+    sub_st = ParagraphStyle("sub", parent=styles["Normal"], fontSize=9, leading=13, textColor=colors.HexColor("#666666"))
+    right_st = ParagraphStyle("right", parent=styles["Normal"], fontSize=10, leading=14, alignment=TA_RIGHT, textColor=colors.HexColor("#111111"))
+    label_st = ParagraphStyle("label", parent=styles["Normal"], fontSize=9, leading=13, textColor=colors.HexColor("#666666"))
+
+    supplier_block = f"<b>To</b><br/>{supplier['name']}" if supplier else f"<b>To</b><br/>{item.get('supplier') or 'Supplier not on file'}"
+    if supplier and supplier.get("email"):
+        supplier_block += f"<br/>{supplier['email']}"
+    if supplier and supplier.get("phone"):
+        supplier_block += f"<br/>{supplier['phone']}"
+
+    header = Table([[
+        Paragraph(f"<b>{store_name}</b><br/>Purchase order", sub_st),
+        Paragraph(f"<b>PURCHASE ORDER</b><br/>PO No: {po_no}<br/>Date: {now_ist().strftime('%Y-%m-%d')}", right_st),
+    ]], colWidths=[100 * mm, 75 * mm])
+    header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story = [header, Spacer(1, 6 * mm), Paragraph(supplier_block, label_st), Spacer(1, 8 * mm)]
+
+    cost = float(item.get("cost_per_unit") or 0)
+    rows = [
+        ["Item", "Unit", "Qty ordered", "Est. cost/unit", "Est. total"],
+        [item["name"], item["unit"], f"{qty:g}", f"₹{cost:.2f}", f"₹{cost * qty:.2f}"],
+    ]
+    tbl = Table(rows, colWidths=[65 * mm, 25 * mm, 30 * mm, 30 * mm, 25 * mm])
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#111111")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ("GRID", (0, 1), (-1, -1), 0.25, colors.HexColor("#e6e6e6")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story.append(tbl)
+    story.append(Spacer(1, 10 * mm))
+    story.append(Paragraph(
+        "Please confirm receipt of this order and expected delivery date. "
+        "Estimated cost is based on the last recorded unit cost and may vary.",
+        sub_st,
+    ))
+    story.append(Paragraph("This is a computer-generated purchase order.", sub_st))
+
+    doc.build(story)
+    return buf.getvalue()
+
+
+@router.get("/inventory/{item_id}/reorder.pdf")
+async def reorder_pdf(
+    item_id: str,
+    qty: Optional[float] = Query(None, description="Quantity to order — defaults to 2× the reorder level, same as the Reorder action"),
+    user: dict = Depends(require_role("Manager")),
+):
+    db = get_db()
+    item = await db.inventory.find_one(tenant_filter(user, {"id": item_id}), PROJECTION)
+    if not item:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+    supplier = None
+    supplier_name = (item.get("supplier") or "").strip()
+    if supplier_name:
+        supplier = await db.suppliers.find_one(
+            tenant_filter(user, {"name": {"$regex": f"^{supplier_name}$", "$options": "i"}}), PROJECTION,
+        )
+    tenant = await get_tenant(user, db)
+    store_name = (tenant.get("store") or {}).get("name") or tenant.get("name") or "Kanda POS"
+    order_qty = qty if qty and qty > 0 else item["reorder"] * 2
+    po_no = f"PO-{item_id[-6:].upper()}-{now_ist().strftime('%Y%m%d%H%M')}"
+    pdf_bytes = _render_po_pdf(item, supplier, store_name, order_qty, po_no)
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{po_no}.pdf"'},
+    )

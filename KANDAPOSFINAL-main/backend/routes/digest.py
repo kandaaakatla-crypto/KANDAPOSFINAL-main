@@ -26,6 +26,7 @@ from routes.assistant import (
     _tool_todays_sales,
     _tool_top_items,
     _tool_low_stock,
+    _tool_expiring_stock,
     _tool_active_orders,
     _tool_staff_on_duty,
 )
@@ -77,11 +78,12 @@ async def _yesterday_sales(db, tenant_id: str) -> dict:
 
 
 async def _gather_digest_data(db, tenant_id: str) -> dict:
-    today_sales, yesterday_sales, top_items, low_stock, active_orders, on_duty = await asyncio.gather(
+    today_sales, yesterday_sales, top_items, low_stock, expiring_stock, active_orders, on_duty = await asyncio.gather(
         _tool_todays_sales(db, tenant_id),
         _yesterday_sales(db, tenant_id),
         _tool_top_items(db, tenant_id, days=1, limit=5),
         _tool_low_stock(db, tenant_id),
+        _tool_expiring_stock(db, tenant_id, days=7),
         _tool_active_orders(db, tenant_id),
         _tool_staff_on_duty(db, tenant_id),
     )
@@ -96,6 +98,7 @@ async def _gather_digest_data(db, tenant_id: str) -> dict:
         "delta_pct": round(delta_pct, 1) if delta_pct is not None else None,
         "top_items": top_items,
         "low_stock": low_stock,
+        "expiring_stock": expiring_stock,
         "active_orders": active_orders,
         "staff_on_duty": len(on_duty),
         "generated_at": now_ist().isoformat(),
@@ -115,7 +118,9 @@ async def _ai_digest_text(tenant_name: str, data: dict) -> str:
             "the owner will read on their phone first thing in the morning. "
             "Use short paragraphs and 3-5 bullet points. Be specific with the "
             "numbers provided. Highlight one thing to celebrate and one thing "
-            "to watch. End with a one-line action tip. Currency is ₹."
+            "to watch — call out any expiring_stock items by name and urgency "
+            "(already expired vs. days left) since spoilage is a direct loss. "
+            "End with a one-line action tip. Currency is ₹."
         )
         chat = (
             LlmChat(
@@ -159,6 +164,12 @@ def _template_digest_text(tenant_name: str, data: dict) -> str:
         for it in data["low_stock"][:5]:
             lines.append(f"  • {it.get('name','?')} — {it.get('stock','?')} {it.get('unit','')} left")
         lines.append("")
+    if data.get("expiring_stock"):
+        lines.append(f"⏳ {len(data['expiring_stock'])} item(s) expired or expiring soon:")
+        for it in data["expiring_stock"][:5]:
+            when = "expired" if it.get("expired") else f"expires {it.get('expiry_date','?')}"
+            lines.append(f"  • {it.get('name','?')} — {it.get('stock','?')} {it.get('unit','')} · {when}")
+        lines.append("")
     lines.append(f"Currently active: {len(data['active_orders'])} orders · {data['staff_on_duty']} staff on duty")
     return "\n".join(lines)
 
@@ -192,7 +203,7 @@ def _sms_body(tenant_name: str, data: dict) -> str:
     return (
         f"Kanda · {tenant_name}\n"
         f"Today: ₹{t['revenue']:.0f} / {t['count']} orders{delta_txt}\n"
-        f"Top: {top} · Low stock: {len(data['low_stock'])}\n"
+        f"Top: {top} · Low stock: {len(data['low_stock'])} · Expiring: {len(data.get('expiring_stock') or [])}\n"
         f"Yesterday: ₹{y['revenue']:.0f} / {y['count']} orders"
     )
 

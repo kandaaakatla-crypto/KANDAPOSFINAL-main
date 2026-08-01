@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { dashApi } from "../api/client";
+import { dashApi, brandApi } from "../api/client";
 
 const DashContext = createContext(null);
 const STORAGE_TOKEN = "kanda_dash_token_v1";
@@ -70,11 +70,26 @@ export function DashProvider({ children }) {
     localStorage.setItem(STORAGE_USER, JSON.stringify(me.data));
   }, []);
 
+  // Brand owners can switch their active store — mints a token scoped to a
+  // different tenant under the same brand. Hard-reloads afterwards so every
+  // screen's own local state (menu, staff, orders...) re-fetches fresh for
+  // the newly-active store instead of showing data cached from the last one.
+  const switchStore = useCallback(async (tenantId) => {
+    const r = await brandApi.switchStore(tenantId);
+    localStorage.setItem(STORAGE_TOKEN, r.token);
+    localStorage.setItem(STORAGE_USER, JSON.stringify(r.user));
+    localStorage.setItem("kanda_pos_token_v1", r.token);
+    if (r.user?.tenant_slug) {
+      localStorage.setItem("kanda_pos_tenant_slug", r.user.tenant_slug);
+    }
+    window.location.assign("/biz");
+  }, []);
+
   const features = { ...DEFAULT_FEATURES, ...(tenantInfo?.features || {}) };
   const businessType = tenantInfo?.businessType || "restaurant";
 
   return (
-    <DashContext.Provider value={{ user, boot, login, logout, changePassword, api: dashApi, tenantInfo, features, businessType }}>
+    <DashContext.Provider value={{ user, boot, login, logout, changePassword, switchStore, api: dashApi, tenantInfo, features, businessType }}>
       {children}
     </DashContext.Provider>
   );
@@ -93,3 +108,4 @@ export const canManageCoupons = (u) => !!u;
 export const canManageWorkforce = (u) => !!u; // all roles see workforce; scope filtered by location_ids
 export const canAddLocation = (u) => u && u.dash_role === "owner"; // payment-gated, owner only
 export const canManagePayroll = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // wage data — same trust level as staff management
+export const canManageLoyalty = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // program rules affect margin — same trust level as payroll

@@ -1,14 +1,19 @@
 """Receipt + KOT (kitchen order ticket) generation.
 
-Two formats:
+Three formats:
   - JSON payload used by the React `ReceiptView` for HTML browser printing.
   - Raw ESC/POS byte stream (scaffolded — transport to physical thermal printer
     is left for a future networking layer; the bytes themselves are correct and
     can be piped to /dev/usb/lp0, a TCP socket, or printed via cups).
+  - A downloadable PDF tax invoice — same authoritative order data as the
+    receipt, formatted for a customer who needs a proper paper/PDF invoice
+    (e.g. a B2B buyer) rather than a thermal-printer strip.
 
 Store info is sourced from the tenant document (per-tenant branding).
 """
+import io
 from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi.responses import StreamingResponse
 from typing import Literal
 
 from auth import get_current_user
@@ -161,3 +166,130 @@ async def receipt_escpos(
     return Response(content=payload, media_type="application/octet-stream", headers={
         "Content-Disposition": f'attachment; filename="receipt_{order_id}_{kind}.bin"'
     })
+
+
+def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
+    """One-page portrait tax invoice for a single order — same colours/table
+    style as the rota PDF (routes/shifts.py`_render_rota_pdf`) so downloadable
+    documents look consistent across the app."""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.enums import TA_LEFT, TA_RIGHT
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=15 * mm, rightMargin=15 * mm,
+        topMargin=15 * mm, bottomMargin=15 * mm,
+        title=f"Tax Invoice — Order #{order.get('number')}",
+    )
+    styles = getSampleStyleSheet()
+    title_st = ParagraphStyle("title", parent=styles["Title"], fontSize=16, leading=20, alignment=TA_LEFT, textColor=colors.HexColor("#111111"))
+    sub_st = ParagraphStyle("sub", parent=styles["Normal"], fontSize=9, leading=13, textColor=colors.HexColor("#666666"))
+    right_st = ParagraphStyle("right", parent=styles["Normal"], fontSize=10, leading=14, alignment=TA_RIGHT, textColor=colors.HexColor("#111111"))
+    label_st = ParagraphStyle("label", parent=styles["Normal"], fontSize=9, leading=13, textColor=colors.HexColor("#666666"))
+
+    invoice_no = f"INV-{order.get('number', '')}"
+    placed = (order.get("placedAt") or "")[:19].replace("T", " ")
+    cust = order.get("customer") or {}
+
+    story = []
+    header = Table([[
+        Paragraph(f"<b>{store.get('name', 'Kanda POS')}</b><br/>{store.get('address', '')}<br/>Tel {store.get('phone', '')}<br/>{store.get('tax_id', '')}", sub_st),
+        Paragraph(f"<b>TAX INVOICE</b><br/>Invoice No: {invoice_no}<br/>Order #{order.get('number')}<br/>Date: {placed}", right_st),
+    ]], colWidths=[100 * mm, 75 * mm])
+    header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(header)
+    story.append(Spacer(1, 6 * mm))
+
+    if cust.get("name"):
+        bill_to = f"<b>Bill To</b><br/>{cust['name']}"
+        if cust.get("address"):
+            bill_to += f"<br/>{cust['address']}"
+        if cust.get("postcode"):
+            bill_to += f" {cust['postcode']}"
+        story.append(Paragraph(bill_to, label_st))
+        story.append(Spacer(1, 5 * mm))
+
+    rows = [["Item", "Qty", "Rate", "Tax %", "Tax Amt", "Amount"]]
+    for it in order.get("items", []):
+        qty = float(it.get("qty", 0))
+        price = float(it.get("price", 0))
+        tax_rate = float(it.get("tax_rate") or 0)
+        tax_amt = float(it.get("tax_amount") or 0)
+        rows.append([
+            it.get("name", ""), f"{qty:g}", f"₹{price:.2f}", f"{tax_rate:g}%", f"₹{tax_amt:.2f}", f"₹{qty * price:.2f}",
+        ])
+    tbl = Table(rows, repeatRows=1, colWidths=[65 * mm, 18 * mm, 25 * mm, 20 * mm, 25 * mm, 22 * mm])
+    tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#111111")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 9),
+        ("FONTSIZE", (0, 1), (-1, -1), 9),
+        ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8f9fb")]),
+        ("LINEBELOW", (0, 0), (-1, 0), 1, colors.HexColor("#111111")),
+        ("GRID", (0, 1), (-1, -1), 0.25, colors.HexColor("#e6e6e6")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(tbl)
+    story.append(Spacer(1, 6 * mm))
+
+    subtotal = order.get("subtotal")
+    if subtotal is None:
+        subtotal = sum(float(it.get("qty", 0)) * float(it.get("price", 0)) for it in order.get("items", []))
+    summary_rows = [["Subtotal", f"₹{subtotal:.2f}"]]
+    if order.get("taxTotal"):
+        tax_label = "GST (incl.)" if order.get("taxInclusive") else "GST"
+        summary_rows.append([tax_label, f"₹{order['taxTotal']:.2f}"])
+        summary_rows.append(["  CGST", f"₹{order.get('cgst', 0):.2f}"])
+        summary_rows.append(["  SGST", f"₹{order.get('sgst', 0):.2f}"])
+    if order.get("deliveryFee"):
+        summary_rows.append(["Delivery", f"₹{order['deliveryFee']:.2f}"])
+    if order.get("discount"):
+        summary_rows.append(["Discount", f"-₹{order['discount']:.2f}"])
+    summary_rows.append(["TOTAL", f"₹{order.get('total', 0):.2f}"])
+    summary = Table(summary_rows, colWidths=[130 * mm, 40 * mm])
+    summary.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, -1), (-1, -1), 12),
+        ("LINEABOVE", (0, -1), (-1, -1), 1, colors.HexColor("#111111")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    story.append(summary)
+    story.append(Spacer(1, 8 * mm))
+
+    story.append(Paragraph(f"Paid by: <b>{str(order.get('payment', '?')).upper()}</b>" + (f" · Ref: {order['razorpayPaymentId']}" if order.get("razorpayPaymentId") else ""), label_st))
+    if cashier:
+        story.append(Paragraph(f"Served by: {cashier}", label_st))
+    story.append(Spacer(1, 6 * mm))
+    story.append(Paragraph(store.get("footer") or "Thank you for your business.", sub_st))
+    story.append(Paragraph("This is a computer-generated tax invoice.", sub_st))
+
+    doc.build(story)
+    return buf.getvalue()
+
+
+@receipts_router.get("/orders/{order_id}/invoice.pdf")
+async def order_invoice_pdf(order_id: str, user: dict = Depends(get_current_user)):
+    """Downloadable PDF tax invoice for a single order — same authoritative
+    GST/total figures already stamped on the order at checkout."""
+    order, store = await _load_order_and_store(order_id, user)
+    pdf_bytes = _render_invoice_pdf(order, store, user.get("name", ""))
+    filename = f"invoice_{order.get('number', order_id)}.pdf"
+    return StreamingResponse(
+        iter([pdf_bytes]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

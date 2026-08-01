@@ -1,23 +1,42 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { usePos } from "../../store/PosContext";
-import { Minus, Plus, AlertTriangle, PackageCheck, Truck, Trash, Search, PlusCircle, Pencil, Trash2, IndianRupee, Mail, Building2 } from "lucide-react";
+import { Minus, Plus, AlertTriangle, PackageCheck, Truck, Trash, Search, PlusCircle, Pencil, Trash2, IndianRupee, Mail, Building2, CalendarClock, Download } from "lucide-react";
 import { toast } from "sonner";
 import { WastePanel } from "./OpsPanels";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { suppliersApi } from "../../api/client";
+import { suppliersApi, inventoryApi } from "../../api/client";
 
-const emptyForm = { name: "", unit: "", stock: "", reorder: "", supplier: "", cost_per_unit: "" };
+const emptyForm = { name: "", unit: "", stock: "", reorder: "", supplier: "", cost_per_unit: "", expiry_date: "" };
 const emptySupplierForm = { name: "", email: "", phone: "" };
+const EXPIRY_WARN_DAYS = 7;
+
+function daysUntilExpiry(item) {
+  if (!item.expiry_date) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const exp = new Date(item.expiry_date + "T00:00:00");
+  return Math.round((exp - today) / 86400000);
+}
+function expiryLabel(days) {
+  if (days < 0) return `Expired ${Math.abs(days)}d ago`;
+  if (days === 0) return "Expires today";
+  return `Expires in ${days}d`;
+}
 
 export default function InventoryScreen() {
   const { inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem, staffUser } = usePos();
   const [view, setView] = useState("all");
   const [showWaste, setShowWaste] = useState(false);
+  const [wastePreset, setWastePreset] = useState(null); // inventory item id to prefill in WastePanel
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState(null); // null | {} (new) | item (edit)
   const [form, setForm] = useState(emptyForm);
   const isManager = staffUser?.role === "Manager";
+
+  const logWasteFor = (item) => {
+    setShowWaste(true);
+    setWastePreset(item.id);
+  };
 
   const [suppliers, setSuppliers] = useState([]);
   const [suppliersOpen, setSuppliersOpen] = useState(false);
@@ -63,8 +82,21 @@ export default function InventoryScreen() {
     }
   };
 
+  const downloadPO = async (item) => {
+    try {
+      await inventoryApi.downloadPoPdf(item.id, item.name);
+      toast.success(`Purchase order PDF saved for ${item.name}`);
+    } catch {
+      toast.error("Could not generate purchase order PDF");
+    }
+  };
+
   const lowItems = inventory.filter((i) => i.stock <= i.reorder);
-  const filtered = (view === "low" ? lowItems : inventory).filter((i) =>
+  const expiringItems = inventory
+    .filter((i) => i.expiry_date && daysUntilExpiry(i) <= EXPIRY_WARN_DAYS)
+    .sort((a, b) => daysUntilExpiry(a) - daysUntilExpiry(b));
+  const shown = view === "low" ? lowItems : view === "expiring" ? expiringItems : inventory;
+  const filtered = shown.filter((i) =>
     !query.trim() || i.name.toLowerCase().includes(query.trim().toLowerCase())
   );
   const stockValue = useMemo(
@@ -76,7 +108,7 @@ export default function InventoryScreen() {
   const openEdit = (item) => {
     setForm({
       name: item.name, unit: item.unit, stock: item.stock, reorder: item.reorder,
-      supplier: item.supplier, cost_per_unit: item.cost_per_unit || 0,
+      supplier: item.supplier, cost_per_unit: item.cost_per_unit || 0, expiry_date: item.expiry_date || "",
     });
     setEditing(item);
   };
@@ -86,6 +118,7 @@ export default function InventoryScreen() {
     const payload = {
       name: form.name.trim(), unit: form.unit.trim(), supplier: form.supplier.trim(),
       reorder: parseFloat(form.reorder) || 0, cost_per_unit: parseFloat(form.cost_per_unit) || 0,
+      expiry_date: form.expiry_date || null,
     };
     if (editing?.id) {
       const updated = await upsertInventoryItem({ id: editing.id, ...payload });
@@ -120,6 +153,10 @@ export default function InventoryScreen() {
           <button data-testid="inv-filter-low" onClick={() => setView("low")} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"
             style={{ background: view === "low" ? "#b91c1c" : "var(--pos-panel)", color: view === "low" ? "#fff" : "#f87171", border: "1px solid var(--pos-border)" }}>
             <AlertTriangle className="w-3.5 h-3.5" /> Low Stock ({lowItems.length})
+          </button>
+          <button data-testid="inv-filter-expiring" onClick={() => setView("expiring")} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"
+            style={{ background: view === "expiring" ? "#b45309" : "var(--pos-panel)", color: view === "expiring" ? "#fff" : "#fbbf24", border: "1px solid var(--pos-border)" }}>
+            <CalendarClock className="w-3.5 h-3.5" /> Expiring ({expiringItems.length})
           </button>
           <button data-testid="inv-toggle-waste" onClick={() => setShowWaste((v) => !v)} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"
             style={{ background: showWaste ? "var(--pos-accent)" : "var(--pos-panel)", color: showWaste ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
@@ -158,7 +195,7 @@ export default function InventoryScreen() {
           <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
             <Trash className="w-4 h-4" /> Wastage / spoilage log
           </h3>
-          <WastePanel />
+          <WastePanel presetItemId={wastePreset} presetReason="Expired" />
         </div>
       )}
 
@@ -166,6 +203,13 @@ export default function InventoryScreen() {
         <div className="rounded-xl px-4 py-3 flex items-center gap-3 text-sm" style={{ background: "#33150e", border: "1px solid #7d3a2e", color: "#fca5a5" }} data-testid="low-stock-banner">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           {lowItems.length} item{lowItems.length > 1 ? "s" : ""} at or below reorder level: {lowItems.map((i) => i.name).join(", ")}
+        </div>
+      )}
+
+      {expiringItems.length > 0 && view === "all" && (
+        <div className="rounded-xl px-4 py-3 flex items-center gap-3 text-sm" style={{ background: "#332310", border: "1px solid #7d5a2e", color: "#fbbf24" }} data-testid="expiring-banner">
+          <CalendarClock className="w-4 h-4 shrink-0" />
+          {expiringItems.length} item{expiringItems.length > 1 ? "s" : ""} expired or expiring within {EXPIRY_WARN_DAYS} days: {expiringItems.map((i) => i.name).join(", ")}
         </div>
       )}
 
@@ -184,28 +228,50 @@ export default function InventoryScreen() {
             )}
             {filtered.map((i) => {
               const low = i.stock <= i.reorder;
+              const days = daysUntilExpiry(i);
+              const expiring = days !== null && days <= EXPIRY_WARN_DAYS;
+              const expired = days !== null && days < 0;
               return (
-                <tr key={i.id} data-testid={`inv-row-${i.id}`} style={{ borderBottom: "1px solid var(--pos-border)", background: low ? "#2a141077" : "transparent" }}>
+                <tr key={i.id} data-testid={`inv-row-${i.id}`} style={{ borderBottom: "1px solid var(--pos-border)", background: low ? "#2a141077" : expiring ? "#2a220f77" : "transparent" }}>
                   <td className="px-4 py-3 font-medium text-white">{i.name}</td>
                   <td className="px-4 py-3 tabular-nums font-bold" style={{ color: low ? "#f87171" : "#7ee2a8" }}>{i.stock} {i.unit}</td>
                   <td className="px-4 py-3 tabular-nums" style={{ color: "var(--pos-muted)" }}>{i.reorder} {i.unit}</td>
                   <td className="px-4 py-3 tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(i.stock * (i.cost_per_unit || 0)).toFixed(0)}</td>
                   <td className="px-4 py-3" style={{ color: "var(--pos-muted)" }}>{i.supplier}</td>
                   <td className="px-4 py-3">
-                    {low ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#3a1515", color: "#f87171" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#13271a", color: "#22c55e" }}><PackageCheck className="w-3 h-3" /> OK</span>
-                    )}
+                    <div className="flex flex-col gap-1 items-start">
+                      {low ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#3a1515", color: "#f87171" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#13271a", color: "#22c55e" }}><PackageCheck className="w-3 h-3" /> OK</span>
+                      )}
+                      {expiring && (
+                        <span data-testid={`expiry-badge-${i.id}`} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: expired ? "#3a1515" : "#3a2a10", color: expired ? "#f87171" : "#fbbf24" }}>
+                          <CalendarClock className="w-3 h-3" /> {expiryLabel(days)}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <button data-testid={`stock-minus-${i.id}`} onClick={() => adjustStock(i.id, -1)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Minus className="w-3.5 h-3.5 text-white" /></button>
                       <button data-testid={`stock-plus-${i.id}`} onClick={() => adjustStock(i.id, 1)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Plus className="w-3.5 h-3.5 text-white" /></button>
                       {low && (
-                        <button data-testid={`reorder-${i.id}`} onClick={() => doReorder(i)}
-                          className="pos-btn h-8 px-3 rounded-lg text-xs font-bold text-white flex items-center gap-1" style={{ background: "var(--pos-blue)" }}>
-                          <Truck className="w-3.5 h-3.5" /> Reorder
+                        <>
+                          <button data-testid={`reorder-${i.id}`} onClick={() => doReorder(i)}
+                            className="pos-btn h-8 px-3 rounded-lg text-xs font-bold text-white flex items-center gap-1" style={{ background: "var(--pos-blue)" }}>
+                            <Truck className="w-3.5 h-3.5" /> Reorder
+                          </button>
+                          <button data-testid={`download-po-${i.id}`} onClick={() => downloadPO(i)} title="Download purchase order PDF"
+                            className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                            <Download className="w-3.5 h-3.5 text-white" />
+                          </button>
+                        </>
+                      )}
+                      {expiring && (
+                        <button data-testid={`log-waste-${i.id}`} onClick={() => logWasteFor(i)}
+                          className="pos-btn h-8 px-3 rounded-lg text-xs font-bold text-white flex items-center gap-1" style={{ background: "#7c2d12" }}>
+                          <Trash className="w-3.5 h-3.5" /> Log waste
                         </button>
                       )}
                       {isManager && (
@@ -229,15 +295,25 @@ export default function InventoryScreen() {
           )}
           {filtered.map((i) => {
             const low = i.stock <= i.reorder;
+            const days = daysUntilExpiry(i);
+            const expiring = days !== null && days <= EXPIRY_WARN_DAYS;
+            const expired = days !== null && days < 0;
             return (
-              <div key={i.id} data-testid={`inv-row-${i.id}`} className="p-3 flex flex-col gap-2" style={{ background: low ? "#2a141077" : "transparent", borderColor: "var(--pos-border)" }}>
+              <div key={i.id} data-testid={`inv-row-${i.id}`} className="p-3 flex flex-col gap-2" style={{ background: low ? "#2a141077" : expiring ? "#2a220f77" : "transparent", borderColor: "var(--pos-border)" }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-medium text-white text-sm">{i.name}</div>
-                  {low ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase shrink-0" style={{ background: "#3a1515", color: "#f87171" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase shrink-0" style={{ background: "#13271a", color: "#22c55e" }}><PackageCheck className="w-3 h-3" /> OK</span>
-                  )}
+                  <div className="flex flex-col gap-1 items-end shrink-0">
+                    {low ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#3a1515", color: "#f87171" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#13271a", color: "#22c55e" }}><PackageCheck className="w-3 h-3" /> OK</span>
+                    )}
+                    {expiring && (
+                      <span data-testid={`expiry-badge-${i.id}`} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: expired ? "#3a1515" : "#3a2a10", color: expired ? "#f87171" : "#fbbf24" }}>
+                        <CalendarClock className="w-3 h-3" /> {expiryLabel(days)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: "var(--pos-muted)" }}>
                   <span>Stock: <b style={{ color: low ? "#f87171" : "#7ee2a8" }}>{i.stock} {i.unit}</b></span>
@@ -249,9 +325,21 @@ export default function InventoryScreen() {
                   <button data-testid={`stock-minus-${i.id}`} onClick={() => adjustStock(i.id, -1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Minus className="w-4 h-4 text-white" /></button>
                   <button data-testid={`stock-plus-${i.id}`} onClick={() => adjustStock(i.id, 1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Plus className="w-4 h-4 text-white" /></button>
                   {low && (
-                    <button data-testid={`reorder-${i.id}`} onClick={() => doReorder(i)}
-                      className="pos-btn h-10 px-3 rounded-lg text-xs font-bold text-white flex items-center gap-1" style={{ background: "var(--pos-blue)" }}>
-                      <Truck className="w-4 h-4" /> Reorder
+                    <>
+                      <button data-testid={`reorder-${i.id}`} onClick={() => doReorder(i)}
+                        className="pos-btn h-10 px-3 rounded-lg text-xs font-bold text-white flex items-center gap-1" style={{ background: "var(--pos-blue)" }}>
+                        <Truck className="w-4 h-4" /> Reorder
+                      </button>
+                      <button data-testid={`download-po-${i.id}`} onClick={() => downloadPO(i)} title="Download purchase order PDF"
+                        className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                        <Download className="w-4 h-4 text-white" />
+                      </button>
+                    </>
+                  )}
+                  {expiring && (
+                    <button data-testid={`log-waste-${i.id}`} onClick={() => logWasteFor(i)}
+                      className="pos-btn h-10 px-3 rounded-lg text-xs font-bold text-white flex items-center gap-1" style={{ background: "#7c2d12" }}>
+                      <Trash className="w-4 h-4" /> Log waste
                     </button>
                   )}
                   {isManager && (
@@ -283,6 +371,10 @@ export default function InventoryScreen() {
               <Input data-testid="inv-form-cost" type="number" placeholder="Cost per unit (₹)" value={form.cost_per_unit} onChange={(e) => setForm({ ...form, cost_per_unit: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
             </div>
             <Input data-testid="inv-form-supplier" list="supplier-names" placeholder="Supplier" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <div>
+              <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Expiry date (optional)</label>
+              <Input data-testid="inv-form-expiry" type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            </div>
             <datalist id="supplier-names">
               {suppliers.map((s) => <option key={s.id} value={s.name} />)}
             </datalist>

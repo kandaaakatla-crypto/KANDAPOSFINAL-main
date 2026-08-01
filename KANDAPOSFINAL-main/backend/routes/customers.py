@@ -19,8 +19,9 @@ from fastapi import APIRouter, HTTPException, Depends
 
 from db import get_db
 from auth import get_current_user, require_role
-from tenants import tenant_filter
+from tenants import tenant_filter, get_tenant
 from models import Customer, CustomerCreate, CustomerUpdate
+from . import loyalty as loyalty_mod
 from ._shared import PROJECTION, clean
 
 router = APIRouter()
@@ -78,8 +79,31 @@ async def create_customer(payload: CustomerCreate, user: dict = Depends(get_curr
         "notes": payload.notes or "",
         "orders": 0,
         "deleted_at": None,
+        "loyalty_points": 0,
+        "birthday": (payload.birthday or "").strip() or None,
     }
+    tenant = await get_tenant(user, db)
+    loyalty_on = ((tenant or {}).get("features") or {}).get("loyalty", True)
+    if loyalty_on:
+        cfg = await loyalty_mod._get_config(db, user["tenant_id"])
+        bonus = int(cfg.get("welcome_bonus_points") or 0)
+        if bonus > 0:
+            doc["loyalty_points"] = bonus
     await db.customers.insert_one(doc)
+    if doc["loyalty_points"] > 0:
+        await db.loyalty_txns.insert_one({
+            "id": f"lt_{uuid.uuid4().hex[:10]}",
+            "tenant_id": user["tenant_id"],
+            "customer_id": doc["id"],
+            "customer_name": doc["name"],
+            "kind": "bonus",
+            "points": doc["loyalty_points"],
+            "order_id": None,
+            "note": "Welcome bonus for new customer",
+            "by_user_id": user["id"],
+            "by_user_name": user["name"],
+            "at": now_ist().isoformat(),
+        })
     return clean(doc)
 
 

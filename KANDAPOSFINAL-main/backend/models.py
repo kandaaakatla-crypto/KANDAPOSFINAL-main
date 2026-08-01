@@ -1,7 +1,7 @@
 """Pydantic models for Kanda POS."""
 from __future__ import annotations
 from typing import List, Literal, Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 OrderType = Literal["delivery", "collection", "dine-in", "sale"]
@@ -56,6 +56,7 @@ class TenantInfo(BaseModel):
     name: str
     businessType: BusinessType = "restaurant"
     features: TenantFeatures = TenantFeatures()
+    brandId: Optional[str] = None
 
 
 class TenantFeaturesUpdate(BaseModel):
@@ -74,6 +75,126 @@ class TenantFeaturesUpdate(BaseModel):
     whatsapp: Optional[bool] = None
     daily_digest: Optional[bool] = None
     payroll: Optional[bool] = None
+
+
+# ---------- Brands (franchise / multi-store grouping) ----------
+class BrandStoreDefaults(BaseModel):
+    """Brand-wide defaults an owner can push out to every member store.
+    Pushing is an explicit action, not continuous enforcement — a franchisee
+    store keeps whatever it has until the owner pushes again."""
+    features: Optional[dict] = None  # subset of TenantFeatures keys -> bool
+    store_footer: Optional[str] = None  # receipt footer text
+    logo_url: Optional[str] = None
+
+
+class Brand(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    slug: str
+    name: str
+    logo_url: Optional[str] = None
+    royalty_percent: float = 0.0  # default % of sales owed by member stores, per-tenant overridable
+    defaults: BrandStoreDefaults = BrandStoreDefaults()
+    created_at: str
+
+
+class BrandCreate(BaseModel):
+    slug: str
+    name: str
+    logo_url: Optional[str] = None
+    royalty_percent: float = 0.0
+
+
+class BrandUpdate(BaseModel):
+    name: Optional[str] = None
+    logo_url: Optional[str] = None
+    royalty_percent: Optional[float] = None
+    defaults: Optional[BrandStoreDefaults] = None
+
+
+class BrandAsset(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    brand_id: str
+    kind: Literal["image", "text"] = "image"
+    title: str
+    content: str  # image URL for kind="image", promo copy for kind="text"
+    created_at: str
+    created_by: str
+
+
+class BrandAssetCreate(BaseModel):
+    kind: Literal["image", "text"] = "image"
+    title: str
+    content: str
+
+
+class BrandStoreCreate(BaseModel):
+    """Create a new franchisee store under a brand, from the Dashboard (not
+    the Platform Owner's Owner Portal) — mirrors TenantCreateRequest in
+    owner_routes.py but scoped to the requesting brand owner."""
+    slug: str
+    name: str
+    contact_email: str
+    store: dict  # {name, address, phone, tax_id}
+    manager_name: str = "Manager"
+    manager_pin: str
+    business_type: BusinessType = "restaurant"
+    apply_brand_defaults: bool = True
+
+
+class BrandSmsBroadcast(BaseModel):
+    body: str
+
+
+BrandInviteStatus = Literal["pending", "accepted", "declined", "cancelled"]
+
+
+class BrandInvite(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    brand_id: str
+    brand_name: str
+    tenant_id: str
+    tenant_slug: str
+    tenant_name: str
+    status: BrandInviteStatus = "pending"
+    invited_by: str
+    created_at: str
+    responded_at: Optional[str] = None
+
+
+class BrandInviteCreate(BaseModel):
+    tenant_slug: str
+
+
+# ---------- Royalty invoices ----------
+RoyaltyInvoiceStatus = Literal["pending", "paid", "void"]
+
+
+class RoyaltyInvoice(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    brand_id: str
+    tenant_id: str
+    store_name: str
+    period_start: str
+    period_end: str
+    sales: float
+    royalty_percent: float
+    amount: float
+    status: RoyaltyInvoiceStatus = "pending"
+    created_at: str
+    paid_at: Optional[str] = None
+
+
+class RoyaltyInvoiceGenerate(BaseModel):
+    start: str
+    end: str
+
+
+class RoyaltyInvoiceStatusUpdate(BaseModel):
+    status: RoyaltyInvoiceStatus
 
 
 # ---------- Users ----------
@@ -235,6 +356,7 @@ class Customer(BaseModel):
     loyalty_points: int = 0
     loyalty_tier: Literal["bronze", "silver", "gold"] = "bronze"
     loyalty_lifetime_spend: float = 0.0
+    birthday: Optional[str] = None  # "MM-DD" — month+day only, no birth year stored
 
 
 class CustomerCreate(BaseModel):
@@ -244,6 +366,7 @@ class CustomerCreate(BaseModel):
     postcode: Optional[str] = ""
     notes: Optional[str] = ""
     email: Optional[str] = ""
+    birthday: Optional[str] = None
 
 
 class CustomerUpdate(BaseModel):
@@ -253,6 +376,7 @@ class CustomerUpdate(BaseModel):
     postcode: Optional[str] = None
     notes: Optional[str] = None
     email: Optional[str] = None
+    birthday: Optional[str] = None
 
 
 # ---------- Tables + Layout ----------
@@ -375,6 +499,7 @@ class InventoryItem(BaseModel):
     reorder: float
     supplier: str
     cost_per_unit: float = 0.0
+    expiry_date: Optional[str] = None  # ISO date (YYYY-MM-DD), batch-level tracking not modeled
 
 
 class InventoryItemCreate(BaseModel):
@@ -384,6 +509,7 @@ class InventoryItemCreate(BaseModel):
     reorder: float = 0
     supplier: str = ""
     cost_per_unit: float = 0.0
+    expiry_date: Optional[str] = None
 
 
 class InventoryItemUpdate(BaseModel):
@@ -392,6 +518,7 @@ class InventoryItemUpdate(BaseModel):
     reorder: Optional[float] = None
     supplier: Optional[str] = None
     cost_per_unit: Optional[float] = None
+    expiry_date: Optional[str] = None  # explicit null clears it; omitted leaves it unchanged
 
 
 class AdjustStockPayload(BaseModel):
@@ -872,13 +999,18 @@ class RefundLog(BaseModel):
 
 
 # ---------- Loyalty ----------
-# Earn rate: 1 point per ₹100 spent. Redeem 1 point → ₹1 off (cap at order subtotal).
-LOYALTY_EARN_DIVISOR = 100.0
-LOYALTY_TIERS = (
-    ("bronze", 0),
-    ("silver", 5000),     # ₹5,000 lifetime spend
-    ("gold", 20000),      # ₹20,000 lifetime spend
-)
+# Defaults mirror the program's original hardcoded rates (1pt/₹100 earned,
+# 1pt=₹1 redeemed, Silver/Gold at ₹5k/₹20k lifetime spend) — every tenant
+# starts here but can customize via LoyaltyConfig (GET/PUT /loyalty/config).
+class LoyaltyConfig(BaseModel):
+    earn_rate: float = Field(default=100.0, gt=0)          # ₹ spent per 1 point earned
+    redeem_value: float = Field(default=1.0, gt=0)         # ₹ discount per point redeemed
+    silver_threshold: float = Field(default=5000.0, ge=0)  # ₹ lifetime spend for Silver
+    gold_threshold: float = Field(default=20000.0, ge=0)   # ₹ lifetime spend for Gold
+    welcome_bonus_points: int = Field(default=0, ge=0)     # granted when a new customer is added
+    silver_multiplier: float = Field(default=1.0, ge=1.0)  # earn-rate multiplier for Silver members
+    gold_multiplier: float = Field(default=1.0, ge=1.0)    # earn-rate multiplier for Gold members
+    birthday_bonus_points: int = Field(default=0, ge=0)    # granted once a year on the customer's birthday
 
 
 class LoyaltyTxn(BaseModel):
@@ -886,7 +1018,7 @@ class LoyaltyTxn(BaseModel):
     id: str
     customer_id: str
     customer_name: str
-    kind: Literal["earn", "redeem", "adjust"]
+    kind: Literal["earn", "redeem", "adjust", "bonus"]
     points: int           # positive for earn, negative for redeem
     order_id: Optional[str] = None
     note: Optional[str] = None

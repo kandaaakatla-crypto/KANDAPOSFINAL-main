@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { useDash, canManageStaff, canAddLocation, canManagePayroll } from "../../store/DashContext";
-import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote } from "lucide-react";
+import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty } from "../../store/DashContext";
+import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
+import StoreSwitcher from "./StoreSwitcher";
 
 const NAV_ITEMS = [
   { to: "/biz", end: true, label: "Overview", icon: LayoutDashboard, allow: () => true },
+  { to: "/biz/brand", label: "Brand", icon: Store, allow: (u) => u?.dash_role === "owner" },
   { to: "/biz/menu", label: "Menu", icon: BookOpen, allow: () => true },
   { to: "/biz/staff", label: "Staff", icon: Users, allow: (u) => canManageStaff(u) || u?.dash_role === "manager" },
   { to: "/biz/payroll", label: "Payroll", icon: Banknote, allow: (u) => canManagePayroll(u), feature: "payroll" },
   { to: "/biz/workforce", label: "Rota", icon: CalendarDays, allow: () => true },
   { to: "/biz/customers", label: "Customers", icon: UserCircle, allow: () => true },
+  { to: "/biz/loyalty", label: "Loyalty", icon: Gift, allow: (u) => canManageLoyalty(u), feature: "loyalty" },
   { to: "/biz/inventory", label: "Inventory", icon: Boxes, allow: () => true },
   { to: "/biz/reports", label: "Reports", icon: BarChart3, allow: () => true },
   { to: "/biz/voice", label: "Voice Agent", icon: PhoneCall, allow: () => true, feature: "voice_agent" },
@@ -92,6 +95,7 @@ export default function DashLayout() {
             <div className="text-[10px] tracking-wider uppercase" style={{ color: "var(--pos-muted)" }}>Dashboard</div>
           </div>
         </div>
+        <StoreSwitcher />
         <NavItems />
       </aside>
 
@@ -106,6 +110,7 @@ export default function DashLayout() {
               <div className="text-[10px] tracking-wider uppercase" style={{ color: "var(--pos-muted)" }}>Dashboard</div>
             </div>
           </div>
+          <StoreSwitcher />
           <NavItems onNavigate={() => setNavOpen(false)} />
         </SheetContent>
       </Sheet>

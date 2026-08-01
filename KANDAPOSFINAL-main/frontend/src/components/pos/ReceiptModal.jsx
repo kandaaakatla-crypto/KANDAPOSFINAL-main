@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
-import { Printer, Download, Loader2 } from "lucide-react";
+import { Printer, Download, Loader2, FileText } from "lucide-react";
 import { receiptsApi } from "../../api/client";
 import { toast } from "sonner";
 
@@ -30,6 +30,18 @@ export default function ReceiptModal({ orderId, open, onClose }) {
       toast.success(`${kind === "kitchen" ? "Kitchen ticket" : "Receipt"} ESC/POS file saved`);
     } catch {
       toast.error("Could not generate ESC/POS file");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const downloadInvoice = async () => {
+    setDownloading(true);
+    try {
+      await receiptsApi.downloadInvoicePdf(orderId, data?.order?.number);
+      toast.success("Tax invoice PDF saved");
+    } catch {
+      toast.error("Could not generate invoice PDF");
     } finally {
       setDownloading(false);
     }
@@ -107,15 +119,20 @@ export default function ReceiptModal({ orderId, open, onClose }) {
             </div>
 
             {/* Actions — hidden in print */}
-            <div className="px-4 py-3 grid grid-cols-3 gap-2 print-hide" style={{ borderTop: "1px solid var(--pos-border)" }}>
+            <div className="px-4 py-3 grid grid-cols-2 gap-2 print-hide" style={{ borderTop: "1px solid var(--pos-border)" }}>
               <button data-testid="print-receipt-btn" onClick={doPrint}
                 className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-sm text-white"
                 style={{ background: "var(--pos-accent)" }}>
                 <Printer className="w-4 h-4" /> Print
               </button>
-              <button data-testid="escpos-customer-btn" disabled={downloading} onClick={() => downloadEscpos("customer")}
+              <button data-testid="download-invoice-btn" disabled={downloading} onClick={downloadInvoice}
                 className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-xs text-white disabled:opacity-40"
                 style={{ background: "var(--pos-blue)" }}>
+                <FileText className="w-3.5 h-3.5" /> Tax Invoice (PDF)
+              </button>
+              <button data-testid="escpos-customer-btn" disabled={downloading} onClick={() => downloadEscpos("customer")}
+                className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-xs text-white disabled:opacity-40"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 <Download className="w-3.5 h-3.5" /> ESC/POS
               </button>
               <button data-testid="escpos-kitchen-btn" disabled={downloading} onClick={() => downloadEscpos("kitchen")}

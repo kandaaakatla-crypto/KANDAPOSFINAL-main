@@ -16,7 +16,7 @@ export default function CartPanel({
   // new
   tipPct, onTipPct, coupon, onCoupon, customerEmail, onCustomerEmail,
   sendReceipt, onSendReceiptToggle,
-  loyaltyBalance, redeemPoints, onRedeemPoints,
+  loyaltyBalance, redeemPoints, onRedeemPoints, redeemValue = 1,
   // editing an existing (unpaid) order — occupied table / running tab
   runningBill = null,
   // mobile: cart renders as a full-screen sheet, gated by open/onClose.
@@ -27,7 +27,8 @@ export default function CartPanel({
 
   const tipAmt = +(subtotal * (tipPct || 0) / 100).toFixed(2);
   const couponDiscount = coupon?.discount || 0;
-  const loyaltyDiscount = Math.min(redeemPoints || 0, subtotal);
+  const loyaltyDiscount = Math.min((redeemPoints || 0) * redeemValue, subtotal);
+  const maxRedeemable = Math.max(0, Math.floor(subtotal / redeemValue));
   // Total: subtotal + GST − %-discount − coupon − loyalty + delivery + tip (+ running bill from earlier rounds)
   const newRoundTotal = +Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDiscount - loyaltyDiscount + deliveryFee + tipAmt).toFixed(2);
   const total = +(newRoundTotal + (runningBill?.total || 0)).toFixed(2);
@@ -169,11 +170,11 @@ export default function CartPanel({
           {loyaltyBalance > 0 && (
             <div className="flex items-center gap-2 text-[11px]">
               <Coins className="w-3 h-3" style={{ color: "#fcd34d" }} />
-              <span style={{ color: "var(--pos-muted)" }}>Redeem points</span>
-              <Input data-testid="redeem-points-input" type="number" min={0} max={Math.min(loyaltyBalance, subtotal)}
-                value={redeemPoints || ""} onChange={(e) => onRedeemPoints(Math.max(0, Math.min(loyaltyBalance, Math.floor(+e.target.value || 0))))}
+              <span style={{ color: "var(--pos-muted)" }}>Redeem points ({redeemValue === 1 ? "₹1/pt" : `₹${redeemValue}/pt`})</span>
+              <Input data-testid="redeem-points-input" type="number" min={0} max={Math.min(loyaltyBalance, maxRedeemable)}
+                value={redeemPoints || ""} onChange={(e) => onRedeemPoints(Math.max(0, Math.min(loyaltyBalance, maxRedeemable, Math.floor(+e.target.value || 0))))}
                 className="h-6 w-16 text-xs text-white text-right" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-              <button data-testid="redeem-all-btn" onClick={() => onRedeemPoints(Math.min(loyaltyBalance, Math.floor(subtotal)))}
+              <button data-testid="redeem-all-btn" onClick={() => onRedeemPoints(Math.min(loyaltyBalance, maxRedeemable))}
                 className="pos-btn text-[10px] px-2 py-0.5 rounded" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
                 Max
               </button>

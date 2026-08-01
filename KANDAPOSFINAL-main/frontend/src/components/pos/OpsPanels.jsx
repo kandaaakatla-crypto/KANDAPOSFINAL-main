@@ -13,7 +13,7 @@ import { toast } from "sonner";
  *  - TipPoolPanel     → rendered inside ReportsScreen
  */
 
-export function WastePanel() {
+export function WastePanel({ presetItemId, presetReason }) {
   const [list, setList] = useState([]);
   const [inv, setInv] = useState([]);
   const [open, setOpen] = useState(false);
@@ -23,6 +23,11 @@ export function WastePanel() {
     inventoryApi.list().then(setInv);
   };
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!presetItemId) return;
+    setForm({ inventory_id: presetItemId, qty: "", reason: presetReason || "" });
+    setOpen(true);
+  }, [presetItemId, presetReason]);
   const save = async () => {
     if (!form.inventory_id || !form.qty || !form.reason.trim()) { toast.error("Fill all fields"); return; }
     try {

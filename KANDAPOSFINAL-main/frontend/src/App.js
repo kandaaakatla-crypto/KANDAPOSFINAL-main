@@ -19,6 +19,7 @@ import PackingScreen from "./components/pos/PackingScreen";
 import CustomerDisplayScreen from "./components/pos/CustomerDisplayScreen";
 import TableOrderPage from "./components/storefront/TableOrderPage";
 import PickupOrderPage from "./components/storefront/PickupOrderPage";
+import BirthdayLinkPage from "./components/storefront/BirthdayLinkPage";
 import StaffScreen from "./components/pos/StaffScreen";
 import WorkforceScreen from "./components/pos/WorkforceScreen";
 import TimeClockScreen from "./components/pos/TimeClockScreen";
@@ -42,9 +43,11 @@ import DashChangePassword from "./components/dash/DashChangePassword";
 import DashLocations from "./components/dash/DashLocations";
 import DashVoice from "./components/dash/DashVoice";
 import DashDigest from "./components/dash/DashDigest";
+import DashLoyalty from "./components/dash/DashLoyalty";
 import DashSms from "./components/dash/DashSms";
 import DashWhatsApp from "./components/dash/DashWhatsApp";
 import PayrollScreen from "./components/dash/PayrollScreen";
+import BrandScreen from "./components/dash/BrandScreen";
 import AIAssistant from "./components/AIAssistant";
 
 function Protected({ children }) {
@@ -102,6 +105,7 @@ function App() {
                   <Route index element={<DashHome />} />
                   <Route path="menu" element={<MenuScreen />} />
                   <Route path="staff" element={<StaffScreen />} />
+                  <Route path="brand" element={<BrandScreen />} />
                   <Route path="payroll" element={<PayrollScreen />} />
                   <Route path="workforce" element={<WorkforceScreen />} />
                   <Route path="customers" element={<CustomersScreen />} />
@@ -109,6 +113,7 @@ function App() {
                   <Route path="inventory" element={<InventoryScreen />} />
                   <Route path="voice" element={<DashVoice />} />
                   <Route path="digest" element={<DashDigest />} />
+                  <Route path="loyalty" element={<DashLoyalty />} />
                   <Route path="sms" element={<DashSms />} />
                   <Route path="whatsapp" element={<DashWhatsApp />} />
                   <Route path="locations" element={<DashLocations />} />
@@ -127,6 +132,7 @@ function App() {
                 {/* Customer-facing QR ordering — fully public, no auth */}
                 <Route path="/order/:slug/table/:number" element={<TableOrderPage />} />
                 <Route path="/order/:slug/pickup" element={<PickupOrderPage />} />
+                <Route path="/loyalty/birthday/:token" element={<BirthdayLinkPage />} />
 
                 {/* Driver stripped POS view */}
                 <Route path="/driver" element={<Protected><DriverScreen /></Protected>} />

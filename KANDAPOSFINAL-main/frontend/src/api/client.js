@@ -93,6 +93,59 @@ dashApi.interceptors.response.use(
   }
 );
 
+// Brand — franchise/multi-store management, owner-only. Uses dashApi since
+// every /brand/* route requires the strict dash JWT (get_dash_user).
+export const brandApi = {
+  create: (payload) => dashApi.post("/brand", payload).then((r) => r.data),
+  get: (id) => dashApi.get(`/brand/${id}`).then((r) => r.data),
+  update: (id, payload) => dashApi.patch(`/brand/${id}`, payload).then((r) => r.data),
+  listStores: (id) => dashApi.get(`/brand/${id}/stores`).then((r) => r.data),
+  rollup: (id, params = {}) => dashApi.get(`/brand/${id}/rollup`, { params }).then((r) => r.data),
+  royalties: (id, params = {}) => dashApi.get(`/brand/${id}/royalties`, { params }).then((r) => r.data),
+  createStore: (id, payload) => dashApi.post(`/brand/${id}/stores`, payload).then((r) => r.data),
+  pushMenuTemplate: (id) => dashApi.post(`/brand/${id}/menu-template/push`).then((r) => r.data),
+  pushDefaults: (id) => dashApi.post(`/brand/${id}/defaults/push`).then((r) => r.data),
+  listAssets: (id) => dashApi.get(`/brand/${id}/assets`).then((r) => r.data),
+  createAsset: (id, payload) => dashApi.post(`/brand/${id}/assets`, payload).then((r) => r.data),
+  deleteAsset: (id, assetId) => dashApi.delete(`/brand/${id}/assets/${assetId}`).then((r) => r.data),
+  smsBroadcast: (id, payload) => dashApi.post(`/brand/${id}/marketing/sms-broadcast`, payload).then((r) => r.data),
+  switchStore: (tenantId) => dashApi.post("/dash/brand/switch", { tenant_id: tenantId }).then((r) => r.data),
+
+  // Pay-per-store billing
+  billing: (id) => dashApi.get(`/brand/${id}/billing`).then((r) => r.data),
+  purchaseStoreSlot: (id) => dashApi.post(`/brand/${id}/payments/purchase-store-slot`).then((r) => r.data),
+  verifyStoreSlot: (id, payload) => dashApi.post(`/brand/${id}/payments/verify`, payload).then((r) => r.data),
+
+  // Per-store royalty override
+  updateStoreRoyalty: (id, tenantId, royaltyPercent) =>
+    dashApi.patch(`/brand/${id}/stores/${tenantId}/royalty`, { royalty_percent: royaltyPercent }).then((r) => r.data),
+
+  // Royalty invoices
+  generateInvoices: (id, payload) => dashApi.post(`/brand/${id}/royalties/invoices/generate`, payload).then((r) => r.data),
+  listInvoices: (id) => dashApi.get(`/brand/${id}/royalties/invoices`).then((r) => r.data),
+  updateInvoiceStatus: (id, invoiceId, status) =>
+    dashApi.patch(`/brand/${id}/royalties/invoices/${invoiceId}`, { status }).then((r) => r.data),
+  downloadInvoicePdf: async (id, invoiceId) => {
+    const r = await dashApi.get(`/brand/${id}/royalties/invoices/${invoiceId}/pdf`, { responseType: "blob" });
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `royalty_invoice_${invoiceId}.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  },
+
+  // Existing-store invites (sent, by the brand owner)
+  sendInvite: (id, tenantSlug) => dashApi.post(`/brand/${id}/invites`, { tenant_slug: tenantSlug }).then((r) => r.data),
+  listSentInvites: (id) => dashApi.get(`/brand/${id}/invites`).then((r) => r.data),
+  cancelInvite: (id, inviteId) => dashApi.delete(`/brand/${id}/invites/${inviteId}`).then((r) => r.data),
+
+  // Existing-store invites (received, by the invited store's own owner)
+  myPendingInvites: () => dashApi.get("/dash/brand/invites").then((r) => r.data),
+  acceptInvite: (inviteId) => dashApi.post(`/dash/brand/invites/${inviteId}/accept`).then((r) => r.data),
+  declineInvite: (inviteId) => dashApi.post(`/dash/brand/invites/${inviteId}/decline`).then((r) => r.data),
+};
+
 export const auth = {
   login: (pin) => api.post("/auth/login", { pin }).then((r) => r.data),
   me: () => api.get("/auth/me").then((r) => r.data),
@@ -161,6 +214,15 @@ export const inventoryApi = {
   remove: (id) => api.delete(`/inventory/${id}`).then((r) => r.data),
   adjust: (id, delta) => api.patch(`/inventory/${id}/adjust`, { delta }).then((r) => r.data),
   reorder: (id) => api.post(`/inventory/${id}/reorder`).then((r) => r.data),
+  downloadPoPdf: async (id, itemName) => {
+    const r = await api.get(`/inventory/${id}/reorder.pdf`, { responseType: "blob" });
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `PO_${(itemName || id).replace(/\s+/g, "_")}.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  },
 };
 
 export const suppliersApi = {
@@ -244,6 +306,7 @@ export const shiftsApi = {
   update: (id, payload) => api.patch(`/shifts/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/shifts/${id}`).then((r) => r.data),
   publish: (start, end) => api.post("/shifts/publish", null, { params: { start, end } }).then((r) => r.data),
+  copyWeek: (sourceStart, targetStart) => api.post("/shifts/copy-week", { source_start: sourceStart, target_start: targetStart }).then((r) => r.data),
   exportPdfUrl: (start, end) => {
     const base = (process.env.REACT_APP_BACKEND_URL || "") + "/api";
     return `${base}/shifts.pdf?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
@@ -298,6 +361,18 @@ export const loyaltyApi = {
   get: (customerId) => api.get(`/customers/${customerId}/loyalty`).then((r) => r.data),
   adjust: (customerId, payload) => api.post(`/customers/${customerId}/loyalty/adjust`, payload).then((r) => r.data),
   lookup: (phone) => api.get("/loyalty/lookup", { params: { phone } }).then((r) => r.data),
+  getConfig: () => api.get("/loyalty/config").then((r) => r.data),
+  saveConfig: (cfg) => api.put("/loyalty/config", cfg).then((r) => r.data),
+  overview: () => api.get("/loyalty/overview").then((r) => r.data),
+  txns: (limit = 100) => api.get("/loyalty/txns", { params: { limit } }).then((r) => r.data),
+  requestBirthdays: (customerIds = null) => api.post("/loyalty/birthday-request", { customer_ids: customerIds }).then((r) => r.data),
+};
+
+/** Fully public client for the birthday self-report link — no staff/dash
+ *  token involved, mirrors storefrontApi's pattern. */
+export const publicLoyaltyApi = {
+  getBirthdayLink: (token) => axios.get(`${BASE}/loyalty/birthday-link/${token}`).then((r) => r.data),
+  submitBirthday: (token, birthday) => axios.post(`${BASE}/loyalty/birthday-link/${token}`, { birthday }).then((r) => r.data),
 };
 
 export const voiceApi = {
@@ -381,6 +456,15 @@ export const receiptsApi = {
     const a = document.createElement("a");
     a.href = url;
     a.download = `receipt_${orderId}_${kind}.bin`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  },
+  downloadInvoicePdf: async (orderId, orderNumber) => {
+    const r = await api.get(`/orders/${orderId}/invoice.pdf`, { responseType: "blob" });
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `invoice_${orderNumber || orderId}.pdf`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   },
