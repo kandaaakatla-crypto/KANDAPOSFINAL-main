@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kanda-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "cwd": "KANDAPOSFINAL-main/frontend",
+      "port": 3000
+    }
+  ]
+}
