@@ -529,7 +529,11 @@ export default function OrderScreen() {
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm font-bold" style={{ color: "var(--pos-accent)" }}>{priceLabel}</span>
                   {!item.available && <span className="text-[10px] uppercase font-bold text-red-400">86&apos;d</span>}
-                  {item.available && item._onSchedule && <span className="text-[10px] uppercase font-bold" style={{ color: "#fcd34d" }}>-{item._discountPct}%</span>}
+                  {item.available && item._onSchedule && (
+                    <span className="text-[10px] uppercase font-bold" style={{ color: "#fcd34d" }}>
+                      {item._pricingMode === "fixed" ? `₹${item._pricingValue}` : `-${item._pricingValue}%`}
+                    </span>
+                  )}
                 </div>
               </div>
             );

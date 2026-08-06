@@ -10,8 +10,14 @@ const DAY_LABELS = [
 
 const EMPTY = {
   name: "", days: [], start_time: "09:00", end_time: "17:00", active: true,
-  restrict_availability: false, discount_pct: "", category_ids: [], item_ids: [],
+  restrict_availability: false, pricing_mode: "none", discount_pct: "", fixed_price: "", category_ids: [], item_ids: [],
 };
+
+const PRICING_MODES = [
+  { v: "none", l: "No price change" },
+  { v: "percent", l: "Percent off" },
+  { v: "fixed", l: "Fixed price" },
+];
 
 /**
  * Restaurant Dashboard → Schedules. Day-part menus (e.g. "Breakfast" only
@@ -42,7 +48,8 @@ export default function DashSchedules() {
     setEditingId(s.id);
     setForm({
       name: s.name, days: s.days || [], start_time: s.start_time, end_time: s.end_time, active: s.active,
-      restrict_availability: !!s.restrict_availability, discount_pct: s.discount_pct ?? "",
+      restrict_availability: !!s.restrict_availability, pricing_mode: s.pricing_mode || "none",
+      discount_pct: s.discount_pct ?? "", fixed_price: s.fixed_price ?? "",
       category_ids: s.category_ids || [], item_ids: s.item_ids || [],
     });
   };
@@ -59,12 +66,16 @@ export default function DashSchedules() {
   const save = async () => {
     if (!form.name.trim()) { toast.error("Name is required"); return; }
     if (!form.category_ids.length && !form.item_ids.length) { toast.error("Select at least one category or item"); return; }
+    if (form.pricing_mode === "percent" && form.discount_pct === "") { toast.error("Enter a discount %"); return; }
+    if (form.pricing_mode === "fixed" && form.fixed_price === "") { toast.error("Enter a fixed price"); return; }
     setSaving(true);
     try {
       const payload = {
         name: form.name.trim(), days: form.days, start_time: form.start_time, end_time: form.end_time, active: form.active,
         restrict_availability: form.restrict_availability,
-        discount_pct: form.discount_pct === "" ? null : parseFloat(form.discount_pct),
+        pricing_mode: form.pricing_mode,
+        discount_pct: form.pricing_mode === "percent" && form.discount_pct !== "" ? parseFloat(form.discount_pct) : null,
+        fixed_price: form.pricing_mode === "fixed" && form.fixed_price !== "" ? parseFloat(form.fixed_price) : null,
         category_ids: form.category_ids, item_ids: form.item_ids,
       };
       if (editingId) {
@@ -112,7 +123,7 @@ export default function DashSchedules() {
           Schedules
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>
-          Day-part menus (e.g. a Breakfast menu only served 7–11am) and time-based pricing (e.g. Happy Hour −20% on drinks). Assign categories or individual items to a schedule right here.
+          Day-part menus (e.g. a Breakfast menu only served 7–11am) and time-based pricing — percent off (e.g. Happy Hour −20% on drinks) or a flat price (e.g. Lunch Special ₹99 pizzas). Assign categories or individual items to a schedule right here.
         </p>
       </div>
 
@@ -138,7 +149,8 @@ export default function DashSchedules() {
                         {s.start_time}–{s.end_time}
                       </span>
                       {s.restrict_availability && <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#1e2a4a", color: "#93c5fd" }}>Day-part menu</span>}
-                      {s.discount_pct ? <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#2a1e0a", color: "#fcd34d" }}>−{s.discount_pct}%</span> : null}
+                      {s.pricing_mode === "percent" && s.discount_pct ? <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#2a1e0a", color: "#fcd34d" }}>−{s.discount_pct}%</span> : null}
+                      {s.pricing_mode === "fixed" && s.fixed_price != null ? <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#2a1e0a", color: "#fcd34d" }}>₹{s.fixed_price} flat</span> : null}
                       {!s.active && <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#3a1515", color: "#f87171" }}>Inactive</span>}
                     </div>
                     <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
@@ -203,9 +215,27 @@ export default function DashSchedules() {
               Day-part menu — hide members outside the window
             </label>
 
-            <Field label="Discount % while active (optional)">
-              <input data-testid="schedule-form-discount" type="number" min={0} max={100} value={form.discount_pct} onChange={(e) => setForm({ ...form, discount_pct: e.target.value })}
-                placeholder="e.g. 20" className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+            <Field label="Pricing while active">
+              <div className="grid grid-cols-3 gap-1.5">
+                {PRICING_MODES.map((m) => (
+                  <button key={m.v} type="button" data-testid={`schedule-form-mode-${m.v}`} onClick={() => setForm({ ...form, pricing_mode: m.v })}
+                    className="pos-btn h-9 rounded text-[11px] font-bold"
+                    style={{ background: form.pricing_mode === m.v ? "var(--pos-accent)" : "var(--pos-panel-2)", color: form.pricing_mode === m.v ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+                    {m.l}
+                  </button>
+                ))}
+              </div>
+              {form.pricing_mode === "percent" && (
+                <input data-testid="schedule-form-discount" type="number" min={0} max={100} value={form.discount_pct} onChange={(e) => setForm({ ...form, discount_pct: e.target.value })}
+                  placeholder="Discount % — e.g. 20" className="w-full mt-2 rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+              )}
+              {form.pricing_mode === "fixed" && (
+                <input data-testid="schedule-form-fixed-price" type="number" min={0} value={form.fixed_price} onChange={(e) => setForm({ ...form, fixed_price: e.target.value })}
+                  placeholder="Flat ₹ price — e.g. 99" className="w-full mt-2 rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+              )}
+              {form.pricing_mode === "fixed" && (
+                <div className="text-[10px] mt-1" style={{ color: "var(--pos-muted)" }}>Applied to every member item (and every pizza size / variant) — replaces the price outright, not a discount off it.</div>
+              )}
             </Field>
 
             <Field label="Categories included">

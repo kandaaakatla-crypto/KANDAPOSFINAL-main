@@ -37,7 +37,9 @@ async def create_schedule(payload: MenuScheduleCreate, user: dict = Depends(requ
         "end_time": payload.end_time,
         "active": payload.active,
         "restrict_availability": payload.restrict_availability,
+        "pricing_mode": payload.pricing_mode,
         "discount_pct": payload.discount_pct,
+        "fixed_price": payload.fixed_price,
         "category_ids": payload.category_ids,
         "item_ids": payload.item_ids,
     }

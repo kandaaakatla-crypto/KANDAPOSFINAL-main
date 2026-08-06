@@ -337,7 +337,9 @@ class MenuSchedule(BaseModel):
     end_time: str  # "HH:MM" 24h; may be < start_time for an overnight window
     active: bool = True
     restrict_availability: bool = False  # if True, member items are hidden outside the window (day-part menu)
-    discount_pct: Optional[float] = None  # % off member items' price while the schedule is active
+    pricing_mode: Literal["none", "percent", "fixed"] = "none"
+    discount_pct: Optional[float] = None  # used when pricing_mode == "percent"
+    fixed_price: Optional[float] = None  # used when pricing_mode == "fixed" — flat ₹ price for every member item
     category_ids: List[str] = []  # every item in these categories is a member
     item_ids: List[str] = []  # individually-added members (e.g. one item from an otherwise-excluded category)
 
@@ -349,7 +351,9 @@ class MenuScheduleCreate(BaseModel):
     end_time: str
     active: bool = True
     restrict_availability: bool = False
+    pricing_mode: Literal["none", "percent", "fixed"] = "none"
     discount_pct: Optional[float] = None
+    fixed_price: Optional[float] = None
     category_ids: List[str] = []
     item_ids: List[str] = []
 
@@ -361,7 +365,9 @@ class MenuScheduleUpdate(BaseModel):
     end_time: Optional[str] = None
     active: Optional[bool] = None
     restrict_availability: Optional[bool] = None
+    pricing_mode: Optional[Literal["none", "percent", "fixed"]] = None
     discount_pct: Optional[float] = None
+    fixed_price: Optional[float] = None
     category_ids: Optional[List[str]] = None
     item_ids: Optional[List[str]] = None
 
