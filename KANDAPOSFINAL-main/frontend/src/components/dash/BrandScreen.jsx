@@ -516,11 +516,13 @@ function MenuDefaultsTab({ brand, onBrandChanged }) {
   };
 
   const pushMenu = async () => {
-    if (!window.confirm("Push this store's current menu to every other store in the brand? Existing items with matching names are left untouched.")) return;
+    if (!window.confirm("Push this store's current menu to every other store in the brand? New items/categories are added and matching ones (by name) are updated to match — each store's own sold-out status is left alone.")) return;
     setPushingMenu(true);
     try {
       const r = await brandApi.pushMenuTemplate(brand.id);
-      toast.success(`Pushed to ${r.pushed_to} store(s)`);
+      const added = r.results.reduce((n, s) => n + s.items_added + s.categories_added, 0);
+      const updated = r.results.reduce((n, s) => n + s.items_updated + s.categories_updated, 0);
+      toast.success(`Pushed to ${r.pushed_to} store(s) — ${added} added, ${updated} updated`);
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Push failed");
     } finally { setPushingMenu(false); }
@@ -543,7 +545,8 @@ function MenuDefaultsTab({ brand, onBrandChanged }) {
         <div className="text-sm font-bold text-white mb-1">Shared menu template</div>
         <p className="text-xs mb-3" style={{ color: "var(--pos-muted)" }}>
           Pushes categories and items from your currently-active store into every other store in the brand.
-          Only missing items (by name) are added — nothing already there gets overwritten.
+          New ones are added, and existing ones (matched by name) are updated to match — so price/description/image
+          edits made here propagate on the next push. Each store's own sold-out status is left alone.
         </p>
         <button data-testid="brand-push-menu-btn" onClick={pushMenu} disabled={pushingMenu}
           className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"

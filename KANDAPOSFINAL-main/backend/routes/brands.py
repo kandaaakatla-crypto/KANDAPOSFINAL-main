@@ -577,32 +577,49 @@ async def push_menu_template(brand_id: str, u: dict = Depends(_brand_owner)):
     results = []
     for t in targets:
         tid = t["id"]
-        existing_cats = await db.categories.find({"tenant_id": tid}, {"_id": 0, "id": 1, "name": 1}).to_list(200)
-        existing_cats_by_name = {c["name"]: c["id"] for c in existing_cats}
+        existing_cats = await db.categories.find({"tenant_id": tid}, {"_id": 0}).to_list(200)
+        existing_cats_by_name = {c["name"]: c for c in existing_cats}
         cat_id_map = {}
         added_cats = 0
+        updated_cats = 0
         for c in src_cats:
-            if c["name"] in existing_cats_by_name:
-                cat_id_map[c["id"]] = existing_cats_by_name[c["name"]]
+            existing = existing_cats_by_name.get(c["name"])
+            if existing:
+                cat_id_map[c["id"]] = existing["id"]
+                fields = {k: v for k, v in c.items() if k not in ("id", "tenant_id")}
+                await db.categories.update_one({"tenant_id": tid, "id": existing["id"]}, {"$set": fields})
+                updated_cats += 1
                 continue
             new_id = f"cat_{uuid.uuid4().hex[:8]}"
             await db.categories.insert_one({**c, "id": new_id, "tenant_id": tid})
             cat_id_map[c["id"]] = new_id
             added_cats += 1
 
-        existing_item_names = {
-            m["name"] for m in await db.menu_items.find({"tenant_id": tid}, {"_id": 0, "name": 1}).to_list(2000)
+        existing_items_by_name = {
+            m["name"]: m for m in await db.menu_items.find({"tenant_id": tid}, {"_id": 0}).to_list(2000)
         }
         added_items = 0
+        updated_items = 0
         for m in src_items:
-            if m["name"] in existing_item_names:
+            target_cat_id = cat_id_map.get(m["cat_id"], m["cat_id"])
+            existing = existing_items_by_name.get(m["name"])
+            if existing:
+                # Sync template content, but leave this store's own 86'd/sold-out status alone.
+                fields = {k: v for k, v in m.items() if k not in ("id", "tenant_id", "available")}
+                fields["cat_id"] = target_cat_id
+                await db.menu_items.update_one({"tenant_id": tid, "id": existing["id"]}, {"$set": fields})
+                updated_items += 1
                 continue
             await db.menu_items.insert_one({
                 **m, "id": f"m_{uuid.uuid4().hex[:8]}", "tenant_id": tid,
-                "cat_id": cat_id_map.get(m["cat_id"], m["cat_id"]),
+                "cat_id": target_cat_id,
             })
             added_items += 1
-        results.append({"tenant_id": tid, "store_name": t["name"], "categories_added": added_cats, "items_added": added_items})
+        results.append({
+            "tenant_id": tid, "store_name": t["name"],
+            "categories_added": added_cats, "categories_updated": updated_cats,
+            "items_added": added_items, "items_updated": updated_items,
+        })
     return {"source_tenant_id": source_tenant_id, "pushed_to": len(targets), "results": results}
 
 
