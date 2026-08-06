@@ -188,6 +188,125 @@ async def rebuild_rollups(user: dict = Depends(require_role("Manager")), days: i
     return {"ok": True, "rebuilt": count, "days": days}
 
 
+@router.get("/reports/menu-engineering")
+async def menu_engineering(user: dict = Depends(require_role("Manager")), days: int = 30):
+    """Classic menu-engineering matrix (Kasavana & Smith): classify each item
+    sold in the last `days` by popularity vs. contribution margin.
+
+    - Popularity: an item is "popular" if it sold at least 70% of an even
+      per-item share of total volume (the standard 70% rule).
+    - Profitability: an item is "profitable" if its margin (selling price
+      minus recipe cost, via `recipes` + `inventory.cost_per_unit`) is at or
+      above the sales-weighted average margin across items with a known cost.
+    - Quadrant: Star (both), Plowhorse (popular only), Puzzle (profitable
+      only), Dog (neither). Items with no recipe get `quadrant: "unknown"`
+      since margin can't be computed — `has_recipe` flags this for the UI.
+
+    Order items only store a `name`, not a menu_item_id, so sold items are
+    matched back to the live menu by longest-prefix name match (same
+    approach as the "top items" aggregation below) — accurate for typical
+    naming (e.g. "Margherita 12\"" matches menu item "Margherita").
+    """
+    db = get_db()
+    now = now_ist()
+    start = (now - timedelta(days=days)).isoformat()
+
+    order_docs = await db.orders.find(
+        tenant_filter(user, {"placedAt": {"$gte": start}, "voided": {"$ne": True}}),
+        {"_id": 0, "items": 1},
+    ).to_list(10000)
+
+    sold: dict[str, dict] = {}
+    for o in order_docs:
+        for it in o.get("items", []):
+            entry = sold.setdefault(it["name"], {"name": it["name"], "qty": 0, "revenue": 0.0})
+            entry["qty"] += it["qty"]
+            entry["revenue"] += it["qty"] * it["price"]
+
+    if not sold:
+        return {"days": days, "items": [], "avg_margin": None, "popularity_threshold": 0}
+
+    menu_docs = await db.menu_items.find(tenant_filter(user), {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+    # Longest-name-first so "Margherita Deluxe" wins over "Margherita" for a
+    # sold name like "Margherita Deluxe 12\"".
+    menu_docs.sort(key=lambda m: -len(m["name"]))
+
+    def match_menu_item(sold_name: str):
+        for m in menu_docs:
+            if sold_name == m["name"] or sold_name.startswith(m["name"] + " ") or sold_name.startswith(m["name"] + " —"):
+                return m
+        return None
+
+    matched: dict[str, dict] = {}  # sold_name -> menu doc
+    menu_ids = set()
+    for name in sold:
+        m = match_menu_item(name)
+        if m:
+            matched[name] = m
+            menu_ids.add(m["id"])
+
+    recipes = await db.recipes.find(
+        tenant_filter(user, {"menu_item_id": {"$in": list(menu_ids)}}), {"_id": 0},
+    ).to_list(500) if menu_ids else []
+    inv_ids = {ing["inventory_id"] for r in recipes for ing in r.get("ingredients", [])}
+    inv_docs = await db.inventory.find(
+        tenant_filter(user, {"id": {"$in": list(inv_ids)}}), {"_id": 0, "id": 1, "cost_per_unit": 1},
+    ).to_list(500) if inv_ids else []
+    cost_by_inv = {d["id"]: float(d.get("cost_per_unit", 0) or 0) for d in inv_docs}
+
+    # Average recipe cost per menu item across whatever size variants exist —
+    # a fair approximation since sold-item names don't reliably tell us which
+    # size was ordered.
+    cost_by_menu_id: dict[str, float] = {}
+    counts_by_menu_id: dict[str, int] = {}
+    for r in recipes:
+        c = sum(ing["qty"] * cost_by_inv.get(ing["inventory_id"], 0) for ing in r.get("ingredients", []))
+        cost_by_menu_id[r["menu_item_id"]] = cost_by_menu_id.get(r["menu_item_id"], 0) + c
+        counts_by_menu_id[r["menu_item_id"]] = counts_by_menu_id.get(r["menu_item_id"], 0) + 1
+    for mid in cost_by_menu_id:
+        cost_by_menu_id[mid] /= counts_by_menu_id[mid]
+
+    rows = []
+    for name, s in sold.items():
+        avg_price = s["revenue"] / s["qty"] if s["qty"] else 0
+        m = matched.get(name)
+        cost = cost_by_menu_id.get(m["id"]) if m else None
+        has_recipe = cost is not None
+        margin = round(avg_price - cost, 2) if has_recipe else None
+        rows.append({
+            "name": name, "qty_sold": s["qty"], "revenue": round(s["revenue"], 2),
+            "avg_price": round(avg_price, 2), "cost": round(cost, 2) if has_recipe else None,
+            "margin": margin, "has_recipe": has_recipe,
+        })
+
+    total_qty = sum(r["qty_sold"] for r in rows)
+    n_items = len(rows)
+    even_share = total_qty / n_items if n_items else 0
+    popularity_threshold = 0.7 * even_share
+
+    costed = [r for r in rows if r["has_recipe"]]
+    total_costed_qty = sum(r["qty_sold"] for r in costed)
+    avg_margin = (sum(r["margin"] * r["qty_sold"] for r in costed) / total_costed_qty) if total_costed_qty else None
+
+    for r in rows:
+        popular = r["qty_sold"] >= popularity_threshold
+        r["popular"] = popular
+        if not r["has_recipe"] or avg_margin is None:
+            r["quadrant"] = "unknown"
+            continue
+        profitable = r["margin"] >= avg_margin
+        r["profitable"] = profitable
+        r["quadrant"] = "star" if popular and profitable else "plowhorse" if popular else "puzzle" if profitable else "dog"
+
+    rows.sort(key=lambda r: -r["revenue"])
+    return {
+        "days": days,
+        "items": rows,
+        "avg_margin": round(avg_margin, 2) if avg_margin is not None else None,
+        "popularity_threshold": round(popularity_threshold, 2),
+    }
+
+
 @router.get("/reports/summary", response_model=ReportSummary)
 async def report_summary(user: dict = Depends(get_current_user)):
     db = get_db()

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { toast } from "sonner";
 import { loyaltyApi, ordersApi, storeCreditApi, giftCardsApi } from "../../api/client";
 import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
+import { applyScheduleToItem } from "../../utils/scheduling";
 
 import { useSearchParams, useNavigate } from "react-router-dom";
 
@@ -22,8 +23,19 @@ const ORDER_TYPES = [
 ];
 
 export default function OrderScreen() {
-  const { menuItems, categories, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser, loyaltyConfig } = usePos();
+  const { menuItems, categories, schedules, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser, loyaltyConfig } = usePos();
   const redeemValue = loyaltyConfig?.redeem_value || 1;
+  // Re-evaluate day-part schedules every minute so a happy-hour window
+  // starting/ending mid-shift updates prices without a page reload.
+  const [scheduleTick, setScheduleTick] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setScheduleTick(Date.now()), 60000);
+    return () => clearInterval(t);
+  }, []);
+  const effectiveMenuItems = useMemo(() => {
+    const now = new Date(scheduleTick);
+    return menuItems.map((m) => applyScheduleToItem(m, schedules, now));
+  }, [menuItems, schedules, scheduleTick]);
   const navigate = useNavigate();
   const [orderType, setOrderType] = useState("delivery");
   const [orderSource, setOrderSource] = useState("in-store");
@@ -137,7 +149,7 @@ export default function OrderScreen() {
     }
   }, [searchParams, orders.length]);
 
-  const items = useMemo(() => menuItems.filter((m) => m.catId === activeCat), [menuItems, activeCat]);
+  const items = useMemo(() => effectiveMenuItems.filter((m) => m.catId === activeCat), [effectiveMenuItems, activeCat]);
 
   const lookupCustomer = () => {
     if (phoneQuery.trim().length < 5) { toast.error("Enter a phone number to search"); return; }
@@ -517,6 +529,7 @@ export default function OrderScreen() {
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm font-bold" style={{ color: "var(--pos-accent)" }}>{priceLabel}</span>
                   {!item.available && <span className="text-[10px] uppercase font-bold text-red-400">86&apos;d</span>}
+                  {item.available && item._onSchedule && <span className="text-[10px] uppercase font-bold" style={{ color: "#fcd34d" }}>-{item._discountPct}%</span>}
                 </div>
               </div>
             );
@@ -555,7 +568,7 @@ export default function OrderScreen() {
         runningBill={editingOrder}
       />
 
-      <ItemModal item={modalItem} menuItems={menuItems} onClose={() => setModalItem(null)} onAdd={addLine} />
+      <ItemModal item={modalItem} menuItems={effectiveMenuItems} onClose={() => setModalItem(null)} onAdd={addLine} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName={orderCustomer()?.name} onCreateOrder={onCreateOrder} onPaid={onPaid} />
 
       <Dialog open={zReportOpen} onOpenChange={setZReportOpen}>

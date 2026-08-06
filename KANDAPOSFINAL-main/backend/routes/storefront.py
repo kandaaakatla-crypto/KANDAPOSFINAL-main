@@ -30,6 +30,7 @@ from sms_service import send_sms, normalize_phone
 from routes.orders import _apply_recipes
 from payments import _get_client as _get_razorpay_client
 from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
+from scheduling import resolve_item_schedule_state, discount_item_prices
 from ._shared import PROJECTION, clean, menu_doc_to_response, next_order_number, table_doc_to_response
 import razorpay
 
@@ -61,10 +62,18 @@ async def public_menu(slug: str):
     tenant = await _tenant_by_slug(slug, db)
     cats = await db.categories.find({"tenant_id": tenant["id"]}, PROJECTION).sort("sort_order", 1).to_list(100)
     items = await db.menu_items.find({"tenant_id": tenant["id"], "available": True}, PROJECTION).to_list(500)
+    schedules = await db.menu_schedules.find({"tenant_id": tenant["id"]}, PROJECTION).to_list(100)
+    now = now_ist()
+    visible = []
+    for it in items:
+        discount_pct, hidden = resolve_item_schedule_state(it, schedules, now)
+        if hidden:
+            continue  # day-part item outside its window — hide from the public menu
+        visible.append(discount_item_prices(it, discount_pct))
     return {
         "tenant": {"name": tenant.get("name"), "slug": slug, "onlinePayments": (tenant.get("features") or {}).get("online_payments", True)},
         "categories": cats,
-        "items": [menu_doc_to_response(i) for i in items],
+        "items": [menu_doc_to_response(i) for i in visible],
     }
 
 
@@ -99,12 +108,23 @@ async def _resolve_lines(db, tenant_id: str, lines: List[CartLine], business_typ
     cat_ids = list({d["cat_id"] for d in docs if d.get("cat_id")})
     cats = await db.categories.find({"tenant_id": tenant_id, "id": {"$in": cat_ids}}, PROJECTION).to_list(200)
     cat_by_id = {c["id"]: c for c in cats}
+    schedules = await db.menu_schedules.find({"tenant_id": tenant_id}, PROJECTION).to_list(100)
+    now = now_ist()
     inclusive = business_type == "retail"
     out = []
     for ln in lines:
         item = by_id.get(ln.item_id)
         if not item or not item.get("available", True):
             raise HTTPException(status_code=400, detail=f"Item no longer available")
+        # Prices are always resolved from the live menu (see module docstring) —
+        # day-part availability and any active happy-hour discount are enforced
+        # here too, server-side, so a client can't order outside the window or
+        # skip the discount either direction.
+        discount_pct, hidden = resolve_item_schedule_state(item, schedules, now)
+        if hidden:
+            raise HTTPException(status_code=400, detail=f"{item['name']} isn't available right now")
+        if discount_pct:
+            item = discount_item_prices(item, discount_pct)
         cat = cat_by_id.get(item.get("cat_id"))
         qty = max(1, int(ln.qty))
         if item.get("is_pizza"):

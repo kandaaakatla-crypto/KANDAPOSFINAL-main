@@ -172,6 +172,13 @@ export const menuApi = {
   saveRecipes: (itemId, recipes) => api.put(`/menu/items/${itemId}/recipes`, { recipes }).then((r) => r.data),
 };
 
+export const menuSchedulesApi = {
+  list: () => api.get("/menu/schedules").then((r) => r.data),
+  create: (payload) => api.post("/menu/schedules", payload).then((r) => r.data),
+  update: (id, payload) => api.put(`/menu/schedules/${id}`, payload).then((r) => r.data),
+  remove: (id) => api.delete(`/menu/schedules/${id}`).then((r) => r.data),
+};
+
 export const tablesApi = {
   list: () => api.get("/tables").then((r) => r.data),
   update: (id, payload) => api.patch(`/tables/${id}`, payload).then((r) => r.data),
@@ -266,6 +273,8 @@ export const reportsApi = {
     api.get("/reports/daily-rollup", { params: { days } }).then((r) => r.data),
   rebuildRollups: (days = 30) =>
     api.post("/reports/daily-rollup/rebuild", null, { params: { days } }).then((r) => r.data),
+  menuEngineering: (days = 30) =>
+    api.get("/reports/menu-engineering", { params: { days } }).then((r) => r.data),
 };
 
 export const billingApi = {

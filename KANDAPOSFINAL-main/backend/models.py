@@ -325,6 +325,47 @@ class AvailabilityPayload(BaseModel):
     available: bool
 
 
+# ---------- Menu schedules (day-part menus + time-based pricing) ----------
+# A schedule owns its own set of categories/items — assign membership from
+# the schedule's Dashboard screen rather than editing each menu item.
+class MenuSchedule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    days: List[int] = []  # ISO weekday: 1=Mon..7=Sun; empty = every day
+    start_time: str  # "HH:MM" 24h
+    end_time: str  # "HH:MM" 24h; may be < start_time for an overnight window
+    active: bool = True
+    restrict_availability: bool = False  # if True, member items are hidden outside the window (day-part menu)
+    discount_pct: Optional[float] = None  # % off member items' price while the schedule is active
+    category_ids: List[str] = []  # every item in these categories is a member
+    item_ids: List[str] = []  # individually-added members (e.g. one item from an otherwise-excluded category)
+
+
+class MenuScheduleCreate(BaseModel):
+    name: str
+    days: List[int] = []
+    start_time: str
+    end_time: str
+    active: bool = True
+    restrict_availability: bool = False
+    discount_pct: Optional[float] = None
+    category_ids: List[str] = []
+    item_ids: List[str] = []
+
+
+class MenuScheduleUpdate(BaseModel):
+    name: Optional[str] = None
+    days: Optional[List[int]] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    active: Optional[bool] = None
+    restrict_availability: Optional[bool] = None
+    discount_pct: Optional[float] = None
+    category_ids: Optional[List[str]] = None
+    item_ids: Optional[List[str]] = None
+
+
 # ---------- Recipes ----------
 class RecipeIngredient(BaseModel):
     inventory_id: str

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
-  auth, tokenStore, menuApi, tablesApi, customersApi,
+  auth, tokenStore, menuApi, menuSchedulesApi, tablesApi, customersApi,
   inventoryApi, ordersApi, tenantApi, loyaltyApi,
 } from "../api/client";
 import { connectWs } from "../api/ws";
@@ -18,6 +18,7 @@ export function PosProvider({ children }) {
 
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [tables, setTables] = useState([]);
@@ -27,14 +28,15 @@ export function PosProvider({ children }) {
   // Load all resources after auth confirmed
   const loadAll = useCallback(async () => {
     try {
-      const [cats, items, ords, custs, tbls, inv, tenant, loyaltyCfg] = await Promise.all([
-        menuApi.categories(), menuApi.items(), ordersApi.list(),
+      const [cats, items, scheds, ords, custs, tbls, inv, tenant, loyaltyCfg] = await Promise.all([
+        menuApi.categories(), menuApi.items(), menuSchedulesApi.list().catch(() => []), ordersApi.list(),
         customersApi.list(), tablesApi.list(), inventoryApi.list(),
         tenantApi.info().catch(() => null),
         loyaltyApi.getConfig().catch(() => null),
       ]);
       setCategories(cats);
       setMenuItems(items);
+      setSchedules(scheds);
       setOrders(ords);
       setCustomers(custs);
       setTables(tbls);
@@ -315,7 +317,7 @@ export function PosProvider({ children }) {
     bootState, staffUser, login, logout,
     tenantInfo, businessType, features, refreshTenantInfo,
     categories,
-    menuItems, upsertMenuItem, toggleItemAvailability,
+    menuItems, upsertMenuItem, toggleItemAvailability, schedules,
     orders, placeOrder, appendToOrder, updateOrderStatus, setOrderPacked, assignDriver, reloadOrders,
     customers, upsertCustomer, deleteCustomer, refreshCustomers, refreshTables, refreshMenu,
     tables, setTableStatus,

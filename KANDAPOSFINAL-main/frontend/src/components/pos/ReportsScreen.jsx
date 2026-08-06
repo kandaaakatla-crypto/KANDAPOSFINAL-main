@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { usePos } from "../../store/PosContext";
 import { reportsApi, labourApi } from "../../api/client";
-import { IndianRupee, ReceiptText, TrendingUp, Bike, Users, RefreshCcw } from "lucide-react";
+import { IndianRupee, ReceiptText, TrendingUp, Bike, Users, RefreshCcw, ChefHat } from "lucide-react";
 import PeakHoursHeatmap from "../dash/PeakHoursHeatmap";
+import MenuEngineeringTab from "./MenuEngineeringTab";
 
 const RANGE_OPTIONS = [7, 14, 30];
 
 export default function ReportsScreen() {
   const { orders, staffUser } = usePos();
+  const [tab, setTab] = useState("sales");
   const [summary, setSummary] = useState(null);
   const [labour, setLabour] = useState(null);
   const [range, setRange] = useState(7);
@@ -63,7 +65,23 @@ export default function ReportsScreen() {
 
   return (
     <div className="h-full overflow-y-auto pos-scroll p-4 space-y-4" data-testid="reports-screen">
-      <h2 className="text-xl font-bold text-white">Sales Dashboard</h2>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="text-xl font-bold text-white">Sales Dashboard</h2>
+        <div className="flex gap-1.5">
+          <button data-testid="reports-tab-sales" onClick={() => setTab("sales")}
+            className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
+            style={{ background: tab === "sales" ? "var(--pos-accent)" : "var(--pos-panel)", color: tab === "sales" ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+            <TrendingUp className="w-3.5 h-3.5" /> Sales
+          </button>
+          <button data-testid="reports-tab-menu-engineering" onClick={() => setTab("menu")}
+            className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
+            style={{ background: tab === "menu" ? "var(--pos-accent)" : "var(--pos-panel)", color: tab === "menu" ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+            <ChefHat className="w-3.5 h-3.5" /> Menu Engineering
+          </button>
+        </div>
+      </div>
+
+      {tab === "menu" ? <MenuEngineeringTab /> : <>
 
       {/* Labour cost widget — Manager-only */}
       {staffUser?.role === "Manager" && labour && (
@@ -180,6 +198,7 @@ export default function ReportsScreen() {
 
       {/* Peak hours — busiest weekday × hour buckets */}
       <PeakHoursHeatmap days={28} />
+      </>}
     </div>
   );
 }

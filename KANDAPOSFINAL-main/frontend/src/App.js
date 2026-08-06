@@ -44,6 +44,7 @@ import DashLocations from "./components/dash/DashLocations";
 import DashVoice from "./components/dash/DashVoice";
 import DashDigest from "./components/dash/DashDigest";
 import DashLoyalty from "./components/dash/DashLoyalty";
+import DashSchedules from "./components/dash/DashSchedules";
 import DashCoupons from "./components/dash/DashCoupons";
 import DashGiftCards from "./components/dash/DashGiftCards";
 import DashSms from "./components/dash/DashSms";
@@ -106,6 +107,7 @@ function App() {
                 <Route path="/biz" element={<DashLayout />}>
                   <Route index element={<DashHome />} />
                   <Route path="menu" element={<MenuScreen />} />
+                  <Route path="schedules" element={<DashSchedules />} />
                   <Route path="staff" element={<StaffScreen />} />
                   <Route path="brand" element={<BrandScreen />} />
                   <Route path="payroll" element={<PayrollScreen />} />
