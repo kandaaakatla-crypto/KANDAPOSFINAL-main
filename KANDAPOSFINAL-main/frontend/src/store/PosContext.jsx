@@ -223,6 +223,13 @@ export function PosProvider({ children }) {
     } catch {}
   }, []);
 
+  const refreshInventory = useCallback(async () => {
+    try {
+      const list = await inventoryApi.list();
+      setInventory(list);
+    } catch {}
+  }, []);
+
 
   // ----- Tables -----
   const setTableStatus = useCallback(async (tableId, status) => {
@@ -321,7 +328,7 @@ export function PosProvider({ children }) {
     orders, placeOrder, appendToOrder, updateOrderStatus, setOrderPacked, assignDriver, reloadOrders,
     customers, upsertCustomer, deleteCustomer, refreshCustomers, refreshTables, refreshMenu,
     tables, setTableStatus,
-    inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem,
+    inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem, refreshInventory,
     loyaltyConfig,
   };
 

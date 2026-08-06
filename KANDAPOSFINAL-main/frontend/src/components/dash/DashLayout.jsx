@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock } from "lucide-react";
+import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import StoreSwitcher from "./StoreSwitcher";
 
 const NAV_ITEMS = [
   { to: "/biz", end: true, label: "Overview", icon: LayoutDashboard, allow: () => true },
   { to: "/biz/brand", label: "Brand", icon: Store, allow: (u) => u?.dash_role === "owner" },
+  { to: "/biz/central-supply", label: "Central Supply", icon: Warehouse, allow: (u) => u?.dash_role === "owner" && !!u?.brand_id },
   { to: "/biz/menu", label: "Menu", icon: BookOpen, allow: () => true },
   { to: "/biz/schedules", label: "Schedules", icon: Clock, allow: () => true },
   { to: "/biz/staff", label: "Staff", icon: Users, allow: (u) => canManageStaff(u) || u?.dash_role === "manager" },

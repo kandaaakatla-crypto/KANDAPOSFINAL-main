@@ -548,6 +548,7 @@ class InventoryItem(BaseModel):
     supplier: str
     cost_per_unit: float = 0.0
     expiry_date: Optional[str] = None  # ISO date (YYYY-MM-DD), batch-level tracking not modeled
+    location_id: Optional[str] = None  # None = shared/unassigned pool, not tied to one outlet
 
 
 class InventoryItemCreate(BaseModel):
@@ -558,6 +559,7 @@ class InventoryItemCreate(BaseModel):
     supplier: str = ""
     cost_per_unit: float = 0.0
     expiry_date: Optional[str] = None
+    location_id: Optional[str] = None
 
 
 class InventoryItemUpdate(BaseModel):
@@ -567,6 +569,84 @@ class InventoryItemUpdate(BaseModel):
     supplier: Optional[str] = None
     cost_per_unit: Optional[float] = None
     expiry_date: Optional[str] = None  # explicit null clears it; omitted leaves it unchanged
+    location_id: Optional[str] = None  # explicit null clears it (moves to shared pool); omitted leaves it unchanged
+
+
+# ---------- Stock transfers (between locations, or from a brand's central supply) ----------
+class StockTransfer(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    item_name: str
+    unit: str
+    qty: float
+    from_location_id: Optional[str] = None  # None = shared/unassigned pool
+    to_location_id: Optional[str] = None
+    source: str = "location"  # "location" (in-store transfer) or "brand_supply" (central warehouse push)
+    note: Optional[str] = None
+    by_user_id: Optional[str] = None
+    by_user_name: Optional[str] = None
+    at: str
+
+
+class StockTransferCreate(BaseModel):
+    to_location_id: Optional[str] = None  # None = move to the shared/unassigned pool
+    qty: float
+    note: Optional[str] = None
+
+
+# ---------- Brand central supply — a warehouse catalog the brand owner stocks
+# and pushes out to member stores, since each store is its own tenant with
+# its own independent inventory collection. ----------
+class CentralSupplyItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    brand_id: str
+    name: str
+    unit: str
+    stock: float = 0.0
+    cost_per_unit: float = 0.0
+    reorder: float = 0.0
+
+
+class CentralSupplyItemCreate(BaseModel):
+    name: str
+    unit: str
+    stock: float = 0.0
+    cost_per_unit: float = 0.0
+    reorder: float = 0.0
+
+
+class CentralSupplyItemUpdate(BaseModel):
+    name: Optional[str] = None
+    unit: Optional[str] = None
+    cost_per_unit: Optional[float] = None
+    reorder: Optional[float] = None
+
+
+class CentralSupplyRestock(BaseModel):
+    delta: float  # positive to add stock at the central warehouse
+
+
+class SupplyPush(BaseModel):
+    tenant_ids: List[str]  # target stores to push to
+    qty_per_store: float
+    note: Optional[str] = None
+
+
+class SupplyLogEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    brand_id: str
+    central_item_id: str
+    item_name: str
+    unit: str
+    tenant_id: str
+    store_name: str
+    qty: float
+    note: Optional[str] = None
+    by_user_id: Optional[str] = None
+    by_user_name: Optional[str] = None
+    at: str
 
 
 class AdjustStockPayload(BaseModel):

@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { usePos } from "../../store/PosContext";
-import { Minus, Plus, AlertTriangle, PackageCheck, Truck, Trash, Search, PlusCircle, Pencil, Trash2, IndianRupee, Mail, Building2, CalendarClock, Download } from "lucide-react";
+import { Minus, Plus, AlertTriangle, PackageCheck, Truck, Trash, Search, PlusCircle, Pencil, Trash2, IndianRupee, Mail, Building2, CalendarClock, Download, ArrowLeftRight, MapPin, History } from "lucide-react";
 import { toast } from "sonner";
 import { WastePanel } from "./OpsPanels";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { suppliersApi, inventoryApi } from "../../api/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { suppliersApi, inventoryApi, locationsApi } from "../../api/client";
 
-const emptyForm = { name: "", unit: "", stock: "", reorder: "", supplier: "", cost_per_unit: "", expiry_date: "" };
+const emptyForm = { name: "", unit: "", stock: "", reorder: "", supplier: "", cost_per_unit: "", expiry_date: "", location_id: "" };
+const emptyTransfer = { to_location_id: "", qty: "", note: "" };
 const emptySupplierForm = { name: "", email: "", phone: "" };
 const EXPIRY_WARN_DAYS = 7;
 
@@ -24,7 +26,7 @@ function expiryLabel(days) {
 }
 
 export default function InventoryScreen() {
-  const { inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem, staffUser } = usePos();
+  const { inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem, refreshInventory, staffUser } = usePos();
   const [view, setView] = useState("all");
   const [showWaste, setShowWaste] = useState(false);
   const [wastePreset, setWastePreset] = useState(null); // inventory item id to prefill in WastePanel
@@ -45,6 +47,36 @@ export default function InventoryScreen() {
 
   const loadSuppliers = () => suppliersApi.list().then(setSuppliers).catch(() => {});
   useEffect(() => { loadSuppliers(); }, []);
+
+  const [locations, setLocations] = useState([]);
+  const [transferFor, setTransferFor] = useState(null); // inventory item being transferred
+  const [transferForm, setTransferForm] = useState(emptyTransfer);
+  const [transferBusy, setTransferBusy] = useState(false);
+  const [transfersOpen, setTransfersOpen] = useState(false);
+  const [transfers, setTransfers] = useState([]);
+
+  useEffect(() => { locationsApi.list().then(setLocations).catch(() => {}); }, []);
+  const loadTransfers = () => inventoryApi.transfers().then(setTransfers).catch(() => {});
+  const locationName = (id) => (id ? locations.find((l) => l.id === id)?.name || "Unknown location" : "Shared / unassigned");
+
+  const openTransfer = (item) => { setTransferForm(emptyTransfer); setTransferFor(item); };
+  const submitTransfer = async () => {
+    if (!transferFor) return;
+    const qty = parseFloat(transferForm.qty);
+    if (!(qty > 0)) { toast.error("Enter a quantity to transfer"); return; }
+    setTransferBusy(true);
+    try {
+      await inventoryApi.transfer(transferFor.id, {
+        to_location_id: transferForm.to_location_id || null,
+        qty, note: transferForm.note || null,
+      });
+      toast.success(`${qty} ${transferFor.unit} of ${transferFor.name} moved to ${locationName(transferForm.to_location_id || null)}`);
+      setTransferFor(null);
+      refreshInventory();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not transfer stock");
+    } finally { setTransferBusy(false); }
+  };
 
   const openNewSupplier = () => { setSupplierForm(emptySupplierForm); setSupplierEditing({}); };
   const openEditSupplier = (s) => { setSupplierForm({ name: s.name, email: s.email || "", phone: s.phone || "" }); setSupplierEditing(s); };
@@ -109,6 +141,7 @@ export default function InventoryScreen() {
     setForm({
       name: item.name, unit: item.unit, stock: item.stock, reorder: item.reorder,
       supplier: item.supplier, cost_per_unit: item.cost_per_unit || 0, expiry_date: item.expiry_date || "",
+      location_id: item.location_id || "",
     });
     setEditing(item);
   };
@@ -119,6 +152,7 @@ export default function InventoryScreen() {
       name: form.name.trim(), unit: form.unit.trim(), supplier: form.supplier.trim(),
       reorder: parseFloat(form.reorder) || 0, cost_per_unit: parseFloat(form.cost_per_unit) || 0,
       expiry_date: form.expiry_date || null,
+      location_id: form.location_id || null,
     };
     if (editing?.id) {
       const updated = await upsertInventoryItem({ id: editing.id, ...payload });
@@ -162,6 +196,12 @@ export default function InventoryScreen() {
             style={{ background: showWaste ? "var(--pos-accent)" : "var(--pos-panel)", color: showWaste ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <Trash className="w-3.5 h-3.5" /> Wastage log
           </button>
+          {locations.length > 0 && (
+            <button data-testid="inv-toggle-transfers" onClick={() => { setTransfersOpen(true); loadTransfers(); }} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"
+              style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+              <History className="w-3.5 h-3.5" /> Transfers
+            </button>
+          )}
           {isManager && (
             <>
               <button data-testid="inv-manage-suppliers-btn" onClick={() => setSuppliersOpen(true)} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"
@@ -233,7 +273,15 @@ export default function InventoryScreen() {
               const expired = days !== null && days < 0;
               return (
                 <tr key={i.id} data-testid={`inv-row-${i.id}`} style={{ borderBottom: "1px solid var(--pos-border)", background: low ? "#2a141077" : expiring ? "#2a220f77" : "transparent" }}>
-                  <td className="px-4 py-3 font-medium text-white">{i.name}</td>
+                  <td className="px-4 py-3 font-medium text-white">
+                    {i.name}
+                    {i.location_id && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded align-middle"
+                        style={{ background: "var(--pos-panel-2)", color: "var(--pos-accent)", border: "1px solid var(--pos-border)" }}>
+                        <MapPin className="w-2.5 h-2.5" /> {locationName(i.location_id)}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 tabular-nums font-bold" style={{ color: low ? "#f87171" : "#7ee2a8" }}>{i.stock} {i.unit}</td>
                   <td className="px-4 py-3 tabular-nums" style={{ color: "var(--pos-muted)" }}>{i.reorder} {i.unit}</td>
                   <td className="px-4 py-3 tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(i.stock * (i.cost_per_unit || 0)).toFixed(0)}</td>
@@ -274,6 +322,10 @@ export default function InventoryScreen() {
                           <Trash className="w-3.5 h-3.5" /> Log waste
                         </button>
                       )}
+                      {isManager && locations.length > 0 && (
+                        <button data-testid={`inv-transfer-${i.id}`} onClick={() => openTransfer(i)} title="Transfer to another location"
+                          className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><ArrowLeftRight className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /></button>
+                      )}
                       {isManager && (
                         <>
                           <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-3.5 h-3.5 text-white" /></button>
@@ -301,7 +353,15 @@ export default function InventoryScreen() {
             return (
               <div key={i.id} data-testid={`inv-row-${i.id}`} className="p-3 flex flex-col gap-2" style={{ background: low ? "#2a141077" : expiring ? "#2a220f77" : "transparent", borderColor: "var(--pos-border)" }}>
                 <div className="flex items-start justify-between gap-2">
-                  <div className="font-medium text-white text-sm">{i.name}</div>
+                  <div className="font-medium text-white text-sm">
+                    {i.name}
+                    {i.location_id && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded align-middle"
+                        style={{ background: "var(--pos-panel-2)", color: "var(--pos-accent)", border: "1px solid var(--pos-border)" }}>
+                        <MapPin className="w-2.5 h-2.5" /> {locationName(i.location_id)}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-col gap-1 items-end shrink-0">
                     {low ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#3a1515", color: "#f87171" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
@@ -342,6 +402,9 @@ export default function InventoryScreen() {
                       <Trash className="w-4 h-4" /> Log waste
                     </button>
                   )}
+                  {isManager && locations.length > 0 && (
+                    <button data-testid={`inv-transfer-${i.id}`} onClick={() => openTransfer(i)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><ArrowLeftRight className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /></button>
+                  )}
                   {isManager && (
                     <>
                       <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-4 h-4 text-white" /></button>
@@ -371,6 +434,20 @@ export default function InventoryScreen() {
               <Input data-testid="inv-form-cost" type="number" placeholder="Cost per unit (₹)" value={form.cost_per_unit} onChange={(e) => setForm({ ...form, cost_per_unit: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
             </div>
             <Input data-testid="inv-form-supplier" list="supplier-names" placeholder="Supplier" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            {locations.length > 0 && (
+              <div>
+                <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Location</label>
+                <Select value={form.location_id || "shared"} onValueChange={(v) => setForm({ ...form, location_id: v === "shared" ? "" : v })}>
+                  <SelectTrigger data-testid="inv-form-location" className="h-10 text-white mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="shared">Shared / unassigned</SelectItem>
+                    {locations.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Expiry date (optional)</label>
               <Input data-testid="inv-form-expiry" type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
@@ -428,6 +505,68 @@ export default function InventoryScreen() {
               <button onClick={() => setSupplierEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
               <button data-testid="supplier-form-save" onClick={saveSupplier} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!transferFor} onOpenChange={(o) => !o && setTransferFor(null)}>
+        <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="transfer-modal">
+          <DialogHeader><DialogTitle className="text-white">Transfer {transferFor?.name}</DialogTitle></DialogHeader>
+          {transferFor && (
+            <div className="space-y-3">
+              <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
+                From <b style={{ color: "white" }}>{locationName(transferFor.location_id)}</b> · {transferFor.stock} {transferFor.unit} available
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>To location</label>
+                <Select value={transferForm.to_location_id || "shared"} onValueChange={(v) => setTransferForm({ ...transferForm, to_location_id: v === "shared" ? "" : v })}>
+                  <SelectTrigger data-testid="transfer-form-to" className="h-10 text-white mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="shared">Shared / unassigned</SelectItem>
+                    {locations.filter((l) => l.id !== transferFor.location_id).map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input data-testid="transfer-form-qty" type="number" min={0} max={transferFor.stock} placeholder={`Quantity (${transferFor.unit})`}
+                value={transferForm.qty} onChange={(e) => setTransferForm({ ...transferForm, qty: e.target.value })}
+                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              <Input data-testid="transfer-form-note" placeholder="Note (optional)" value={transferForm.note} onChange={(e) => setTransferForm({ ...transferForm, note: e.target.value })}
+                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setTransferFor(null)} disabled={transferBusy} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+                <button data-testid="transfer-submit-btn" onClick={submitTransfer} disabled={transferBusy}
+                  className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white disabled:opacity-40" style={{ background: "var(--pos-accent)" }}>
+                  {transferBusy ? "Transferring…" : "Transfer"}
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={transfersOpen} onOpenChange={setTransfersOpen}>
+        <DialogContent className="max-w-lg border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="transfers-log-modal">
+          <DialogHeader><DialogTitle className="text-white">Transfer log</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto pos-scroll">
+            {transfers.length === 0 && <p className="text-sm text-center py-6" style={{ color: "var(--pos-muted)" }}>No transfers yet.</p>}
+            {transfers.map((t) => (
+              <div key={t.id} data-testid={`transfer-row-${t.id}`} className="rounded-lg p-3" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-semibold text-white">{t.item_name} — {t.qty} {t.unit}</div>
+                  {t.source === "brand_supply" && (
+                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#1e2a4a", color: "#93c5fd" }}>Central supply</span>
+                  )}
+                </div>
+                <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
+                  {locationName(t.from_location_id)} → {locationName(t.to_location_id)}
+                  {t.by_user_name && <> · by {t.by_user_name}</>}
+                  {t.note && <> · {t.note}</>}
+                </div>
+                <div className="text-[10px] mt-0.5" style={{ color: "var(--pos-muted)" }}>{new Date(t.at).toLocaleString("en-GB")}</div>
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>

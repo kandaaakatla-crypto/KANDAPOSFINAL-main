@@ -146,6 +146,16 @@ export const brandApi = {
   declineInvite: (inviteId) => dashApi.post(`/dash/brand/invites/${inviteId}/decline`).then((r) => r.data),
 };
 
+export const centralSupplyApi = {
+  listItems: (id) => dashApi.get(`/brand/${id}/supply/items`).then((r) => r.data),
+  createItem: (id, payload) => dashApi.post(`/brand/${id}/supply/items`, payload).then((r) => r.data),
+  updateItem: (id, itemId, payload) => dashApi.patch(`/brand/${id}/supply/items/${itemId}`, payload).then((r) => r.data),
+  removeItem: (id, itemId) => dashApi.delete(`/brand/${id}/supply/items/${itemId}`).then((r) => r.data),
+  restock: (id, itemId, delta) => dashApi.patch(`/brand/${id}/supply/items/${itemId}/restock`, { delta }).then((r) => r.data),
+  push: (id, itemId, payload) => dashApi.post(`/brand/${id}/supply/items/${itemId}/push`, payload).then((r) => r.data),
+  log: (id) => dashApi.get(`/brand/${id}/supply/log`).then((r) => r.data),
+};
+
 export const auth = {
   login: (pin) => api.post("/auth/login", { pin }).then((r) => r.data),
   me: () => api.get("/auth/me").then((r) => r.data),
@@ -221,6 +231,8 @@ export const inventoryApi = {
   remove: (id) => api.delete(`/inventory/${id}`).then((r) => r.data),
   adjust: (id, delta) => api.patch(`/inventory/${id}/adjust`, { delta }).then((r) => r.data),
   reorder: (id) => api.post(`/inventory/${id}/reorder`).then((r) => r.data),
+  transfer: (id, payload) => api.post(`/inventory/${id}/transfer`, payload).then((r) => r.data),
+  transfers: () => api.get("/inventory/transfers").then((r) => r.data),
   downloadPoPdf: async (id, itemName) => {
     const r = await api.get(`/inventory/${id}/reorder.pdf`, { responseType: "blob" });
     const url = URL.createObjectURL(r.data);

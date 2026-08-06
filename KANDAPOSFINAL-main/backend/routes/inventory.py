@@ -11,7 +11,7 @@ from auth import get_current_user, require_role
 from tenants import tenant_filter, get_tenant
 from tz import now_ist
 from ws import schedule_broadcast
-from models import InventoryItem, InventoryItemCreate, InventoryItemUpdate, AdjustStockPayload
+from models import InventoryItem, InventoryItemCreate, InventoryItemUpdate, AdjustStockPayload, StockTransfer, StockTransferCreate
 from email_service import send_email, purchase_order_email
 from ._shared import PROJECTION, clean
 
@@ -80,6 +80,80 @@ async def adjust_inventory(item_id: str, payload: AdjustStockPayload, user: dict
         user["tenant_id"],
     )
     return cleaned
+
+
+async def _log_transfer(db, tenant_id: str, item_name: str, unit: str, qty: float,
+                         from_location_id: Optional[str], to_location_id: Optional[str],
+                         source: str, note: Optional[str], user: dict) -> dict:
+    doc = {
+        "id": f"xfer_{uuid.uuid4().hex[:10]}",
+        "tenant_id": tenant_id,
+        "item_name": item_name,
+        "unit": unit,
+        "qty": qty,
+        "from_location_id": from_location_id,
+        "to_location_id": to_location_id,
+        "source": source,
+        "note": note,
+        "by_user_id": user.get("id"),
+        "by_user_name": user.get("name"),
+        "at": now_ist().isoformat(),
+    }
+    await db.stock_transfers.insert_one(doc)
+    return clean(dict(doc))
+
+
+@router.get("/inventory/transfers", response_model=List[StockTransfer])
+async def list_transfers(user: dict = Depends(get_current_user)):
+    db = get_db()
+    return await db.stock_transfers.find(tenant_filter(user), PROJECTION).sort("at", -1).to_list(500)
+
+
+@router.post("/inventory/{item_id}/transfer")
+async def transfer_stock(item_id: str, payload: StockTransferCreate, user: dict = Depends(require_role("Manager"))):
+    """Move stock from one location to another within this tenant. The
+    destination is a *separate* inventory doc for the same item name — one
+    doc per (name, location) pair — auto-created if this is the first stock
+    that location has ever held of this item."""
+    db = get_db()
+    if payload.qty <= 0:
+        raise HTTPException(status_code=400, detail="Quantity must be positive")
+    src = await db.inventory.find_one(tenant_filter(user, {"id": item_id}), PROJECTION)
+    if not src:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+    if src.get("location_id") == payload.to_location_id:
+        raise HTTPException(status_code=400, detail="Source and destination are the same location")
+    if src["stock"] < payload.qty:
+        raise HTTPException(status_code=400, detail=f"Only {src['stock']} {src['unit']} available to transfer")
+
+    await db.inventory.update_one(
+        tenant_filter(user, {"id": item_id}), {"$inc": {"stock": -payload.qty}},
+    )
+    dest = await db.inventory.find_one(
+        tenant_filter(user, {"name": src["name"], "location_id": payload.to_location_id}), PROJECTION,
+    )
+    if dest:
+        dest = await db.inventory.find_one_and_update(
+            tenant_filter(user, {"id": dest["id"]}), {"$inc": {"stock": payload.qty}}, return_document=True,
+        )
+    else:
+        dest = {
+            "id": f"i_{uuid.uuid4().hex[:8]}", "tenant_id": user["tenant_id"],
+            "name": src["name"], "unit": src["unit"], "stock": payload.qty,
+            "reorder": src.get("reorder", 0), "supplier": src.get("supplier", ""),
+            "cost_per_unit": src.get("cost_per_unit", 0.0), "expiry_date": None,
+            "location_id": payload.to_location_id,
+        }
+        await db.inventory.insert_one(dest)
+
+    transfer = await _log_transfer(
+        db, user["tenant_id"], src["name"], src["unit"], payload.qty,
+        src.get("location_id"), payload.to_location_id, "location", payload.note, user,
+    )
+    src_after = await db.inventory.find_one(tenant_filter(user, {"id": item_id}), PROJECTION)
+    schedule_broadcast("inventory.updated", {"item": clean(src_after), "low": src_after["stock"] <= src_after["reorder"]}, user["tenant_id"])
+    schedule_broadcast("inventory.updated", {"item": clean(dict(dest)), "low": dest["stock"] <= dest["reorder"]}, user["tenant_id"])
+    return {"ok": True, "transfer": transfer, "source": clean(src_after), "destination": clean(dict(dest))}
 
 
 @router.post("/inventory/{item_id}/reorder")

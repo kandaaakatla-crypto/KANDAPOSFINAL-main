@@ -51,6 +51,7 @@ import DashSms from "./components/dash/DashSms";
 import DashWhatsApp from "./components/dash/DashWhatsApp";
 import PayrollScreen from "./components/dash/PayrollScreen";
 import BrandScreen from "./components/dash/BrandScreen";
+import DashCentralSupply from "./components/dash/DashCentralSupply";
 import AIAssistant from "./components/AIAssistant";
 
 function Protected({ children }) {
@@ -110,6 +111,7 @@ function App() {
                   <Route path="schedules" element={<DashSchedules />} />
                   <Route path="staff" element={<StaffScreen />} />
                   <Route path="brand" element={<BrandScreen />} />
+                  <Route path="central-supply" element={<DashCentralSupply />} />
                   <Route path="payroll" element={<PayrollScreen />} />
                   <Route path="workforce" element={<WorkforceScreen />} />
                   <Route path="customers" element={<CustomersScreen />} />
