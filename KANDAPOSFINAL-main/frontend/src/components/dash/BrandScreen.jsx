@@ -532,7 +532,6 @@ function MenuDefaultsTab({ brand, onBrandChanged }) {
   };
 
   const pushDefaults = async () => {
-    if (!window.confirm("Apply these saved defaults to every store in the brand right now?")) return;
     setPushingDefaults(true);
     try {
       const r = await brandApi.pushDefaults(brand.id);
@@ -604,11 +603,27 @@ function MenuDefaultsTab({ brand, onBrandChanged }) {
             style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
             {saving ? "Saving…" : "Save defaults"}
           </button>
-          <button data-testid="brand-push-defaults-btn" onClick={pushDefaults} disabled={pushingDefaults}
-            className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"
-            style={{ background: "var(--pos-accent)" }}>
-            {pushingDefaults ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />} Push to all stores now
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button data-testid="brand-push-defaults-btn" disabled={pushingDefaults}
+                className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"
+                style={{ background: "var(--pos-accent)" }}>
+                {pushingDefaults ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />} Push to all stores now
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Apply defaults to all stores?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Applies these saved defaults (receipt footer, logo, feature toggles) to every store in the brand right now.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction data-testid="brand-push-defaults-confirm-btn" onClick={pushDefaults}>Apply now</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </Card>
     </div>
