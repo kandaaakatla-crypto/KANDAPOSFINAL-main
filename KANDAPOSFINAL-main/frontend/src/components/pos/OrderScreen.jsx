@@ -10,7 +10,7 @@ import { Bike, ShoppingBag, UtensilsCrossed, Search, UserPlus, X, Phone, Info, D
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
-import { loyaltyApi, ordersApi } from "../../api/client";
+import { loyaltyApi, ordersApi, storeCreditApi, giftCardsApi } from "../../api/client";
 import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
 
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -42,6 +42,12 @@ export default function OrderScreen() {
   const [sendReceipt, setSendReceipt] = useState(false);
   const [loyaltyBalance, setLoyaltyBalance] = useState(0);
   const [redeemPoints, setRedeemPoints] = useState(0);
+  const [storeCreditBalance, setStoreCreditBalance] = useState(0);
+  const [redeemCredit, setRedeemCredit] = useState(0);
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const [giftCardBalance, setGiftCardBalance] = useState(null); // null = not checked yet
+  const [giftCardChecking, setGiftCardChecking] = useState(false);
+  const [redeemGiftCard, setRedeemGiftCard] = useState(0);
 
   // customer state
   const [phoneQuery, setPhoneQuery] = useState("");
@@ -66,6 +72,28 @@ export default function OrderScreen() {
   const pickCustomer = (found) => {
     setCustomer(found); setNewCust(null); setSuggestOpen(false);
     loyaltyApi.lookup(found.phone).then((r) => setLoyaltyBalance(r.found ? (r.loyalty_points || 0) : 0)).catch(() => setLoyaltyBalance(0));
+    storeCreditApi.lookup(found.phone).then((r) => setStoreCreditBalance(r.found ? (r.store_credit || 0) : 0)).catch(() => setStoreCreditBalance(0));
+  };
+
+  const checkGiftCard = async () => {
+    const code = giftCardCode.trim().toUpperCase();
+    if (!code) return;
+    setGiftCardChecking(true);
+    try {
+      const r = await giftCardsApi.lookup(code);
+      if (r.found && r.status === "active" && r.balance > 0) {
+        setGiftCardBalance(r.balance);
+        toast.success(`Gift card found — ₹${r.balance.toFixed(2)} available`);
+      } else {
+        setGiftCardBalance(0);
+        toast.error(r.found ? `Gift card is ${r.status}` : "Gift card not found");
+      }
+    } catch {
+      setGiftCardBalance(0);
+      toast.error("Could not check gift card");
+    } finally {
+      setGiftCardChecking(false);
+    }
   };
 
   // Editing an existing unpaid order (occupied table / running tab).
@@ -160,7 +188,9 @@ export default function OrderScreen() {
   const tipAmt = +(subtotal * tipPct / 100).toFixed(2);
   const couponDisc = coupon?.discount || 0;
   const loyaltyDisc = Math.min((redeemPoints || 0) * redeemValue, subtotal);
-  const newRoundTotal = Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDisc - loyaltyDisc + deliveryFee + tipAmt);
+  const creditDisc = Math.min(redeemCredit || 0, subtotal);
+  const giftDisc = Math.min(redeemGiftCard || 0, subtotal);
+  const newRoundTotal = Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDisc - loyaltyDisc - creditDisc - giftDisc + deliveryFee + tipAmt);
   const total = editingOrder ? +(newRoundTotal + editingOrder.total).toFixed(2) : newRoundTotal;
 
   const orderCustomer = () => {
@@ -182,6 +212,8 @@ export default function OrderScreen() {
     setPhoneQuery(""); setCollectionName(""); setTableNo("");
     setTipPct(0); setCoupon(null); setCustomerEmail(""); setSendReceipt(false);
     setLoyaltyBalance(0); setRedeemPoints(0);
+    setStoreCreditBalance(0); setRedeemCredit(0);
+    setGiftCardCode(""); setGiftCardBalance(null); setRedeemGiftCard(0);
     setEditingOrderId(null); setCartOpen(false); setSuggestOpen(false);
   };
 
@@ -209,13 +241,16 @@ export default function OrderScreen() {
     customer: orderCustomer(),
     table: orderType === "dine-in" ? Number(tableNo) : undefined,
     items: cart.map((l) => ({ name: l.name, qty: l.qty, price: l.price, mods: l.mods || [], size: l.size || null })),
-    deliveryFee, discount: discountAmt + couponDisc + loyaltyDisc, total, payment,
+    deliveryFee, discount: discountAmt + couponDisc + loyaltyDisc + creditDisc + giftDisc, total, payment,
     source: orderSource,
     tip: tipAmt,
     coupon_code: coupon?.code || null,
     customer_email: customerEmail || null,
     send_email_receipt: !!(sendReceipt && customerEmail && customerEmail.includes("@")),
     redeem_loyalty_points: redeemPoints || 0,
+    redeem_store_credit: redeemCredit || 0,
+    gift_card_code: redeemGiftCard > 0 ? giftCardCode.trim().toUpperCase() : null,
+    gift_card_amount: redeemGiftCard || 0,
     splits,
   });
 
@@ -513,6 +548,10 @@ export default function OrderScreen() {
         customerEmail={customerEmail} onCustomerEmail={setCustomerEmail}
         sendReceipt={sendReceipt} onSendReceiptToggle={setSendReceipt}
         loyaltyBalance={loyaltyBalance} redeemPoints={redeemPoints} onRedeemPoints={setRedeemPoints} redeemValue={redeemValue}
+        storeCreditBalance={storeCreditBalance} redeemCredit={redeemCredit} onRedeemCredit={setRedeemCredit}
+        giftCardCode={giftCardCode} onGiftCardCode={setGiftCardCode} giftCardBalance={giftCardBalance}
+        giftCardChecking={giftCardChecking} onCheckGiftCard={checkGiftCard}
+        redeemGiftCard={redeemGiftCard} onRedeemGiftCard={setRedeemGiftCard}
         runningBill={editingOrder}
       />
 

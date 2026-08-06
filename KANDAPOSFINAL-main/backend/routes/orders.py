@@ -17,6 +17,8 @@ from email_service import send_email, order_receipt_email
 from models import Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload
 from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
 from . import loyalty as loyalty_mod
+from . import store_credit as credit_mod
+from . import gift_cards as gift_card_mod
 from ._shared import PROJECTION, clean, next_order_number, table_doc_to_response
 
 logger = logging.getLogger("kanda.orders")
@@ -191,6 +193,9 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         "voided": False,
         "loyalty_earned": 0,
         "loyalty_redeemed": 0,
+        "store_credit_redeemed": 0,
+        "gift_card_code": None,
+        "gift_card_redeemed": 0,
         "splits": splits_payload,
     }
     await db.orders.insert_one(doc)
@@ -226,6 +231,34 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         )
         doc["loyalty_earned"] = earned
         doc["loyalty_redeemed"] = redeemed
+
+    # Store credit + gift card: same server-authoritative debit discipline
+    # as loyalty — re-read the real balance rather than trusting the
+    # client's `discount` total to reflect an actual deduction.
+    credit_redeemed = 0.0
+    if payload.redeem_store_credit and payload.redeem_store_credit > 0:
+        try:
+            credit_redeemed = await credit_mod.burn_credit_for_order(db, user, doc, float(payload.redeem_store_credit))
+        except HTTPException:
+            credit_redeemed = 0.0
+    gift_redeemed = 0.0
+    if payload.gift_card_code and payload.gift_card_amount and payload.gift_card_amount > 0:
+        try:
+            gift_redeemed = await gift_card_mod.redeem_gift_card_for_order(db, user, doc, payload.gift_card_code, float(payload.gift_card_amount))
+        except HTTPException:
+            gift_redeemed = 0.0
+    if credit_redeemed or gift_redeemed:
+        await db.orders.update_one(
+            tenant_filter(user, {"id": doc["id"]}),
+            {"$set": {
+                "store_credit_redeemed": credit_redeemed,
+                "gift_card_code": payload.gift_card_code if gift_redeemed else None,
+                "gift_card_redeemed": gift_redeemed,
+            }},
+        )
+        doc["store_credit_redeemed"] = credit_redeemed
+        doc["gift_card_code"] = payload.gift_card_code if gift_redeemed else None
+        doc["gift_card_redeemed"] = gift_redeemed
 
     schedule_broadcast("kds.ticket", {"orderId": doc["id"], "number": doc["number"]}, user["tenant_id"])
 

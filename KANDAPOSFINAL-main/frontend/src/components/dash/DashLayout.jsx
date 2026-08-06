@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty } from "../../store/DashContext";
-import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift } from "lucide-react";
+import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
+import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import StoreSwitcher from "./StoreSwitcher";
 
@@ -14,6 +14,8 @@ const NAV_ITEMS = [
   { to: "/biz/workforce", label: "Rota", icon: CalendarDays, allow: () => true },
   { to: "/biz/customers", label: "Customers", icon: UserCircle, allow: () => true },
   { to: "/biz/loyalty", label: "Loyalty", icon: Gift, allow: (u) => canManageLoyalty(u), feature: "loyalty" },
+  { to: "/biz/coupons", label: "Coupons", icon: Ticket, allow: (u) => canManageCoupons(u) },
+  { to: "/biz/gift-cards", label: "Gift Cards", icon: Wallet, allow: (u) => canManageGiftCards(u) },
   { to: "/biz/inventory", label: "Inventory", icon: Boxes, allow: () => true },
   { to: "/biz/reports", label: "Reports", icon: BarChart3, allow: () => true },
   { to: "/biz/voice", label: "Voice Agent", icon: PhoneCall, allow: () => true, feature: "voice_agent" },

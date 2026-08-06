@@ -44,6 +44,8 @@ import DashLocations from "./components/dash/DashLocations";
 import DashVoice from "./components/dash/DashVoice";
 import DashDigest from "./components/dash/DashDigest";
 import DashLoyalty from "./components/dash/DashLoyalty";
+import DashCoupons from "./components/dash/DashCoupons";
+import DashGiftCards from "./components/dash/DashGiftCards";
 import DashSms from "./components/dash/DashSms";
 import DashWhatsApp from "./components/dash/DashWhatsApp";
 import PayrollScreen from "./components/dash/PayrollScreen";
@@ -114,6 +116,8 @@ function App() {
                   <Route path="voice" element={<DashVoice />} />
                   <Route path="digest" element={<DashDigest />} />
                   <Route path="loyalty" element={<DashLoyalty />} />
+                  <Route path="coupons" element={<DashCoupons />} />
+                  <Route path="gift-cards" element={<DashGiftCards />} />
                   <Route path="sms" element={<DashSms />} />
                   <Route path="whatsapp" element={<DashWhatsApp />} />
                   <Route path="locations" element={<DashLocations />} />

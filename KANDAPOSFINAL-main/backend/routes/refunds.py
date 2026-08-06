@@ -22,6 +22,7 @@ from auth import require_role
 from tenants import tenant_filter
 from models import RefundRequest, VoidRequest, RefundLog
 from ws import schedule_broadcast
+from . import store_credit as credit_mod
 
 router = APIRouter()
 
@@ -68,6 +69,14 @@ async def refund_order(order_id: str, payload: RefundRequest,
     max_refundable = round(float(order["total"]) - already, 2)
     if payload.amount > max_refundable + 0.005:
         raise HTTPException(status_code=400, detail=f"Cannot refund more than ₹{max_refundable:.2f}")
+
+    credit_result = None
+    if payload.refund_method == "store_credit":
+        phone = (order.get("customer") or {}).get("phone") or ""
+        credit_result = await credit_mod.add_credit_for_refund(
+            db, user["tenant_id"], phone, payload.amount, order_id, order["number"], user["id"], user["name"],
+        )
+
     new_total = round(already + payload.amount, 2)
     await db.orders.update_one(
         tenant_filter(user, {"id": order_id}),
@@ -77,8 +86,11 @@ async def refund_order(order_id: str, payload: RefundRequest,
             "refunded_by": user["name"],
         }},
     )
-    log = await _log(db, user, order, "refund", payload.amount, payload.reason.strip(), payload.notes)
-    return {"ok": True, "refunded_total": new_total, "log": log}
+    reason = payload.reason.strip()
+    if payload.refund_method == "store_credit":
+        reason += " (refunded to store credit)"
+    log = await _log(db, user, order, "refund", payload.amount, reason, payload.notes)
+    return {"ok": True, "refunded_total": new_total, "log": log, "credit": credit_result}
 
 
 @router.post("/orders/{order_id}/void")

@@ -109,3 +109,4 @@ export const canManageWorkforce = (u) => !!u; // all roles see workforce; scope 
 export const canAddLocation = (u) => u && u.dash_role === "owner"; // payment-gated, owner only
 export const canManagePayroll = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // wage data — same trust level as staff management
 export const canManageLoyalty = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // program rules affect margin — same trust level as payroll
+export const canManageGiftCards = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // issues real prepaid balance — same trust level as payroll/loyalty

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Minus, Plus, Trash2, Percent, Send, CreditCard, Bike, ShoppingBag, UtensilsCrossed, Tag, Gift, Mail, Coins, X } from "lucide-react";
+import { Minus, Plus, Trash2, Percent, Send, CreditCard, Bike, ShoppingBag, UtensilsCrossed, Tag, Gift, Mail, Coins, X, Wallet, Loader2 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { couponsApi, loyaltyApi } from "../../api/client";
@@ -17,6 +17,8 @@ export default function CartPanel({
   tipPct, onTipPct, coupon, onCoupon, customerEmail, onCustomerEmail,
   sendReceipt, onSendReceiptToggle,
   loyaltyBalance, redeemPoints, onRedeemPoints, redeemValue = 1,
+  storeCreditBalance = 0, redeemCredit, onRedeemCredit,
+  giftCardCode, onGiftCardCode, giftCardBalance, giftCardChecking, onCheckGiftCard, redeemGiftCard, onRedeemGiftCard,
   // editing an existing (unpaid) order — occupied table / running tab
   runningBill = null,
   // mobile: cart renders as a full-screen sheet, gated by open/onClose.
@@ -29,8 +31,10 @@ export default function CartPanel({
   const couponDiscount = coupon?.discount || 0;
   const loyaltyDiscount = Math.min((redeemPoints || 0) * redeemValue, subtotal);
   const maxRedeemable = Math.max(0, Math.floor(subtotal / redeemValue));
-  // Total: subtotal + GST − %-discount − coupon − loyalty + delivery + tip (+ running bill from earlier rounds)
-  const newRoundTotal = +Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDiscount - loyaltyDiscount + deliveryFee + tipAmt).toFixed(2);
+  const creditDiscount = Math.min(redeemCredit || 0, subtotal);
+  const giftDiscount = Math.min(redeemGiftCard || 0, subtotal);
+  // Total: subtotal + GST − %-discount − coupon − loyalty − credit − gift card + delivery + tip (+ running bill from earlier rounds)
+  const newRoundTotal = +Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDiscount - loyaltyDiscount - creditDiscount - giftDiscount + deliveryFee + tipAmt).toFixed(2);
   const total = +(newRoundTotal + (runningBill?.total || 0)).toFixed(2);
 
   const applyCoupon = async (code) => {
@@ -182,6 +186,47 @@ export default function CartPanel({
             </div>
           )}
 
+          {/* Store credit redeem */}
+          {storeCreditBalance > 0 && (
+            <div className="flex items-center gap-2 text-[11px]">
+              <Wallet className="w-3 h-3" style={{ color: "#7ee2a8" }} />
+              <span style={{ color: "var(--pos-muted)" }}>Store credit (₹{storeCreditBalance.toFixed(2)} avail.)</span>
+              <Input data-testid="redeem-credit-input" type="number" min={0} max={Math.min(storeCreditBalance, subtotal)}
+                value={redeemCredit || ""} onChange={(e) => onRedeemCredit(Math.max(0, Math.min(storeCreditBalance, subtotal, +e.target.value || 0)))}
+                className="h-6 w-16 text-xs text-white text-right" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              <button data-testid="redeem-credit-max-btn" onClick={() => onRedeemCredit(Math.min(storeCreditBalance, subtotal))}
+                className="pos-btn text-[10px] px-2 py-0.5 rounded" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
+                Max
+              </button>
+              <span className="text-white tabular-nums">−₹{creditDiscount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {/* Gift card redeem */}
+          <div className="flex items-center gap-2 text-[11px] flex-wrap">
+            <Gift className="w-3 h-3" style={{ color: "#c4b5fd" }} />
+            <Input data-testid="gift-card-code-input" placeholder="Gift card code" value={giftCardCode || ""}
+              onChange={(e) => onGiftCardCode(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onCheckGiftCard(); } }}
+              className="h-6 w-28 text-xs text-white tracking-wider" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <button data-testid="gift-card-check-btn" onClick={onCheckGiftCard} disabled={!giftCardCode || giftCardChecking}
+              className="pos-btn text-[10px] px-2 py-0.5 rounded flex items-center gap-1 disabled:opacity-40" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
+              {giftCardChecking ? <Loader2 className="w-3 h-3 animate-spin" /> : "Check"}
+            </button>
+            {giftCardBalance > 0 && (
+              <>
+                <Input data-testid="redeem-gift-card-input" type="number" min={0} max={Math.min(giftCardBalance, subtotal)}
+                  value={redeemGiftCard || ""} onChange={(e) => onRedeemGiftCard(Math.max(0, Math.min(giftCardBalance, subtotal, +e.target.value || 0)))}
+                  className="h-6 w-16 text-xs text-white text-right" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                <button data-testid="redeem-gift-card-max-btn" onClick={() => onRedeemGiftCard(Math.min(giftCardBalance, subtotal))}
+                  className="pos-btn text-[10px] px-2 py-0.5 rounded" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
+                  Max
+                </button>
+                <span className="text-white tabular-nums">−₹{giftDiscount.toFixed(2)}</span>
+              </>
+            )}
+          </div>
+
           {/* Email receipt */}
           <div className="flex items-center gap-2 text-[11px]">
             <Mail className="w-3 h-3" style={{ color: "var(--pos-muted)" }} />
@@ -229,6 +274,12 @@ export default function CartPanel({
         )}
         {loyaltyDiscount > 0 && (
           <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Loyalty ({redeemPoints} pts)</span><span className="tabular-nums" style={{ color: "#fcd34d" }}>-₹{loyaltyDiscount.toFixed(2)}</span></div>
+        )}
+        {creditDiscount > 0 && (
+          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Store credit</span><span className="tabular-nums" style={{ color: "#7ee2a8" }}>-₹{creditDiscount.toFixed(2)}</span></div>
+        )}
+        {giftDiscount > 0 && (
+          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Gift card ({giftCardCode})</span><span className="tabular-nums" style={{ color: "#c4b5fd" }}>-₹{giftDiscount.toFixed(2)}</span></div>
         )}
         {tipAmt > 0 && (
           <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Tip</span><span className="text-white tabular-nums" data-testid="tip-amount">₹{tipAmt.toFixed(2)}</span></div>

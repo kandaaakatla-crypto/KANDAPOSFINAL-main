@@ -375,6 +375,19 @@ export const publicLoyaltyApi = {
   submitBirthday: (token, birthday) => axios.post(`${BASE}/loyalty/birthday-link/${token}`, { birthday }).then((r) => r.data),
 };
 
+export const storeCreditApi = {
+  get: (customerId) => api.get(`/customers/${customerId}/credit`).then((r) => r.data),
+  adjust: (customerId, payload) => api.post(`/customers/${customerId}/credit/adjust`, payload).then((r) => r.data),
+  lookup: (phone) => api.get("/credit/lookup", { params: { phone } }).then((r) => r.data),
+};
+
+export const giftCardsApi = {
+  list: () => api.get("/gift-cards").then((r) => r.data),
+  create: (payload) => api.post("/gift-cards", payload).then((r) => r.data),
+  lookup: (code) => api.get("/gift-cards/lookup", { params: { code } }).then((r) => r.data),
+  cancel: (id) => api.patch(`/gift-cards/${id}/cancel`).then((r) => r.data),
+};
+
 export const voiceApi = {
   config: () => api.get("/voice/config").then((r) => r.data),
   saveConfig: (payload) => api.put("/voice/config", payload).then((r) => r.data),

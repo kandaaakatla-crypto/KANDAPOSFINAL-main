@@ -7,7 +7,6 @@ import {
   Truck, Boxes, Users, BarChart3, MessageCircle, Mic, MapPin, Mail, Phone,
   ArrowRight, CheckCircle2, Sparkles, ShoppingBag,
 } from "lucide-react";
-import KandaMark from "./KandaMark";
 
 const CYCLE_WORDS = ["order", "ticket", "sale", "table", "delivery", "refund"];
 
@@ -126,13 +125,7 @@ export default function LandingPage() {
       {/* Nav */}
       <header className="sticky top-0 z-20" style={{ background: "rgba(11,18,32,0.75)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <motion.div whileHover={{ rotate: -8 }}>
-              <KandaMark size={36} />
-            </motion.div>
-            <span className="font-bold tracking-tight text-xl">Kanda</span>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: "#F2B33D", color: "#1a1a1a" }}>POS</span>
-          </div>
+          <motion.img whileHover={{ scale: 1.03 }} src="/kanda-logo.png" alt="Kanda POS" className="h-8 w-auto" />
           <nav className="hidden md:flex items-center gap-8 text-sm" style={{ color: "var(--pos-muted)" }}>
             {NAV_LINKS.map((l) => (
               <a key={l.href} href={l.href} className="hover:text-white transition-colors">{l.label}</a>

@@ -86,6 +86,26 @@ def purchase_order_email(item: dict, tenant: dict, qty_ordered: float) -> tuple[
     )
 
 
+def gift_card_email(card: dict, tenant: dict) -> tuple[str, str]:
+    """Render a "you've got a gift card" email sent to the recipient."""
+    store_name = tenant.get("store", {}).get("name") or tenant.get("name") or "Kanda POS"
+    subject = f"You've received a ₹{card['initial_value']:.0f} gift card from {store_name}"
+    return subject, (
+        f'<div style="font-family:Inter,Arial,sans-serif;background:#fafafa;padding:24px">'
+        f'<div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #eee;border-radius:12px;padding:24px;text-align:center">'
+        f'<h2 style="margin:0 0 4px;color:#111">Gift card from {store_name}</h2>'
+        f'<p style="color:#666;font-size:13px;margin:8px 0 20px">Hi {card.get("recipient_name") or "there"}, someone sent you a gift card!</p>'
+        f'<div style="background:#fdf0e3;border:1px dashed #d97706;border-radius:10px;padding:20px;margin-bottom:16px">'
+        f'<div style="color:#92400e;font-size:12px;letter-spacing:1px">GIFT CARD CODE</div>'
+        f'<div style="color:#111;font-size:26px;font-weight:700;letter-spacing:2px;margin-top:6px">{card["code"]}</div>'
+        f'<div style="color:#92400e;font-size:14px;margin-top:8px">Value: ₹{card["initial_value"]:.2f}</div>'
+        f'</div>'
+        f'<p style="color:#666;font-size:12px">Show this code at checkout to redeem — in full or across multiple visits.</p>'
+        f'<p style="color:#999;font-size:11px;margin-top:24px">Sent automatically by Kanda POS.</p>'
+        f'</div></div>'
+    )
+
+
 def order_receipt_email(order: dict, tenant: dict) -> tuple[str, str]:
     """Render a customer-facing receipt email for a paid POS order."""
     store_name = tenant.get("store", {}).get("name") or tenant.get("name") or "Kanda POS"

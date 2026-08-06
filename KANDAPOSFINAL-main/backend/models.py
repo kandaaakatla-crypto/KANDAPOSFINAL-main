@@ -357,6 +357,7 @@ class Customer(BaseModel):
     loyalty_tier: Literal["bronze", "silver", "gold"] = "bronze"
     loyalty_lifetime_spend: float = 0.0
     birthday: Optional[str] = None  # "MM-DD" — month+day only, no birth year stored
+    store_credit: float = 0.0  # ₹ wallet balance — refunds-to-credit + manual top-ups
 
 
 class CustomerCreate(BaseModel):
@@ -563,6 +564,9 @@ class OrderCreate(BaseModel):
     customer_email: Optional[str] = None
     send_email_receipt: bool = False
     redeem_loyalty_points: int = 0  # cashier elects to burn X points → ₹X off
+    redeem_store_credit: float = 0  # ₹ amount to burn from the customer's own wallet balance
+    gift_card_code: Optional[str] = None
+    gift_card_amount: float = 0  # ₹ amount to redeem against gift_card_code
     # Split payment: list of {method, amount} that sums to total when supplied.
     splits: Optional[List["OrderSplit"]] = None
 
@@ -601,6 +605,9 @@ class Order(BaseModel):
     voided_by: Optional[str] = None
     loyalty_earned: int = 0
     loyalty_redeemed: int = 0
+    store_credit_redeemed: float = 0
+    gift_card_code: Optional[str] = None
+    gift_card_redeemed: float = 0
     splits: Optional[List[OrderSplit]] = None
     packed: bool = False
     # GST breakdown, computed server-side at checkout (see tax.py).
@@ -977,6 +984,7 @@ class RefundRequest(BaseModel):
     amount: float
     reason: str
     notes: Optional[str] = None
+    refund_method: Literal["original", "store_credit"] = "original"
 
 
 class VoidRequest(BaseModel):
@@ -1030,6 +1038,69 @@ class LoyaltyTxn(BaseModel):
 class LoyaltyAdjust(BaseModel):
     points: int  # can be negative
     note: str
+
+
+# ---------- Store credit ----------
+class CreditTxn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    customer_id: str
+    customer_name: str
+    kind: Literal["topup", "redeem", "adjust", "refund"]
+    amount: float  # positive for topup/refund/adjust-up, negative for redeem/adjust-down
+    order_id: Optional[str] = None
+    note: Optional[str] = None
+    by_user_id: Optional[str] = None
+    by_user_name: Optional[str] = None
+    at: str
+
+
+class StoreCreditAdjust(BaseModel):
+    amount: float  # can be negative
+    note: str
+
+
+# ---------- Gift cards ----------
+GiftCardStatus = Literal["active", "redeemed", "cancelled"]
+
+
+class GiftCard(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    code: str
+    initial_value: float
+    balance: float
+    recipient_name: Optional[str] = None
+    recipient_phone: Optional[str] = None
+    recipient_email: Optional[str] = None
+    purchaser_name: Optional[str] = None
+    status: GiftCardStatus = "active"
+    created_at: str
+    created_by: Optional[str] = None
+    expires_at: Optional[str] = None
+    redeemed_at: Optional[str] = None
+
+
+class GiftCardCreate(BaseModel):
+    value: float
+    recipient_name: Optional[str] = None
+    recipient_phone: Optional[str] = None
+    recipient_email: Optional[str] = None
+    purchaser_name: Optional[str] = None
+    expires_at: Optional[str] = None
+
+
+class GiftCardTxn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    gift_card_id: str
+    code: str
+    kind: Literal["issue", "redeem", "cancel"]
+    amount: float
+    order_id: Optional[str] = None
+    by_user_id: Optional[str] = None
+    by_user_name: Optional[str] = None
+    at: str
 
 
 # ---------- Reports: labour cost widget ----------

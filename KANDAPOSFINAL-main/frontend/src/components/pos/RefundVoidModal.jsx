@@ -16,13 +16,16 @@ export default function RefundVoidModal({ order, onClose, onDone }) {
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
+  const [refundMethod, setRefundMethod] = useState("original");
   const [busy, setBusy] = useState(false);
+  const hasCustomerPhone = !!order?.customer?.phone;
 
   useEffect(() => {
     if (open) {
       setAmount(isVoid ? "" : String(refundMax));
       setReason("");
       setNotes("");
+      setRefundMethod("original");
       setBusy(false);
     }
   }, [open, refundMax, isVoid]);
@@ -37,8 +40,10 @@ export default function RefundVoidModal({ order, onClose, onDone }) {
       } else {
         const amt = parseFloat(amount);
         if (!(amt > 0)) { toast.error("Enter a refund amount"); setBusy(false); return; }
-        await refundsApi.refund(order.id, { amount: amt, reason, notes });
-        toast.success(`Refunded ₹${amt.toFixed(2)} for order #${order.number}`);
+        await refundsApi.refund(order.id, { amount: amt, reason, notes, refund_method: refundMethod });
+        toast.success(refundMethod === "store_credit"
+          ? `₹${amt.toFixed(2)} issued as store credit for order #${order.number}`
+          : `Refunded ₹${amt.toFixed(2)} for order #${order.number}`);
       }
       onDone && onDone();
     } catch (e) {
@@ -74,6 +79,25 @@ export default function RefundVoidModal({ order, onClose, onDone }) {
                   <button data-testid="refund-quarter" onClick={() => setAmount(String((refundMax / 4).toFixed(2)))} className="pos-btn h-7 px-2 rounded text-[10px]" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>25%</button>
                   <button data-testid="refund-half" onClick={() => setAmount(String((refundMax / 2).toFixed(2)))} className="pos-btn h-7 px-2 rounded text-[10px]" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>50%</button>
                   <button data-testid="refund-full" onClick={() => setAmount(String(refundMax))} className="pos-btn h-7 px-2 rounded text-[10px]" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>Full</button>
+                </div>
+              </div>
+            )}
+
+            {!isVoid && (
+              <div>
+                <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Refund to</label>
+                <div className="grid grid-cols-2 gap-1.5 mt-1">
+                  <button data-testid="refund-method-original" onClick={() => setRefundMethod("original")}
+                    className="pos-btn h-9 rounded-md text-xs font-bold"
+                    style={{ background: refundMethod === "original" ? "var(--pos-accent)" : "var(--pos-panel-2)", color: refundMethod === "original" ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+                    Original payment
+                  </button>
+                  <button data-testid="refund-method-credit" onClick={() => hasCustomerPhone && setRefundMethod("store_credit")} disabled={!hasCustomerPhone}
+                    title={hasCustomerPhone ? "" : "No customer phone on file for this order"}
+                    className="pos-btn h-9 rounded-md text-xs font-bold disabled:opacity-40"
+                    style={{ background: refundMethod === "store_credit" ? "var(--pos-accent)" : "var(--pos-panel-2)", color: refundMethod === "store_credit" ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+                    Store credit
+                  </button>
                 </div>
               </div>
             )}
