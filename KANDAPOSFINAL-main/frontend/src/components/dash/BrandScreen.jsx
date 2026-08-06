@@ -6,6 +6,10 @@ import { Textarea } from "../ui/textarea";
 import { Switch } from "../ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
+import {
   Store, Plus, Loader2, Image as ImageIcon, MessageSquare,
   IndianRupee, Copy, Trash2, Send, UploadCloud, CheckCircle2,
   ShieldCheck, Mail, X, FileText, Download,
@@ -516,7 +520,6 @@ function MenuDefaultsTab({ brand, onBrandChanged }) {
   };
 
   const pushMenu = async () => {
-    if (!window.confirm("Push this store's current menu to every other store in the brand? New items/categories are added and matching ones (by name) are updated to match — each store's own sold-out status is left alone.")) return;
     setPushingMenu(true);
     try {
       const r = await brandApi.pushMenuTemplate(brand.id);
@@ -548,11 +551,28 @@ function MenuDefaultsTab({ brand, onBrandChanged }) {
           New ones are added, and existing ones (matched by name) are updated to match — so price/description/image
           edits made here propagate on the next push. Each store's own sold-out status is left alone.
         </p>
-        <button data-testid="brand-push-menu-btn" onClick={pushMenu} disabled={pushingMenu}
-          className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"
-          style={{ background: "var(--pos-accent)" }}>
-          {pushingMenu ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />} Push menu to all stores
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button data-testid="brand-push-menu-btn" disabled={pushingMenu}
+              className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"
+              style={{ background: "var(--pos-accent)" }}>
+              {pushingMenu ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />} Push menu to all stores
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Push menu to all stores?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Pushes this store's current menu to every other store in the brand. New items/categories are added
+                and matching ones (by name) are updated to match — each store's own sold-out status is left alone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction data-testid="brand-push-menu-confirm-btn" onClick={pushMenu}>Push menu</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Card>
 
       <Card testid="brand-defaults-card">
