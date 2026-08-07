@@ -1,0 +1,67 @@
+name: Build signed Android AAB
+
+# Tag-triggered rather than on every push to master — an Android release is
+# a deliberate, versioned artifact (uploaded to Play Console by hand for
+# now), not something to rebuild on every backend/frontend commit the way
+# deploy-backend.yml/deploy-frontend.yml do.
+on:
+  push:
+    tags:
+      - "android-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web bundle
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          # Points the packaged app at the deployed Cloud Run backend — set
+          # this repo variable once the backend's Cloud Run URL is known
+          # (same variable deploy-frontend.yml uses).
+          REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Decode release keystore
+        working-directory: KANDAPOSFINAL-main/frontend/android
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+
+      - name: Build signed release AAB
+        working-directory: KANDAPOSFINAL-main/frontend/android
+        env:
+          ANDROID_KEYSTORE_PATH: release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease
+
+      - name: Remove decoded keystore
+        if: always()
+        working-directory: KANDAPOSFINAL-main/frontend/android
+        run: rm -f release.keystore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-pos-release-aab
+          path: KANDAPOSFINAL-main/frontend/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90

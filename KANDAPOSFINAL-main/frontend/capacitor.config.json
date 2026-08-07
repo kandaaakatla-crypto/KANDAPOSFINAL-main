@@ -1,0 +1,13 @@
+{
+  "appId": "com.kandapos.app",
+  "appName": "Kanda POS",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorSQLite": {
+      "androidIsEncryption": false
+    }
+  }
+}

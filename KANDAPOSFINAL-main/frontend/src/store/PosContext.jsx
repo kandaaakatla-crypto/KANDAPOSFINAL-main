@@ -6,6 +6,7 @@ import {
 import { connectWs } from "../api/ws";
 import * as repo from "../data/repo";
 import { pullDeltas, processOutbox } from "../data/syncEngine";
+import { isOnline, subscribeConnectivity } from "../data/connectivity";
 import { toast } from "sonner";
 
 const PosContext = createContext(null);
@@ -48,6 +49,10 @@ export function PosProvider({ children }) {
 
   const [isOffline, setIsOffline] = useState(typeof navigator !== "undefined" && "onLine" in navigator ? !navigator.onLine : false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  // Mirrors `isOffline` for synchronous reads inside callbacks (runSync)
+  // without pulling it into their dependency arrays.
+  const isOfflineRef = useRef(false);
+  useEffect(() => { isOfflineRef.current = isOffline; }, [isOffline]);
 
   // Resolved once per session (the tenant slug doubles as the tenant_id
   // convention used throughout this codebase's seed data) — every Repo call
@@ -104,7 +109,7 @@ export function PosProvider({ children }) {
   // racing its own not-yet-sent mutations.
   const runSync = useCallback(async (tid) => {
     if (!tid) return;
-    if (typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine) return;
+    if (isOfflineRef.current) return;
     try {
       await processOutbox(tid);
       await pullDeltas(tid);
@@ -175,18 +180,20 @@ export function PosProvider({ children }) {
     return () => { cancelled = true; };
   }, [loadAll]);
 
-  // Connectivity: flip the offline flag immediately on browser online/offline
-  // events, and kick a sync the moment we're back so queued orders don't sit
-  // around waiting for the next periodic tick.
+  // Connectivity: flip the offline flag immediately on a connectivity change
+  // (browser online/offline events on web/Electron, OS-level network status
+  // via @capacitor/network on Android — see data/connectivity.js for why
+  // Android can't just trust navigator.onLine), and kick a sync the moment
+  // we're back so queued orders don't sit around waiting for the next
+  // periodic tick. Also reconciles the synchronous initial guess against
+  // the real state once it's known, since Capacitor's status check is async.
   useEffect(() => {
+    let cancelled = false;
+    isOnline().then((online) => { if (!cancelled) setIsOffline(!online); });
     const goOnline = () => { setIsOffline(false); if (staffUser) runSync(tenantIdRef.current); };
     const goOffline = () => setIsOffline(true);
-    window.addEventListener("online", goOnline);
-    window.addEventListener("offline", goOffline);
-    return () => {
-      window.removeEventListener("online", goOnline);
-      window.removeEventListener("offline", goOffline);
-    };
+    const unsubscribe = subscribeConnectivity((online) => (online ? goOnline() : goOffline()));
+    return () => { cancelled = true; unsubscribe(); };
   }, [staffUser, runSync]);
 
   // Periodic background sync while logged in — catches changes made from

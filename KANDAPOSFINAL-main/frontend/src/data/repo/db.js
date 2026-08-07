@@ -1,4 +1,5 @@
 import Dexie from "dexie";
+import { CACHE_COLLECTIONS } from "./collections";
 
 // Local-first cache + write queue for offline survival. One IndexedDB
 // database per browser origin, tenant-scoped rows inside shared tables
@@ -17,14 +18,9 @@ export const db = new Dexie("kanda_pos_offline");
 // of Table objects in the schema), so a store literally named "tables"
 // gets shadowed by that and `db.tables.where(...)` silently isn't a table
 // proxy anymore. Cost an afternoon to track down; don't reintroduce it.
-const CACHE_STORES = {
-  menuItems: "id, tenant_id, updated_at",
-  categories: "id, tenant_id, updated_at",
-  inventory: "id, tenant_id, updated_at",
-  customers: "id, tenant_id, updated_at",
-  menuSchedules: "id, tenant_id, updated_at",
-  diningTables: "id, tenant_id, updated_at",
-};
+const CACHE_STORES = Object.fromEntries(
+  CACHE_COLLECTIONS.map((name) => [name, "id, tenant_id, updated_at"]),
+);
 
 const SHARED_STORES = {
   ...CACHE_STORES,
@@ -54,4 +50,4 @@ db.version(2).stores({
   outbox: "++seq, tenantId, status, createdAt, dependsOnLocalId",
 });
 
-export const CACHE_COLLECTIONS = Object.keys(CACHE_STORES);
+export { CACHE_COLLECTIONS };
