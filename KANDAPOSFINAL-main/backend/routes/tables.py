@@ -3,14 +3,15 @@ import base64
 import io
 import os
 import uuid
-from typing import List
+from typing import List, Optional
 
 import qrcode
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 
 from db import get_db
 from auth import get_current_user, require_role
 from tenants import tenant_filter, get_tenant
+from tz import now_ist
 from ws import schedule_broadcast
 from models import Table, TableUpdate, TablePosition, TableCreate, FloorElement, FloorElementCreate, FloorElementUpdate
 from ._shared import PROJECTION, clean, table_doc_to_response
@@ -26,7 +27,7 @@ def _qr_response(url: str) -> dict:
 
 
 @router.get("/tables", response_model=List[Table])
-async def list_tables(user: dict = Depends(get_current_user)):
+async def list_tables(since: Optional[str] = Query(None), user: dict = Depends(get_current_user)):
     db = get_db()
     # Self-heal: if a table is marked occupied but its linked order is completed / paid /
     # voided / missing, free it. Prevents "empty bill on occupied table" drift.
@@ -42,16 +43,17 @@ async def list_tables(user: dict = Depends(get_current_user)):
         if not o or o.get("status") == "completed" or o.get("voided") or o.get("payment") in ("cash", "card"):
             await db.tables.update_one(
                 tenant_filter(user, {"id": t["id"]}),
-                {"$set": {"status": "available", "order_id": None}},
+                {"$set": {"status": "available", "order_id": None, "updated_at": now_ist().isoformat()}},
             )
-    docs = await db.tables.find(tenant_filter(user), PROJECTION).sort("number", 1).to_list(200)
+    q = tenant_filter(user, {"updated_at": {"$gt": since}}) if since else tenant_filter(user)
+    docs = await db.tables.find(q, PROJECTION).sort("number", 1).to_list(200)
     return [table_doc_to_response(d) for d in docs]
 
 
 @router.patch("/tables/{table_id}", response_model=Table)
 async def update_table(table_id: str, payload: TableUpdate, user: dict = Depends(get_current_user)):
     db = get_db()
-    update = {"status": payload.status}
+    update = {"status": payload.status, "updated_at": now_ist().isoformat()}
     if payload.status == "available":
         update["order_id"] = None
     elif payload.orderId is not None:
@@ -83,6 +85,7 @@ async def create_table(payload: TableCreate, user: dict = Depends(require_role("
         "x": payload.x, "y": payload.y,
         "width": payload.width, "height": payload.height,
         "shape": payload.shape, "rotation": payload.rotation,
+        "updated_at": now_ist().isoformat(),
     }
     await db.tables.insert_one(doc)
     return table_doc_to_response(clean(doc))
@@ -101,9 +104,11 @@ async def delete_table(table_id: str, user: dict = Depends(require_role("Manager
 async def update_position(table_id: str, payload: TablePosition, user: dict = Depends(require_role("Manager"))):
     """Save a table's layout-editor coordinates + shape."""
     db = get_db()
+    update = payload.model_dump()
+    update["updated_at"] = now_ist().isoformat()
     res = await db.tables.find_one_and_update(
         tenant_filter(user, {"id": table_id}),
-        {"$set": payload.model_dump()},
+        {"$set": update},
         return_document=True,
     )
     if not res:

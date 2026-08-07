@@ -316,6 +316,19 @@ async def seed_all(db):
     await db.orders.create_index([("tenant_id", 1), ("number", 1)], unique=True)
     # For /reports/summary's rolling 7-day window (uses ISO-string $gte filter).
     await db.orders.create_index([("tenant_id", 1), ("placedAt", -1)])
+    # Idempotency key for offline-queued order creation (see routes/orders.py
+    # create_order) — a retried POST with the same client_ref must resolve to
+    # the same order, never a duplicate. Partial so normal online orders
+    # (client_ref: null) don't collide with each other.
+    await db.orders.create_index(
+        [("tenant_id", 1), ("client_ref", 1)], unique=True,
+        partialFilterExpression={"client_ref": {"$type": "string"}},
+    )
+
+    # updated_at indexes for offline-sync clients pulling incremental deltas
+    # (?since=<ISO8601>) instead of a full collection fetch every time.
+    for coll_name in ("menu_items", "categories", "inventory", "customers", "menu_schedules", "tables"):
+        await db[coll_name].create_index([("tenant_id", 1), ("updated_at", 1)])
 
     # Staff ops collections (added 2026-02-25).
     await db.time_punches.create_index([("tenant_id", 1), ("user_id", 1), ("at", -1)])

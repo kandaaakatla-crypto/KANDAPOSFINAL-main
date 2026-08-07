@@ -23,7 +23,8 @@ from fastapi.responses import StreamingResponse
 from db import get_db
 from auth import require_role
 from tenants import tenant_filter
-from ._shared import PROJECTION
+from tz import now_ist
+from ._shared import PROJECTION, NOT_DELETED
 
 router = APIRouter()
 
@@ -86,9 +87,9 @@ def _parse_ingredients(raw: str, inv_by_name: dict[str, str]) -> tuple[list[dict
 @router.get("/menu/export.csv")
 async def export_menu_csv(user: dict = Depends(require_role("Manager"))):
     db = get_db()
-    cats = await db.categories.find(tenant_filter(user), PROJECTION).to_list(200)
+    cats = await db.categories.find(tenant_filter(user, NOT_DELETED), PROJECTION).to_list(200)
     cat_name = {c["id"]: c["name"] for c in cats}
-    items = await db.menu_items.find(tenant_filter(user), PROJECTION).to_list(2000)
+    items = await db.menu_items.find(tenant_filter(user, NOT_DELETED), PROJECTION).to_list(2000)
     inv = await db.inventory.find(tenant_filter(user), PROJECTION).to_list(2000)
     inv_by_id = {i["id"]: i for i in inv}
     recipes = await db.recipes.find(tenant_filter(user), PROJECTION).to_list(5000)
@@ -160,7 +161,7 @@ async def import_menu_csv(file: UploadFile = File(...), dry_run: bool = False,
         raise HTTPException(status_code=400, detail=f"CSV must include the columns: {', '.join(HEADERS)}")
 
     db = get_db()
-    cats = await db.categories.find(tenant_filter(user), PROJECTION).to_list(200)
+    cats = await db.categories.find(tenant_filter(user, NOT_DELETED), PROJECTION).to_list(200)
     cat_by_name = {(c["name"] or "").strip().lower(): c["id"] for c in cats}
     existing_by_id = {m["id"]: m for m in await db.menu_items.find(tenant_filter(user), PROJECTION).to_list(2000)}
     inv = await db.inventory.find(tenant_filter(user), PROJECTION).to_list(2000)
@@ -185,6 +186,8 @@ async def import_menu_csv(file: UploadFile = File(...), dry_run: bool = False,
             "desc": (row.get("description") or "").strip() or None,
             "available": _truthy(row.get("available")) if row.get("available") else True,
             "is_pizza": is_pizza,
+            "updated_at": now_ist().isoformat(),
+            "deleted_at": None,  # importing/re-importing a row is an explicit "this exists" signal
         }
         try:
             if is_pizza:

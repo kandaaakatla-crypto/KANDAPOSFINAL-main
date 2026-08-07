@@ -224,6 +224,8 @@ class Category(BaseModel):
     sort_order: int = 0
     station: Optional[str] = None
     tax_rate: Optional[float] = None  # GST % applied to items in this category unless overridden per-item
+    updated_at: Optional[str] = None  # for offline-client delta sync (?since=)
+    deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
 
 class CategoryCreate(BaseModel):
@@ -289,6 +291,8 @@ class MenuItem(BaseModel):
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
     tax_rate: Optional[float] = None  # GST % override; None = inherit the category's rate
+    updated_at: Optional[str] = None  # for offline-client delta sync (?since=)
+    deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
 
 class MenuItemCreate(BaseModel):
@@ -342,6 +346,8 @@ class MenuSchedule(BaseModel):
     fixed_price: Optional[float] = None  # used when pricing_mode == "fixed" — flat ₹ price for every member item
     category_ids: List[str] = []  # every item in these categories is a member
     item_ids: List[str] = []  # individually-added members (e.g. one item from an otherwise-excluded category)
+    updated_at: Optional[str] = None  # for offline-client delta sync (?since=)
+    deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
 
 class MenuScheduleCreate(BaseModel):
@@ -405,6 +411,8 @@ class Customer(BaseModel):
     loyalty_lifetime_spend: float = 0.0
     birthday: Optional[str] = None  # "MM-DD" — month+day only, no birth year stored
     store_credit: float = 0.0  # ₹ wallet balance — refunds-to-credit + manual top-ups
+    updated_at: Optional[str] = None  # for offline-client delta sync (?since=)
+    deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
 
 class CustomerCreate(BaseModel):
@@ -441,6 +449,7 @@ class Table(BaseModel):
     height: float = 80
     shape: TableShape = "square"
     rotation: float = 0
+    updated_at: Optional[str] = None  # for offline-client delta sync (?since=)
 
 
 class TableUpdate(BaseModel):
@@ -549,6 +558,8 @@ class InventoryItem(BaseModel):
     cost_per_unit: float = 0.0
     expiry_date: Optional[str] = None  # ISO date (YYYY-MM-DD), batch-level tracking not modeled
     location_id: Optional[str] = None  # None = shared/unassigned pool, not tied to one outlet
+    updated_at: Optional[str] = None  # for offline-client delta sync (?since=)
+    deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
 
 class InventoryItemCreate(BaseModel):
@@ -696,6 +707,10 @@ class OrderCreate(BaseModel):
     gift_card_amount: float = 0  # ₹ amount to redeem against gift_card_code
     # Split payment: list of {method, amount} that sums to total when supplied.
     splits: Optional[List["OrderSplit"]] = None
+    # Client-generated idempotency key for offline-queued order creation — a
+    # retried POST with the same client_ref returns the already-created order
+    # instead of creating a duplicate. None for normal online order creation.
+    client_ref: Optional[str] = None
 
 
 class OrderSplit(BaseModel):
@@ -743,6 +758,8 @@ class Order(BaseModel):
     cgst: float = 0
     sgst: float = 0
     taxInclusive: bool = False  # True when item prices already included tax (retail MRP) and it was extracted, not added on top
+    client_ref: Optional[str] = None  # idempotency key, set when this order was created offline and later synced
+    sync_warnings: List[str] = []  # non-fatal issues found when replaying an offline-queued order (e.g. item since deleted)
 
 
 class OrderStatusPayload(BaseModel):

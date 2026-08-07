@@ -13,22 +13,26 @@ from tz import now_ist
 from ws import schedule_broadcast
 from models import InventoryItem, InventoryItemCreate, InventoryItemUpdate, AdjustStockPayload, StockTransfer, StockTransferCreate
 from email_service import send_email, purchase_order_email
-from ._shared import PROJECTION, clean
+from ._shared import PROJECTION, NOT_DELETED, clean
 
 router = APIRouter()
 
 
 @router.get("/inventory", response_model=List[InventoryItem])
-async def list_inventory(user: dict = Depends(get_current_user)):
+async def list_inventory(since: Optional[str] = Query(None), user: dict = Depends(get_current_user)):
     db = get_db()
-    docs = await db.inventory.find(tenant_filter(user), PROJECTION).to_list(500)
+    q = tenant_filter(user, {"updated_at": {"$gt": since}}) if since else tenant_filter(user, NOT_DELETED)
+    docs = await db.inventory.find(q, PROJECTION).to_list(500)
     return docs
 
 
 @router.post("/inventory", response_model=InventoryItem)
 async def create_inventory(payload: InventoryItemCreate, user: dict = Depends(require_role("Manager"))):
     db = get_db()
-    doc = {"id": f"i_{uuid.uuid4().hex[:8]}", "tenant_id": user["tenant_id"], **payload.model_dump()}
+    doc = {
+        "id": f"i_{uuid.uuid4().hex[:8]}", "tenant_id": user["tenant_id"], **payload.model_dump(),
+        "updated_at": now_ist().isoformat(), "deleted_at": None,
+    }
     await db.inventory.insert_one(doc)
     cleaned = clean(doc)
     schedule_broadcast("inventory.updated", {"item": cleaned, "low": cleaned["stock"] <= cleaned["reorder"]}, user["tenant_id"])
@@ -44,6 +48,7 @@ async def update_inventory(item_id: str, payload: InventoryItemUpdate, user: dic
         if not item:
             raise HTTPException(status_code=404, detail="Inventory item not found")
         return clean(item)
+    updates["updated_at"] = now_ist().isoformat()
     res = await db.inventory.find_one_and_update(
         tenant_filter(user, {"id": item_id}), {"$set": updates}, return_document=True,
     )
@@ -57,8 +62,11 @@ async def update_inventory(item_id: str, payload: InventoryItemUpdate, user: dic
 @router.delete("/inventory/{item_id}")
 async def delete_inventory(item_id: str, user: dict = Depends(require_role("Manager"))):
     db = get_db()
-    res = await db.inventory.delete_one(tenant_filter(user, {"id": item_id}))
-    if res.deleted_count == 0:
+    res = await db.inventory.update_one(
+        tenant_filter(user, {"id": item_id, **NOT_DELETED}),
+        {"$set": {"deleted_at": now_ist().isoformat(), "updated_at": now_ist().isoformat()}},
+    )
+    if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Inventory item not found")
     return {"ok": True}
 
@@ -71,7 +79,7 @@ async def adjust_inventory(item_id: str, payload: AdjustStockPayload, user: dict
         raise HTTPException(status_code=404, detail="Inventory item not found")
     new_stock = max(0.0, round((item["stock"] + payload.delta) * 10) / 10)
     res = await db.inventory.find_one_and_update(
-        tenant_filter(user, {"id": item_id}), {"$set": {"stock": new_stock}}, return_document=True,
+        tenant_filter(user, {"id": item_id}), {"$set": {"stock": new_stock, "updated_at": now_ist().isoformat()}}, return_document=True,
     )
     cleaned = clean(res)
     schedule_broadcast(
@@ -127,14 +135,16 @@ async def transfer_stock(item_id: str, payload: StockTransferCreate, user: dict 
         raise HTTPException(status_code=400, detail=f"Only {src['stock']} {src['unit']} available to transfer")
 
     await db.inventory.update_one(
-        tenant_filter(user, {"id": item_id}), {"$inc": {"stock": -payload.qty}},
+        tenant_filter(user, {"id": item_id}), {"$inc": {"stock": -payload.qty}, "$set": {"updated_at": now_ist().isoformat()}},
     )
     dest = await db.inventory.find_one(
         tenant_filter(user, {"name": src["name"], "location_id": payload.to_location_id}), PROJECTION,
     )
     if dest:
         dest = await db.inventory.find_one_and_update(
-            tenant_filter(user, {"id": dest["id"]}), {"$inc": {"stock": payload.qty}}, return_document=True,
+            tenant_filter(user, {"id": dest["id"]}),
+            {"$inc": {"stock": payload.qty}, "$set": {"updated_at": now_ist().isoformat()}},
+            return_document=True,
         )
     else:
         dest = {
@@ -143,6 +153,7 @@ async def transfer_stock(item_id: str, payload: StockTransferCreate, user: dict 
             "reorder": src.get("reorder", 0), "supplier": src.get("supplier", ""),
             "cost_per_unit": src.get("cost_per_unit", 0.0), "expiry_date": None,
             "location_id": payload.to_location_id,
+            "updated_at": now_ist().isoformat(), "deleted_at": None,
         }
         await db.inventory.insert_one(dest)
 
@@ -165,7 +176,7 @@ async def reorder_inventory(item_id: str, user: dict = Depends(require_role("Man
     qty_ordered = item["reorder"] * 2
     new_stock = item["stock"] + qty_ordered
     res = await db.inventory.find_one_and_update(
-        tenant_filter(user, {"id": item_id}), {"$set": {"stock": new_stock}}, return_document=True,
+        tenant_filter(user, {"id": item_id}), {"$set": {"stock": new_stock, "updated_at": now_ist().isoformat()}}, return_document=True,
     )
     cleaned = clean(res)
     schedule_broadcast("inventory.updated", {"item": cleaned, "low": False}, user["tenant_id"])

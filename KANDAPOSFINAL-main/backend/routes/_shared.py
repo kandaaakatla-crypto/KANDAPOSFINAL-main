@@ -4,6 +4,12 @@ from datetime import datetime
 
 PROJECTION = {"_id": 0}
 
+# Soft-delete convention (matches customers.py's pre-existing `deleted_at`
+# pattern, extended to menu_items/categories for offline delta-sync
+# tombstones): merge into a tenant_filter() extra dict to exclude trashed
+# docs from any query that reads the full collection.
+NOT_DELETED = {"$or": [{"deleted_at": {"$exists": False}}, {"deleted_at": None}]}
+
 
 def clean(doc: dict) -> dict:
     """Strip Mongo's `_id` before returning a doc over the wire."""
@@ -25,6 +31,7 @@ def table_doc_to_response(doc: dict) -> dict:
         "height": doc.get("height", 80),
         "shape": doc.get("shape", "square"),
         "rotation": doc.get("rotation", 0),
+        "updated_at": doc.get("updated_at"),
     }
 
 
@@ -43,6 +50,8 @@ def menu_doc_to_response(doc: dict) -> dict:
         "barcode": doc.get("barcode"),
         "variants": doc.get("variants"),
         "tax_rate": doc.get("tax_rate"),
+        "updated_at": doc.get("updated_at"),
+        "deleted_at": doc.get("deleted_at"),
     }
 
 

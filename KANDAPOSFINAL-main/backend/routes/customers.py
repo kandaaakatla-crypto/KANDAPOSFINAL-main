@@ -13,9 +13,9 @@ Soft-delete pattern (added 2026-02-20 after data-loss incident):
 import uuid
 from datetime import datetime, timezone
 from tz import now_ist
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 
 from db import get_db
 from auth import get_current_user, require_role
@@ -35,9 +35,13 @@ def _active_filter(user: dict, extra: dict | None = None) -> dict:
 
 
 @router.get("/customers", response_model=List[Customer])
-async def list_customers(user: dict = Depends(get_current_user)):
+async def list_customers(since: Optional[str] = Query(None), user: dict = Depends(get_current_user)):
     db = get_db()
-    docs = await db.customers.find(_active_filter(user), PROJECTION).to_list(2000)
+    # A delta-sync pull includes tombstones (deleted_at set) so an offline
+    # client can prune ones it deleted since its last sync; the normal
+    # (no `since`) call keeps hiding them, same as before.
+    q = tenant_filter(user, {"updated_at": {"$gt": since}}) if since else _active_filter(user)
+    docs = await db.customers.find(q, PROJECTION).to_list(2000)
     return docs
 
 
@@ -81,6 +85,7 @@ async def create_customer(payload: CustomerCreate, user: dict = Depends(get_curr
         "deleted_at": None,
         "loyalty_points": 0,
         "birthday": (payload.birthday or "").strip() or None,
+        "updated_at": now_ist().isoformat(),
     }
     tenant = await get_tenant(user, db)
     loyalty_on = ((tenant or {}).get("features") or {}).get("loyalty", True)
@@ -113,6 +118,7 @@ async def update_customer(customer_id: str, payload: CustomerUpdate, user: dict 
     update = payload.model_dump(exclude_none=True)
     if not update:
         raise HTTPException(status_code=400, detail="Nothing to update")
+    update["updated_at"] = now_ist().isoformat()
     res = await db.customers.find_one_and_update(
         _active_filter(user, {"id": customer_id}), {"$set": update}, return_document=True,
     )
@@ -129,7 +135,7 @@ async def delete_customer(customer_id: str, user: dict = Depends(get_current_use
     now = now_ist().isoformat()
     res = await db.customers.find_one_and_update(
         _active_filter(user, {"id": customer_id}),
-        {"$set": {"deleted_at": now, "deleted_by": user.get("id")}},
+        {"$set": {"deleted_at": now, "deleted_by": user.get("id"), "updated_at": now}},
         return_document=True,
     )
     if not res:
@@ -142,7 +148,7 @@ async def restore_customer(customer_id: str, user: dict = Depends(require_role("
     db = get_db()
     res = await db.customers.find_one_and_update(
         tenant_filter(user, {"id": customer_id, "deleted_at": {"$ne": None}}),
-        {"$set": {"deleted_at": None, "deleted_by": None}},
+        {"$set": {"deleted_at": None, "deleted_by": None, "updated_at": now_ist().isoformat()}},
         return_document=True,
     )
     if not res:

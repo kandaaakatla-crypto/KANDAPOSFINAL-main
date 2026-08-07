@@ -5,23 +5,25 @@ active (`sale_discount_pct`). See `scheduling.py` for the shared time logic
 consumed by both the POS menu API and the storefront checkout.
 """
 import uuid
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 
 from db import get_db
 from auth import get_current_user, require_role
 from tenants import tenant_filter
+from tz import now_ist
 from models import MenuSchedule, MenuScheduleCreate, MenuScheduleUpdate
-from ._shared import PROJECTION, clean
+from ._shared import PROJECTION, NOT_DELETED, clean
 
 router = APIRouter()
 
 
 @router.get("/menu/schedules", response_model=List[MenuSchedule])
-async def list_schedules(user: dict = Depends(get_current_user)):
+async def list_schedules(since: Optional[str] = Query(None), user: dict = Depends(get_current_user)):
     db = get_db()
-    docs = await db.menu_schedules.find(tenant_filter(user), PROJECTION).sort("name", 1).to_list(100)
+    q = tenant_filter(user, {"updated_at": {"$gt": since}}) if since else tenant_filter(user, NOT_DELETED)
+    docs = await db.menu_schedules.find(q, PROJECTION).sort("name", 1).to_list(100)
     return docs
 
 
@@ -42,6 +44,8 @@ async def create_schedule(payload: MenuScheduleCreate, user: dict = Depends(requ
         "fixed_price": payload.fixed_price,
         "category_ids": payload.category_ids,
         "item_ids": payload.item_ids,
+        "updated_at": now_ist().isoformat(),
+        "deleted_at": None,
     }
     await db.menu_schedules.insert_one(doc)
     return clean(doc)
@@ -53,6 +57,7 @@ async def update_schedule(schedule_id: str, payload: MenuScheduleUpdate, user: d
     update = payload.model_dump(exclude_none=True)
     if not update:
         raise HTTPException(status_code=400, detail="Nothing to update")
+    update["updated_at"] = now_ist().isoformat()
     res = await db.menu_schedules.find_one_and_update(
         tenant_filter(user, {"id": schedule_id}), {"$set": update}, return_document=True,
     )
@@ -67,7 +72,10 @@ async def delete_schedule(schedule_id: str, user: dict = Depends(require_role("M
     in_use = await db.menu_items.count_documents(tenant_filter(user, {"schedule_id": schedule_id}))
     if in_use:
         raise HTTPException(status_code=409, detail=f"{in_use} menu items use this schedule. Unlink them first.")
-    res = await db.menu_schedules.delete_one(tenant_filter(user, {"id": schedule_id}))
-    if res.deleted_count == 0:
+    res = await db.menu_schedules.update_one(
+        tenant_filter(user, {"id": schedule_id, **NOT_DELETED}),
+        {"$set": {"deleted_at": now_ist().isoformat(), "updated_at": now_ist().isoformat()}},
+    )
+    if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Schedule not found")
     return {"ok": True}

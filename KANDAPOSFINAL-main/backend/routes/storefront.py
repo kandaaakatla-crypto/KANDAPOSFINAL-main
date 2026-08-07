@@ -31,7 +31,7 @@ from routes.orders import _apply_recipes
 from payments import _get_client as _get_razorpay_client
 from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
 from scheduling import resolve_item_schedule_state, apply_schedule_pricing
-from ._shared import PROJECTION, clean, menu_doc_to_response, next_order_number, table_doc_to_response
+from ._shared import PROJECTION, NOT_DELETED, clean, menu_doc_to_response, next_order_number, table_doc_to_response
 import razorpay
 
 router = APIRouter(prefix="/storefront")
@@ -60,9 +60,9 @@ async def _tenant_by_slug(slug: str, db) -> dict:
 async def public_menu(slug: str):
     db = get_db()
     tenant = await _tenant_by_slug(slug, db)
-    cats = await db.categories.find({"tenant_id": tenant["id"]}, PROJECTION).sort("sort_order", 1).to_list(100)
-    items = await db.menu_items.find({"tenant_id": tenant["id"], "available": True}, PROJECTION).to_list(500)
-    schedules = await db.menu_schedules.find({"tenant_id": tenant["id"]}, PROJECTION).to_list(100)
+    cats = await db.categories.find({"tenant_id": tenant["id"], **NOT_DELETED}, PROJECTION).sort("sort_order", 1).to_list(100)
+    items = await db.menu_items.find({"tenant_id": tenant["id"], "available": True, **NOT_DELETED}, PROJECTION).to_list(500)
+    schedules = await db.menu_schedules.find({"tenant_id": tenant["id"], **NOT_DELETED}, PROJECTION).to_list(100)
     now = now_ist()
     visible = []
     for it in items:
@@ -103,12 +103,12 @@ async def _resolve_lines(db, tenant_id: str, lines: List[CartLine], business_typ
     if not lines:
         raise HTTPException(status_code=400, detail="Cart is empty")
     ids = list({ln.item_id for ln in lines})
-    docs = await db.menu_items.find({"tenant_id": tenant_id, "id": {"$in": ids}}, PROJECTION).to_list(500)
+    docs = await db.menu_items.find({"tenant_id": tenant_id, "id": {"$in": ids}, **NOT_DELETED}, PROJECTION).to_list(500)
     by_id = {d["id"]: d for d in docs}
     cat_ids = list({d["cat_id"] for d in docs if d.get("cat_id")})
     cats = await db.categories.find({"tenant_id": tenant_id, "id": {"$in": cat_ids}}, PROJECTION).to_list(200)
     cat_by_id = {c["id"]: c for c in cats}
-    schedules = await db.menu_schedules.find({"tenant_id": tenant_id}, PROJECTION).to_list(100)
+    schedules = await db.menu_schedules.find({"tenant_id": tenant_id, **NOT_DELETED}, PROJECTION).to_list(100)
     now = now_ist()
     inclusive = business_type == "retail"
     out = []

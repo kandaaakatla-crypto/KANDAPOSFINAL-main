@@ -28,7 +28,7 @@ from pydantic import BaseModel
 from db import get_db
 from routes.dash_auth import get_dash_user, provision_tenant_dashboard
 from routes.sms import _log_and_send
-from routes._shared import clean
+from routes._shared import clean, NOT_DELETED
 from auth import hash_pin
 from models import (
     Brand, BrandCreate, BrandUpdate, BrandAsset, BrandAssetCreate,
@@ -568,8 +568,8 @@ async def create_store(brand_id: str, payload: BrandStoreCreate, u: dict = Depen
 async def push_menu_template(brand_id: str, u: dict = Depends(_brand_owner)):
     db = get_db()
     source_tenant_id = u["tenant_id"]
-    src_cats = await db.categories.find({"tenant_id": source_tenant_id}, {"_id": 0}).to_list(200)
-    src_items = await db.menu_items.find({"tenant_id": source_tenant_id}, {"_id": 0}).to_list(2000)
+    src_cats = await db.categories.find({"tenant_id": source_tenant_id, **NOT_DELETED}, {"_id": 0}).to_list(200)
+    src_items = await db.menu_items.find({"tenant_id": source_tenant_id, **NOT_DELETED}, {"_id": 0}).to_list(2000)
     targets = await db.tenants.find(
         {"brand_id": brand_id, "id": {"$ne": source_tenant_id}}, {"_id": 0, "id": 1, "name": 1},
     ).to_list(200)
@@ -587,11 +587,12 @@ async def push_menu_template(brand_id: str, u: dict = Depends(_brand_owner)):
             if existing:
                 cat_id_map[c["id"]] = existing["id"]
                 fields = {k: v for k, v in c.items() if k not in ("id", "tenant_id")}
+                fields["updated_at"] = now_ist().isoformat()
                 await db.categories.update_one({"tenant_id": tid, "id": existing["id"]}, {"$set": fields})
                 updated_cats += 1
                 continue
             new_id = f"cat_{uuid.uuid4().hex[:8]}"
-            await db.categories.insert_one({**c, "id": new_id, "tenant_id": tid})
+            await db.categories.insert_one({**c, "id": new_id, "tenant_id": tid, "updated_at": now_ist().isoformat()})
             cat_id_map[c["id"]] = new_id
             added_cats += 1
 
@@ -607,12 +608,13 @@ async def push_menu_template(brand_id: str, u: dict = Depends(_brand_owner)):
                 # Sync template content, but leave this store's own 86'd/sold-out status alone.
                 fields = {k: v for k, v in m.items() if k not in ("id", "tenant_id", "available")}
                 fields["cat_id"] = target_cat_id
+                fields["updated_at"] = now_ist().isoformat()
                 await db.menu_items.update_one({"tenant_id": tid, "id": existing["id"]}, {"$set": fields})
                 updated_items += 1
                 continue
             await db.menu_items.insert_one({
                 **m, "id": f"m_{uuid.uuid4().hex[:8]}", "tenant_id": tid,
-                "cat_id": target_cat_id,
+                "cat_id": target_cat_id, "updated_at": now_ist().isoformat(),
             })
             added_items += 1
         results.append({

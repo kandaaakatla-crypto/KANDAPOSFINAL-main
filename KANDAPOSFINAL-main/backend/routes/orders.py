@@ -7,6 +7,7 @@ from tz import now_ist
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
+from pymongo.errors import DuplicateKeyError
 
 from db import get_db
 from auth import get_current_user
@@ -19,7 +20,7 @@ from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
 from . import loyalty as loyalty_mod
 from . import store_credit as credit_mod
 from . import gift_cards as gift_card_mod
-from ._shared import PROJECTION, clean, next_order_number, table_doc_to_response
+from ._shared import PROJECTION, NOT_DELETED, clean, next_order_number, table_doc_to_response
 
 logger = logging.getLogger("kanda.orders")
 router = APIRouter()
@@ -91,16 +92,19 @@ def _base_item_name(name: str) -> str:
     return name
 
 
-async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[dict]) -> list[tuple]:
+async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[dict]) -> tuple[list[tuple], list[str]]:
     """Resolve each order item's effective GST rate via its menu item/category,
     stamp tax_rate/tax_amount onto the item dict in place, and return the
-    (taxable_value, tax_amount) pairs for the order-level GST breakdown.
+    (taxable_value, tax_amount) pairs for the order-level GST breakdown, plus
+    any non-fatal warnings (e.g. an item that no longer matches a menu item —
+    typically because it was deleted/86'd after an offline order was rung up
+    but before it synced) for the caller to surface as sync_warnings.
 
     Matches items back to their menu item by name (orders don't carry a menu
     item id today), same best-effort approach already used for KDS station
     routing and recipe-based inventory decrement elsewhere in this file."""
     menu = await db.menu_items.find(
-        {"tenant_id": tenant_id}, {"_id": 0, "name": 1, "cat_id": 1, "tax_rate": 1},
+        {"tenant_id": tenant_id, **NOT_DELETED}, {"_id": 0, "name": 1, "cat_id": 1, "tax_rate": 1},
     ).to_list(2000)
     by_name = {m["name"]: m for m in menu}
     cats = await db.categories.find(
@@ -110,9 +114,12 @@ async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[di
     inclusive = business_type == "retail"
 
     line_amounts: list[tuple] = []
+    warnings: list[str] = []
     for it in items:
         name = it.get("name", "")
         menu_item = by_name.get(name) or by_name.get(_base_item_name(name))
+        if not menu_item:
+            warnings.append(f"item_unavailable: {name}")
         cat = cat_by_id.get(menu_item["cat_id"]) if menu_item else None
         rate, _source = resolve_effective_rate(
             menu_item.get("tax_rate") if menu_item else None,
@@ -125,7 +132,7 @@ async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[di
         it["tax_rate"] = rate
         it["tax_amount"] = tax_amt
         line_amounts.append((taxable, tax_amt))
-    return line_amounts
+    return line_amounts, warnings
 
 
 @router.get("/orders", response_model=List[Order])
@@ -138,6 +145,18 @@ async def list_orders(user: dict = Depends(get_current_user)):
 @router.post("/orders", response_model=Order)
 async def create_order(payload: OrderCreate, user: dict = Depends(get_current_user)):
     db = get_db()
+
+    # Idempotency: a client_ref means this may be a retried replay of an
+    # offline-queued order (network dropped after the write landed but
+    # before the response did). Return the already-created order instead
+    # of creating a duplicate — never trust "no response" to mean "no order".
+    if payload.client_ref:
+        existing = await db.orders.find_one(
+            tenant_filter(user, {"client_ref": payload.client_ref}), PROJECTION,
+        )
+        if existing:
+            return clean(existing)
+
     number = await next_order_number(db, user["tenant_id"])
     placed_at = now_ist().isoformat()
     raw_items = [it.model_dump() for it in payload.items]
@@ -149,7 +168,7 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     # stamp tax_rate/tax_amount onto the item, and derive the authoritative
     # order total server-side — the whole point of "tax compliant" is that
     # these numbers are computed here, not merely trusted from the client.
-    line_amounts = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
+    line_amounts, sync_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
     tax = compute_order_tax(line_amounts)
     grand_total = round(tax["items_total"] - float(payload.discount or 0) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
 
@@ -197,8 +216,20 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         "gift_card_code": None,
         "gift_card_redeemed": 0,
         "splits": splits_payload,
+        "client_ref": payload.client_ref,
+        "sync_warnings": sync_warnings,
     }
-    await db.orders.insert_one(doc)
+    try:
+        await db.orders.insert_one(doc)
+    except DuplicateKeyError:
+        # Lost the race against a concurrent retry with the same client_ref —
+        # the other request's order already exists; return it, don't double-book.
+        existing = await db.orders.find_one(
+            tenant_filter(user, {"client_ref": payload.client_ref}), PROJECTION,
+        )
+        if existing:
+            return clean(existing)
+        raise
     await _apply_recipes(db, user["tenant_id"], raw_items)
 
     # Bump coupon usage counter (best-effort — doesn't fail the order).
@@ -274,7 +305,7 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     if payload.type == "dine-in" and payload.table is not None:
         await db.tables.update_one(
             tenant_filter(user, {"number": payload.table}),
-            {"$set": {"status": "occupied", "order_id": doc["id"]}},
+            {"$set": {"status": "occupied", "order_id": doc["id"], "updated_at": now_ist().isoformat()}},
         )
         tbl = await db.tables.find_one(tenant_filter(user, {"number": payload.table}), PROJECTION)
         if tbl:
@@ -313,7 +344,7 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
     business_type = tenant_doc.get("business_type", "restaurant")
 
     raw_items = [it.model_dump() for it in payload.items]
-    line_amounts = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
+    line_amounts, append_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
     add_tax = compute_order_tax(line_amounts)
     annotated = await annotate_order_items_for_kds(db, user["tenant_id"], raw_items)
     new_total = round(float(existing.get("total", 0) or 0) + add_tax["items_total"], 2)
@@ -321,6 +352,7 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
     new_tax_total = round(float(existing.get("taxTotal", 0) or 0) + add_tax["tax_total"], 2)
     new_cgst = round(float(existing.get("cgst", 0) or 0) + add_tax["cgst"], 2)
     new_sgst = round(float(existing.get("sgst", 0) or 0) + add_tax["sgst"], 2)
+    new_warnings = list(dict.fromkeys((existing.get("sync_warnings") or []) + append_warnings))
 
     # Drop status back to 'new' so KDS re-alerts staff to the freshly-added items.
     res = await db.orders.find_one_and_update(
@@ -331,6 +363,7 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
                 "total": new_total, "status": "new",
                 "subtotal": new_subtotal, "taxTotal": new_tax_total,
                 "cgst": new_cgst, "sgst": new_sgst,
+                "sync_warnings": new_warnings,
             },
         },
         return_document=True,
