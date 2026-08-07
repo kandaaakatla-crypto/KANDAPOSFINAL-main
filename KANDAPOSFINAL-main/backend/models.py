@@ -57,6 +57,11 @@ class TenantInfo(BaseModel):
     businessType: BusinessType = "restaurant"
     features: TenantFeatures = TenantFeatures()
     brandId: Optional[str] = None
+    # Receipt branding (name/address/phone/tax_id/footer/logo_url) — exposed
+    # here so the POS can cache it and build a receipt fully offline
+    # (see frontend/src/utils/escpos.js) instead of needing a network round
+    # trip to GET /orders/{id}/receipt every time.
+    store: Optional[dict] = None
 
 
 class TenantFeaturesUpdate(BaseModel):

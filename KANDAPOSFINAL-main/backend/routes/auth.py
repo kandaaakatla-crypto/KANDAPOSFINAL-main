@@ -58,7 +58,8 @@ async def tenant_info(user: dict = Depends(get_current_user)):
     business_type = tenant.get("business_type", "restaurant")
     features = {**default_features(business_type), **(tenant.get("features") or {})}
     return TenantInfo(id=tenant["id"], slug=tenant.get("slug", tenant["id"]), name=tenant.get("name", ""),
-                       businessType=business_type, features=features)
+                       businessType=business_type, features=features, brandId=tenant.get("brand_id"),
+                       store=tenant.get("store"))
 
 
 @router.patch("/tenant/features", response_model=TenantInfo)

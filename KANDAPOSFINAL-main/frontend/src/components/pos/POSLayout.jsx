@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { Pizza, Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X } from "lucide-react";
+import { Pizza, Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
@@ -12,7 +12,7 @@ import { Sheet, SheetContent } from "../ui/sheet";
 const ALL_STAFF_WORKFORCE = { to: "/workforce", label: "My Rota", icon: CalendarDays };
 
 export default function POSLayout() {
-  const { staffUser, logout, orders, businessType, features } = usePos();
+  const { staffUser, logout, orders, businessType, features, isOffline, pendingSyncCount } = usePos();
   const navigate = useNavigate();
   const location = useLocation();
   const [time, setTime] = useState(new Date());
@@ -128,6 +128,22 @@ export default function POSLayout() {
               <LocationSwitcher storeName="Store" isManager={staffUser?.role === "Manager"} />
             </div>
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
+              {(isOffline || pendingSyncCount > 0) && (
+                <div data-testid="sync-status-badge"
+                  className="flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-bold"
+                  style={{
+                    background: isOffline ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)",
+                    color: isOffline ? "#f87171" : "#fbbf24",
+                  }}
+                  title={isOffline
+                    ? "No connection — orders and changes are saved locally and will sync automatically once you're back online."
+                    : `${pendingSyncCount} change${pendingSyncCount === 1 ? "" : "s"} waiting to sync`}>
+                  {isOffline ? <WifiOff className="w-3.5 h-3.5" /> : <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span className="hidden sm:inline">
+                    {isOffline ? "Offline" : `Syncing ${pendingSyncCount}`}
+                  </span>
+                </div>
+              )}
               <span className="hidden lg:inline text-sm tabular-nums" style={{ color: "var(--pos-muted)" }} data-testid="header-clock">
                 {time.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · {time.toLocaleTimeString("en-GB")}
               </span>

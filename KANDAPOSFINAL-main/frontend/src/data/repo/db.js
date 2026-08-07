@@ -26,19 +26,32 @@ const CACHE_STORES = {
   diningTables: "id, tenant_id, updated_at",
 };
 
-db.version(1).stores({
+const SHARED_STORES = {
   ...CACHE_STORES,
   // Sync cursor per (tenant, collection) — advanced only after a delta
   // merge fully succeeds, so a failed/partial sync doesn't lose the next
   // delta (see syncEngine.js).
   syncMeta: "key", // key = `${tenantId}:${collection}`
-  // Write queue — every mutation lands here first, gets applied optimistically
-  // to local state, then replayed FIFO per tenant once back online.
-  outbox: "++seq, tenantId, status, createdAt",
   // The POS's own view of orders: server-synced ones plus any still-local
   // (offline-created, not yet synced) ones, so the UI has one place to read
   // "today's orders" regardless of connectivity.
   localOrders: "id, tenant_id, placedAt",
+};
+
+db.version(1).stores({
+  ...SHARED_STORES,
+  outbox: "++seq, tenantId, status, createdAt",
+});
+// v2: outbox needs `dependsOnLocalId` indexed — remapDependentMutations()
+// queries it directly, and Dexie throws on an unindexed where() clause
+// (silently failing every order.append/status/packed mutation queued
+// against a not-yet-synced local order, and — worse — leaving the
+// order.create entry itself stuck "pending" forever even after its order
+// was created server-side, since the throw happens after the create call
+// succeeds but before markMutationSynced runs).
+db.version(2).stores({
+  ...SHARED_STORES,
+  outbox: "++seq, tenantId, status, createdAt, dependsOnLocalId",
 });
 
 export const CACHE_COLLECTIONS = Object.keys(CACHE_STORES);

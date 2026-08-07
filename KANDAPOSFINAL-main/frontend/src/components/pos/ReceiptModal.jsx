@@ -2,36 +2,61 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
 import { Printer, Download, Loader2, FileText } from "lucide-react";
 import { receiptsApi } from "../../api/client";
+import { usePos } from "../../store/PosContext";
+import { downloadEscposReceipt } from "../../utils/escpos";
 import { toast } from "sonner";
 
-/** Customer receipt — HTML for browser printing + ESC/POS download for thermal printers. */
+const FALLBACK_STORE = { name: "Kanda POS", address: "", phone: "", tax_id: "", footer: "Thank you for ordering!" };
+
+/** Customer receipt — HTML for browser printing + ESC/POS download for thermal printers.
+ * Built entirely from the already-cached order + tenant store info whenever
+ * possible (see PosContext's `orders`/`tenantInfo`) so it works with zero
+ * network calls — critical for a receipt right after an offline-queued
+ * order, which may not even exist server-side yet. */
 export default function ReceiptModal({ orderId, open, onClose }) {
+  const { orders, tenantInfo, staffUser } = usePos();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (!open || !orderId) { setData(null); return; }
+    const cached = orders.find((o) => o.id === orderId);
+    if (cached) {
+      const subtotal = cached.subtotal ?? cached.items.reduce((s, it) => s + it.qty * it.price, 0);
+      setData({
+        store: tenantInfo?.store || FALLBACK_STORE,
+        order: cached,
+        subtotal,
+        taxTotal: cached.taxTotal || 0,
+        cgst: cached.cgst || 0,
+        sgst: cached.sgst || 0,
+        taxInclusive: !!cached.taxInclusive,
+        issuedAt: cached.placedAt,
+        cashier: staffUser?.name,
+      });
+      return;
+    }
+    // Not in the local cache (shouldn't normally happen — every order shown
+    // anywhere in the app comes from there) — fall back to the network.
     setLoading(true);
     receiptsApi.json(orderId)
       .then(setData)
       .catch(() => toast.error("Could not load receipt"))
       .finally(() => setLoading(false));
-  }, [open, orderId]);
+  }, [open, orderId, orders, tenantInfo, staffUser]);
 
   const doPrint = () => {
     window.print();
   };
 
-  const downloadEscpos = async (kind) => {
-    setDownloading(true);
+  const downloadEscpos = (kind) => {
+    if (!data) return;
     try {
-      await receiptsApi.downloadEscpos(orderId, kind);
+      downloadEscposReceipt(data.order, data.store, kind, orderId);
       toast.success(`${kind === "kitchen" ? "Kitchen ticket" : "Receipt"} ESC/POS file saved`);
     } catch {
       toast.error("Could not generate ESC/POS file");
-    } finally {
-      setDownloading(false);
     }
   };
 
