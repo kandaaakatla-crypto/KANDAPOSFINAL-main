@@ -1,0 +1,39 @@
+name: Deploy frontend to Firebase Hosting
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "KANDAPOSFINAL-main/frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          # Points the built app at the deployed Cloud Run backend — set
+          # this repo variable once the backend's Cloud Run URL is known.
+          REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+        run: npm run build
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
+          channelId: live
+          entryPoint: KANDAPOSFINAL-main/frontend

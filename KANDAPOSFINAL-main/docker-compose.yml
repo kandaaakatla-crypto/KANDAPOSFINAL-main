@@ -1,0 +1,29 @@
+# Local container parity for the backend before it ever touches a real
+# cloud deploy — `docker compose up` gives the same image Cloud Run will
+# run, against a throwaway local Mongo instead of Atlas. Not used for the
+# frontend (that stays `npm start` for hot reload; its production build is
+# static output shipped to Firebase Hosting, not a long-running container).
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      DB_NAME: kanda_pos
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-change-me}
+      CORS_ORIGINS: "*"
+      PUBLIC_BASE_URL: http://localhost:3000
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:

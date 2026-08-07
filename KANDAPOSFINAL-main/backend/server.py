@@ -36,6 +36,14 @@ logger = logging.getLogger("kanda")
 app = FastAPI(title="Kanda POS API")
 
 
+# Unauthenticated liveness/readiness probe for Cloud Run (and any other
+# container platform) — deliberately outside /api and outside every
+# middleware/auth chain above so it stays cheap and always answers.
+@app.get("/healthz")
+async def healthz():
+    return {"ok": True}
+
+
 # ----------------- Lifecycle -----------------
 @app.on_event("startup")
 async def on_startup():

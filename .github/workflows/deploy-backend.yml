@@ -1,0 +1,61 @@
+name: Deploy backend to Cloud Run
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "KANDAPOSFINAL-main/backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch: {}
+
+env:
+  GCP_REGION: ${{ vars.GCP_REGION }}
+  SERVICE_NAME: kanda-pos-backend
+  REPO_NAME: kanda-pos
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # for google-github-actions/auth via Workload Identity Federation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          # Two supported ways to authenticate — set whichever secret you
+          # configured (see the deployment runbook). Workload Identity
+          # Federation (no long-lived key) is the recommended one; a
+          # service-account JSON key also works and is simpler to set up
+          # first, at the cost of a static credential to rotate.
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+      - name: Build and push image
+        working-directory: KANDAPOSFINAL-main/backend
+        run: |
+          IMAGE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image "${{ env.IMAGE }}" \
+            --region "${{ env.GCP_REGION }}" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --platform managed \
+            --min-instances 1 \
+            --allow-unauthenticated \
+            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }}" \
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest"
