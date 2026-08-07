@@ -123,3 +123,20 @@ export function downloadEscposReceipt(order, store, kind, filenameOrderId) {
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
+
+// On the Electron desktop build, with a printer configured on the store
+// (`printer_host`/`printer_port` — set once a Settings UI exists for it),
+// sends the bytes straight to a networked thermal printer via the main
+// process (see electron/preload.js + electron/printer.js) instead of
+// downloading a file. Everywhere else — web, Android, or Electron with no
+// printer configured yet — falls back to the existing file download.
+export async function sendEscposReceipt(order, store, kind, filenameOrderId) {
+  const bridge = typeof window !== "undefined" ? window.kandaDesktop : null;
+  if (bridge?.isElectron && bridge.printEscpos && store?.printer_host) {
+    const bytes = buildEscposReceipt(order, store, kind);
+    await bridge.printEscpos(store.printer_host, store.printer_port || 9100, bytes);
+    return "printed";
+  }
+  downloadEscposReceipt(order, store, kind, filenameOrderId);
+  return "downloaded";
+}

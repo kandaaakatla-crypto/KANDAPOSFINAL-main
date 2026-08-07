@@ -1,0 +1,51 @@
+name: Build Windows Electron installer
+
+# Tag-triggered, same reasoning as build-android.yml — a desktop release is
+# a deliberate, versioned artifact, not something to rebuild on every commit.
+on:
+  push:
+    tags:
+      - "windows-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web bundle
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          # Points the packaged app at the deployed Cloud Run backend — same
+          # repo variable deploy-frontend.yml and build-android.yml use.
+          REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+        run: npm run build
+
+      - name: Build and publish Windows installer
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          # electron-builder reads these automatically for Authenticode
+          # signing — unset (no cert configured yet) just produces an
+          # unsigned installer rather than failing the build.
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+          # electron-updater's feed (package.json's build.publish) is
+          # GitHub Releases on this same repo — the default token can
+          # publish there.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --publish always
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-pos-windows-installer
+          path: KANDAPOSFINAL-main/frontend/dist-electron/*.exe
+          retention-days: 90

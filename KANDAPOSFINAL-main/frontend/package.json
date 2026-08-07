@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "dependencies": {
     "@capacitor-community/sqlite": "^8.1.1",
     "@capacitor/android": "^8.5.0",
@@ -45,6 +46,7 @@
     "date-fns": "4.1.0",
     "dayjs": "1.11.13",
     "dexie": "^4.4.4",
+    "electron-updater": "^6.3.9",
     "embla-carousel-react": "8.6.0",
     "framer-motion": "11.18.0",
     "input-otp": "1.4.2",
@@ -71,7 +73,34 @@
     "build": "craco build",
     "test": "craco test",
     "android:sync": "npm run build && npx cap sync android",
-    "android:open": "npx cap open android"
+    "android:open": "npx cap open android",
+    "electron:start": "concurrently -k \"npm:start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "npm run build && electron-builder --publish never"
+  },
+  "build": {
+    "appId": "com.kandapos.app",
+    "productName": "Kanda POS",
+    "files": [
+      "build/**/*",
+      "electron/**/*"
+    ],
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "kandaaakatla-crypto",
+      "repo": "KANDAPOSFINAL-main"
+    }
   },
   "browserslist": {
     "production": [
@@ -93,7 +122,10 @@
     "@eslint/js": "9.23.0",
     "@types/lodash": "4.17.24",
     "autoprefixer": "10.4.20",
+    "concurrently": "^9.1.2",
     "dotenv": "16.4.5",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "eslint": "9.23.0",
     "eslint-plugin-import": "2.31.0",
     "eslint-plugin-jsx-a11y": "6.10.2",
@@ -101,7 +133,13 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "globals": "15.15.0",
     "postcss": "8.4.49",
-    "tailwindcss": "3.4.17"
+    "tailwindcss": "3.4.17",
+    "wait-on": "^8.0.2"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "allowScripts": {
+    "core-js@3.49.0": true,
+    "core-js-pure@3.49.0": true,
+    "electron@33.4.11": true
+  }
 }

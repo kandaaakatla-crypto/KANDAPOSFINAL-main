@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from "../ui/dialog";
 import { Printer, Download, Loader2, FileText } from "lucide-react";
 import { receiptsApi } from "../../api/client";
 import { usePos } from "../../store/PosContext";
-import { downloadEscposReceipt } from "../../utils/escpos";
+import { sendEscposReceipt } from "../../utils/escpos";
 import { toast } from "sonner";
 
 const FALLBACK_STORE = { name: "Kanda POS", address: "", phone: "", tax_id: "", footer: "Thank you for ordering!" };
@@ -50,13 +50,14 @@ export default function ReceiptModal({ orderId, open, onClose }) {
     window.print();
   };
 
-  const downloadEscpos = (kind) => {
+  const downloadEscpos = async (kind) => {
     if (!data) return;
+    const label = kind === "kitchen" ? "Kitchen ticket" : "Receipt";
     try {
-      downloadEscposReceipt(data.order, data.store, kind, orderId);
-      toast.success(`${kind === "kitchen" ? "Kitchen ticket" : "Receipt"} ESC/POS file saved`);
+      const mode = await sendEscposReceipt(data.order, data.store, kind, orderId);
+      toast.success(mode === "printed" ? `${label} sent to printer` : `${label} ESC/POS file saved`);
     } catch {
-      toast.error("Could not generate ESC/POS file");
+      toast.error(`Could not send ${label.toLowerCase()}`);
     }
   };
 
