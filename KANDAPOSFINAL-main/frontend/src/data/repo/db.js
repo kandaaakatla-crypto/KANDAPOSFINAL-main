@@ -11,13 +11,19 @@ export const db = new Dexie("kanda_pos_offline");
 // Collections mirrored from the server via delta sync (see syncEngine.js).
 // Keyed by the server's own `id` so upserts are trivial; tenant_id is a
 // secondary index for scoping reads/writes to the active tenant.
+//
+// Note: the dining-tables collection is named `diningTables`, not `tables`
+// — Dexie instances expose their own reserved `db.tables` getter (the list
+// of Table objects in the schema), so a store literally named "tables"
+// gets shadowed by that and `db.tables.where(...)` silently isn't a table
+// proxy anymore. Cost an afternoon to track down; don't reintroduce it.
 const CACHE_STORES = {
   menuItems: "id, tenant_id, updated_at",
   categories: "id, tenant_id, updated_at",
   inventory: "id, tenant_id, updated_at",
   customers: "id, tenant_id, updated_at",
   menuSchedules: "id, tenant_id, updated_at",
-  tables: "id, tenant_id, updated_at",
+  diningTables: "id, tenant_id, updated_at",
 };
 
 db.version(1).stores({

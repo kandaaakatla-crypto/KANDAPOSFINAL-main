@@ -17,7 +17,7 @@ const COLLECTION_APIS = {
   inventory: (since) => inventoryApi.list(since),
   customers: (since) => customersApi.list(since),
   menuSchedules: (since) => menuSchedulesApi.list(since),
-  tables: (since) => tablesApi.list(since),
+  diningTables: (since) => tablesApi.list(since),
 };
 
 function cursorIsUsable(lastSyncedAt) {
@@ -43,7 +43,7 @@ export async function pullDeltas(tenantId) {
       const requestStartedAt = new Date().toISOString();
       const records = await fetchFn(useDelta ? meta.lastSyncedAt : undefined);
       if (useDelta) {
-        await repo.putMany(collection, records);
+        await repo.putMany(collection, tenantId, records);
       } else {
         await repo.replaceAll(collection, tenantId, records);
       }
@@ -96,7 +96,7 @@ export async function processOutbox(tenantId, { onOrderSynced } = {}) {
     try {
       if (m.kind === "order.create") {
         const created = await ordersApi.create({ ...m.payload, client_ref: m.idempotencyKey });
-        await repo.remapLocalOrderId(m.localOrderId, created);
+        await repo.remapLocalOrderId(m.localOrderId, created, tenantId);
         await repo.remapDependentMutations(m.localOrderId, created.id);
         resolvedThisPass.set(m.localOrderId, created.id);
         onOrderSynced?.(m.localOrderId, created);

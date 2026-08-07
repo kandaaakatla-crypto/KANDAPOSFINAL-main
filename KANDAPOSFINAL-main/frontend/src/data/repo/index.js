@@ -27,11 +27,18 @@ export async function getById(collection, id) {
 // Upsert a batch of server records into the local cache. A record with
 // `deleted_at` set is a delta-sync tombstone — remove it from the cache
 // instead of storing it.
-export async function putMany(collection, records) {
+//
+// `tenantId` is stamped onto every record here rather than trusted from the
+// payload: several list endpoints (menu items/categories, tables) return a
+// deliberately whitelisted shape that never includes `tenant_id` at all, so
+// relying on the server to supply it would silently break every tenant-scoped
+// query (`getAll` below) the moment a response omitted it.
+export async function putMany(collection, tenantId, records) {
   assertCollection(collection);
   if (!records || !records.length) return;
-  const toDelete = records.filter((r) => r.deleted_at).map((r) => r.id);
-  const toPut = records.filter((r) => !r.deleted_at);
+  const stamped = records.map((r) => ({ ...r, tenant_id: tenantId }));
+  const toDelete = stamped.filter((r) => r.deleted_at).map((r) => r.id);
+  const toPut = stamped.filter((r) => !r.deleted_at);
   await db.transaction("rw", db[collection], async () => {
     if (toPut.length) await db[collection].bulkPut(toPut);
     if (toDelete.length) await db[collection].bulkDelete(toDelete);
@@ -42,9 +49,10 @@ export async function putMany(collection, records) {
 // full-fetch fallback path — first install, or a stale/missing cursor).
 export async function replaceAll(collection, tenantId, records) {
   assertCollection(collection);
+  const stamped = (records || []).map((r) => ({ ...r, tenant_id: tenantId }));
   await db.transaction("rw", db[collection], async () => {
     await db[collection].where("tenant_id").equals(tenantId).delete();
-    if (records && records.length) await db[collection].bulkPut(records);
+    if (stamped.length) await db[collection].bulkPut(stamped);
   });
 }
 
@@ -104,9 +112,13 @@ export async function remapDependentMutations(oldLocalId, newId) {
 }
 
 // ----- Local orders (the POS's "today's orders" view) -----
+// `tenantId` is required and stamped here for the same reason as putMany/
+// replaceAll above: the Order API response never carries tenant_id, so
+// listLocalOrders' tenant-scoped query would silently return nothing if we
+// trusted the payload instead.
 
-export async function upsertLocalOrder(order) {
-  await db.localOrders.put(order);
+export async function upsertLocalOrder(order, tenantId) {
+  await db.localOrders.put({ ...order, tenant_id: tenantId });
 }
 
 export async function listLocalOrders(tenantId) {
@@ -124,9 +136,9 @@ export async function removeLocalOrder(id) {
 // Swap a locally-created order's provisional id/number for the real ones
 // once its create mutation has synced — single choke point so every screen
 // (order list, KDS, receipt reprint) picks up the swap consistently.
-export async function remapLocalOrderId(oldLocalId, newOrder) {
+export async function remapLocalOrderId(oldLocalId, newOrder, tenantId) {
   await db.transaction("rw", db.localOrders, async () => {
     await db.localOrders.delete(oldLocalId);
-    await db.localOrders.put(newOrder);
+    await db.localOrders.put({ ...newOrder, tenant_id: tenantId });
   });
 }
