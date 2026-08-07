@@ -3,6 +3,10 @@ import { usePos } from "../../store/PosContext";
 import { tablesApi } from "../../api/client";
 import { LayoutGrid, Plus, Save, Trash2, Square, Circle, RectangleHorizontal, Move, RotateCw } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 const GRID = 10;
 const MIN_SIZE = 40;
@@ -171,7 +175,6 @@ export default function TableLayoutEditor({ onExit }) {
 
   const removeTable = async () => {
     if (!selected) return;
-    if (!window.confirm(`Remove table ${selected.number}?`)) return;
     await tablesApi.remove(selected.id);
     setLocalTables((ts) => ts.filter((t) => t.id !== selected.id));
     setSelectedId(null);
@@ -264,11 +267,25 @@ export default function TableLayoutEditor({ onExit }) {
               {Math.round(selected.width)} × {Math.round(selected.height)} px · {selected.rotation || 0}°
             </div>
 
-            <button data-testid="layout-remove-table" onClick={removeTable}
-              className="pos-btn w-full h-9 rounded-md text-xs font-bold flex items-center justify-center gap-1.5"
-              style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
-              <Trash2 className="w-3.5 h-3.5" /> Remove table
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button data-testid="layout-remove-table"
+                  className="pos-btn w-full h-9 rounded-md text-xs font-bold flex items-center justify-center gap-1.5"
+                  style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+                  <Trash2 className="w-3.5 h-3.5" /> Remove table
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Remove table?</AlertDialogTitle>
+                  <AlertDialogDescription>Remove table {selected.number}?</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction data-testid="layout-remove-table-confirm" onClick={removeTable}>Remove</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
             <div className="text-[10px] flex items-start gap-1.5 mt-2 pt-2" style={{ color: "var(--pos-muted)", borderTop: "1px solid var(--pos-border)" }}>
               <Move className="w-3 h-3 mt-0.5 flex-shrink-0" /> Drag to move · drag the orange corner to resize · drag the orange dot to rotate.

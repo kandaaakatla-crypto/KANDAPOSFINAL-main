@@ -4,6 +4,10 @@ import { Minus, Plus, AlertTriangle, PackageCheck, Truck, Trash, Search, PlusCir
 import { toast } from "sonner";
 import { WastePanel } from "./OpsPanels";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { suppliersApi, inventoryApi, locationsApi } from "../../api/client";
@@ -97,7 +101,6 @@ export default function InventoryScreen() {
     }
   };
   const removeSupplier = async (s) => {
-    if (!window.confirm(`Delete supplier "${s.name}"?`)) return;
     try { await suppliersApi.remove(s.id); loadSuppliers(); toast.success("Supplier removed"); }
     catch (e) { toast.error(e?.response?.data?.detail || "Could not delete supplier"); }
   };
@@ -165,7 +168,6 @@ export default function InventoryScreen() {
   };
 
   const remove = async (item) => {
-    if (!window.confirm(`Delete "${item.name}" from inventory?`)) return;
     await deleteInventoryItem(item.id);
     toast.success("Item removed");
   };
@@ -329,7 +331,21 @@ export default function InventoryScreen() {
                       {isManager && (
                         <>
                           <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-3.5 h-3.5 text-white" /></button>
-                          <button data-testid={`inv-delete-${i.id}`} onClick={() => remove(i)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <button data-testid={`inv-delete-${i.id}`} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete inventory item?</AlertDialogTitle>
+                                <AlertDialogDescription>Delete "{i.name}" from inventory?</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction data-testid={`inv-delete-confirm-${i.id}`} onClick={() => remove(i)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </>
                       )}
                     </div>
@@ -408,7 +424,21 @@ export default function InventoryScreen() {
                   {isManager && (
                     <>
                       <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-4 h-4 text-white" /></button>
-                      <button data-testid={`inv-delete-${i.id}`} onClick={() => remove(i)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Trash2 className="w-4 h-4 text-red-400" /></button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button data-testid={`inv-delete-${i.id}`} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Trash2 className="w-4 h-4 text-red-400" /></button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete inventory item?</AlertDialogTitle>
+                            <AlertDialogDescription>Delete "{i.name}" from inventory?</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction data-testid={`inv-delete-confirm-${i.id}`} onClick={() => remove(i)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </>
                   )}
                 </div>
@@ -481,7 +511,21 @@ export default function InventoryScreen() {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button data-testid={`supplier-edit-${s.id}`} onClick={() => openEditSupplier(s)} className="pos-btn w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}><Pencil className="w-3.5 h-3.5 text-white" /></button>
-                  <button data-testid={`supplier-delete-${s.id}`} onClick={() => removeSupplier(s)} className="pos-btn w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button data-testid={`supplier-delete-${s.id}`} className="pos-btn w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete supplier?</AlertDialogTitle>
+                        <AlertDialogDescription>Delete supplier "{s.name}"?</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction data-testid={`supplier-delete-confirm-${s.id}`} onClick={() => removeSupplier(s)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             ))}

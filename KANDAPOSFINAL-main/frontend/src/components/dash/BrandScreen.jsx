@@ -655,7 +655,6 @@ function RoyaltiesTab({ brand }) {
   useEffect(() => { loadReport(); loadInvoices(); }, [brand.id]); // eslint-disable-line
 
   const generateInvoices = async () => {
-    if (!window.confirm(`Generate royalty invoices for ${range.start} to ${range.end}? One per store with a non-zero amount owed.`)) return;
     setGenerating(true);
     try {
       const end = new Date(`${range.end}T00:00:00Z`); end.setUTCDate(end.getUTCDate() + 1);
@@ -727,11 +726,27 @@ function RoyaltiesTab({ brand }) {
           <label><span className="text-[10px] uppercase" style={{ color: "var(--pos-muted)" }}>To</span>
             <Input type="date" value={range.end} onChange={(e) => setRange((r) => ({ ...r, end: e.target.value }))}
               className="h-9 text-white text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} /></label>
-          <button data-testid="brand-generate-invoices-btn" onClick={generateInvoices} disabled={generating}
-            className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"
-            style={{ background: "var(--pos-accent)" }}>
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} Generate invoices
-          </button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button data-testid="brand-generate-invoices-btn" disabled={generating}
+                className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"
+                style={{ background: "var(--pos-accent)" }}>
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} Generate invoices
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Generate royalty invoices?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Generate royalty invoices for {range.start} to {range.end}? One per store with a non-zero amount owed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction data-testid="brand-generate-invoices-confirm-btn" onClick={generateInvoices}>Generate</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
         <div className="space-y-1.5">
           {invoices.map((inv) => (
@@ -793,7 +808,6 @@ function MarketingTab({ brand }) {
 
   const sendCampaign = async () => {
     if (!smsBody.trim()) return;
-    if (!window.confirm("Send this SMS to every customer across every store in the brand?")) return;
     setSending(true);
     try {
       const r = await brandApi.smsBroadcast(brand.id, { body: smsBody });
@@ -842,11 +856,27 @@ function MarketingTab({ brand }) {
         </p>
         <Textarea value={smsBody} onChange={(e) => setSmsBody(e.target.value)} rows={3} placeholder="Hi {name}, this weekend only…"
           className="text-white text-sm mb-3" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-        <button data-testid="brand-send-campaign-btn" onClick={sendCampaign} disabled={sending}
-          className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"
-          style={{ background: "var(--pos-accent)" }}>
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Send to all stores
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button data-testid="brand-send-campaign-btn" disabled={sending || !smsBody.trim()}
+              className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2 disabled:opacity-40"
+              style={{ background: "var(--pos-accent)" }}>
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Send to all stores
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Send SMS to all stores?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Send this SMS to every customer across every store in the brand?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction data-testid="brand-send-campaign-confirm-btn" onClick={sendCampaign}>Send</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Card>
     </div>
   );

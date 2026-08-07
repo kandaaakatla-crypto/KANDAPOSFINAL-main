@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { locationsApi } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { MapPin, Plus, ChevronDown, Trash2 } from "lucide-react";
@@ -62,7 +66,6 @@ export default function LocationSwitcher({ storeName, isManager }) {
   };
 
   const removeLoc = async (id) => {
-    if (!window.confirm("Delete this location?")) return;
     try { await locationsApi.remove(id); await load(); }
     catch (e) { toast.error(e?.response?.data?.detail || "Failed"); }
   };
@@ -118,10 +121,24 @@ export default function LocationSwitcher({ storeName, isManager }) {
                           className="pos-btn text-[10px] px-1.5 py-0.5 rounded" style={{ color: "var(--pos-muted)" }}>Default</button>
                       )}
                       {list.length > 1 && (
-                        <button onClick={() => removeLoc(l.id)} title="Delete location"
-                          className="pos-btn p-1 rounded" style={{ color: "#fca5a5" }}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button title="Delete location"
+                              className="pos-btn p-1 rounded" style={{ color: "#fca5a5" }}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete location?</AlertDialogTitle>
+                              <AlertDialogDescription>Delete "{l.name}"?</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => removeLoc(l.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </>
                   )}

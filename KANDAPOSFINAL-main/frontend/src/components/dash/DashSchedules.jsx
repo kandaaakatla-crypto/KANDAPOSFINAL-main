@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { menuSchedulesApi, menuApi } from "../../api/client";
 import { Clock, Plus, Trash2, Loader2, Pencil } from "lucide-react";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 const DAY_LABELS = [
   { n: 1, l: "Mon" }, { n: 2, l: "Tue" }, { n: 3, l: "Wed" }, { n: 4, l: "Thu" },
@@ -93,7 +97,6 @@ export default function DashSchedules() {
   };
 
   const remove = async (s) => {
-    if (!window.confirm(`Delete schedule "${s.name}"?`)) return;
     try {
       await menuSchedulesApi.remove(s.id);
       toast.success("Schedule deleted");
@@ -162,10 +165,24 @@ export default function DashSchedules() {
                       className="pos-btn h-7 w-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
                       <Pencil className="w-3.5 h-3.5" style={{ color: "var(--pos-muted)" }} />
                     </button>
-                    <button data-testid={`schedule-delete-${s.id}`} onClick={() => remove(s)}
-                      className="pos-btn w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button data-testid={`schedule-delete-${s.id}`}
+                          className="pos-btn w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
+                          <AlertDialogDescription>Delete schedule "{s.name}"?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction data-testid={`schedule-delete-confirm-${s.id}`} onClick={() => remove(s)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}

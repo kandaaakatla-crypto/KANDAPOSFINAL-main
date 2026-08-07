@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import { Input } from "../ui/input";
 import { LayoutGrid, Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -30,7 +34,6 @@ export default function CategoryManagerModal({ open, onClose, onChanged }) {
   };
 
   const remove = async (c) => {
-    if (!window.confirm(`Delete category "${c.name}"?`)) return;
     try {
       await menuApi.removeCategory(c.id);
       toast.success("Category removed");
@@ -94,10 +97,24 @@ export default function CategoryManagerModal({ open, onClose, onChanged }) {
                 style={{ background: "var(--pos-accent)", color: "#fff" }}>
                 <Save className="w-3.5 h-3.5" />
               </button>
-              <button data-testid={`category-delete-${c.id}`} onClick={() => remove(c)} className="pos-btn h-9 w-9 rounded-md flex items-center justify-center"
-                style={{ background: "var(--pos-panel)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button data-testid={`category-delete-${c.id}`} className="pos-btn h-9 w-9 rounded-md flex items-center justify-center"
+                    style={{ background: "var(--pos-panel)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete category?</AlertDialogTitle>
+                    <AlertDialogDescription>Delete category "{c.name}"?</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction data-testid={`category-delete-confirm-${c.id}`} onClick={() => remove(c)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           ))}
         </div>

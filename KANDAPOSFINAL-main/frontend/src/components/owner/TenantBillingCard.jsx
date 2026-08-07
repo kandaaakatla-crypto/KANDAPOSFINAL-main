@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { ownerData } from "../../api/ownerClient";
 import { CreditCard, Loader2, Link as LinkIcon, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 const STATUS_COLOR = {
   active: "#22c55e",
@@ -42,7 +46,6 @@ export default function TenantBillingCard({ tenantId }) {
   };
 
   const onCancel = async () => {
-    if (!window.confirm("Cancel this subscription at the end of the current cycle?")) return;
     setBusy(true);
     try {
       await ownerData.cancel(tenantId);
@@ -113,11 +116,25 @@ export default function TenantBillingCard({ tenantId }) {
             {billing.subscription_id ? "Send new payment link" : "Create subscription"}
           </button>
           {billing.subscription_id && (
-            <button data-testid="cancel-sub-btn" onClick={onCancel} disabled={busy}
-              className="pos-btn h-10 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5"
-              style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
-              <XCircle className="w-3.5 h-3.5" /> Cancel at cycle end
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button data-testid="cancel-sub-btn" disabled={busy}
+                  className="pos-btn h-10 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5"
+                  style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+                  <XCircle className="w-3.5 h-3.5" /> Cancel at cycle end
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
+                  <AlertDialogDescription>Cancel this subscription at the end of the current cycle?</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep subscription</AlertDialogCancel>
+                  <AlertDialogAction data-testid="cancel-sub-confirm-btn" onClick={onCancel}>Cancel subscription</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
 

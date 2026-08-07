@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { ownerData } from "../../api/ownerClient";
 import { ChefHat, Package, Monitor, Copy, RotateCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 function TokenUrlRow({ testid, url }) {
   return (
@@ -31,7 +35,6 @@ export default function KdsTokenCard({ tenantId }) {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [tenantId]);
 
   const rotate = async () => {
-    if (!window.confirm("Rotate the kiosk token? Any Kitchen Display, Packing Station, or Customer Display tablet using the old URL will need to reload with the new one.")) return;
     setBusy(true);
     try {
       const r = await ownerData.rotateKdsToken(tenantId);
@@ -57,11 +60,27 @@ export default function KdsTokenCard({ tenantId }) {
           <ChefHat className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
           <span className="text-sm font-semibold text-white">Kiosk tablet tokens</span>
         </div>
-        <button data-testid="kds-rotate" onClick={rotate} disabled={busy}
-          className="pos-btn h-8 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-1.5"
-          style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
-          {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />} Rotate
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button data-testid="kds-rotate" disabled={busy}
+              className="pos-btn h-8 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-1.5"
+              style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+              {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />} Rotate
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Rotate the kiosk token?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Any Kitchen Display, Packing Station, or Customer Display tablet using the old URL will need to reload with the new one.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction data-testid="kds-rotate-confirm" onClick={rotate}>Rotate</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       <div className="p-4 space-y-5">
         <div className="space-y-3">

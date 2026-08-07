@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { wasteApi, cashDrawerApi, tipsApi, inventoryApi } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { PlusCircle, Trash2 } from "lucide-react";
@@ -200,7 +204,6 @@ export function TipPoolPanel() {
     } catch (e) { toast.error(e?.response?.data?.detail || "Failed"); }
   };
   const del = async (id) => {
-    if (!window.confirm("Delete this tip pool?")) return;
     await tipsApi.remove(id); load();
   };
   return (
@@ -219,9 +222,23 @@ export function TipPoolPanel() {
                 <div className="text-sm font-bold text-white">{t.shift_date} · ₹{t.total_pool.toFixed(2)}</div>
                 <div className="text-xs" style={{ color: "var(--pos-muted)" }}>By {t.created_by} · {new Date(t.at).toLocaleString()}</div>
               </div>
-              <button onClick={() => del(t.id)} className="pos-btn p-2 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
-                <Trash2 className="w-4 h-4 text-white" />
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="pos-btn p-2 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
+                    <Trash2 className="w-4 h-4 text-white" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete tip pool?</AlertDialogTitle>
+                    <AlertDialogDescription>Delete this tip pool?</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => del(t.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
             <div className="space-y-1">
               {t.allocations.map((a) => (

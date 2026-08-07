@@ -4,6 +4,10 @@ import { useDash } from "../../store/DashContext";
 import { centralSupplyApi, brandApi } from "../../api/client";
 import { Warehouse, Plus, Loader2, Trash2, Pencil, Send, History, PackagePlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import { Input } from "../ui/input";
 
 const EMPTY = { name: "", unit: "", stock: "", cost_per_unit: "", reorder: "" };
@@ -74,7 +78,6 @@ export default function DashCentralSupply() {
   };
 
   const remove = async (i) => {
-    if (!window.confirm(`Delete "${i.name}" from the central catalog?`)) return;
     try { await centralSupplyApi.removeItem(brandId, i.id); toast.success("Item removed"); load(); }
     catch (e) { toast.error(e?.response?.data?.detail || "Could not delete item"); }
   };
@@ -168,9 +171,23 @@ export default function DashCentralSupply() {
                     <button data-testid={`central-item-edit-${i.id}`} onClick={() => startEdit(i)} className="pos-btn h-7 w-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
                       <Pencil className="w-3.5 h-3.5" style={{ color: "var(--pos-muted)" }} />
                     </button>
-                    <button data-testid={`central-item-delete-${i.id}`} onClick={() => remove(i)} className="pos-btn w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button data-testid={`central-item-delete-${i.id}`} className="pos-btn w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete central item?</AlertDialogTitle>
+                          <AlertDialogDescription>Delete "{i.name}" from the central catalog?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction data-testid={`central-item-delete-confirm-${i.id}`} onClick={() => remove(i)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}

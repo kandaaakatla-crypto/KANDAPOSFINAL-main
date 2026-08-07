@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { staffApi } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Switch } from "../ui/switch";
@@ -59,7 +63,6 @@ export default function StaffScreen() {
   };
 
   const deactivate = async (s) => {
-    if (!window.confirm(`Deactivate ${s.name}? Their timesheets stay intact.`)) return;
     try {
       await staffApi.remove(s.id);
       toast.success(`${s.name} deactivated`);
@@ -134,10 +137,24 @@ export default function StaffScreen() {
                     <Pencil className="w-4 h-4 text-white" />
                   </button>
                   {s.active && (
-                    <button data-testid={`staff-deactivate-${s.id}`} onClick={() => deactivate(s)}
-                      className="pos-btn p-2 rounded-md inline-flex ml-2" style={{ background: "var(--pos-panel-2)" }}>
-                      <Trash2 className="w-4 h-4 text-white" />
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button data-testid={`staff-deactivate-${s.id}`}
+                          className="pos-btn p-2 rounded-md inline-flex ml-2" style={{ background: "var(--pos-panel-2)" }}>
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Deactivate {s.name}?</AlertDialogTitle>
+                          <AlertDialogDescription>Their timesheets stay intact.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction data-testid={`staff-deactivate-confirm-${s.id}`} onClick={() => deactivate(s)}>Deactivate</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </td>
               </tr>
@@ -179,10 +196,24 @@ export default function StaffScreen() {
                       <Pencil className="w-4 h-4 text-white" />
                     </button>
                     {s.active && (
-                      <button data-testid={`staff-deactivate-${s.id}`} onClick={() => deactivate(s)}
-                        className="pos-btn w-10 h-10 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}>
-                        <Trash2 className="w-4 h-4 text-white" />
-                      </button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button data-testid={`staff-deactivate-${s.id}`}
+                            className="pos-btn w-10 h-10 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}>
+                            <Trash2 className="w-4 h-4 text-white" />
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Deactivate {s.name}?</AlertDialogTitle>
+                            <AlertDialogDescription>Their timesheets stay intact.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction data-testid={`staff-deactivate-confirm-${s.id}`} onClick={() => deactivate(s)}>Deactivate</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </div>
                 </div>

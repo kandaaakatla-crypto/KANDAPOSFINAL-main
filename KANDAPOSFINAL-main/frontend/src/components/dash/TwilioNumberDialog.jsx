@@ -3,6 +3,10 @@ import { voiceApi } from "../../api/client";
 import { toast } from "sonner";
 import { ShoppingCart, Search, Loader2, CheckCircle2, PhoneCall, MessageSquare, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
@@ -46,7 +50,6 @@ export default function TwilioNumberDialog({ open, onClose, onPurchased }) {
   };
 
   const buy = async (num) => {
-    if (!window.confirm(`Buy ${num.phone_number}?\n\nThis will charge your Twilio account (typically $1–$6/month + per-minute usage) and set this number as your restaurant's voice agent number.`)) return;
     setBuyingNum(num.phone_number);
     try {
       const r = await voiceApi.purchaseNumber({ phone_number: num.phone_number, set_as_tenant_default: true });
@@ -152,14 +155,30 @@ export default function TwilioNumberDialog({ open, onClose, onPurchased }) {
                     </div>
                   </td>
                   <td className="py-2 px-3 text-right">
-                    <button data-testid={`buy-btn-${n.phone_number}`}
-                      onClick={() => buy(n)} disabled={buyingNum === n.phone_number}
-                      className="pos-btn h-8 px-3 rounded-md text-xs font-bold text-white"
-                      style={{ background: "#0ea5e9", opacity: buyingNum === n.phone_number ? 0.5 : 1 }}>
-                      {buyingNum === n.phone_number
-                        ? <Loader2 className="w-3.5 h-3.5 animate-spin inline" />
-                        : "Buy"}
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button data-testid={`buy-btn-${n.phone_number}`}
+                          disabled={buyingNum === n.phone_number}
+                          className="pos-btn h-8 px-3 rounded-md text-xs font-bold text-white"
+                          style={{ background: "#0ea5e9", opacity: buyingNum === n.phone_number ? 0.5 : 1 }}>
+                          {buyingNum === n.phone_number
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin inline" />
+                            : "Buy"}
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Buy {n.phone_number}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will charge your Twilio account (typically $1–$6/month + per-minute usage) and set this number as your restaurant's voice agent number.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction data-testid={`buy-btn-confirm-${n.phone_number}`} onClick={() => buy(n)}>Buy number</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </td>
                 </tr>
               ))}

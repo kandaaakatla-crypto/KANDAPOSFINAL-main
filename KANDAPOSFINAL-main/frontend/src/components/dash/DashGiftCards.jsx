@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { giftCardsApi, storeCreditApi, customersApi } from "../../api/client";
 import { Wallet, Gift, Plus, Loader2, Search, Ban, Copy } from "lucide-react";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 const EMPTY_CARD = { value: "", recipient_name: "", recipient_phone: "", recipient_email: "" };
 
@@ -81,7 +85,6 @@ function GiftCardsTab() {
   };
 
   const cancelCard = async (card) => {
-    if (!window.confirm(`Cancel gift card ${card.code}? This can't be undone.`)) return;
     try {
       await giftCardsApi.cancel(card.id);
       toast.success(`Gift card ${card.code} cancelled`);
@@ -127,11 +130,25 @@ function GiftCardsTab() {
                   </div>
                 </div>
                 {c.status === "active" && (
-                  <button data-testid={`gift-card-cancel-${c.id}`} onClick={() => cancelCard(c)}
-                    className="pos-btn h-7 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-1 shrink-0"
-                    style={{ background: "var(--pos-panel)", color: "#f87171", border: "1px solid var(--pos-border)" }}>
-                    <Ban className="w-3 h-3" /> Cancel
-                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button data-testid={`gift-card-cancel-${c.id}`}
+                        className="pos-btn h-7 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-1 shrink-0"
+                        style={{ background: "var(--pos-panel)", color: "#f87171", border: "1px solid var(--pos-border)" }}>
+                        <Ban className="w-3 h-3" /> Cancel
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel gift card?</AlertDialogTitle>
+                        <AlertDialogDescription>Cancel gift card {c.code}? This can't be undone.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep card</AlertDialogCancel>
+                        <AlertDialogAction data-testid={`gift-card-cancel-confirm-${c.id}`} onClick={() => cancelCard(c)}>Cancel card</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
             ))}

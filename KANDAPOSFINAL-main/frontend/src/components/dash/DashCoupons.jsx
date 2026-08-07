@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { couponsApi } from "../../api/client";
 import { Tag, Plus, Trash2, Loader2, Percent, IndianRupee } from "lucide-react";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 const EMPTY = { code: "", kind: "percent", value: "", valid_from: "", valid_to: "", max_uses: "", min_subtotal: "" };
 
@@ -59,7 +63,6 @@ export default function DashCoupons() {
   };
 
   const remove = async (c) => {
-    if (!window.confirm(`Delete coupon ${c.code}?`)) return;
     try {
       await couponsApi.remove(c.id);
       toast.success(`Coupon ${c.code} deleted`);
@@ -116,10 +119,24 @@ export default function DashCoupons() {
                       style={{ background: c.active ? "var(--pos-panel)" : "var(--pos-accent)", color: c.active ? "var(--pos-muted)" : "#fff", border: "1px solid var(--pos-border)" }}>
                       {c.active ? "Deactivate" : "Activate"}
                     </button>
-                    <button data-testid={`coupon-delete-${c.id}`} onClick={() => remove(c)}
-                      className="pos-btn w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button data-testid={`coupon-delete-${c.id}`}
+                          className="pos-btn w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete coupon?</AlertDialogTitle>
+                          <AlertDialogDescription>Delete coupon {c.code}?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction data-testid={`coupon-delete-confirm-${c.id}`} onClick={() => remove(c)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}

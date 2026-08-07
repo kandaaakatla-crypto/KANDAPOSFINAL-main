@@ -3,6 +3,10 @@ import { useDash, canAddLocation } from "../../store/DashContext";
 import { MapPin, Plus, CheckCircle2, Pencil, Trash2, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import PlanUpgradeDialog from "../PlanUpgradeDialog";
 import { plansApi } from "../../api/client";
 
@@ -62,7 +66,6 @@ export default function DashLocations() {
   };
 
   const remove = async (loc) => {
-    if (!window.confirm(`Delete "${loc.name}"? This can't be undone.`)) return;
     try {
       await api.delete(`/locations/${loc.id}`);
       toast.success("Location deleted");
@@ -131,10 +134,24 @@ export default function DashLocations() {
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   {!l.is_default && (
-                    <button data-testid={`del-loc-${l.id}`} onClick={() => remove(l)}
-                      className="pos-btn p-1.5 rounded" style={{ background: "var(--pos-panel-2)", color: "#f87171" }}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button data-testid={`del-loc-${l.id}`}
+                          className="pos-btn p-1.5 rounded" style={{ background: "var(--pos-panel-2)", color: "#f87171" }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete location?</AlertDialogTitle>
+                          <AlertDialogDescription>Delete "{l.name}"? This can't be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction data-testid={`del-loc-confirm-${l.id}`} onClick={() => remove(l)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
               )}

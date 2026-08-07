@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import { Input } from "../ui/input";
 import { CalendarClock, Plus, Loader2, Phone, X, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -73,7 +77,6 @@ export default function ReservationModal({ open, onClose }) {
   };
 
   const remove = async (id) => {
-    if (!window.confirm("Delete this reservation?")) return;
     try { await reservationsApi.remove(id); load(); } catch { toast.error("Could not delete"); }
   };
 
@@ -120,8 +123,22 @@ export default function ReservationModal({ open, onClose }) {
                     style={{ background: "rgba(239,68,68,0.15)", color: "#fca5a5" }}><X className="w-3 h-3 inline" /> No-show</button>
                 </>
               )}
-              <button data-testid={`reservation-delete-${r.id}`} onClick={() => remove(r.id)} className="pos-btn h-8 w-8 rounded flex items-center justify-center"
-                style={{ background: "var(--pos-panel)", color: "#fca5a5" }}><X className="w-3.5 h-3.5" /></button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button data-testid={`reservation-delete-${r.id}`} className="pos-btn h-8 w-8 rounded flex items-center justify-center"
+                    style={{ background: "var(--pos-panel)", color: "#fca5a5" }}><X className="w-3.5 h-3.5" /></button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete reservation?</AlertDialogTitle>
+                    <AlertDialogDescription>Delete this reservation for {r.customer_name}?</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction data-testid={`reservation-delete-confirm-${r.id}`} onClick={() => remove(r.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           ))}
         </div>
