@@ -167,8 +167,8 @@ export const tenantApi = {
 };
 
 export const menuApi = {
-  categories: () => api.get("/menu/categories").then((r) => r.data),
-  items: () => api.get("/menu/items").then((r) => r.data),
+  categories: (since) => api.get("/menu/categories", { params: since ? { since } : undefined }).then((r) => r.data),
+  items: (since) => api.get("/menu/items", { params: since ? { since } : undefined }).then((r) => r.data),
   create: (payload) => api.post("/menu/items", payload).then((r) => r.data),
   update: (id, payload) => api.put(`/menu/items/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/menu/items/${id}`).then((r) => r.data),
@@ -183,14 +183,14 @@ export const menuApi = {
 };
 
 export const menuSchedulesApi = {
-  list: () => api.get("/menu/schedules").then((r) => r.data),
+  list: (since) => api.get("/menu/schedules", { params: since ? { since } : undefined }).then((r) => r.data),
   create: (payload) => api.post("/menu/schedules", payload).then((r) => r.data),
   update: (id, payload) => api.put(`/menu/schedules/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/menu/schedules/${id}`).then((r) => r.data),
 };
 
 export const tablesApi = {
-  list: () => api.get("/tables").then((r) => r.data),
+  list: (since) => api.get("/tables", { params: since ? { since } : undefined }).then((r) => r.data),
   update: (id, payload) => api.patch(`/tables/${id}`, payload).then((r) => r.data),
   create: (payload) => api.post("/tables", payload).then((r) => r.data),
   remove: (id) => api.delete(`/tables/${id}`).then((r) => r.data),
@@ -215,7 +215,7 @@ export const reservationsApi = {
 };
 
 export const customersApi = {
-  list: () => api.get("/customers").then((r) => r.data),
+  list: (since) => api.get("/customers", { params: since ? { since } : undefined }).then((r) => r.data),
   trash: () => api.get("/customers/trash").then((r) => r.data),
   search: (phone) => api.get("/customers/search", { params: { phone } }).then((r) => r.data),
   create: (payload) => api.post("/customers", payload).then((r) => r.data),
@@ -225,7 +225,7 @@ export const customersApi = {
 };
 
 export const inventoryApi = {
-  list: () => api.get("/inventory").then((r) => r.data),
+  list: (since) => api.get("/inventory", { params: since ? { since } : undefined }).then((r) => r.data),
   create: (payload) => api.post("/inventory", payload).then((r) => r.data),
   update: (id, payload) => api.patch(`/inventory/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/inventory/${id}`).then((r) => r.data),
