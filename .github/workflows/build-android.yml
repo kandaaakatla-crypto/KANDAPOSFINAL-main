@@ -61,7 +61,13 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew bundleRelease
+        # chmod belt-and-suspenders: gradlew was committed from a Windows
+        # checkout, which doesn't track the Unix executable bit, so it can
+        # land non-executable on a Linux runner regardless of the repo's
+        # actual git file mode.
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease
 
       - name: Remove decoded keystore
         if: always()

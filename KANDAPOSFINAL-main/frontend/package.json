@@ -1,6 +1,8 @@
 {
   "name": "frontend",
   "version": "0.1.0",
+  "description": "Kanda POS — restaurant and retail point-of-sale",
+  "author": "Kanda POS",
   "private": true,
   "main": "electron/main.js",
   "dependencies": {
@@ -78,6 +80,7 @@
     "electron:build": "npm run build && electron-builder --publish never"
   },
   "build": {
+    "extends": null,
     "appId": "com.kandapos.app",
     "productName": "Kanda POS",
     "files": [
