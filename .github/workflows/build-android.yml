@@ -48,7 +48,9 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          # Capacitor's own Android library module compiles against Java 21
+          # source compatibility — 17 fails with "invalid source release: 21".
+          java-version: "21"
 
       - name: Decode release keystore
         working-directory: KANDAPOSFINAL-main/frontend/android
