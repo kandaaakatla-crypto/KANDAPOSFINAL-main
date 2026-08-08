@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write # only needed for the publish-to-GitHub-Releases step below
     steps:
       - uses: actions/checkout@v4
 
@@ -30,7 +32,7 @@ jobs:
           REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
         run: npm run build
 
-      - name: Build and publish Windows installer
+      - name: Build Windows installer
         working-directory: KANDAPOSFINAL-main/frontend
         env:
           # electron-builder reads these automatically for Authenticode
@@ -40,9 +42,19 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
           # electron-updater's feed (package.json's build.publish) is
           # GitHub Releases on this same repo — the default token can
-          # publish there.
+          # publish there. Only actually publish once there's a real
+          # signing cert configured: a manual/no-cert run (e.g. testing the
+          # pipeline before Part 1 of the setup guide is done) should still
+          # produce a downloadable artifact instead of failing on a publish
+          # step nobody asked for yet.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --publish always
+        shell: bash
+        run: |
+          if [ -n "$CSC_LINK" ]; then
+            npx electron-builder --publish always
+          else
+            npx electron-builder --publish never
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
