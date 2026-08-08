@@ -81,9 +81,13 @@ jobs:
         # checkout, which doesn't track the Unix executable bit, so it can
         # land non-executable on a Linux runner regardless of the repo's
         # actual git file mode.
+        # bundleRelease (.aab) is what Play Console wants; assembleRelease
+        # (.apk) is what you actually sideload onto a phone directly — an
+        # .aab can't be installed on a device without running it through
+        # bundletool first. Both share the same signingConfig above.
         run: |
           chmod +x ./gradlew
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease assembleRelease
 
       - name: Remove decoded keystore
         if: always()
@@ -94,4 +98,10 @@ jobs:
         with:
           name: kanda-pos-release-aab
           path: KANDAPOSFINAL-main/frontend/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-pos-release-apk
+          path: KANDAPOSFINAL-main/frontend/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 90
