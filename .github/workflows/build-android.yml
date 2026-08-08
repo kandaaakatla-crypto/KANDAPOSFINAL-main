@@ -53,7 +53,11 @@ jobs:
           java-version: "21"
 
       - name: Decode release keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        # `if:` can't reference the secrets context directly on this runner
+        # ("Unrecognized named-value: 'secrets'") — so this always runs; with
+        # no secret configured it just writes an empty file, which is fine
+        # since the build step below only points Gradle at it when the
+        # secret is actually present (see ANDROID_KEYSTORE_PATH below).
         # app/build.gradle's `file(releaseKeystorePath)` resolves relative
         # to the app/ module's own directory, not the android/ project root
         # — the decoded file has to land here or Gradle reports "Keystore
