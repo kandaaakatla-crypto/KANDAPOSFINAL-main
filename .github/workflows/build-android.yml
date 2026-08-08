@@ -53,13 +53,23 @@ jobs:
           java-version: "21"
 
       - name: Decode release keystore
-        working-directory: KANDAPOSFINAL-main/frontend/android
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        # app/build.gradle's `file(releaseKeystorePath)` resolves relative
+        # to the app/ module's own directory, not the android/ project root
+        # — the decoded file has to land here or Gradle reports "Keystore
+        # file ... not found" even with a correct path string.
+        working-directory: KANDAPOSFINAL-main/frontend/android/app
         run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
 
       - name: Build signed release AAB
         working-directory: KANDAPOSFINAL-main/frontend/android
         env:
-          ANDROID_KEYSTORE_PATH: release.keystore
+          # Empty (not just "unset") when the secret is absent — build.gradle's
+          # signingConfigs.release block only activates when this is truthy,
+          # so a no-secret run produces a normal unsigned bundle instead of
+          # failing when Gradle looks for a keystore file that was never
+          # written.
+          ANDROID_KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'release.keystore' || '' }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -73,7 +83,7 @@ jobs:
 
       - name: Remove decoded keystore
         if: always()
-        working-directory: KANDAPOSFINAL-main/frontend/android
+        working-directory: KANDAPOSFINAL-main/frontend/android/app
         run: rm -f release.keystore
 
       - uses: actions/upload-artifact@v4
