@@ -18,7 +18,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # @capacitor/cli requires Node >=22 (`npx cap sync android` below
+          # fails outright on 20, which is otherwise fine for the plain
+          # `npm run build` step).
+          node-version: 22
 
       - name: Install frontend dependencies
         working-directory: KANDAPOSFINAL-main/frontend
