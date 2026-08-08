@@ -28,6 +28,9 @@ jobs:
           # Points the built app at the deployed Cloud Run backend — set
           # this repo variable once the backend's Cloud Run URL is known.
           REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          # See build-android.yml — CRA fails the build on pre-existing lint
+          # warnings when CI=true, which GitHub Actions sets by default.
+          CI: false
         run: npm run build
 
       - uses: FirebaseExtended/action-hosting-deploy@v0

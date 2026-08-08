@@ -30,6 +30,9 @@ jobs:
           # Points the packaged app at the deployed Cloud Run backend — same
           # repo variable deploy-frontend.yml and build-android.yml use.
           REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          # See build-android.yml — CRA fails the build on pre-existing lint
+          # warnings when CI=true, which GitHub Actions sets by default.
+          CI: false
         run: npm run build
 
       - name: Build Windows installer

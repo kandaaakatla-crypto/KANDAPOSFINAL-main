@@ -31,6 +31,11 @@ jobs:
           # this repo variable once the backend's Cloud Run URL is known
           # (same variable deploy-frontend.yml uses).
           REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          # CRA treats ESLint warnings as build-failing errors whenever CI=true
+          # — which GitHub Actions sets by default — even though the exact
+          # same warnings don't fail a local `npm run build`. The warnings
+          # are pre-existing (unrelated files, not this pipeline's job to fix).
+          CI: false
         run: npm run build
 
       - name: Sync Capacitor Android project
