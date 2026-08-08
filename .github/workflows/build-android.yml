@@ -103,5 +103,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: kanda-pos-release-apk
-          path: KANDAPOSFINAL-main/frontend/android/app/build/outputs/apk/release/app-release.apk
+          # AGP names this app-release.apk when a real signingConfig is
+          # attached, or app-release-unsigned.apk when it isn't (no
+          # ANDROID_KEYSTORE_BASE64 secret configured yet) — glob covers both.
+          path: KANDAPOSFINAL-main/frontend/android/app/build/outputs/apk/release/app-release*.apk
           retention-days: 90
