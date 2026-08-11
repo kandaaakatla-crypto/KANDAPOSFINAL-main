@@ -39,9 +39,12 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            if (releaseKeystorePath) {
-                signingConfig signingConfigs.release
-            }
+            // Always sign, even with no real release keystore configured —
+            // an *unsigned* APK isn't just "not ready for Play Store", it's
+            // flat-out uninstallable on a real device ("package appears to
+            // be invalid"). Fall back to AGP's built-in auto-generated debug
+            // key so the build stays sideloadable for testing either way.
+            signingConfig releaseKeystorePath ? signingConfigs.release : signingConfigs.debug
         }
     }
 }
