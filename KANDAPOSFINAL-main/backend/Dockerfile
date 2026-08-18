@@ -12,7 +12,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# emergentintegrations is a private package (only resolvable through this
+# dev sandbox's own package mirror, not public PyPI) that powers the
+# optional "Ask Kanda AI" chat/voice-transcription endpoints
+# (routes/assistant.py) via a sandbox-issued EMERGENT_LLM_KEY. Neither the
+# package nor that key exist outside this dev environment, so it's excluded
+# from the container build — everything else in the app is unaffected,
+# since both usages are lazy imports scoped inside their own route handlers,
+# not module-level. Those two endpoints simply aren't available in this
+# deployment until they're re-pointed at a real LLM provider — a separate,
+# deliberate task, not a byproduct of this build fix.
+RUN grep -v '^emergentintegrations==' requirements.txt > requirements.docker.txt \
+    && pip install --no-cache-dir --prefix=/install -r requirements.docker.txt
 
 FROM python:3.11-slim AS runtime
 
