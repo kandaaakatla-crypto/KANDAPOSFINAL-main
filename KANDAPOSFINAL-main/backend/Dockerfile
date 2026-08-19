@@ -35,6 +35,15 @@ RUN useradd --create-home --shell /bin/bash kanda
 COPY --from=builder /install /usr/local
 COPY . .
 RUN chown -R kanda:kanda /app
+
+# Debian's OpenSSL ships a default CipherString of DEFAULT@SECLEVEL=2, which
+# some MongoDB Atlas shared-tier (M0) clusters' TLS handshakes don't satisfy
+# — pymongo fails with "SSL handshake failed: ... TLSV1_ALERT_INTERNAL_ERROR"
+# against every shard host, an alert the *server* side sends, not a client
+# CA-trust problem (that's a different fix, already applied in db.py).
+# Lowering to SECLEVEL=1 is the standard workaround for this exact error.
+RUN sed -i 's/^CipherString = DEFAULT@SECLEVEL=2/CipherString = DEFAULT@SECLEVEL=1/' /etc/ssl/openssl.cnf
+
 USER kanda
 
 ENV PYTHONUNBUFFERED=1
