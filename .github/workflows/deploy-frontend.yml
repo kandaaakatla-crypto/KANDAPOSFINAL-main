@@ -25,9 +25,17 @@ jobs:
       - name: Build
         working-directory: KANDAPOSFINAL-main/frontend
         env:
-          # Points the built app at the deployed Cloud Run backend — set
-          # this repo variable once the backend's Cloud Run URL is known.
-          REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          # Deliberately empty, NOT ${{ vars.REACT_APP_BACKEND_URL }} — that
+          # variable holds an absolute URL the Android/Windows builds need
+          # (they have no "same origin" server to resolve a relative path
+          # against). The web build takes a different path entirely: empty
+          # means client.js/ws.js build relative "/api/..." URLs, which
+          # firebase.json's rewrite proxies server-side to the Cloud Run
+          # service — same-origin from the browser's perspective, so no
+          # CORS, and it routes around the *.run.app default-domain edge
+          # bug (see Issue Tracker #547996268) since Firebase Hosting's
+          # Cloud Run integration uses a different routing path.
+          REACT_APP_BACKEND_URL: ""
           # See build-android.yml — CRA fails the build on pre-existing lint
           # warnings when CI=true, which GitHub Actions sets by default.
           CI: false
