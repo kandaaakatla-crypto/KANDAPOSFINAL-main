@@ -36,6 +36,12 @@ jobs:
           # bug (see Issue Tracker #547996268) since Firebase Hosting's
           # Cloud Run integration uses a different routing path.
           REACT_APP_BACKEND_URL: ""
+          # WebSocket-only override — Firebase Hosting's rewrite doesn't
+          # proxy WS upgrades, so realtime needs its own path: a Cloud Run
+          # domain mapping (api.kandapos.com -> kanda-pos-backend,
+          # us-central1) that isn't affected by that limitation. Everything
+          # else keeps using the relative /api/... path above.
+          REACT_APP_WS_BACKEND_URL: "https://api.kandapos.com"
           # See build-android.yml — CRA fails the build on pre-existing lint
           # warnings when CI=true, which GitHub Actions sets by default.
           CI: false

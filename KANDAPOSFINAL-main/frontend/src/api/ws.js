@@ -5,7 +5,14 @@
 import { tokenStore } from "./client";
 
 function wsUrl() {
-  const base = process.env.REACT_APP_BACKEND_URL || "";
+  // REACT_APP_WS_BACKEND_URL is a dedicated override for the WebSocket
+  // connection only — Firebase Hosting's rewrite-to-Cloud-Run integration
+  // (what REACT_APP_BACKEND_URL="" + relative /api paths resolve through
+  // for every other request) doesn't proxy WebSocket upgrades at all, so
+  // realtime needs a different path: api.kandapos.com, mapped directly to
+  // the Cloud Run service via a Cloud Run domain mapping. Falls back to
+  // REACT_APP_BACKEND_URL when unset (Android/Windows, or local dev).
+  const base = process.env.REACT_APP_WS_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || "";
   // Convert http(s) → ws(s)
   const wsBase = base.replace(/^http/i, "ws");
   return `${wsBase}/api/ws`;
