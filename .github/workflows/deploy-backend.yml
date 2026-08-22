@@ -58,4 +58,4 @@ jobs:
             --min-instances 1 \
             --allow-unauthenticated \
             --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }}" \
-            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest"
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest"
