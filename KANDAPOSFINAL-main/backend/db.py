@@ -17,7 +17,16 @@ def get_client() -> AsyncIOMotorClient:
         # before authentication is even reached. certifi's bundle is the
         # standard fix; harmless against a local unencrypted mongod too,
         # since it's only consulted when the connection string uses TLS.
-        _client = AsyncIOMotorClient(os.environ["MONGO_URL"], tlsCAFile=certifi.where())
+        #
+        # maxPoolSize is explicit, not the driver default (100), because it
+        # has to be sized against Atlas's per-tier connection ceiling times
+        # however many Cloud Run instances are running concurrently — left
+        # at 100, a handful of instances scaling out under load can exhaust
+        # a free-tier (M0) cluster's ~500 total connection budget on driver
+        # pools alone, before counting a single real request.
+        _client = AsyncIOMotorClient(
+            os.environ["MONGO_URL"], tlsCAFile=certifi.where(), maxPoolSize=20
+        )
     return _client
 
 
