@@ -248,4 +248,9 @@ async def import_menu_csv(file: UploadFile = File(...), dry_run: bool = False,
                     "ingredients": ingredients,
                 })
 
+    if pending:
+        from cache import cache_delete
+        from routes.menu import _menu_items_key
+        await cache_delete(_menu_items_key(user["tenant_id"]))
+
     return {"created": created, "updated": updated, "skipped": skipped, "errors": errors[:20]}

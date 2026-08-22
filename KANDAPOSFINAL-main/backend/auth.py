@@ -42,8 +42,13 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
+def user_cache_key(tenant_id: str, user_id: str) -> str:
+    return f"user:{tenant_id}:{user_id}"
+
+
 async def get_current_user(request: Request) -> dict:
     from db import get_db
+    from cache import cache_get, cache_set
 
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
@@ -88,11 +93,17 @@ async def get_current_user(request: Request) -> dict:
     # generated independently per tenant (routes/staff.py), so nothing else
     # guarantees uniqueness across tenants.
     jwt_tenant_id = payload.get("tenant_id")
-    user = await db.users.find_one(
-        {"tenant_id": jwt_tenant_id, "id": payload["sub"]}, {"_id": 0, "pin_hash": 0}
-    )
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+    cache_key = user_cache_key(jwt_tenant_id, payload["sub"])
+    user = await cache_get(cache_key)
+    if user is None:
+        user = await db.users.find_one(
+            {"tenant_id": jwt_tenant_id, "id": payload["sub"]}, {"_id": 0, "pin_hash": 0}
+        )
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        # Short TTL — staff.py explicitly invalidates this key on update/deactivate,
+        # so the TTL only bounds staleness from writes that bypass that path.
+        await cache_set(cache_key, user, ttl=60)
     # Anchor tenant_id from the JWT (not the DB row) — JWT is signed and immutable
     # for the token lifetime, which prevents cross-tenant escalation if a user's
     # tenant assignment changes underneath an active session.

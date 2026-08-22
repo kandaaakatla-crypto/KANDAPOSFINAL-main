@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 
 from db import get_db
 from auth import get_current_user, require_role
+from cache import cache_get, cache_set, cache_delete
 from tenants import tenant_filter, get_tenant
 from tax import suggest_tax_rate, is_price_banded
 from tz import now_ist
@@ -18,13 +19,36 @@ from ._shared import PROJECTION, NOT_DELETED, clean, menu_doc_to_response
 
 router = APIRouter()
 
+# Full-list (no `since`) reads are the hot path — every terminal that boots
+# cold or hasn't synced in a while hits these. Delta (`since=...`) reads are
+# cheap already (indexed updated_at range scan) and deliberately not cached,
+# since caching a moving cursor value would be a cache-key explosion for no
+# benefit. Short TTL: a write invalidates immediately (below), so this only
+# bounds staleness for writes that somehow bypass these route handlers.
+_MENU_CACHE_TTL = 30
+
+
+def _categories_key(tenant_id: str) -> str:
+    return f"categories:{tenant_id}"
+
+
+def _menu_items_key(tenant_id: str) -> str:
+    return f"menu_items:{tenant_id}"
+
 
 # -------------------- Categories --------------------
 @router.get("/menu/categories", response_model=List[Category])
 async def list_categories(since: Optional[str] = Query(None), user: dict = Depends(get_current_user)):
     db = get_db()
-    q = tenant_filter(user, {"updated_at": {"$gt": since}}) if since else tenant_filter(user, NOT_DELETED)
-    docs = await db.categories.find(q, PROJECTION).sort("sort_order", 1).to_list(100)
+    if since:
+        q = tenant_filter(user, {"updated_at": {"$gt": since}})
+        return await db.categories.find(q, PROJECTION).sort("sort_order", 1).to_list(100)
+    key = _categories_key(user["tenant_id"])
+    cached = await cache_get(key)
+    if cached is not None:
+        return cached
+    docs = await db.categories.find(tenant_filter(user, NOT_DELETED), PROJECTION).sort("sort_order", 1).to_list(100)
+    await cache_set(key, docs, ttl=_MENU_CACHE_TTL)
     return docs
 
 
@@ -51,6 +75,7 @@ async def create_category(payload: CategoryCreate, user: dict = Depends(require_
         "deleted_at": None,
     }
     await db.categories.insert_one(doc)
+    await cache_delete(_categories_key(user["tenant_id"]))
     return clean(doc)
 
 
@@ -66,6 +91,7 @@ async def update_category(cat_id: str, payload: CategoryUpdate, user: dict = Dep
     )
     if not res:
         raise HTTPException(status_code=404, detail="Category not found")
+    await cache_delete(_categories_key(user["tenant_id"]))
     return clean(res)
 
 
@@ -81,6 +107,7 @@ async def delete_category(cat_id: str, user: dict = Depends(require_role("Manage
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Category not found")
+    await cache_delete(_categories_key(user["tenant_id"]))
     return {"ok": True}
 
 
@@ -91,6 +118,7 @@ async def reorder_categories(payload: CategoryReorder, user: dict = Depends(requ
         await db.categories.update_one(
             tenant_filter(user, {"id": cid}), {"$set": {"sort_order": i * 10, "updated_at": now_ist().isoformat()}},
         )
+    await cache_delete(_categories_key(user["tenant_id"]))
     return {"ok": True, "count": len(payload.order)}
 
 
@@ -98,9 +126,18 @@ async def reorder_categories(payload: CategoryReorder, user: dict = Depends(requ
 @router.get("/menu/items", response_model=List[MenuItem])
 async def list_menu_items(since: Optional[str] = Query(None), user: dict = Depends(get_current_user)):
     db = get_db()
-    q = tenant_filter(user, {"updated_at": {"$gt": since}}) if since else tenant_filter(user, NOT_DELETED)
-    docs = await db.menu_items.find(q, PROJECTION).to_list(500)
-    return [menu_doc_to_response(d) for d in docs]
+    if since:
+        q = tenant_filter(user, {"updated_at": {"$gt": since}})
+        docs = await db.menu_items.find(q, PROJECTION).to_list(500)
+        return [menu_doc_to_response(d) for d in docs]
+    key = _menu_items_key(user["tenant_id"])
+    cached = await cache_get(key)
+    if cached is not None:
+        return cached
+    docs = await db.menu_items.find(tenant_filter(user, NOT_DELETED), PROJECTION).to_list(500)
+    result = [menu_doc_to_response(d) for d in docs]
+    await cache_set(key, result, ttl=_MENU_CACHE_TTL)
+    return result
 
 
 @router.post("/menu/items", response_model=MenuItem)
@@ -125,6 +162,7 @@ async def create_menu_item(payload: MenuItemCreate, user: dict = Depends(require
         "deleted_at": None,
     }
     await db.menu_items.insert_one(doc)
+    await cache_delete(_menu_items_key(user["tenant_id"]))
     return menu_doc_to_response(doc)
 
 
@@ -145,6 +183,7 @@ async def update_menu_item(item_id: str, payload: MenuItemUpdate, user: dict = D
     )
     if not res:
         raise HTTPException(status_code=404, detail="Menu item not found")
+    await cache_delete(_menu_items_key(user["tenant_id"]))
     return menu_doc_to_response(clean(res))
 
 
@@ -158,6 +197,7 @@ async def set_availability(item_id: str, payload: AvailabilityPayload, user: dic
     )
     if not res:
         raise HTTPException(status_code=404, detail="Menu item not found")
+    await cache_delete(_menu_items_key(user["tenant_id"]))
     return menu_doc_to_response(clean(res))
 
 
@@ -172,6 +212,7 @@ async def delete_menu_item(item_id: str, user: dict = Depends(require_role("Mana
         raise HTTPException(status_code=404, detail="Menu item not found")
     # also drop any recipes pinned to this item
     await db.recipes.delete_many(tenant_filter(user, {"menu_item_id": item_id}))
+    await cache_delete(_menu_items_key(user["tenant_id"]))
     return {"ok": True}
 
 

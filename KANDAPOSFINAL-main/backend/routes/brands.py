@@ -566,6 +566,8 @@ async def create_store(brand_id: str, payload: BrandStoreCreate, u: dict = Depen
 # ===================================================================
 @router.post("/{brand_id}/menu-template/push")
 async def push_menu_template(brand_id: str, u: dict = Depends(_brand_owner)):
+    from cache import cache_delete
+    from routes.menu import _categories_key, _menu_items_key
     db = get_db()
     source_tenant_id = u["tenant_id"]
     src_cats = await db.categories.find({"tenant_id": source_tenant_id, **NOT_DELETED}, {"_id": 0}).to_list(200)
@@ -622,6 +624,7 @@ async def push_menu_template(brand_id: str, u: dict = Depends(_brand_owner)):
             "categories_added": added_cats, "categories_updated": updated_cats,
             "items_added": added_items, "items_updated": updated_items,
         })
+        await cache_delete(_categories_key(tid), _menu_items_key(tid))
     return {"source_tenant_id": source_tenant_id, "pushed_to": len(targets), "results": results}
 
 

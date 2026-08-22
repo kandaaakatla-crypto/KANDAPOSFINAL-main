@@ -13,7 +13,8 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 
 from db import get_db
-from auth import require_role, hash_pin, verify_pin
+from auth import require_role, hash_pin, verify_pin, user_cache_key
+from cache import cache_delete
 from tenants import tenant_filter
 from models import StaffPublic, StaffCreate, StaffUpdate
 
@@ -107,6 +108,7 @@ async def update_staff(user_id: str, payload: StaffUpdate, user: dict = Depends(
         updates["pin_hash"] = hash_pin(payload.pin)
     if updates:
         await db.users.update_one(tenant_filter(user, {"id": user_id}), {"$set": updates})
+        await cache_delete(user_cache_key(user["tenant_id"], user_id))
     fresh = await db.users.find_one(tenant_filter(user, {"id": user_id}), {"_id": 0, "pin_hash": 0})
     return _to_public(fresh)
 
@@ -123,4 +125,5 @@ async def deactivate_staff(user_id: str, user: dict = Depends(require_role("Mana
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Employee not found")
+    await cache_delete(user_cache_key(user["tenant_id"], user_id))
     return {"ok": True, "id": user_id}
