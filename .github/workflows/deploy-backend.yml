@@ -10,6 +10,12 @@ on:
 
 env:
   GCP_REGION: ${{ vars.GCP_REGION }}
+  # Cloud Run domain mappings aren't available in asia-south1, so the
+  # api.kandapos.com WebSocket domain mapping points at a second copy of
+  # this same service deployed in us-central1 instead. Both must be kept
+  # on the same image/config or the two regions drift — this is the one
+  # place that's deployed.
+  WS_REGION: us-central1
   SERVICE_NAME: kanda-pos-backend
   REPO_NAME: kanda-pos
 
@@ -48,11 +54,23 @@ jobs:
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run (asia-south1 — HTTP API via Firebase Hosting rewrite)
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image "${{ env.IMAGE }}" \
             --region "${{ env.GCP_REGION }}" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --platform managed \
+            --min-instances 1 \
+            --allow-unauthenticated \
+            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }}" \
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest"
+
+      - name: Deploy to Cloud Run (us-central1 — WebSocket via api.kandapos.com domain mapping)
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image "${{ env.IMAGE }}" \
+            --region "${{ env.WS_REGION }}" \
             --project "${{ secrets.GCP_PROJECT_ID }}" \
             --platform managed \
             --min-instances 1 \
