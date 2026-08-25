@@ -34,6 +34,8 @@ jobs:
           # this repo variable once the backend's Cloud Run URL is known
           # (same variable deploy-frontend.yml uses).
           REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          REACT_APP_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
+          REACT_APP_SENTRY_ENVIRONMENT: "production-android"
           # CRA treats ESLint warnings as build-failing errors whenever CI=true
           # — which GitHub Actions sets by default — even though the exact
           # same warnings don't fail a local `npm run build`. The warnings

@@ -13,9 +13,21 @@ load_dotenv(ROOT_DIR / ".env")
 import os
 import logging
 
+import sentry_sdk
 from fastapi import FastAPI, HTTPException
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+# Optional — unset SENTRY_DSN (e.g. local dev) leaves this a no-op, same
+# graceful-degradation pattern as cache.py's Redis wiring. send_default_pii
+# is deliberately left off: this app handles payment and customer PII in
+# request bodies/headers that shouldn't leave the process by default.
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
+        traces_sample_rate=0.1,
+    )
 
 from db import get_db, close as close_db
 from seed import seed_all

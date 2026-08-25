@@ -42,6 +42,8 @@ jobs:
           # us-central1) that isn't affected by that limitation. Everything
           # else keeps using the relative /api/... path above.
           REACT_APP_WS_BACKEND_URL: "https://api.kandapos.com"
+          REACT_APP_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
+          REACT_APP_SENTRY_ENVIRONMENT: "production-web"
           # See build-android.yml — CRA fails the build on pre-existing lint
           # warnings when CI=true, which GitHub Actions sets by default.
           CI: false

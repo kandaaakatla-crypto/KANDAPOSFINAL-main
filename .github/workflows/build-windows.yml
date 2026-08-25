@@ -30,6 +30,8 @@ jobs:
           # Points the packaged app at the deployed Cloud Run backend — same
           # repo variable deploy-frontend.yml and build-android.yml use.
           REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          REACT_APP_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
+          REACT_APP_SENTRY_ENVIRONMENT: "production-windows"
           # See build-android.yml — CRA fails the build on pre-existing lint
           # warnings when CI=true, which GitHub Actions sets by default.
           CI: false
