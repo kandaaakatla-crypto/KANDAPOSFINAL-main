@@ -24,7 +24,15 @@ def get_redis() -> Optional["redis.Redis"]:
         _checked = True
         url = os.environ.get("REDIS_URL")
         if url:
-            _client = redis.from_url(url, decode_responses=True)
+            try:
+                _client = redis.from_url(url, decode_responses=True)
+            except Exception:
+                # from_url() parses/validates eagerly and can raise on a bad
+                # URL before any network call — e.g. a misconfigured secret.
+                # Must not crash the first caller (redis_subscriber_loop on
+                # startup, or a real request's cache_get/cache_set); log and
+                # stay in no-op mode like every other failure mode here.
+                logger.error("get_redis: failed to construct client from REDIS_URL", exc_info=True)
     return _client
 
 
