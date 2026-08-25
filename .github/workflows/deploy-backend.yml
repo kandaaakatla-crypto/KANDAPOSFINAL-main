@@ -82,7 +82,7 @@ jobs:
             --concurrency 40 \
             --allow-unauthenticated \
             --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-api" \
-            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest"
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"
 
       # us-central1 (WebSocket): concurrency raised well above the default —
       # an open WebSocket holds a concurrency slot for its entire connected
@@ -101,4 +101,4 @@ jobs:
             --concurrency 250 \
             --allow-unauthenticated \
             --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-ws" \
-            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest"
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"

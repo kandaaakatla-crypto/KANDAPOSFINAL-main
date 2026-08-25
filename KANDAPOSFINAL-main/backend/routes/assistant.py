@@ -7,7 +7,7 @@ The AI is grounded in three sources:
      active orders, staff on duty, pending reservations).
   3. The current page/route the user is on (passed in `context`).
 
-Model: Claude Sonnet 4.5 via emergentintegrations (Emergent LLM key).
+Model: Claude Sonnet 4.5 via the Anthropic API directly (ANTHROPIC_API_KEY).
 """
 from __future__ import annotations
 
@@ -227,29 +227,29 @@ def _system_prompt(tenant: dict, role_hint: Optional[str], route: Optional[str])
     )
 
 
+def _is_billing_error(e: Exception) -> bool:
+    """Anthropic returns a 400 with 'credit balance' in the message when the
+    API key's account is out of funds, and a 429 on rate limits — both worth
+    surfacing to the user as "go top up" rather than a generic 502."""
+    import anthropic
+    if isinstance(e, anthropic.RateLimitError):
+        return True
+    return "credit balance" in str(e).lower()
+
+
 async def _llm_reply(system: str, messages: list[dict]) -> str:
-    """Single LLM turn using emergentintegrations."""
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
-    chat = (
-        LlmChat(
-            api_key=os.environ["EMERGENT_LLM_KEY"],
-            session_id=f"assistant-{now_ist().timestamp()}",
-            system_message=system,
-        )
-        .with_model("anthropic", "claude-sonnet-4-5")
+    """Single LLM turn via the Anthropic API — messages are already in the
+    role-alternating shape the API wants, so no transcript-flattening hack
+    is needed here."""
+    import anthropic
+    client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    resp = await client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=1024,
+        system=system,
+        messages=[{"role": m["role"], "content": m["content"]} for m in messages],
     )
-    # Replay prior turns as separate UserMessage / AssistantMessage entries so
-    # the model has full context. emergentintegrations' send_message takes ONE
-    # user message; earlier turns get baked into the system prompt for a
-    # single-shot call. Keep it simple: concatenate the transcript.
-    transcript = "\n".join(f"{m['role'].upper()}: {m['content']}" for m in messages[:-1])
-    last_user = messages[-1]["content"] if messages else ""
-    if transcript:
-        prompt = f"Prior conversation:\n{transcript}\n\nLatest user message:\n{last_user}"
-    else:
-        prompt = last_user
-    reply = await chat.send_message(UserMessage(text=prompt))
-    return str(reply)
+    return "".join(block.text for block in resp.content if block.type == "text")
 
 
 def _extract_tool_request(reply: str) -> tuple[str, list[str]]:
@@ -283,11 +283,10 @@ async def chat(payload: ChatPayload, user: dict = Depends(get_current_user)):
     try:
         reply = await _llm_reply(system, turns)
     except Exception as e:
-        msg = str(e)
-        if "Budget" in msg or "budget" in msg:
-            raise HTTPException(status_code=402, detail="AI credits exhausted — please top up the Emergent Universal Key in your Profile.")
+        if _is_billing_error(e):
+            raise HTTPException(status_code=402, detail="AI credits exhausted — please top up the Anthropic API key's billing.")
         logger.exception("Assistant LLM call failed")
-        raise HTTPException(status_code=502, detail=f"AI upstream error: {msg[:200]}")
+        raise HTTPException(status_code=502, detail=f"AI upstream error: {str(e)[:200]}")
     visible, tool_names = _extract_tool_request(reply)
     tool_data = {}
     if tool_names:
@@ -303,11 +302,10 @@ async def chat(payload: ChatPayload, user: dict = Depends(get_current_user)):
         try:
             reply2 = await _llm_reply(system, turns)
         except Exception as e:
-            msg = str(e)
-            if "Budget" in msg or "budget" in msg:
-                raise HTTPException(status_code=402, detail="AI credits exhausted — please top up the Emergent Universal Key in your Profile.")
+            if _is_billing_error(e):
+                raise HTTPException(status_code=402, detail="AI credits exhausted — please top up the Anthropic API key's billing.")
             logger.exception("Assistant LLM follow-up failed")
-            raise HTTPException(status_code=502, detail=f"AI upstream error: {msg[:200]}")
+            raise HTTPException(status_code=502, detail=f"AI upstream error: {str(e)[:200]}")
         visible2, _ = _extract_tool_request(reply2)
         return {"reply": visible2, "tools_used": tool_names, "tool_data": tool_data}
 
@@ -322,9 +320,9 @@ async def chat(payload: ChatPayload, user: dict = Depends(get_current_user)):
 # ===================================================================
 @router.post("/assistant/transcribe")
 async def transcribe(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
-    """Transcribe a short audio clip (< 25 MB) via OpenAI whisper-1.
-    Runs on the same Emergent LLM key as the chat endpoint."""
-    from emergentintegrations.llm.openai import OpenAISpeechToText
+    """Transcribe a short audio clip (< 25 MB) via OpenAI whisper-1. Reuses
+    OPENAI_API_KEY — the same key voice.py's realtime bridge already runs on."""
+    import openai
     import io
 
     data = await file.read()
@@ -334,17 +332,14 @@ async def transcribe(file: UploadFile = File(...), user: dict = Depends(get_curr
         raise HTTPException(status_code=413, detail="Audio too large (max 25 MB)")
 
     buf = io.BytesIO(data)
-    # emergentintegrations expects a filename attribute so it can infer format.
+    # The OpenAI SDK infers audio format from the filename extension.
     buf.name = file.filename or "voice.webm"
 
-    stt = OpenAISpeechToText(api_key=os.environ["EMERGENT_LLM_KEY"])
+    client = openai.AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
     try:
-        resp = await stt.transcribe(file=buf, model="whisper-1", response_format="json")
+        resp = await client.audio.transcriptions.create(model="whisper-1", file=buf, response_format="json")
     except Exception as exc:
-        msg = str(exc)
-        if "Budget" in msg or "budget" in msg:
-            raise HTTPException(status_code=402, detail="AI credits exhausted — please top up the Emergent Universal Key.")
         logger.exception("Whisper transcription failed")
-        raise HTTPException(status_code=502, detail=f"Transcription failed: {msg[:200]}")
+        raise HTTPException(status_code=502, detail=f"Transcription failed: {str(exc)[:200]}")
     text = getattr(resp, "text", "") or ""
     return {"text": text.strip()}
