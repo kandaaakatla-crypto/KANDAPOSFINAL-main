@@ -4,6 +4,10 @@ Covers: staff CRUD, timeclock punch + current + timesheet (+ CSV), shifts CRUD,
 waste, cash drawer open/close, coupons create+apply, tips pool, locations
 auto-seed + CRUD, prep-list shape, orders accepting tip/coupon/location fields.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import time
 import uuid as _uuid

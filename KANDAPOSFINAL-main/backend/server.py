@@ -61,6 +61,13 @@ async def healthz():
 async def on_startup():
     db = get_db()
     await seed_all(db)
+    # Set by the unit-test fixture (backend/tests/unit/conftest.py) — a
+    # TestClient boots this same startup hook on a throwaway database, and
+    # these loops do real work (SMS, email, external Redis/WS connections)
+    # that must never fire against test data.
+    if os.environ.get("DISABLE_BACKGROUND_TASKS") == "1":
+        logger.info("Kanda POS DB seeded / verified (background tasks disabled)")
+        return
     # Start the reservation reminder background task (1h-before SMS reminders)
     import asyncio
     from sms_service import reservation_reminder_loop

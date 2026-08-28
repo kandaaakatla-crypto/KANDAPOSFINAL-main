@@ -6,6 +6,10 @@ WebSocket bridge to OpenAI Realtime requires live credit on the OpenAI
 account and a real phone, so it has its own manual smoke probe at
 `tests/manual/probe_voice_bridge.py`.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import re
 from dotenv import load_dotenv

@@ -1,4 +1,8 @@
 """P3c (Ops & Support) + P3d (Subscriptions) backend coverage."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import time
 import json

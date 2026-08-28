@@ -1,4 +1,8 @@
 """KDS — Kitchen Display System tests."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import time
 import requests

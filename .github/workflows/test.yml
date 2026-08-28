@@ -1,0 +1,41 @@
+name: Backend unit tests
+
+# P0-4 remediation (docs/p0-remediation/PLAN.md, PR 1) — this workflow
+# reports on every PR and push to master. It does NOT gate deploys yet;
+# deploy-backend.yml is wired to depend on it in a later PR (PR 6), once the
+# suite has proven itself green across a few real PRs.
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --quiet --eval 'db.runCommand({ping:1})'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: KANDAPOSFINAL-main/backend
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        working-directory: KANDAPOSFINAL-main/backend
+        env:
+          MONGO_URL: mongodb://localhost:27017
+        run: pytest tests/unit -v

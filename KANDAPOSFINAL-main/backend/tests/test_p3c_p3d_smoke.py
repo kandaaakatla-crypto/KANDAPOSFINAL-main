@@ -1,4 +1,8 @@
 """Additional smoke tests for P3c/P3d flows beyond test_p3c_p3d.py."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import json
 import hmac

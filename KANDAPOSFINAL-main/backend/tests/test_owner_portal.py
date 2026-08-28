@@ -3,6 +3,10 @@
 Covers: two-step login (password + TOTP bypass), KPIs, tenants list/detail,
 tenant create with auto Manager seed, impersonation full vs auditor write-block.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import time
 import pytest

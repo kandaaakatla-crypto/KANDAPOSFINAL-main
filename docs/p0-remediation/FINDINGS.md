@@ -285,6 +285,32 @@ before returning the response, including order creation.
 
 ---
 
+## Found during PR 1 (test harness)
+
+### P4-3. The `integration` marker doesn't stop the legacy suite crashing collection
+
+`pytest.ini`'s `addopts = -m "not integration"` only deselects already-collected
+test *items*. Eight of the 21 legacy files (`test_assistant_and_digest.py`,
+`test_iteration5_smoke.py`, `test_iteration6_features.py`, `test_iteration7.py`,
+`test_iteration8_workforce.py`, `test_iteration9_batch.py`,
+`test_orders_append.py`, `test_owner_portal.py`) run module-level code —
+reading `REACT_APP_BACKEND_URL` with `os.environ[...]` or `.get(...).rstrip()`,
+or opening `/app/frontend/.env` directly — that raises before collection
+finishes, regardless of any marker. Confirmed: `pytest backend/tests` (no path
+narrowing) aborts with `Interrupted: 8 errors during collection` even with the
+marker in place; `pytest backend/tests/unit` is unaffected because pytest only
+imports conftest.py files that are ancestors of an explicitly-targeted path,
+not sibling test modules outside it.
+
+Not a problem for PR 1's own definition of done (CI runs `pytest
+backend/tests/unit` specifically) or for anyone else who does the same. It
+does mean a developer running bare `pytest` from `backend/` or
+`backend/tests/` gets 8 collection errors instead of a clean "20 deselected."
+Fix belongs with whichever PR actually triages the legacy suite (out of scope
+here per CLAUDE.md's working rules — not fixed in PR 1).
+
+---
+
 ## P4 — dead or stale
 
 ### P4-1. Menu schedules are half-wired

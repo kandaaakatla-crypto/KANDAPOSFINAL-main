@@ -5,6 +5,10 @@ asserts that it is excluded from both the weekly chart and the topItems
 aggregation. Guards the DB-level `placedAt >= week_start` filter added
 in 2026-02 to avoid a full collection scan on `/api/reports/summary`.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import uuid
 from datetime import datetime, timezone, timedelta

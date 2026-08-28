@@ -2,6 +2,10 @@
 - Rota PDF export (Manager only, returns application/pdf, magic bytes %PDF)
 - /api/shifts?mine=true regression for Cashier + Driver
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import requests
 import datetime as dt

@@ -1,4 +1,8 @@
 """Tests for AI Assistant chat and Daily Digest (Phase 2)."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import time
 import pytest

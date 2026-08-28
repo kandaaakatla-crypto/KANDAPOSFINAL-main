@@ -7,6 +7,10 @@ a live Twilio call to exercise the endpoint.
 """
 from __future__ import annotations
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 import json
 import os
 from unittest.mock import AsyncMock

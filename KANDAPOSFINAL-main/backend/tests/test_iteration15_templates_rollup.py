@@ -3,6 +3,10 @@
 2) /api/reports/daily-rollup shape + /api/reports/daily-rollup/rebuild
 3) Verify cron loop registered (via startup log line).
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import time
 import pytest
