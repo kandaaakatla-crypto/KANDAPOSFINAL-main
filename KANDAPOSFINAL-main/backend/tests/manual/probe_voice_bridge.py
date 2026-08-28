@@ -16,7 +16,7 @@ import sys
 import websockets
 
 
-WSS = "wss://retail-engine-97.preview.emergentagent.com/api/voice/twilio-stream"
+WSS = "wss://api.kandapos.com/api/voice/twilio-stream"
 
 
 async def main():

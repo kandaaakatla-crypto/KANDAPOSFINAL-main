@@ -98,8 +98,7 @@ export default function AIAssistant() {
       const status = e?.response?.status;
       let msg = "Sorry — I couldn't answer just now. Try again in a moment.";
       if (status === 401) msg = "Your session expired. Please log in again.";
-      else if (typeof detail === "string" && /budget/i.test(detail))
-        msg = "The AI credit budget is exhausted for this workspace. Please top up the Emergent Universal Key.";
+      else if (status === 402) msg = "AI credits exhausted for this workspace — please top up the Anthropic API key's billing.";
       else if (typeof detail === "string" && detail) msg = `AI error: ${detail}`;
       setMessages([...next, { role: "assistant", content: msg }]);
     } finally { setBusy(false); }

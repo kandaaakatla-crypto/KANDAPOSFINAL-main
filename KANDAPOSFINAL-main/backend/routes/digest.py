@@ -106,12 +106,12 @@ async def _gather_digest_data(db, tenant_id: str) -> dict:
 
 
 # ===================================================================
-# AI-written summary via Emergent LLM Key (Claude Sonnet 4.5)
-# Fallback to a deterministic template if the LLM fails / budget exceeded.
+# AI-written summary via the Anthropic API (Claude Sonnet 4.5)
+# Fallback to a deterministic template if the LLM fails / credits exhausted.
 # ===================================================================
 async def _ai_digest_text(tenant_name: str, data: dict) -> str:
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        import anthropic
         system = (
             f"You are the daily-digest writer for the Kanda POS restaurant "
             f"'{tenant_name}'. Write a concise, warm, actionable daily summary "
@@ -122,17 +122,15 @@ async def _ai_digest_text(tenant_name: str, data: dict) -> str:
             "(already expired vs. days left) since spoilage is a direct loss. "
             "End with a one-line action tip. Currency is ₹."
         )
-        chat = (
-            LlmChat(
-                api_key=os.environ["EMERGENT_LLM_KEY"],
-                session_id=f"digest-{now_ist().timestamp()}",
-                system_message=system,
-            )
-            .with_model("anthropic", "claude-sonnet-4-5")
-        )
+        client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         prompt = "Here is today's data as JSON:\n" + json.dumps(data, default=str, indent=2)
-        reply = await chat.send_message(UserMessage(text=prompt))
-        return str(reply).strip()
+        resp = await client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=1024,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return "".join(block.text for block in resp.content if block.type == "text").strip()
     except Exception as exc:
         logger.warning("Digest AI generation failed, using template: %s", exc)
         return _template_digest_text(tenant_name, data)
