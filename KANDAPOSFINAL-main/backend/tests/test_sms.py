@@ -1,4 +1,8 @@
 """Tests for /api/sms/send, /api/sms/broadcast, /api/sms/history (iteration 13)."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import pytest
 import requests

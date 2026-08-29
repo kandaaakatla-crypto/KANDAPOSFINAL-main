@@ -1,4 +1,8 @@
 """Iteration 7 — CSV preview, Twilio reminder loop wiring, KDS WS endpoint."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import io
 import asyncio

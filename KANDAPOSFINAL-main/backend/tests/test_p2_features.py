@@ -1,5 +1,9 @@
 """P2 backend tests: drivers, driver assignment, Razorpay payments,
 receipts (JSON + ESC/POS), realtime WebSocket, and Hyderabad localization."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import asyncio
 import json
 import os

@@ -1,4 +1,8 @@
 """Tests for /api/whatsapp/* — two-way WhatsApp chat via Twilio (iteration 14)."""
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import pytest
 import requests

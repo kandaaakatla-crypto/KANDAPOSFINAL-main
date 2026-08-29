@@ -4,6 +4,10 @@
 - KDS token issuance + rotation + station filter + full lifecycle from
   fresh POS order → preparing → ready → recall.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import requests
 

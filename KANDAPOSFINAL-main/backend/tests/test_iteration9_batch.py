@@ -12,6 +12,10 @@ Covers the additive feature batch shipped in this iteration:
 
 Uses Manager PIN 1234 + Cashier PIN 2345 against the demo tenant.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import time
 import pytest

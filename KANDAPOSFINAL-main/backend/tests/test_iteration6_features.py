@@ -3,6 +3,10 @@ Covers: Menu Categories CRUD, Recipes <-> Inventory decrement, Order `source`,
 Driver claim/payment/onway/delivered, Tables CRUD + position + floor elements,
 Reservations CRUD + overlap guard.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import time
 from datetime import datetime, timedelta, timezone

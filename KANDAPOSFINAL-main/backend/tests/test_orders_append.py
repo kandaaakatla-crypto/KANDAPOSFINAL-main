@@ -3,6 +3,10 @@
 Also asserts regressions: create-order-with-table sets table occupied, and
 PATCH status=completed releases the table.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import pytest
 import requests

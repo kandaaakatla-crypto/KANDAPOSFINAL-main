@@ -3,6 +3,10 @@
 Covers: Auth, Menu, Tables, Customers, Inventory, Orders, Reports.
 All resource endpoints require Bearer JWT (PIN 1234 = Aarav Reddy / Manager).
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import pytest
 import requests

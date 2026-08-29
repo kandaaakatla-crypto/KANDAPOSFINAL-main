@@ -4,6 +4,10 @@ the already-discounted `total`. Bug fix for Iter 9 review:
    chose to redeem points client-side → the backend would skip debiting
    and the customer would walk out with a free order.
 """
+
+import pytest
+
+pytestmark = pytest.mark.integration
 import os
 import uuid
 from pathlib import Path
