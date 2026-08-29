@@ -10,7 +10,7 @@ FINDINGS.md and are explicitly out of scope until every box below is checked.
 
 | PR | Issue | Status |
 |----|-------|--------|
-| 1 | Test harness + CI (non-gating) | [ ] not started |
+| 1 | Test harness + CI (non-gating) | [x] merged (#1) |
 | 2 | P0-5 deactivated staff keep access | [ ] not started |
 | 3 | P0-2 5xx dropped from `error_logs` | [ ] not started |
 | 4 | P0-1 Sentry captures backend exceptions | [ ] not started |
