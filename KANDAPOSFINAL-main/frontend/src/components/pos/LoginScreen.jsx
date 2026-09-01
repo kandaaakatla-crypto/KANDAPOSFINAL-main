@@ -2,10 +2,21 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
 import { DEMO_STAFF_HINTS_BY_TENANT } from "../../data/mock";
-import { Pizza, Delete, LogIn, Loader2 } from "lucide-react";
+import { Pizza, ShoppingBag, Delete, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { tenantStore } from "../../api/client";
+import { api, tenantStore } from "../../api/client";
 import { impersonationCtx } from "../../api/ownerClient";
+
+const BRAND_COPY = {
+  restaurant: {
+    headline: <>Every order.<br />One screen.</>,
+    body: "Delivery, collection and dine-in orders processed on a single easy-to-use screen — built for busy pizza & fast-food stores.",
+  },
+  retail: {
+    headline: <>Every sale.<br />One screen.</>,
+    body: "Basket checkout, barcode scanning and inventory tracking on a single easy-to-use screen — built for busy retail stores.",
+  },
+};
 
 export default function LoginScreen() {
   const { login } = usePos();
@@ -13,6 +24,20 @@ export default function LoginScreen() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Defaults to "restaurant" until the fetch below resolves, so the panel
+  // still renders something sensible before the network round-trip finishes.
+  const [businessType, setBusinessType] = useState("restaurant");
+
+  useEffect(() => {
+    let cancelled = false;
+    api.get("/tenant/public-info")
+      .then((r) => { if (!cancelled) setBusinessType(r.data.businessType || "restaurant"); })
+      .catch(() => {}); // keep the restaurant default — never block sign-in on this
+    return () => { cancelled = true; };
+  }, []);
+
+  const BrandIcon = businessType === "retail" ? ShoppingBag : Pizza;
+  const copy = BRAND_COPY[businessType] || BRAND_COPY.restaurant;
 
   // Self-heal: if a previous impersonation left a stale tenant slug in
   // localStorage that doesn't match the host, drop it so login resolves to
@@ -59,7 +84,7 @@ export default function LoginScreen() {
       <div className="hidden lg:flex flex-col justify-between w-[42%] p-12" style={{ background: "linear-gradient(160deg, #101a30 0%, #0b1220 100%)", borderRight: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
-            <Pizza className="w-7 h-7 text-white" />
+            <BrandIcon className="w-7 h-7 text-white" />
           </div>
           <div>
             <div className="text-2xl font-bold tracking-tight text-white">KANDA</div>
@@ -67,9 +92,9 @@ export default function LoginScreen() {
           </div>
         </div>
         <div>
-          <h1 className="text-4xl font-bold text-white leading-tight mb-4">Every order.<br />One screen.</h1>
+          <h1 className="text-4xl font-bold text-white leading-tight mb-4">{copy.headline}</h1>
           <p className="text-base leading-relaxed max-w-md" style={{ color: "var(--pos-muted)" }}>
-            Delivery, collection and dine-in orders processed on a single easy-to-use screen — built for busy pizza &amp; fast-food stores.
+            {copy.body}
           </p>
         </div>
         <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
@@ -82,7 +107,7 @@ export default function LoginScreen() {
         <div className="w-full max-w-sm fade-in">
           <div className="text-center mb-8">
             <div className="lg:hidden w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
-              <Pizza className="w-8 h-8 text-white" />
+              <BrandIcon className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white">Staff Sign In</h2>
             <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>Enter your 4-digit PIN</p>

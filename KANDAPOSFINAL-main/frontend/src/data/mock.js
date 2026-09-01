@@ -48,7 +48,6 @@ export const DEMO_STAFF_HINTS_BY_TENANT = {
     { id: "s11", name: "Arjun Nair",   pin: "1236", role: "Driver" },
   ],
   urbanmart: [
-    { id: "ru1", name: "Neha Kapoor",    pin: "2468", role: "Manager" },
-    { id: "ru2", name: "Rohit Malhotra", pin: "1357", role: "Cashier" },
+    { id: "s_766ffdba", name: "Manager", pin: "9876", role: "Manager" },
   ],
 };

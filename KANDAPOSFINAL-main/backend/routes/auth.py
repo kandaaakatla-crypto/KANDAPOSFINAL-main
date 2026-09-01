@@ -42,6 +42,18 @@ async def login(payload: LoginRequest, request: Request):
     raise HTTPException(status_code=401, detail="Invalid PIN")
 
 
+@router.get("/tenant/public-info")
+async def tenant_public_info(request: Request):
+    """Unauthenticated — just enough for the Staff Sign In screen to brand
+    itself correctly (retail vs restaurant icon/copy) before anyone has
+    logged in. Resolves the tenant the same way /auth/login does (the
+    X-Tenant-Slug header client.js already attaches), so no frontend
+    plumbing beyond calling this endpoint is needed."""
+    db = get_db()
+    tenant = await resolve_tenant_from_request(request, db)
+    return {"name": tenant.get("name", ""), "businessType": tenant.get("business_type", "restaurant")}
+
+
 @router.get("/auth/me", response_model=UserPublic)
 async def me(user: dict = Depends(get_current_user)):
     return UserPublic(id=user["id"], name=user["name"], role=user["role"], initials=user["initials"])
