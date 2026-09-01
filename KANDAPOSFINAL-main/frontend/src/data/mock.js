@@ -34,18 +34,15 @@ export const DELIVERY_FEE = 49;
 // entry here — a real customer's tenant renders no hint card at all, since
 // we have no legitimate PINs to show for it.
 export const DEMO_STAFF_HINTS_BY_TENANT = {
+  // One representative PIN per role, not all 11 seeded staff — the full
+  // list made the login screen's hint card run past the fold. Anyone who
+  // wants to see a different role's screen can PIN in as Manager and
+  // check Staff for the rest.
   demo: [
-    { id: "s1",  name: "Aarav Reddy",  pin: "1234", role: "Manager" },
-    { id: "s2",  name: "Priya Iyer",   pin: "2345", role: "Cashier" },
-    { id: "s3",  name: "Rohan Sharma", pin: "3456", role: "Cashier" },
-    { id: "s7",  name: "Ananya Gupta", pin: "7890", role: "Cashier" },
-    { id: "s8",  name: "Rahul Verma",  pin: "8901", role: "Cashier" },
-    { id: "s5",  name: "Meera Nair",   pin: "5678", role: "Kitchen" },
-    { id: "s6",  name: "Vikram Desai", pin: "6789", role: "Kitchen" },
-    { id: "s4",  name: "Karthik Rao",  pin: "4567", role: "Driver" },
-    { id: "s9",  name: "Sanjay Kumar", pin: "9012", role: "Driver" },
-    { id: "s10", name: "Divya Menon",  pin: "1235", role: "Driver" },
-    { id: "s11", name: "Arjun Nair",   pin: "1236", role: "Driver" },
+    { id: "s1", name: "Aarav Reddy", pin: "1234", role: "Manager" },
+    { id: "s2", name: "Priya Iyer",  pin: "2345", role: "Cashier" },
+    { id: "s5", name: "Meera Nair",  pin: "5678", role: "Kitchen" },
+    { id: "s4", name: "Karthik Rao", pin: "4567", role: "Driver" },
   ],
   urbanmart: [
     { id: "s_766ffdba", name: "Manager", pin: "9876", role: "Manager" },
