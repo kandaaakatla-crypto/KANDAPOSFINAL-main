@@ -7,7 +7,7 @@ import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/t
 import StorefrontItemModal from "./StorefrontItemModal";
 import "./storefront.css";
 import {
-  UtensilsCrossed, Minus, Plus, X, ShoppingCart, CheckCircle2, Loader2, ShieldCheck,
+  UtensilsCrossed, ShoppingBag, Minus, Plus, X, ShoppingCart, CheckCircle2, Loader2, ShieldCheck,
   Sun, Moon, User, ChevronLeft, Wallet, CreditCard, Clock,
 } from "lucide-react";
 
@@ -50,6 +50,7 @@ export default function PickupOrderPage() {
   const { slug } = useParams();
   const [theme, toggleTheme] = useStorefrontTheme();
   const [menu, setMenu] = useState(null);
+  const StoreIcon = menu?.tenant?.businessType === "retail" ? ShoppingBag : UtensilsCrossed;
   const [error, setError] = useState("");
   const [step, setStep] = useState(STEP.IDENTIFY);
 
@@ -193,7 +194,7 @@ export default function PickupOrderPage() {
         <div className="absolute top-4 right-4">{ThemeToggleBtn}</div>
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 sf-btn-accent"><UtensilsCrossed className="w-6 h-6" /></div>
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 sf-btn-accent"><StoreIcon className="w-6 h-6" /></div>
             <div className="text-xl font-bold">{menu?.tenant?.name || "Pickup order"}</div>
             <div className="text-xs mt-1" style={{ color: "var(--sf-text-muted)" }}>Order ahead for collection</div>
           </div>
@@ -245,7 +246,7 @@ export default function PickupOrderPage() {
     <div className={themeClass} style={{ paddingBottom: 112 }} data-testid="pickup-order-page">
       <header className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between sf-card" style={{ backdropFilter: "blur(10px)", borderLeft: "none", borderRight: "none", borderTop: "none" }}>
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 sf-btn-accent"><UtensilsCrossed className="w-4 h-4" /></div>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 sf-btn-accent"><StoreIcon className="w-4 h-4" /></div>
           <div className="min-w-0">
             <div className="text-sm font-bold truncate">{menu.tenant.name}</div>
             <div className="text-[11px]" style={{ color: "var(--sf-text-muted)" }}>Pickup · {name}</div>
@@ -282,7 +283,7 @@ export default function PickupOrderPage() {
                 <img src={item.imageUrl} alt="" className="w-full aspect-square object-cover sf-item-img" loading="lazy" />
               ) : (
                 <div className="w-full aspect-square flex items-center justify-center sf-item-img">
-                  <UtensilsCrossed className="w-7 h-7" style={{ color: "var(--sf-text-muted)" }} />
+                  <StoreIcon className="w-7 h-7" style={{ color: "var(--sf-text-muted)" }} />
                 </div>
               )}
               <div className="p-2.5 flex flex-col gap-1 flex-1">

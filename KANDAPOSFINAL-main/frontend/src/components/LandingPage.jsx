@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   Store, ShoppingCart, LayoutGrid, ChefHat,
   Truck, Boxes, Users, BarChart3, MessageCircle, Mic, MapPin, Mail, Phone,
-  ArrowRight, CheckCircle2, Sparkles, ShoppingBag,
+  ArrowRight, CheckCircle2, Sparkles, ShoppingBag, Menu, X, Wallet, Star,
 } from "lucide-react";
 
 const CYCLE_WORDS = ["order", "ticket", "sale", "table", "delivery", "refund"];
@@ -59,6 +59,19 @@ const NAV_LINKS = [
   { href: "#demo", label: "Contact & Demo" },
 ];
 
+const MARQUEE_ITEMS = [
+  { label: "Dine-in", icon: LayoutGrid },
+  { label: "Delivery", icon: Truck },
+  { label: "Collection", icon: ShoppingBag },
+  { label: "Retail Checkout", icon: ShoppingCart },
+  { label: "Kitchen Display", icon: ChefHat },
+  { label: "Inventory", icon: Boxes },
+  { label: "Payroll", icon: Wallet },
+  { label: "Loyalty", icon: Star },
+  { label: "Reports", icon: BarChart3 },
+  { label: "Multi-location", icon: MapPin },
+];
+
 const PORTALS = [
   { label: "Demo Restaurant POS", desc: "Staff terminal: orders, tables, kitchen, dispatch", icon: Store, to: "/login" },
   { label: "Demo Retail POS: Urban Mart", desc: "Staff terminal: basket checkout, barcode scan, variants", icon: ShoppingBag, to: "/login?tenant=urbanmart" },
@@ -95,6 +108,7 @@ export default function LandingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [wordIdx, setWordIdx] = useState(0);
   const [ticketIdx, setTicketIdx] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setWordIdx((i) => (i + 1) % CYCLE_WORDS.length), 1800);
@@ -131,10 +145,48 @@ export default function LandingPage() {
               <a key={l.href} href={l.href} className="hover:text-white transition-colors">{l.label}</a>
             ))}
           </nav>
-          <a href={`#${GET_STARTED_ID}`} className="pos-btn rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-            Login
-          </a>
+          <div className="flex items-center gap-2">
+            <a href={`#${GET_STARTED_ID}`} className="pos-btn rounded-lg px-4 py-2 text-sm font-semibold text-white" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+              Login
+            </a>
+            <button
+              type="button"
+              className="md:hidden rounded-lg p-2"
+              style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}
+              onClick={() => setMobileNavOpen((v) => !v)}
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileNavOpen}
+            >
+              {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
+        <AnimatePresence>
+          {mobileNavOpen && (
+            <motion.nav
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden overflow-hidden"
+              style={{ borderTop: "1px solid var(--pos-border)" }}
+            >
+              <div className="flex flex-col px-6 py-2">
+                {NAV_LINKS.map((l) => (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setMobileNavOpen(false)}
+                    className="py-3 text-sm hover:text-white transition-colors"
+                    style={{ color: "var(--pos-muted)", borderBottom: "1px solid var(--pos-border)" }}
+                  >
+                    {l.label}
+                  </a>
+                ))}
+              </div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* Hero */}
@@ -188,9 +240,9 @@ export default function LandingPage() {
           <div className="land-marquee-track">
             {[...Array(2)].map((_, rep) => (
               <div key={rep} className="flex items-center gap-10 pr-10 shrink-0">
-                {["Dine-in", "Delivery", "Collection", "Retail Checkout", "Kitchen Display", "Inventory", "Payroll", "Loyalty", "Reports", "Multi-location"].map((w) => (
-                  <span key={w} className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap" style={{ color: "var(--pos-muted)" }}>
-                    <Store className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> {w}
+                {MARQUEE_ITEMS.map(({ label, icon: Icon }) => (
+                  <span key={label} className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap" style={{ color: "var(--pos-muted)" }}>
+                    <Icon className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> {label}
                   </span>
                 ))}
               </div>

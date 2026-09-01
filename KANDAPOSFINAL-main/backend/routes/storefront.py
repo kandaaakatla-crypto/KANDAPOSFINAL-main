@@ -71,7 +71,11 @@ async def public_menu(slug: str):
             continue  # day-part item outside its window — hide from the public menu
         visible.append(apply_schedule_pricing(it, mode, value))
     return {
-        "tenant": {"name": tenant.get("name"), "slug": slug, "onlinePayments": (tenant.get("features") or {}).get("online_payments", True)},
+        "tenant": {
+            "name": tenant.get("name"), "slug": slug,
+            "businessType": tenant.get("business_type", "restaurant"),
+            "onlinePayments": (tenant.get("features") or {}).get("online_payments", True),
+        },
         "categories": cats,
         "items": [menu_doc_to_response(i) for i in visible],
     }
