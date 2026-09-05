@@ -53,6 +53,8 @@ import PayrollScreen from "./components/dash/PayrollScreen";
 import BrandScreen from "./components/dash/BrandScreen";
 import DashCentralSupply from "./components/dash/DashCentralSupply";
 import AIAssistant from "./components/AIAssistant";
+import PrivacyPolicy from "./components/legal/PrivacyPolicy";
+import TermsAndConditions from "./components/legal/TermsAndConditions";
 
 function Protected({ children }) {
   const { staffUser, bootState } = usePos();
@@ -148,6 +150,8 @@ function App() {
                 {/* Public marketing landing page + portal picker */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/start" element={<Navigate to="/" replace />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/terms" element={<TermsAndConditions />} />
 
                 {/* Tenant POS */}
                 <Route path="/login" element={<LoginScreen />} />
