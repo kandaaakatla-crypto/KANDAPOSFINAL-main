@@ -7,6 +7,13 @@
       "runtimeArgs": ["start"],
       "cwd": "KANDAPOSFINAL-main/frontend",
       "port": 3000
+    },
+    {
+      "name": "kanda-backend",
+      "runtimeExecutable": "venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"],
+      "cwd": "KANDAPOSFINAL-main/backend",
+      "port": 8000
     }
   ]
 }

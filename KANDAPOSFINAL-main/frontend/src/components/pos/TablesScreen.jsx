@@ -37,12 +37,12 @@ export default function TablesScreen() {
   const handleClick = (t) => {
     if (t.status === "available") {
       toast.success(`Starting order for T${t.number}`);
-      navigate(`/?table=${t.number}`);
+      navigate(`/pos?table=${t.number}`);
     } else if (t.status === "occupied") {
       const order = orderFor(t);
       if (order) {
         toast.info(`Opening open bill for T${t.number}`);
-        navigate(`/?table=${t.number}&order=${order.id}`);
+        navigate(`/pos?table=${t.number}&order=${order.id}`);
       }
     } else if (t.status === "reserved") {
       setTableStatus(t.id, "available");

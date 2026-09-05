@@ -159,7 +159,7 @@ export default function DriverScreen() {
             style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <RefreshCw className={`w-4 h-4 ${busy ? "animate-spin" : ""}`} />
           </button>
-          <button data-testid="driver-logout" onClick={() => { logout(); navigate("/login"); }}
+          <button data-testid="driver-logout" onClick={() => { logout(); window.location.assign("/login"); }}
             className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
             style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <LogOut className="w-3.5 h-3.5" /> Sign out

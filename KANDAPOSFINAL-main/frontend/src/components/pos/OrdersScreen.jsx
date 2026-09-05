@@ -126,7 +126,7 @@ export default function OrdersScreen() {
                     <Receipt className="w-3.5 h-3.5" /> Receipt / KOT
                   </button>
                   {o.payment === "unpaid" && !o.voided && o.status !== "completed" && (
-                    <button data-testid={`bill-${o.number}`} onClick={() => navigate(`/?order=${o.id}`)}
+                    <button data-testid={`bill-${o.number}`} onClick={() => navigate(`/pos?order=${o.id}`)}
                       className="pos-btn mt-2 h-9 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5"
                       style={{ background: "var(--pos-accent)" }}>
                       <CreditCard className="w-3.5 h-3.5" /> Bill this order
