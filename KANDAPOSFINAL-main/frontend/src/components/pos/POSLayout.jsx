@@ -22,7 +22,7 @@ export default function POSLayout() {
   // Primary tabs — always visible in the mobile bottom bar. Tables only
   // makes sense for dine-in businesses, so retail tenants skip it.
   const PRIMARY_NAV = [
-    { to: "/", label: businessType === "retail" ? "Sale" : "Order", icon: ShoppingCart, end: true },
+    { to: "/pos", label: businessType === "retail" ? "Sale" : "Order", icon: ShoppingCart, end: true },
     { to: "/orders", label: "Orders", icon: ClipboardList },
     ...(features.tables ? [{ to: "/tables", label: "Tables", icon: LayoutGrid }] : []),
     { to: "/menu", label: businessType === "retail" ? "Products" : "Menu", icon: BookOpen },
@@ -50,8 +50,8 @@ export default function POSLayout() {
   // by direct URL either, not just have it hidden from nav.
   useEffect(() => {
     const path = location.pathname;
-    if (path === "/tables" && !features.tables) navigate("/", { replace: true });
-    if (path === "/dispatch" && !features.dispatch) navigate("/", { replace: true });
+    if (path === "/tables" && !features.tables) navigate("/pos", { replace: true });
+    if (path === "/dispatch" && !features.dispatch) navigate("/pos", { replace: true });
   }, [location.pathname, features, navigate]);
 
   const activeCount = orders.filter((o) => ["new", "in-kitchen", "ready", "out-for-delivery"].includes(o.status)).length;

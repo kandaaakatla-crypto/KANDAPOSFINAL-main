@@ -25,7 +25,7 @@ export default function OnboardingBanner() {
     { key: "has_extra_staff", label: "Add your real employees", route: "/biz/staff", done: status.has_extra_staff },
     { key: "has_menu", label: "Confirm your menu is set up", route: "/menu", done: status.has_menu },
     { key: "has_location", label: "Verify your store location", route: "/biz/locations", done: status.has_location },
-    { key: "has_real_orders", label: "Take your first paid order", route: "/", done: status.has_real_orders },
+    { key: "has_real_orders", label: "Take your first paid order", route: "/pos", done: status.has_real_orders },
   ];
   const doneCount = items.filter((i) => i.done).length;
 

@@ -103,7 +103,7 @@ export default function DriverScreen() {
 
   // If a non-Driver lands here, send them home.
   useEffect(() => {
-    if (staffUser && staffUser.role !== "Driver") navigate("/", { replace: true });
+    if (staffUser && staffUser.role !== "Driver") navigate("/pos", { replace: true });
   }, [staffUser, navigate]);
 
   const load = useCallback(async () => {

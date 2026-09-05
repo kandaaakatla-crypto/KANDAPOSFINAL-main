@@ -24,7 +24,7 @@ export default function ImpersonateModal({ tenant, open, onClose }) {
       onClose();
       // Hard navigation so PosContext bootstraps fresh with the new impersonation token.
       // Mirrors the pattern used by ImpersonationBanner.onExit().
-      window.location.assign("/");
+      window.location.assign("/pos");
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Could not start impersonation");
     } finally { setBusy(false); }

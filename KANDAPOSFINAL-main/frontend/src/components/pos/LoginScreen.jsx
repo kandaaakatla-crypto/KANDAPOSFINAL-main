@@ -66,7 +66,7 @@ export default function LoginScreen() {
     setBusy(false);
     if (user) {
       toast.success(`Welcome back, ${user.name}`);
-      navigate(user.role === "Driver" ? "/driver" : "/");
+      navigate(user.role === "Driver" ? "/driver" : "/pos");
     } else {
       setError(true);
       setPin("");

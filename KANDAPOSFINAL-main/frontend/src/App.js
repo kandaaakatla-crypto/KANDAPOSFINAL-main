@@ -63,7 +63,7 @@ function Protected({ children }) {
       </div>
     );
   }
-  if (!staffUser) return <Navigate to="/start" replace />;
+  if (!staffUser) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -146,13 +146,14 @@ function App() {
                 <Route path="/driver" element={<Protected><DriverScreen /></Protected>} />
 
                 {/* Public marketing landing page + portal picker */}
-                <Route path="/start" element={<LandingPage />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/start" element={<Navigate to="/" replace />} />
 
                 {/* Tenant POS */}
                 <Route path="/login" element={<LoginScreen />} />
                 <Route path="/clock" element={<TimeClockScreen />} />
                 <Route element={<Protected><POSLayout /></Protected>}>
-                  <Route path="/" element={<HomeScreen />} />
+                  <Route path="/pos" element={<HomeScreen />} />
                   <Route path="/orders" element={<OrdersScreen />} />
                   <Route path="/tables" element={<TablesScreen />} />
                   <Route path="/menu" element={<MenuScreen />} />
