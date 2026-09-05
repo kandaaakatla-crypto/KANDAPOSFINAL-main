@@ -72,7 +72,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
       key: rzpOrder.razorpayKeyId, amount: rzpOrder.amount, currency: rzpOrder.currency,
       order_id: rzpOrder.razorpayOrderId, name: "Kanda POS",
       description: `POS Order #${placed.number} — card portion`,
-      prefill: { name: customerName || "Walk-in" }, theme: { color: "#1FA55B" },
+      prefill: { name: customerName || "Walk-in" }, theme: { color: "#f97316" },
       modal: {
         ondismiss: () => {
           setCardState("idle");
@@ -125,7 +125,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
       name: "Kanda POS",
       description: `POS Order #${placed.number}`,
       prefill: { name: customerName || "Walk-in" },
-      theme: { color: "#1FA55B" },
+      theme: { color: "#f97316" },
       modal: {
         ondismiss: () => {
           setCardState("idle");

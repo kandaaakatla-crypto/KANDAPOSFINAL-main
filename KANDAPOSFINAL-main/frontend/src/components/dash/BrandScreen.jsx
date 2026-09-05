@@ -403,7 +403,7 @@ function NewStoreForm({ brand, onDone }) {
       const order = await brandApi.purchaseStoreSlot(brand.id);
       const rzp = new window.Razorpay({
         key: order.key_id, amount: order.amount, currency: order.currency, order_id: order.order_id,
-        name: "Kanda POS", description: order.description, theme: { color: "#1FA55B" },
+        name: "Kanda POS", description: order.description, theme: { color: "#f97316" },
         handler: async (resp) => {
           try {
             await brandApi.verifyStoreSlot(brand.id, {
@@ -411,7 +411,7 @@ function NewStoreForm({ brand, onDone }) {
               razorpay_payment_id: resp.razorpay_payment_id,
               razorpay_signature: resp.razorpay_signature,
             });
-            toast.success("Payment successful, adding store…");
+            toast.success("Payment successful — adding store…");
             setPaymentNeeded(null);
             await attemptCreate();
           } catch (e) {
@@ -435,7 +435,7 @@ function NewStoreForm({ brand, onDone }) {
     return (
       <div className="space-y-4" data-testid="brand-store-payment-step">
         <div className="p-4 rounded-xl text-center"
-          style={{ background: "linear-gradient(135deg, rgba(31,165,91,0.20), rgba(23,136,73,0.10))", border: "1px solid rgba(31,165,91,0.40)" }}>
+          style={{ background: "linear-gradient(135deg, rgba(249,115,22,0.20), rgba(234,88,12,0.10))", border: "1px solid rgba(249,115,22,0.40)" }}>
           <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>One-time charge</div>
           <div className="mt-1 text-4xl font-bold text-white tabular-nums">₹{paymentNeeded.price.toFixed(0)}</div>
           <div className="text-[11px] mt-1" style={{ color: "var(--pos-muted)" }}>
