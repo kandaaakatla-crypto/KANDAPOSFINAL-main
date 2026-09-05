@@ -3,7 +3,12 @@ import LegalPage, { Section } from "./LegalPage";
 
 export default function PrivacyPolicy() {
   return (
-    <LegalPage title="Privacy policy" updated="6 September 2026">
+    <LegalPage
+      title="Privacy policy"
+      updated="6 September 2026"
+      path="/privacy"
+      description="How Kanda POS collects, uses and protects data for the businesses and customers using our restaurant and retail point of sale platform."
+    >
       <Section heading="Who this applies to">
         <p>
           Kanda POS is point-of-sale software used by restaurants and retail stores ("businesses"). This

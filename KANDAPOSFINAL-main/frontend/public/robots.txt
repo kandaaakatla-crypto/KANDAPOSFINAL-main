@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+
+# App-only routes: staff/owner tools, tenant storefronts and long-lived
+# device links. They require auth or a per-tenant token and have no
+# standalone content worth indexing.
+Disallow: /login
+Disallow: /clock
+Disallow: /pos
+Disallow: /orders
+Disallow: /tables
+Disallow: /menu
+Disallow: /dispatch
+Disallow: /workforce
+Disallow: /driver
+Disallow: /biz
+Disallow: /owner
+Disallow: /kds
+Disallow: /display
+Disallow: /packing
+Disallow: /order/
+Disallow: /loyalty/
+
+Sitemap: https://kandapos.com/sitemap.xml

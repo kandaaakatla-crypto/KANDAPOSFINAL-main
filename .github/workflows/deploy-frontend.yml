@@ -47,6 +47,11 @@ jobs:
           # See build-android.yml — CRA fails the build on pre-existing lint
           # warnings when CI=true, which GitHub Actions sets by default.
           CI: false
+          # Don't ship .map files publicly — they expose original source
+          # (including comments) to anyone who opens devtools. Sentry still
+          # gets readable stack traces from its own SDK breadcrumbs; wiring
+          # up a separate sourcemap upload step is a follow-up, not this.
+          GENERATE_SOURCEMAP: false
         run: npm run build
 
       - uses: FirebaseExtended/action-hosting-deploy@v0

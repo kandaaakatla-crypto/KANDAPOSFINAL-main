@@ -7,6 +7,7 @@ import {
   Truck, Boxes, Users, BarChart3, MessageCircle, Mic, MapPin, Mail, Phone,
   ArrowRight, CheckCircle2, Sparkles, ShoppingBag, Menu, X, Wallet, Star,
 } from "lucide-react";
+import useSeo, { useStructuredData } from "../hooks/useSeo";
 
 const CYCLE_WORDS = ["order", "ticket", "sale", "table", "delivery", "refund"];
 
@@ -102,8 +103,36 @@ function SectionLabel({ children }) {
   );
 }
 
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "name": "Kanda POS",
+      "url": "https://kandapos.com",
+      "logo": "https://kandapos.com/kanda-logo.png",
+      "email": "connect@kandapos.com",
+      "telephone": "+91-90009-90209",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Kanda POS",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, Android, Windows",
+      "description": "Point of sale software for restaurants and retail stores: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one system.",
+      "url": "https://kandapos.com",
+    },
+  ],
+};
+
 export default function LandingPage() {
   const navigate = useNavigate();
+  useSeo({
+    title: "Point of sale for restaurants & retail",
+    description: "Kanda POS runs dine-in, collection, delivery and in-store retail sales, kitchen tickets, barcode checkout, staff, inventory and reporting for busy restaurants and retail stores, all from one system.",
+    path: "/",
+  });
+  useStructuredData("ld-landing", STRUCTURED_DATA);
   const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [wordIdx, setWordIdx] = useState(0);

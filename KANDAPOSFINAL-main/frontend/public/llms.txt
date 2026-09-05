@@ -1,0 +1,16 @@
+# Kanda POS
+
+> Point of sale software for restaurants and retail stores: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff management, inventory and reporting, in one system. Ships as a web app, and as Android and Windows apps.
+
+Kanda POS is multi-tenant software used by individual restaurants and retail stores to run their own point of sale. Staff sign in with a 4-digit PIN; store owners and managers get a separate business dashboard.
+
+## Pages
+
+- [Homepage](https://kandapos.com/): product overview, features and a demo request form.
+- [Privacy policy](https://kandapos.com/privacy): what data is collected from businesses and their customers, and how it's used.
+- [Terms and conditions](https://kandapos.com/terms): the terms that govern use of the platform.
+
+## Contact
+
+- Email: connect@kandapos.com
+- Phone: +91 90009 90209

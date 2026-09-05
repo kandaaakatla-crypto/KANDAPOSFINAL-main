@@ -137,7 +137,7 @@ export default function RetailSaleScreen() {
             <button key={item.id} data-testid={`retail-item-${item.id}`} onClick={() => handleItemClick(item)} disabled={!item.available}
               className="rounded-xl text-left flex flex-col overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", opacity: item.available ? 1 : 0.5 }}>
               {item.imageUrl ? (
-                <img src={item.imageUrl} alt="" className="w-full aspect-square object-cover" style={{ background: "var(--pos-panel-2)" }} />
+                <img src={item.imageUrl} alt={item.name} className="w-full aspect-square object-cover" style={{ background: "var(--pos-panel-2)" }} />
               ) : (
                 <div className="w-full aspect-square flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}>
                   <Package className="w-6 h-6" style={{ color: "var(--pos-muted)" }} />

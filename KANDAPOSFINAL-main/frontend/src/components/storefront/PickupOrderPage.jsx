@@ -16,20 +16,20 @@ const SHEET = { CART: "cart", PAYMENT: "payment", PLACING: "placing" };
 
 async function runOnlinePayment({ slug, orderId, amount, customerName }) {
   if (typeof window.Razorpay !== "function") {
-    return { ok: false, reason: "Online payment isn't available for this store — your order is saved, pay on collection." };
+    return { ok: false, reason: "Online payment isn't available for this store. Your order is saved, pay on collection." };
   }
   let rzpOrder;
   try {
     rzpOrder = await storefrontApi.createPaymentOrder(slug, orderId, amount);
   } catch (e) {
-    return { ok: false, reason: e?.response?.data?.detail || "Online payment isn't available for this store — your order is saved, pay on collection." };
+    return { ok: false, reason: e?.response?.data?.detail || "Online payment isn't available for this store. Your order is saved, pay on collection." };
   }
   return new Promise((resolve) => {
     const rzp = new window.Razorpay({
       key: rzpOrder.razorpayKeyId, amount: rzpOrder.amount, currency: rzpOrder.currency,
       order_id: rzpOrder.razorpayOrderId, name: "Order payment", description: `Order`,
       prefill: { name: customerName || "" }, theme: { color: "#d9480f" },
-      modal: { ondismiss: () => resolve({ ok: false, reason: "Payment cancelled — your order is saved, pay on collection." }) },
+      modal: { ondismiss: () => resolve({ ok: false, reason: "Payment cancelled. Your order is saved, pay on collection." }) },
       handler: async (resp) => {
         try {
           const result = await storefrontApi.verifyPayment(slug, {
@@ -38,7 +38,7 @@ async function runOnlinePayment({ slug, orderId, amount, customerName }) {
           });
           resolve({ ok: true, order: result.order });
         } catch (e) {
-          resolve({ ok: false, reason: e?.response?.data?.detail || "Payment verification failed — your order is saved, pay on collection." });
+          resolve({ ok: false, reason: e?.response?.data?.detail || "Payment verification failed. Your order is saved, pay on collection." });
         }
       },
     });
@@ -149,7 +149,7 @@ export default function PickupOrderPage() {
       setCartOpen(false);
       setStep(STEP.DONE);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Could not place your order — please try again.");
+      toast.error(e?.response?.data?.detail || "Could not place your order, please try again.");
       setSheetStep(SHEET.PAYMENT);
     } finally { setPlacing(false); }
   };
@@ -182,7 +182,7 @@ export default function PickupOrderPage() {
           <div className="text-xs mb-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: confirmed.paid ? "var(--sf-success-bg)" : "var(--sf-bg-sunken)", color: confirmed.paid ? "var(--sf-success)" : "var(--sf-text-muted)" }}>
             {confirmed.paid ? <><CheckCircle2 className="w-3.5 h-3.5" /> Paid online</> : <><Clock className="w-3.5 h-3.5" /> Pay on collection</>}
           </div>
-          <p className="text-xs" style={{ color: "var(--sf-text-muted)" }}>We'll have it ready shortly — show your name at the counter.</p>
+          <p className="text-xs" style={{ color: "var(--sf-text-muted)" }}>We'll have it ready shortly. Show your name at the counter.</p>
         </div>
       </div>
     );
@@ -216,7 +216,7 @@ export default function PickupOrderPage() {
               </div>
               {devCode && (
                 <div className="text-xs rounded-lg px-3 py-2" style={{ background: "var(--sf-bg-sunken)", color: "var(--sf-accent)" }}>
-                  No SMS provider configured — your code is <b>{devCode}</b>
+                  No SMS provider configured. Your code is <b>{devCode}</b>
                 </div>
               )}
               <input data-testid="pickup-otp-code" placeholder="6-digit code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -280,7 +280,7 @@ export default function PickupOrderPage() {
             <button key={item.id} data-testid={`sf-item-${item.id}`} onClick={() => handleItemClick(item)}
               className="rounded-2xl text-left flex flex-col overflow-hidden sf-card" style={{ opacity: item.available ? 1 : 0.5 }} disabled={!item.available}>
               {item.imageUrl ? (
-                <img src={item.imageUrl} alt="" className="w-full aspect-square object-cover sf-item-img" loading="lazy" />
+                <img src={item.imageUrl} alt={item.name} className="w-full aspect-square object-cover sf-item-img" loading="lazy" />
               ) : (
                 <div className="w-full aspect-square flex items-center justify-center sf-item-img">
                   <StoreIcon className="w-7 h-7" style={{ color: "var(--sf-text-muted)" }} />

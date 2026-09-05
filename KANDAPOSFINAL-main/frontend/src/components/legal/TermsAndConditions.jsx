@@ -3,7 +3,12 @@ import LegalPage, { Section } from "./LegalPage";
 
 export default function TermsAndConditions() {
   return (
-    <LegalPage title="Terms and conditions" updated="6 September 2026">
+    <LegalPage
+      title="Terms and conditions"
+      updated="6 September 2026"
+      path="/terms"
+      description="The terms that govern use of the Kanda POS restaurant and retail point of sale platform."
+    >
       <Section heading="Agreement">
         <p>These terms govern use of Kanda POS by the business that signs up for an account ("you") and the
           staff you authorise to use it. By creating an account or using the system, you agree to them.</p>

@@ -38,7 +38,7 @@ export default function BirthdayLinkPage() {
       await publicLoyaltyApi.submitBirthday(token, value.slice(5));
       setDone(true);
     } catch (e) {
-      setError(e?.response?.data?.detail || "Could not save — try again.");
+      setError(e?.response?.data?.detail || "Could not save, try again.");
     } finally {
       setSaving(false);
     }
@@ -68,7 +68,7 @@ export default function BirthdayLinkPage() {
               </div>
               <h1 className="text-lg font-bold text-white">Hi {name.split(" ")[0] || "there"}!</h1>
               <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
-                {existing ? "You've already told us your birthday — update it below if it's wrong." : "When's your birthday? We'll send you a treat every year."}
+                {existing ? "You've already told us your birthday. Update it below if it's wrong." : "When's your birthday? We'll send you a treat every year."}
               </p>
             </div>
 
@@ -77,7 +77,7 @@ export default function BirthdayLinkPage() {
               onChange={(e) => setValue(e.target.value)}
               className="w-full h-11 rounded-lg px-3 mt-1.5 text-sm text-white outline-none"
               style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
-            <p className="text-[10px] mt-1.5" style={{ color: "var(--pos-muted)" }}>We only keep the month and day — not the year.</p>
+            <p className="text-[10px] mt-1.5" style={{ color: "var(--pos-muted)" }}>We only keep the month and day, not the year.</p>
 
             <button data-testid="birthday-submit-btn" onClick={submit} disabled={!value || saving}
               className="pos-btn w-full h-11 rounded-lg font-bold text-white flex items-center justify-center gap-2 mt-4"
@@ -93,7 +93,7 @@ export default function BirthdayLinkPage() {
             <h1 className="text-lg font-bold text-white flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" style={{ color: "#4ade80" }} /> Got it!
             </h1>
-            <p className="text-sm" style={{ color: "var(--pos-muted)" }}>Thanks — see you on your birthday 🎉</p>
+            <p className="text-sm" style={{ color: "var(--pos-muted)" }}>Thanks, see you on your birthday.</p>
           </div>
         )}
       </div>

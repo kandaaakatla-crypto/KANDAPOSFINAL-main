@@ -6,21 +6,23 @@ import { Pizza, ShoppingBag, Delete, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, tenantStore } from "../../api/client";
 import { impersonationCtx } from "../../api/ownerClient";
+import useSeo from "../../hooks/useSeo";
 
 const BRAND_COPY = {
   restaurant: {
     headline: <>Every order.<br />One screen.</>,
-    body: "Delivery, collection and dine-in orders processed on a single easy-to-use screen — built for busy pizza & fast-food stores.",
+    body: "Delivery, collection and dine-in orders processed on a single easy-to-use screen, built for busy pizza & fast-food stores.",
   },
   retail: {
     headline: <>Every sale.<br />One screen.</>,
-    body: "Basket checkout, barcode scanning and inventory tracking on a single easy-to-use screen — built for busy retail stores.",
+    body: "Basket checkout, barcode scanning and inventory tracking on a single easy-to-use screen, built for busy retail stores.",
   },
 };
 
 export default function LoginScreen() {
   const { login } = usePos();
   const navigate = useNavigate();
+  useSeo({ title: "Staff sign in", noindex: true });
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);

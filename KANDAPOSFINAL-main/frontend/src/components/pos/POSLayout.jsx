@@ -8,6 +8,7 @@ import ContactSupportModal from "./ContactSupportModal";
 import OnboardingBanner from "./OnboardingBanner";
 import LocationSwitcher from "./LocationSwitcher";
 import { Sheet, SheetContent } from "../ui/sheet";
+import useSeo from "../../hooks/useSeo";
 
 const ALL_STAFF_WORKFORCE = { to: "/workforce", label: "My Rota", icon: CalendarDays };
 
@@ -15,6 +16,9 @@ export default function POSLayout() {
   const { staffUser, logout, orders, businessType, features, isOffline, pendingSyncCount } = usePos();
   const navigate = useNavigate();
   const location = useLocation();
+  // Resets the tab title once staff are past /login — otherwise it would
+  // keep reading "Staff sign in" for the rest of the session.
+  useSeo({ title: "Point of sale", noindex: true });
   const [time, setTime] = useState(new Date());
   const [supportOpen, setSupportOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);

@@ -52,7 +52,7 @@ export default function StorefrontItemModal({ item, items, onClose, onAdd }) {
       });
       onAdd({ item_id: item.id, qty, mods, displayName: item.name, displayPrice: item.price });
     } else if (hasVariants) {
-      onAdd({ item_id: item.id, qty, variant: variant.label, mods: [], displayName: `${item.name} — ${variant.label}`, displayPrice: unitPrice });
+      onAdd({ item_id: item.id, qty, variant: variant.label, mods: [], displayName: `${item.name} (${variant.label})`, displayPrice: unitPrice });
     } else {
       onAdd({ item_id: item.id, qty, size: item.isPizza ? size : null, mods: [], displayName: item.isPizza ? `${item.name} (${SIZE_OPTS.find((s) => s.id === size).label})` : item.name, displayPrice: unitPrice });
     }
@@ -63,7 +63,7 @@ export default function StorefrontItemModal({ item, items, onClose, onAdd }) {
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sf max-w-lg max-h-[85vh] overflow-y-auto p-0 overflow-hidden" style={{ background: "var(--sf-bg-elevated)", borderColor: "var(--sf-border)", color: "var(--sf-text)" }} data-testid="storefront-item-modal">
         {item.imageUrl ? (
-          <img src={item.imageUrl} alt="" className="w-full h-44 object-cover sf-item-img" />
+          <img src={item.imageUrl} alt={item.name} className="w-full h-44 object-cover sf-item-img" />
         ) : (
           <div className="w-full h-28 flex items-center justify-center sf-item-img">
             <UtensilsCrossed className="w-8 h-8" style={{ color: "var(--sf-text-muted)" }} />

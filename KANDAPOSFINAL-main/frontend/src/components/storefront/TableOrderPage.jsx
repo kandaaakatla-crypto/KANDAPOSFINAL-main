@@ -15,20 +15,20 @@ const STEP = { CART: "cart", AUTH: "auth", PAYMENT: "payment", PLACING: "placing
 
 async function runOnlinePayment({ slug, orderId, amount, customerName }) {
   if (typeof window.Razorpay !== "function") {
-    return { ok: false, reason: "Online payment isn't available for this store — your order is saved, pay at the table." };
+    return { ok: false, reason: "Online payment isn't available for this store. Your order is saved, pay at the table." };
   }
   let rzpOrder;
   try {
     rzpOrder = await storefrontApi.createPaymentOrder(slug, orderId, amount);
   } catch (e) {
-    return { ok: false, reason: e?.response?.data?.detail || "Online payment isn't available for this store — your order is saved, pay at the table." };
+    return { ok: false, reason: e?.response?.data?.detail || "Online payment isn't available for this store. Your order is saved, pay at the table." };
   }
   return new Promise((resolve) => {
     const rzp = new window.Razorpay({
       key: rzpOrder.razorpayKeyId, amount: rzpOrder.amount, currency: rzpOrder.currency,
       order_id: rzpOrder.razorpayOrderId, name: "Order payment", description: `Order`,
       prefill: { name: customerName || "" }, theme: { color: "#d9480f" },
-      modal: { ondismiss: () => resolve({ ok: false, reason: "Payment cancelled — your order is saved, pay at the table." }) },
+      modal: { ondismiss: () => resolve({ ok: false, reason: "Payment cancelled. Your order is saved, pay at the table." }) },
       handler: async (resp) => {
         try {
           const result = await storefrontApi.verifyPayment(slug, {
@@ -37,7 +37,7 @@ async function runOnlinePayment({ slug, orderId, amount, customerName }) {
           });
           resolve({ ok: true, order: result.order });
         } catch (e) {
-          resolve({ ok: false, reason: e?.response?.data?.detail || "Payment verification failed — your order is saved, pay at the table." });
+          resolve({ ok: false, reason: e?.response?.data?.detail || "Payment verification failed. Your order is saved, pay at the table." });
         }
       },
     });
@@ -147,7 +147,7 @@ export default function TableOrderPage() {
       setCart([]);
       setCartOpen(false);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Could not place your order — please try again.");
+      toast.error(e?.response?.data?.detail || "Could not place your order, please try again.");
       setSheetStep(STEP.PAYMENT);
     } finally { setPlacing(false); }
   };
@@ -239,7 +239,7 @@ export default function TableOrderPage() {
             <button key={item.id} data-testid={`sf-item-${item.id}`} onClick={() => handleItemClick(item)}
               className="rounded-2xl text-left flex flex-col overflow-hidden sf-card" style={{ opacity: item.available ? 1 : 0.5 }} disabled={!item.available}>
               {item.imageUrl ? (
-                <img src={item.imageUrl} alt="" className="w-full aspect-square object-cover sf-item-img" loading="lazy" />
+                <img src={item.imageUrl} alt={item.name} className="w-full aspect-square object-cover sf-item-img" loading="lazy" />
               ) : (
                 <div className="w-full aspect-square flex items-center justify-center sf-item-img">
                   <UtensilsCrossed className="w-7 h-7" style={{ color: "var(--sf-text-muted)" }} />
@@ -333,7 +333,7 @@ export default function TableOrderPage() {
                 ) : (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-xs mb-1" style={{ color: "var(--sf-text-muted)" }}><ShieldCheck className="w-3.5 h-3.5" /> Code sent to {phone}</div>
-                    {devCode && <div className="text-xs rounded-lg px-3 py-2" style={{ background: "var(--sf-bg-sunken)", color: "var(--sf-accent)" }}>No SMS provider configured — your code is <b>{devCode}</b></div>}
+                    {devCode && <div className="text-xs rounded-lg px-3 py-2" style={{ background: "var(--sf-bg-sunken)", color: "var(--sf-accent)" }}>No SMS provider configured. Your code is <b>{devCode}</b></div>}
                     <input data-testid="table-auth-code" placeholder="6-digit code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       className="w-full h-11 px-3 rounded-xl text-sm text-center tracking-[0.5em] font-bold sf-input" />
                     {otpError && <p className="text-xs" style={{ color: "var(--sf-danger)" }}>{otpError}</p>}

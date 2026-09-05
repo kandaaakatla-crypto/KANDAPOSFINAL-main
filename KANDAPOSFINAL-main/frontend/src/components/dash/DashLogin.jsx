@@ -42,7 +42,7 @@ export default function DashLogin() {
         <div>
           <h1 className="text-4xl font-bold text-white leading-tight mb-3">Manage every store from one screen.</h1>
           <p className="text-base max-w-md leading-relaxed" style={{ color: "var(--pos-muted)" }}>
-            Menu, staff, rota, promotions, and locations — all in one place.
+            Menu, staff, rota, promotions, and locations, all in one place.
             Owners see every store. Area managers see the ones they cover. Store managers see theirs.
           </p>
         </div>

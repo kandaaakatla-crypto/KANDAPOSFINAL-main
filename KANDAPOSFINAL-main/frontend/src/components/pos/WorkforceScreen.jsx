@@ -403,7 +403,7 @@ function LiveTab() {
         <div key={p.punch_id} data-testid={`live-row-${p.user_id}`} className="flex items-center gap-4 rounded-lg p-3"
           style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           {p.selfie_b64 ? (
-            <img src={p.selfie_b64} alt="" className="w-12 h-12 rounded-full object-cover" />
+            <img src={p.selfie_b64} alt={p.user_name} className="w-12 h-12 rounded-full object-cover" />
           ) : (
             <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "var(--pos-blue)" }}>
               <Clock className="w-5 h-5 text-white" />
