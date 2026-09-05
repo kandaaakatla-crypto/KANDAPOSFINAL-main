@@ -220,7 +220,7 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="land-blob-a absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full" style={{ background: "radial-gradient(circle, #f97316 0%, transparent 70%)", filter: "blur(70px)", opacity: 0.35 }} />
+        <div className="land-blob-a absolute -top-32 -left-32 w-[28rem] h-[28rem] rounded-full" style={{ background: "radial-gradient(circle, #1FA55B 0%, transparent 70%)", filter: "blur(70px)", opacity: 0.35 }} />
         <div className="land-blob-b absolute top-10 -right-40 w-[30rem] h-[30rem] rounded-full" style={{ background: "radial-gradient(circle, #2563eb 0%, transparent 70%)", filter: "blur(80px)", opacity: 0.3 }} />
 
         <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
@@ -324,11 +324,11 @@ export default function LandingPage() {
                   exit={{ opacity: 0, y: -10, rotate: -3 }}
                   transition={{ duration: 0.3 }}
                   className="rounded-2xl p-6"
-                  style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", boxShadow: "0 20px 60px -20px rgba(249,115,22,0.25)" }}
+                  style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", boxShadow: "0 20px 60px -20px rgba(31,165,91,0.25)" }}
                 >
                   <div className="flex items-center justify-between mb-4 pb-4" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span className="font-bold text-sm">{ticket.orderId}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(249,115,22,0.15)", color: "var(--pos-accent)" }}>{ticket.tag}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(31,165,91,0.15)", color: "var(--pos-accent)" }}>{ticket.tag}</span>
                   </div>
                   {ticket.lines.map(([item, price], i) => (
                     <motion.div
@@ -363,7 +363,7 @@ export default function LandingPage() {
           {FEATURES.map(({ icon: Icon, title, desc, big }, i) => (
             <Reveal key={title} delay={(i % 3) * 0.06} className={big ? "sm:col-span-2" : ""}>
               <div className="land-card h-full rounded-2xl p-6" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, var(--pos-accent), #ea580c)" }}>
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, var(--pos-accent), #178849)" }}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
                 <div className="font-semibold text-lg mb-1.5">{title}</div>
@@ -378,7 +378,7 @@ export default function LandingPage() {
       <section id="demo" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <div className="grid md:grid-cols-2 rounded-3xl overflow-hidden" style={{ border: "1px solid var(--pos-border)" }}>
           {/* Left — contact info, accent panel */}
-          <Reveal className="p-10 flex flex-col justify-between" style={{ background: "linear-gradient(160deg, var(--pos-accent) 0%, #c2410c 100%)" }}>
+          <Reveal className="p-10 flex flex-col justify-between" style={{ background: "linear-gradient(160deg, var(--pos-accent) 0%, #15803D 100%)" }}>
             <div>
               <div className="text-xs font-bold tracking-[0.3em] uppercase mb-4 text-white/80">Contact &amp; Demo</div>
               <h2 className="text-3xl font-bold mb-4 text-white">Let's get your business on Kanda POS</h2>

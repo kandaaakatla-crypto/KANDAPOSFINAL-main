@@ -42,7 +42,7 @@ export default function PendingBrandInviteBanner() {
     <div className="space-y-2" data-testid="brand-invite-banner">
       {invites.map((inv) => (
         <div key={inv.id} className="rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap"
-          style={{ background: "linear-gradient(135deg, rgba(249,115,22,0.15), rgba(234,88,12,0.08))", border: "1px solid rgba(249,115,22,0.4)" }}>
+          style={{ background: "linear-gradient(135deg, rgba(31,165,91,0.15), rgba(23,136,73,0.08))", border: "1px solid rgba(31,165,91,0.4)" }}>
           <div className="flex items-center gap-2.5">
             <Mail className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} />
             <div className="text-sm text-white">

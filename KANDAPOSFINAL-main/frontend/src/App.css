@@ -5,8 +5,8 @@
   --pos-panel: #111a2c;
   --pos-panel-2: #16213a;
   --pos-border: #243352;
-  --pos-accent: #f97316;
-  --pos-accent-hover: #ea580c;
+  --pos-accent: #1FA55B;
+  --pos-accent-hover: #178849;
   --pos-blue: #2563eb;
   --pos-text: #e8edf7;
   --pos-muted: #8b9bb8;
@@ -87,7 +87,7 @@
 }
 
 .land-gradient-text {
-  background: linear-gradient(90deg, #ffffff 0%, #fdba74 50%, #f97316 100%);
+  background: linear-gradient(90deg, #ffffff 0%, #86efac 50%, #1FA55B 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
