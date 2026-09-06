@@ -7,9 +7,26 @@ from db import get_db
 from auth import verify_pin, create_access_token, get_current_user, require_role
 from tenants import resolve_tenant_from_request, tenant_filter
 from subscriptions import grace_state
+from ratelimit import peek as rate_limit_peek, hit as rate_limit_hit
 from models import LoginRequest, LoginResponse, UserPublic, TenantInfo, TenantFeaturesUpdate, default_features
 
 router = APIRouter()
+
+# A PIN is 4 digits — 10,000 combinations. Cap failed attempts per source so
+# brute-forcing one isn't practical, without punishing a shared terminal
+# where many staff enter their own correct PIN throughout a shift (only
+# failures count, see below).
+LOGIN_MAX_FAILURES = 6
+LOGIN_WINDOW_SECONDS = 300
+
+
+def _client_ip(request: Request) -> str:
+    # Cloud Run puts the real client IP first in X-Forwarded-For, with its
+    # own infra's hops appended after.
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 @router.post("/auth/login", response_model=LoginResponse)
@@ -19,6 +36,14 @@ async def login(payload: LoginRequest, request: Request):
     if not pin:
         raise HTTPException(status_code=400, detail="PIN is required")
     tenant = await resolve_tenant_from_request(request, db)
+
+    rl_key = f"loginrl:{tenant['id']}:{_client_ip(request)}"
+    if await rate_limit_peek(rl_key) >= LOGIN_MAX_FAILURES:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many failed sign-in attempts. Please wait a few minutes and try again.",
+        )
+
     # Subscription gate: hard-block staff login if the tenant is past the grace window.
     sub = grace_state(tenant)
     if not sub["ok"]:
@@ -39,6 +64,7 @@ async def login(payload: LoginRequest, request: Request):
                 token=token,
                 user=UserPublic(id=u["id"], name=u["name"], role=u["role"], initials=u["initials"]),
             )
+    await rate_limit_hit(rl_key, LOGIN_WINDOW_SECONDS)
     raise HTTPException(status_code=401, detail="Invalid PIN")
 
 

@@ -138,7 +138,12 @@ install_ops_middleware(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
+    # Auth here is Bearer-token-only (see auth.py) — nothing relies on
+    # cookies or other ambient credentials cross-origin, so this must stay
+    # False. `allow_credentials=True` combined with a wildcard origin is
+    # spec-invalid (browsers refuse to expose the response), and this app
+    # has no case that actually needs it.
+    allow_credentials=False,
     allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
     allow_methods=["*"],
     allow_headers=["*"],
