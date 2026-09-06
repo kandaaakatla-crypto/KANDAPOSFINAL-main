@@ -17,6 +17,8 @@ import PrivacyPolicy from "./components/legal/PrivacyPolicy";
 import TermsAndConditions from "./components/legal/TermsAndConditions";
 import NotFoundPage from "./components/NotFoundPage";
 
+const RolePicker = lazy(() => import("./components/display/RolePicker"));
+
 const LoginScreen = lazy(() => import("./components/pos/LoginScreen"));
 const TimeClockScreen = lazy(() => import("./components/pos/TimeClockScreen"));
 const POSLayout = lazy(() => import("./components/pos/POSLayout"));
@@ -74,6 +76,25 @@ function RouteLoading() {
       Loading…
     </div>
   );
+}
+
+// Decides what "/" opens to. Set at build time via REACT_APP_APP_TARGET
+// (see .github/workflows/build-android.yml / build-windows.yml / the new
+// -display variants) — the same web bundle powers three different device
+// identities:
+//   web (default, unset) — the marketing homepage. Used by the plain web
+//     deploy; the staff/KDS routes below still work here too (an
+//     unadvertised fallback), this only changes what "/" shows.
+//   pos — the "Kanda POS" native app (cashier/driver/clock-in): straight
+//     to staff sign-in, no marketing page on a till.
+//   display — the "Kanda Display" native app (KDS/packing/customer
+//     display): a role picker, since this device has no staff PIN of its
+//     own to log in with.
+function RootRoute() {
+  const target = process.env.REACT_APP_APP_TARGET;
+  if (target === "pos") return <Navigate to="/login" replace />;
+  if (target === "display") return <RolePicker />;
+  return <LandingPage />;
 }
 
 function Protected({ children }) {
@@ -173,8 +194,10 @@ function App() {
                   {/* Driver stripped POS view */}
                   <Route path="/driver" element={<Protected><DriverScreen /></Protected>} />
 
-                  {/* Public marketing landing page + portal picker */}
-                  <Route path="/" element={<LandingPage />} />
+                  {/* Public marketing landing page on web; a native-app
+                  identity's own starting screen on pos/display builds
+                  (see RootRoute above). */}
+                  <Route path="/" element={<RootRoute />} />
                   <Route path="/start" element={<Navigate to="/" replace />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/terms" element={<TermsAndConditions />} />
