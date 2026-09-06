@@ -13,10 +13,12 @@ load_dotenv(ROOT_DIR / ".env")
 import os
 import logging
 
+import httpx
 import sentry_sdk
 from fastapi import FastAPI, HTTPException
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 
 # Optional — unset SENTRY_DSN (e.g. local dev) leaves this a no-op, same
 # graceful-degradation pattern as cache.py's Redis wiring. send_default_pii
@@ -85,6 +87,33 @@ async def on_startup():
 @app.on_event("shutdown")
 async def on_shutdown():
     await close_db()
+
+
+# ----------------- SPA soft-404 fix -----------------
+# firebase.json's Hosting rewrite table forwards any path that isn't a real
+# static asset or an explicitly listed app route here (as a catch-all,
+# lowest-priority "run" rewrite) instead of the default static-shell
+# rewrite, which would otherwise answer every dead link with the React app
+# shell and an HTTP 200 — a "soft 404" search engines flag. Real /api/*
+# 404s (and everything else, e.g. 405s) keep their normal JSON error body;
+# only an actually-unmatched public route gets the HTML swap below.
+_SOFT_404_FALLBACK_HTML = "<!doctype html><title>404 Not Found</title><h1>404 Not Found</h1>"
+
+
+@app.exception_handler(StarletteHTTPException)
+async def spa_soft_404_handler(request, exc):
+    if exc.status_code == 404 and not request.url.path.startswith("/api/"):
+        base = os.environ.get("PUBLIC_BASE_URL")
+        if base:
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as hc:
+                    resp = await hc.get(f"{base}/index.html")
+                if resp.status_code == 200:
+                    return HTMLResponse(content=resp.text, status_code=404)
+            except Exception:
+                pass
+        return HTMLResponse(content=_SOFT_404_FALLBACK_HTML, status_code=404)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 # ----------------- Auditor read-only guard -----------------

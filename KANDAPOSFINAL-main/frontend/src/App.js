@@ -102,6 +102,11 @@ function OwnerProtected({ children }) {
   return children;
 }
 
+// Every top-level path below also has to be listed in firebase.json's
+// Hosting rewrites (as its own fast static "/index.html" rule) — otherwise
+// Firebase Hosting's catch-all falls through to the backend's soft-404
+// handler (server.py) and a real route gets served as a 404. Add new
+// top-level routes to both places.
 function App() {
   return (
     <div className="App">

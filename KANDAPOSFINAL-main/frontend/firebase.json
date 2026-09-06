@@ -10,9 +10,35 @@
           "region": "asia-south1"
         }
       },
+      { "source": "/owner", "destination": "/index.html" },
+      { "source": "/owner/**", "destination": "/index.html" },
+      { "source": "/biz", "destination": "/index.html" },
+      { "source": "/biz/**", "destination": "/index.html" },
+      { "source": "/kds", "destination": "/index.html" },
+      { "source": "/kds/**", "destination": "/index.html" },
+      { "source": "/display", "destination": "/index.html" },
+      { "source": "/packing", "destination": "/index.html" },
+      { "source": "/order/**", "destination": "/index.html" },
+      { "source": "/loyalty/**", "destination": "/index.html" },
+      { "source": "/driver", "destination": "/index.html" },
+      { "source": "/", "destination": "/index.html" },
+      { "source": "/start", "destination": "/index.html" },
+      { "source": "/privacy", "destination": "/index.html" },
+      { "source": "/terms", "destination": "/index.html" },
+      { "source": "/login", "destination": "/index.html" },
+      { "source": "/clock", "destination": "/index.html" },
+      { "source": "/pos", "destination": "/index.html" },
+      { "source": "/orders", "destination": "/index.html" },
+      { "source": "/tables", "destination": "/index.html" },
+      { "source": "/menu", "destination": "/index.html" },
+      { "source": "/dispatch", "destination": "/index.html" },
+      { "source": "/workforce", "destination": "/index.html" },
       {
         "source": "**",
-        "destination": "/index.html"
+        "run": {
+          "serviceId": "kanda-pos-backend",
+          "region": "asia-south1"
+        }
       }
     ],
     "headers": [
