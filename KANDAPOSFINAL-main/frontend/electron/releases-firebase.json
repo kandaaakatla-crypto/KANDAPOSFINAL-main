@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "site": "kandapos-desktop-releases",
+    "public": "release-feed",
+    "headers": [
+      {
+        "source": "**",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      }
+    ]
+  }
+}

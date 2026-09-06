@@ -101,9 +101,8 @@
       "allowToChangeInstallationDirectory": true
     },
     "publish": {
-      "provider": "github",
-      "owner": "kandaaakatla-crypto",
-      "repo": "KANDAPOSFINAL-main"
+      "provider": "generic",
+      "url": "https://kandapos-desktop-releases.web.app/"
     }
   },
   "browserslist": {

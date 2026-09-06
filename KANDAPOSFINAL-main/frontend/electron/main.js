@@ -48,11 +48,14 @@ app.whenReady().then(() => {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-  // Only meaningful for a packaged, installed build — checks the GitHub
-  // Releases feed configured in package.json's `build.publish` (see
-  // .github/workflows/build-windows.yml, which is what actually publishes
-  // a release) and silently no-ops in dev, matching electron-updater's own
-  // guidance for `electron .`/unpackaged runs.
+  // Only meaningful for a packaged, installed build — checks the feed
+  // configured in package.json's `build.publish` (a dedicated public
+  // Firebase Hosting site, kandapos-desktop-releases, kept separate from
+  // this private source repo so end users' apps can check for updates
+  // without needing repo access; see .github/workflows/build-windows.yml,
+  // which is what actually publishes a release there) and silently no-ops
+  // in dev, matching electron-updater's own guidance for `electron .`/
+  // unpackaged runs.
   if (app.isPackaged) {
     autoUpdater.checkForUpdatesAndNotify().catch(() => {
       // Best-effort — no update server reachable is not fatal to running the app.
