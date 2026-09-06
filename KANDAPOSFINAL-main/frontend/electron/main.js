@@ -31,6 +31,16 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, "..", "build", "index.html"));
   }
+
+  // The app never navigates itself to a new top-level URL or opens
+  // popups — every screen is a client-side React Router route within the
+  // page the window already loaded. Block both so a link in customer-facing
+  // content (e.g. QR-ordering pages rendered in this same bundle) can't
+  // carry the desktop window to an external site.
+  win.webContents.on("will-navigate", (event, url) => {
+    if (url !== win.webContents.getURL()) event.preventDefault();
+  });
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
 }
 
 app.whenReady().then(() => {
