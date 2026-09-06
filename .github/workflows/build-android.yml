@@ -41,6 +41,10 @@ jobs:
           # same warnings don't fail a local `npm run build`. The warnings
           # are pre-existing (unrelated files, not this pipeline's job to fix).
           CI: false
+          # See deploy-frontend.yml — without this, the APK/AAB ships full
+          # .map files inside its web assets; anyone who unzips the package
+          # gets fully readable original source with comments.
+          GENERATE_SOURCEMAP: false
         run: npm run build
 
       - name: Sync Capacitor Android project

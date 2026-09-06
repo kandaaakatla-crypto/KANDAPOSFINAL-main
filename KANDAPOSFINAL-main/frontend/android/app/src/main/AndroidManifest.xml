@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- allowBackup=false: the offline SQLite cache (kanda_pos_offline —
+    see src/data/repo/sqliteRepo.js) holds an outbox of unsynced,
+    money-bearing order writes and isn't encrypted on-device yet. Auto
+    Backup would otherwise copy that file to the user's Google Drive. -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

@@ -35,6 +35,10 @@ jobs:
           # See build-android.yml — CRA fails the build on pre-existing lint
           # warnings when CI=true, which GitHub Actions sets by default.
           CI: false
+          # See deploy-frontend.yml — without this, the installer ships
+          # full .map files inside the packaged app; anyone who extracts the
+          # asar archive gets fully readable original source with comments.
+          GENERATE_SOURCEMAP: false
         run: npm run build
 
       - name: Build Windows installer
