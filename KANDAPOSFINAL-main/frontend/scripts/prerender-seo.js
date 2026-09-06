@@ -60,8 +60,12 @@ for (const { route, title, description } of PAGES) {
   html = replaceOne(html, /(<meta name="twitter:title" content=")[^"]*(")/, `$1${fullTitle}$2`);
   html = replaceOne(html, /(<meta name="twitter:description" content=")[^"]*(")/, `$1${description}$2`);
 
-  const outDir = path.join(BUILD_DIR, route);
-  fs.mkdirSync(outDir, { recursive: true });
-  fs.writeFileSync(path.join(outDir, "index.html"), html);
-  console.log(`prerender-seo: wrote build/${route}/index.html`);
+  // A flat "<route>.html" file, not "<route>/index.html" — the latter
+  // creates a real directory named e.g. "privacy" in the deployed static
+  // content, which Firebase Hosting treats as a real match and 301s the
+  // clean "/privacy" URL to "/privacy/" *before* the firebase.json rewrite
+  // rule ever runs (real static files/dirs take priority over rewrites).
+  // A flat file has no such collision, so the rewrite serves it directly.
+  fs.writeFileSync(path.join(BUILD_DIR, `${route}.html`), html);
+  console.log(`prerender-seo: wrote build/${route}.html`);
 }
