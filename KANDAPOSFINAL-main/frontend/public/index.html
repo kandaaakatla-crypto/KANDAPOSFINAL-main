@@ -42,7 +42,10 @@
         -->
         <title>Kanda POS | Point of sale for restaurants & retail</title>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
-        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+        <!-- defer: only ever invoked from a user-initiated checkout action
+        (PaymentModal/PickupOrderPage/TableOrderPage/BrandScreen/PlanUpgradeDialog),
+        long after load — no reason to block first paint on every page for it. -->
+        <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
