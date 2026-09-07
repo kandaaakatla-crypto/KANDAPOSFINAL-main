@@ -321,8 +321,11 @@ async def recall_order(order_id: str, tenant: dict = Depends(kds_tenant)):
 @kds_router.get("/my-token")
 async def my_kds_token(user: dict = Depends(require_role("Manager"))):
     """Lets a tenant's own Manager fetch (and lazily create) their kiosk
-    token without needing the Platform Owner — used for the KDS tablet URL
-    and the customer-facing order-status display."""
+    token without needing the Platform Owner — used for the KDS tablet URL,
+    the packing station, and the customer-facing order-status display (see
+    frontend/src/components/dash/KioskTokensCard.jsx). Mirrors the shape of
+    the Platform-Owner-only GET /owner/tenants/{id}/kds-token below so both
+    surfaces can share one frontend card pattern."""
     db = get_db()
     tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
     if not tenant:
@@ -331,7 +334,24 @@ async def my_kds_token(user: dict = Depends(require_role("Manager"))):
     if not token:
         token = f"kds_{user['tenant_id']}_{secrets.token_urlsafe(24)}"
         await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"kds_token": token}})
-    return {"token": token}
+    base = os.environ.get("PUBLIC_BASE_URL") or ""
+    return {"token": token, "url": f"{base}/kds?token={token}", "stations": list(STATIONS)}
+
+
+@kds_router.post("/my-token/rotate")
+async def rotate_my_kds_token(user: dict = Depends(require_role("Manager"))):
+    """Self-serve equivalent of POST /owner/tenants/{id}/kds-token/rotate —
+    a tenant's own Manager can invalidate a lost/compromised kiosk tablet's
+    access without contacting the Platform Owner. Immediately signs out
+    every tablet using the old token (KDS, packing, customer display all
+    share it)."""
+    db = get_db()
+    token = f"kds_{user['tenant_id']}_{secrets.token_urlsafe(24)}"
+    res = await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"kds_token": token}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    base = os.environ.get("PUBLIC_BASE_URL") or ""
+    return {"token": token, "url": f"{base}/kds?token={token}"}
 
 
 # ------------------- Owner-facing: KDS token management -------------------

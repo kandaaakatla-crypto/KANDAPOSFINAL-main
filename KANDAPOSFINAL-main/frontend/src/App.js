@@ -69,6 +69,7 @@ const DashWhatsApp = lazy(() => import("./components/dash/DashWhatsApp"));
 const PayrollScreen = lazy(() => import("./components/dash/PayrollScreen"));
 const BrandScreen = lazy(() => import("./components/dash/BrandScreen"));
 const DashCentralSupply = lazy(() => import("./components/dash/DashCentralSupply"));
+const KioskDevicesPage = lazy(() => import("./components/dash/KioskDevicesPage"));
 
 function RouteLoading() {
   return (
@@ -166,6 +167,7 @@ function App() {
                     <Route path="customers" element={<CustomersScreen />} />
                     <Route path="reports" element={<ReportsScreen />} />
                     <Route path="inventory" element={<InventoryScreen />} />
+                    <Route path="devices" element={<KioskDevicesPage />} />
                     <Route path="voice" element={<DashVoice />} />
                     <Route path="digest" element={<DashDigest />} />
                     <Route path="loyalty" element={<DashLoyalty />} />
