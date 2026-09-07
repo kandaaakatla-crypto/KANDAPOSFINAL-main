@@ -76,6 +76,16 @@
 .land-blob-a { animation: blobFloatA 16s ease-in-out infinite; }
 .land-blob-b { animation: blobFloatB 20s ease-in-out infinite; }
 
+.land-grid-fade {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 55% 65% at 50% 25%, #000 40%, transparent 85%);
+  mask-image: radial-gradient(ellipse 55% 65% at 50% 25%, #000 40%, transparent 85%);
+  pointer-events: none;
+}
+
 @keyframes marqueeScroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
