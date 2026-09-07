@@ -1,0 +1,25 @@
+{
+  "extends": null,
+  "appId": "com.kandapos.display",
+  "productName": "Kanda Display",
+  "files": [
+    "build/**/*",
+    "electron/**/*"
+  ],
+  "directories": {
+    "output": "dist-electron-display"
+  },
+  "win": {
+    "target": [
+      "nsis"
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  },
+  "publish": {
+    "provider": "generic",
+    "url": "https://kandapos-display-releases.web.app/"
+  }
+}

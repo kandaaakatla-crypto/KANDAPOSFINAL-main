@@ -1,0 +1,98 @@
+name: Build signed Android AAB (Kanda Display)
+
+# Sibling of build-android.yml for the back-of-house app — same source
+# tree and Capacitor Android tooling, different native project
+# (android-display/, its own applicationId/icon) and a
+# REACT_APP_APP_TARGET=display build that opens to the role picker
+# instead of staff sign-in. Tag-triggered for the same reason as
+# build-android.yml: a deliberate, versioned artifact, not rebuilt on
+# every commit.
+on:
+  push:
+    tags:
+      - "android-display-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install frontend dependencies
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web bundle
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          REACT_APP_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
+          REACT_APP_SENTRY_ENVIRONMENT: "production-android-display"
+          # Opens to the role picker (Kitchen Display/Packing/Customer
+          # Display) instead of the marketing homepage or staff sign-in —
+          # see App.js's RootRoute. This build is "Kanda Display"; the
+          # cashier/driver/clock-in sibling app is build-android.yml with
+          # REACT_APP_APP_TARGET=pos instead.
+          REACT_APP_APP_TARGET: display
+          CI: false
+          GENERATE_SOURCEMAP: false
+        run: npm run build
+
+      - name: Use Kanda Display Capacitor config
+        # The Capacitor CLI has no --config override for `cap sync` — it
+        # only ever reads capacitor.config.json from the project root. This
+        # second app's identity (appId com.kandapos.display, native project
+        # at android-display/ via the config's android.path) lives in
+        # capacitor.config.display.json instead; swap it in for this run.
+        # A fresh checkout every run means there's nothing to restore after.
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: cp capacitor.config.display.json capacitor.config.json
+
+      - name: Sync Capacitor Android project
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Decode release keystore
+        # Reuses the same signing identity as the main POS app (shared
+        # "Kanda" publisher, per the plan) — see build-android.yml for why
+        # this step always runs regardless of whether the secret is set.
+        working-directory: KANDAPOSFINAL-main/frontend/android-display/app
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+
+      - name: Build signed release AAB
+        working-directory: KANDAPOSFINAL-main/frontend/android-display
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'release.keystore' || '' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease assembleRelease
+
+      - name: Remove decoded keystore
+        if: always()
+        working-directory: KANDAPOSFINAL-main/frontend/android-display/app
+        run: rm -f release.keystore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-display-release-aab
+          path: KANDAPOSFINAL-main/frontend/android-display/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-display-release-apk
+          path: KANDAPOSFINAL-main/frontend/android-display/app/build/outputs/apk/release/app-release*.apk
+          retention-days: 90

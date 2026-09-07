@@ -1,0 +1,81 @@
+name: Build Windows Electron installer (Kanda Display)
+
+# Sibling of build-windows.yml for the back-of-house app — same source
+# tree, same electron/main.js, different electron-builder identity
+# (electron-builder.display.json) and a REACT_APP_APP_TARGET=display build
+# that opens to the role picker instead of staff sign-in. Tag-triggered for
+# the same reason as build-windows.yml: a desktop release is a deliberate,
+# versioned artifact, not something to rebuild on every commit.
+on:
+  push:
+    tags:
+      - "windows-display-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web bundle
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          REACT_APP_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
+          REACT_APP_SENTRY_ENVIRONMENT: "production-windows-display"
+          # Opens to the role picker (Kitchen Display/Packing/Customer
+          # Display) instead of the marketing homepage or staff sign-in —
+          # see App.js's RootRoute. This build is "Kanda Display"; the
+          # cashier/driver/clock-in sibling app is build-windows.yml with
+          # REACT_APP_APP_TARGET=pos instead.
+          REACT_APP_APP_TARGET: display
+          CI: false
+          GENERATE_SOURCEMAP: false
+        run: npm run build
+
+      - name: Build Windows installer
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          # Same signing identity as the main POS app (shared "Kanda"
+          # publisher) — see build-windows.yml for why this is unset today.
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          npx electron-builder --config electron-builder.display.json --publish never
+          if [ -n "$CSC_LINK" ]; then
+            echo "HAS_CSC=true" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-display-windows-installer
+          path: KANDAPOSFINAL-main/frontend/dist-electron-display/*.exe
+          retention-days: 90
+
+      - name: Publish update feed
+        # Own Firebase Hosting site (kandapos-display-releases) — separate
+        # from the main POS app's kandapos-desktop-releases, since a
+        # Hosting deploy replaces a site's entire content each time; two
+        # apps sharing one site would clobber each other's feed on deploy.
+        if: ${{ env.HAS_CSC == 'true' }}
+        working-directory: KANDAPOSFINAL-main/frontend
+        shell: bash
+        run: |
+          mkdir -p electron/release-feed-display
+          cp dist-electron-display/*.exe dist-electron-display/latest.yml electron/release-feed-display/
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          npx firebase-tools deploy --only hosting --project "$FIREBASE_PROJECT_ID" --config electron/releases-firebase-display.json
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}

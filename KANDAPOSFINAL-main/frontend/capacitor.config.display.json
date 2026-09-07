@@ -1,0 +1,11 @@
+{
+  "appId": "com.kandapos.display",
+  "appName": "Kanda Display",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "path": "android-display"
+  }
+}
