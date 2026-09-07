@@ -30,6 +30,12 @@ jobs:
           REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
           REACT_APP_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
           REACT_APP_SENTRY_ENVIRONMENT: "production-windows"
+          # Opens straight to staff sign-in instead of the marketing
+          # homepage — see App.js's RootRoute. This build is "Kanda POS":
+          # cashier/driver/clock-in. The back-of-house sibling app
+          # (Kitchen Display/Packing/Customer Display) is a separate
+          # build+workflow with REACT_APP_APP_TARGET=display instead.
+          REACT_APP_APP_TARGET: pos
           # See build-android.yml — CRA fails the build on pre-existing lint
           # warnings when CI=true, which GitHub Actions sets by default.
           CI: false
