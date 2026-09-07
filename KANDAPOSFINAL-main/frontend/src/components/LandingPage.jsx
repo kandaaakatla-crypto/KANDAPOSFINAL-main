@@ -123,7 +123,15 @@ export default function LandingPage() {
       {/* Nav */}
       <header className="sticky top-0 z-20" style={{ background: "rgba(5,5,6,0.75)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-          <img src="/kanda-logo.png" alt="Kanda POS" className="h-8 w-auto" />
+          <div className="flex items-center gap-2">
+            {/* The logo file's wordmark is dark brown, illegible on this dark
+                header — crop to just the orange mark and set the name as
+                real, theme-colored text instead of baked-in pixels. */}
+            <div className="h-8 w-8 overflow-hidden shrink-0">
+              <img src="/kanda-logo.png" alt="Kanda POS" className="h-8 w-auto max-w-none" />
+            </div>
+            <span className="font-bold text-lg tracking-tight" style={{ color: "var(--pos-text)" }}>Kanda POS</span>
+          </div>
           <nav className="hidden md:flex items-center gap-8 text-sm" style={{ color: "var(--pos-muted)" }}>
             {NAV_LINKS.map((l) => (
               <a key={l.href} href={l.href} className="hover:text-white transition-colors">{l.label}</a>
