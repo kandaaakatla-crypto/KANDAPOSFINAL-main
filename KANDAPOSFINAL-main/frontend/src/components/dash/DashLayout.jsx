@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Settings, Receipt, Code2, LifeBuoy } from "lucide-react";
+import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -97,37 +97,28 @@ function NavRow({ to, end, label, icon: Icon, onNavigate, collapsed, badgeCount 
   );
 }
 
-// Footer row for both settings links (some "coming soon" and inert) and the
-// password/sign-out action buttons. Collapses to an icon with a tooltip
-// alongside the main nav rows.
-function FooterLink({ to, onClick, onNavigate, icon: Icon, label, collapsed, soon, color, testid }) {
+// Footer row for both the settings link and the password/sign-out action
+// buttons. Collapses to an icon with a tooltip alongside the main nav rows.
+function FooterLink({ to, onClick, onNavigate, icon: Icon, label, collapsed, color, testid }) {
   const content = (
     <>
       <Icon className="w-3.5 h-3.5 shrink-0" />
       {!collapsed && <span className="truncate">{label}</span>}
-      {!collapsed && soon && (
-        <span className="ml-auto text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: "var(--pos-bg)", border: "1px solid var(--pos-border)", color: "var(--pos-muted)" }}>Soon</span>
-      )}
     </>
   );
-  const className = `pos-btn w-full flex items-center gap-2 px-3 py-1.5 rounded text-xs ${collapsed ? "justify-center px-0" : ""} ${soon ? "cursor-default opacity-60" : ""}`;
+  const className = `pos-btn w-full flex items-center gap-2 px-3 py-1.5 rounded text-xs ${collapsed ? "justify-center px-0" : ""}`;
   const style = { color: color || "var(--pos-muted)" };
 
-  let el;
-  if (soon) {
-    el = <div className={className} style={style} aria-disabled="true">{content}</div>;
-  } else if (to) {
-    el = <Link to={to} data-testid={testid} onClick={onNavigate} className={className} style={style}>{content}</Link>;
-  } else {
-    el = <button type="button" data-testid={testid} onClick={() => { onNavigate?.(); onClick?.(); }} className={className} style={style}>{content}</button>;
-  }
+  const el = to
+    ? <Link to={to} data-testid={testid} onClick={onNavigate} className={className} style={style}>{content}</Link>
+    : <button type="button" data-testid={testid} onClick={() => { onNavigate?.(); onClick?.(); }} className={className} style={style}>{content}</button>;
 
   if (!collapsed) return el;
   return (
     <Tooltip delayDuration={200}>
       <TooltipTrigger asChild>{el}</TooltipTrigger>
       <TooltipContent side="right" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)", border: "1px solid var(--pos-border)" }}>
-        {label}{soon ? " (soon)" : ""}
+        {label}
       </TooltipContent>
     </Tooltip>
   );
@@ -190,9 +181,6 @@ export default function DashLayout() {
       </nav>
       <div className="p-2 space-y-0.5" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <FooterLink to="/biz/locations" onNavigate={onNavigate} icon={Settings} label="Store Settings" collapsed={navCollapsed} />
-        <FooterLink icon={Receipt} label="Tax & Billing" collapsed={navCollapsed} soon />
-        <FooterLink icon={Code2} label="Developer" collapsed={navCollapsed} soon />
-        <FooterLink icon={LifeBuoy} label="Support" collapsed={navCollapsed} soon />
         <div className="my-1" style={{ borderTop: "1px solid var(--pos-border)" }} />
         <div className={`flex items-center gap-2.5 rounded-md p-2 ${navCollapsed ? "justify-center" : ""}`} style={{ background: "var(--pos-panel-2)" }}>
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: "var(--pos-accent)", color: "#1a0e04" }}>{initials}</div>
