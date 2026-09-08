@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, ChevronDown, Settings, Receipt, Code2, LifeBuoy } from "lucide-react";
+import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Settings, Receipt, Code2, LifeBuoy } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -74,7 +74,7 @@ const SIDEBAR_COLLAPSED_KEY = "kanda_dash_sidebar_collapsed_v1";
 function NavRow({ to, end, label, icon: Icon, onNavigate, collapsed, badgeCount }) {
   const row = (
     <NavLink key={to} to={to} end={end} data-testid={`dash-nav-${label.toLowerCase()}`} onClick={onNavigate}
-      className={({ isActive }) => `pos-btn relative flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-medium ${isActive ? "text-white" : ""} ${collapsed ? "justify-center px-0" : ""}`}
+      className={({ isActive }) => `pos-btn relative flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium ${isActive ? "text-white" : ""} ${collapsed ? "justify-center px-0" : ""}`}
       style={({ isActive }) => ({ background: isActive ? "var(--pos-accent)" : "transparent", color: isActive ? "#fff" : "var(--pos-muted)" })}>
       <Icon className="w-4 h-4 shrink-0" />
       {!collapsed && <span className="truncate">{label}</span>}
@@ -110,7 +110,7 @@ function FooterLink({ to, onClick, onNavigate, icon: Icon, label, collapsed, soo
       )}
     </>
   );
-  const className = `pos-btn w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs ${collapsed ? "justify-center px-0" : ""} ${soon ? "cursor-default opacity-60" : ""}`;
+  const className = `pos-btn w-full flex items-center gap-2 px-3 py-1.5 rounded text-xs ${collapsed ? "justify-center px-0" : ""} ${soon ? "cursor-default opacity-60" : ""}`;
   const style = { color: color || "var(--pos-muted)" };
 
   let el;
@@ -133,68 +133,13 @@ function FooterLink({ to, onClick, onNavigate, icon: Icon, label, collapsed, soo
   );
 }
 
-// Clickable group label — an accordion header, not just a caption. Collapsing
-// the five inactive groups down to one line each is most of the "too much
-// nav" fix; only the group holding the current route opens by default.
-function GroupHeader({ label, open, onToggle }) {
+// Plain group label — always visible, not a toggle. Grouping alone (without
+// hiding anything behind a click) is the de-clutter mechanism here; density
+// (tighter row height/spacing) does the rest.
+function GroupHeader({ label }) {
   return (
-    <button type="button" onClick={onToggle}
-      className="w-full flex items-center gap-1 px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wider"
-      style={{ color: "#5c6d8f" }}>
-      <span className="flex-1 text-left">{label}</span>
-      <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`} />
-    </button>
-  );
-}
-
-// Clubs the four settings destinations (one real, three "coming soon") behind
-// a single footer row instead of four, so the footer doesn't out-grow the nav.
-function SettingsMenu({ collapsed, onNavigate }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-
-  const menuItems = [
-    { icon: Settings, label: "Store Settings", to: "/biz/locations" },
-    { icon: Receipt, label: "Tax & Billing", soon: true },
-    { icon: Code2, label: "Developer", soon: true },
-    { icon: LifeBuoy, label: "Support", soon: true },
-  ];
-
-  const trigger = (
-    <button type="button" onClick={() => setOpen((v) => !v)}
-      className={`pos-btn w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs ${collapsed ? "justify-center px-0" : ""}`}
-      style={{ color: "var(--pos-muted)" }}>
-      <Settings className="w-3.5 h-3.5 shrink-0" />
-      {!collapsed && <span className="truncate">Settings</span>}
-      {!collapsed && <ChevronDown className={`w-3 h-3 ml-auto shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />}
-    </button>
-  );
-
-  return (
-    <div className="relative" ref={ref}>
-      {trigger}
-      {open && (
-        <div className={`absolute z-30 rounded-md p-1 ${collapsed ? "left-full ml-2 bottom-0 w-44" : "left-0 right-0 bottom-full mb-1"}`}
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", boxShadow: "0 16px 40px -12px rgba(0,0,0,.5)" }}>
-          {menuItems.map((item) => item.soon ? (
-            <div key={item.label} className="flex items-center gap-2.5 px-3 py-2 rounded text-xs opacity-60 cursor-default" style={{ color: "var(--pos-muted)" }}>
-              <item.icon className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{item.label}</span>
-              <span className="ml-auto text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded shrink-0" style={{ background: "var(--pos-bg)", border: "1px solid var(--pos-border)" }}>Soon</span>
-            </div>
-          ) : (
-            <Link key={item.label} to={item.to} onClick={() => { setOpen(false); onNavigate?.(); }}
-              className="pos-btn flex items-center gap-2.5 px-3 py-2 rounded text-xs" style={{ color: "var(--pos-text)" }}>
-              <item.icon className="w-3.5 h-3.5 shrink-0" /> {item.label}
-            </Link>
-          ))}
-        </div>
-      )}
+    <div className="px-3 pb-0.5 pt-1.5 text-[9.5px] font-bold uppercase tracking-wider" style={{ color: "#5c6d8f" }}>
+      {label}
     </div>
   );
 }
@@ -216,25 +161,6 @@ export default function DashLayout() {
     .map((g) => ({ ...g, items: g.items.filter((i) => i.allow(user) && (!i.feature || features[i.feature])) }))
     .filter((g) => g.items.length > 0);
 
-  // Which group holds the current route — that's the one open by default,
-  // so landing on e.g. Reports doesn't bury it inside a collapsed section.
-  const activeGroupLabel = useMemo(() => {
-    const g = visibleGroups.find((g) => g.items.some((i) => (i.end ? location.pathname === i.to : location.pathname.startsWith(i.to))));
-    return g ? g.label : visibleGroups[0]?.label;
-  }, [location.pathname, visibleGroups]);
-
-  const [openGroups, setOpenGroups] = useState(() => new Set([activeGroupLabel]));
-  // Keep the active group open as routes change, without closing ones the
-  // user opened themselves.
-  useEffect(() => {
-    if (activeGroupLabel) setOpenGroups((prev) => (prev.has(activeGroupLabel) ? prev : new Set(prev).add(activeGroupLabel)));
-  }, [activeGroupLabel]);
-  const toggleGroup = (label) => setOpenGroups((prev) => {
-    const next = new Set(prev);
-    if (next.has(label)) next.delete(label); else next.add(label);
-    return next;
-  });
-
   // A feature turned off shouldn't be reachable by direct URL either.
   useEffect(() => {
     if (!user) return;
@@ -249,28 +175,24 @@ export default function DashLayout() {
 
   const NavItems = ({ onNavigate, collapsed: navCollapsed = false }) => (
     <>
-      <nav className="flex-1 min-h-0 p-2 space-y-1 overflow-y-auto">
-        {visibleGroups.map((group) => {
-          const isOpen = navCollapsed || openGroups.has(group.label);
-          return (
-            <div key={group.label}>
-              {!navCollapsed && (
-                <GroupHeader label={group.label} open={isOpen} onToggle={() => toggleGroup(group.label)} />
-              )}
-              {isOpen && (
-                <div className="space-y-1">
-                  {group.items.map(({ to, end, label, icon, badge }) => (
-                    <NavRow key={to} to={to} end={end} label={label} icon={icon} onNavigate={onNavigate}
-                      collapsed={navCollapsed} badgeCount={badge === "lowStock" ? lowStockCount : 0} />
-                  ))}
-                </div>
-              )}
+      <nav className="flex-1 min-h-0 p-2 space-y-0.5 overflow-y-auto">
+        {visibleGroups.map((group) => (
+          <div key={group.label}>
+            {!navCollapsed && <GroupHeader label={group.label} />}
+            <div className="space-y-0.5">
+              {group.items.map(({ to, end, label, icon, badge }) => (
+                <NavRow key={to} to={to} end={end} label={label} icon={icon} onNavigate={onNavigate}
+                  collapsed={navCollapsed} badgeCount={badge === "lowStock" ? lowStockCount : 0} />
+              ))}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </nav>
-      <div className="p-2 space-y-1" style={{ borderTop: "1px solid var(--pos-border)" }}>
-        <SettingsMenu collapsed={navCollapsed} onNavigate={onNavigate} />
+      <div className="p-2 space-y-0.5" style={{ borderTop: "1px solid var(--pos-border)" }}>
+        <FooterLink to="/biz/locations" onNavigate={onNavigate} icon={Settings} label="Store Settings" collapsed={navCollapsed} />
+        <FooterLink icon={Receipt} label="Tax & Billing" collapsed={navCollapsed} soon />
+        <FooterLink icon={Code2} label="Developer" collapsed={navCollapsed} soon />
+        <FooterLink icon={LifeBuoy} label="Support" collapsed={navCollapsed} soon />
         <div className="my-1" style={{ borderTop: "1px solid var(--pos-border)" }} />
         <div className={`flex items-center gap-2.5 rounded-md p-2 ${navCollapsed ? "justify-center" : ""}`} style={{ background: "var(--pos-panel-2)" }}>
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: "var(--pos-accent)", color: "#1a0e04" }}>{initials}</div>
