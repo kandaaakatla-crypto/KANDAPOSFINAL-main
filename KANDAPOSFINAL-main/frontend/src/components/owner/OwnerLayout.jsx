@@ -26,7 +26,7 @@ export default function OwnerLayout() {
             <div className="font-bold text-white">Owner Portal</div>
           </div>
         </div>
-        <nav className="px-2 space-y-1 flex-1">
+        <nav className="px-2 space-y-1 flex-1 min-h-0 overflow-y-auto">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end}
               className={({ isActive }) => `flex items-center gap-2.5 h-10 px-3 rounded-lg text-sm font-medium ${

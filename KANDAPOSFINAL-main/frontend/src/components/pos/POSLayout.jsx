@@ -85,7 +85,7 @@ export default function POSLayout() {
           <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-6" style={{ background: "var(--pos-accent)" }}>
             {businessType === "retail" ? <Store className="w-6 h-6 text-white" /> : <Pizza className="w-6 h-6 text-white" />}
           </div>
-          <nav className="flex flex-col gap-1.5 flex-1 w-full px-2 overflow-y-auto">
+          <nav className="flex flex-col gap-1.5 flex-1 min-h-0 w-full px-2 overflow-y-auto">
             {[...PRIMARY_NAV, ...SECONDARY_NAV].map((n) => (
               <RailLink key={n.to} to={n.to} label={n.label} Icon={n.icon} end={n.end}
                 badge={n.to === "/orders" ? activeCount : 0} />
