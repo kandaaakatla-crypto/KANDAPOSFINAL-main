@@ -79,7 +79,7 @@ export default function CustomersScreen() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pos-scroll">
+      <div className="flex-1 min-h-0 overflow-y-auto pos-scroll">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {filtered.map((c) => (
             <div key={c.id} className="rounded-xl p-4 fade-in" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid={`customer-${c.id}`}>

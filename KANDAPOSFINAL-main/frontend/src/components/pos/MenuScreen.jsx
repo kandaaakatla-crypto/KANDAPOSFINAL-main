@@ -198,7 +198,7 @@ export default function MenuScreen() {
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto pos-scroll rounded-xl" style={{ border: "1px solid var(--pos-border)" }}>
+      <div className="flex-1 min-h-0 overflow-y-auto pos-scroll rounded-xl" style={{ border: "1px solid var(--pos-border)" }}>
         <table className="w-full text-sm hidden md:table">
           <thead>
             <tr style={{ background: "var(--pos-panel)" }}>

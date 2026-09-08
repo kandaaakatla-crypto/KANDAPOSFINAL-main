@@ -118,7 +118,7 @@ function Lane({ laneKey, label, accent, tickets, onItemStatus, onRecall, newIds 
         <div data-testid={`kds-lane-count-${laneKey}`} className="text-xs tabular-nums px-2 py-0.5 rounded-full font-bold"
           style={{ background: accent + "22", color: accent }}>{tickets.length}</div>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
         {tickets.length === 0 ? (
           <div className="text-center text-[11px] py-8" style={{ color: "var(--pos-muted)" }}>—</div>
         ) : tickets.map((t) => (

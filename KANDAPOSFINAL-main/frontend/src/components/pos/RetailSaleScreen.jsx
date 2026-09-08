@@ -175,7 +175,7 @@ export default function RetailSaleScreen() {
             <div className="w-11 md:hidden" />
           </div>
 
-          <div className="flex-1 overflow-y-auto pos-scroll p-4 space-y-3">
+          <div className="flex-1 min-h-0 overflow-y-auto pos-scroll p-4 space-y-3">
             {cart.length === 0 ? (
               <p className="text-sm text-center py-8" style={{ color: "var(--pos-muted)" }}>Scan or tap a product to start a sale.</p>
             ) : cart.map((l) => (

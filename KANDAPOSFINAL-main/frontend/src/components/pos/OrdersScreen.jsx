@@ -73,7 +73,7 @@ export default function OrdersScreen() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pos-scroll">
+      <div className="flex-1 min-h-0 overflow-y-auto pos-scroll">
         {filtered.length === 0 ? (
           <div className="h-40 flex items-center justify-center text-sm" style={{ color: "var(--pos-muted)" }}>No orders in this view.</div>
         ) : (

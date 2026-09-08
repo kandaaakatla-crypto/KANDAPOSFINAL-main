@@ -82,7 +82,7 @@ export default function CartPanel({
       )}
 
       {/* Lines */}
-      <div className="flex-1 overflow-y-auto pos-scroll px-3 py-2" data-testid="cart-lines">
+      <div className="flex-1 min-h-0 overflow-y-auto pos-scroll px-3 py-2" data-testid="cart-lines">
         {runningBill && runningBill.items?.length > 0 && (
           <div className="rounded-lg p-2.5 mb-3" style={{ background: "#1a2235", border: "1px dashed #3f5170" }} data-testid="running-bill-items">
             <div className="text-[10px] uppercase tracking-wider mb-1.5 flex items-center justify-between" style={{ color: "#7ea3d1" }}>
