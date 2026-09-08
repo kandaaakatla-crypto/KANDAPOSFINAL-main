@@ -17,9 +17,17 @@ export function DashProvider({ children }) {
   });
   const [boot, setBoot] = useState(user ? "ready" : "anon");
   const [tenantInfo, setTenantInfo] = useState(null);
+  const [lowStockCount, setLowStockCount] = useState(0);
 
   const loadTenantInfo = useCallback(() => {
     dashApi.get("/tenant/info").then((r) => setTenantInfo(r.data)).catch(() => {});
+  }, []);
+
+  // Shared with the sidebar nav badge as well as the KPI row on DashHome —
+  // fetched once here so both read the same number instead of two
+  // independent polls of the same endpoint.
+  const loadLowStock = useCallback(() => {
+    dashApi.get("/inventory").then((r) => setLowStockCount(r.data.filter((i) => i.stock <= i.reorder).length)).catch(() => {});
   }, []);
 
   // Re-validate the saved token at startup; if expired, clear it.
@@ -31,6 +39,7 @@ export function DashProvider({ children }) {
       localStorage.setItem(STORAGE_USER, JSON.stringify(r.data));
       setBoot("ready");
       loadTenantInfo();
+      loadLowStock();
     }).catch(() => { logout(); });
   }, []); // eslint-disable-line
 
@@ -50,8 +59,9 @@ export function DashProvider({ children }) {
     setUser(r.data.user);
     setBoot("ready");
     loadTenantInfo();
+    loadLowStock();
     return r.data;
-  }, [loadTenantInfo]);
+  }, [loadTenantInfo, loadLowStock]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_TOKEN);
@@ -89,7 +99,7 @@ export function DashProvider({ children }) {
   const businessType = tenantInfo?.businessType || "restaurant";
 
   return (
-    <DashContext.Provider value={{ user, boot, login, logout, changePassword, switchStore, api: dashApi, tenantInfo, features, businessType }}>
+    <DashContext.Provider value={{ user, boot, login, logout, changePassword, switchStore, api: dashApi, tenantInfo, features, businessType, lowStockCount, refreshLowStock: loadLowStock }}>
       {children}
     </DashContext.Provider>
   );

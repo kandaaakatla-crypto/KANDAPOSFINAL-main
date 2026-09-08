@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDash, canAddLocation } from "../../store/DashContext";
-import { Lock, ShoppingBag, IndianRupee, Users, Boxes, MapPin, Plus, AlertCircle, Settings2 } from "lucide-react";
+import { Lock, ShoppingBag, IndianRupee, Users, Boxes, MapPin, Plus, AlertCircle, Settings2, Receipt, Store } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 import PeakHoursHeatmap from "./PeakHoursHeatmap";
 import PendingBrandInviteBanner from "./PendingBrandInviteBanner";
+import EmptyState from "../ui/empty-state";
 
 const FEATURE_LABELS = [
   { key: "tables", label: "Tables / floor plan", desc: "Dine-in seating, table QR ordering." },
@@ -24,11 +25,11 @@ const FEATURE_LABELS = [
  * - Manager: only their single location.
  */
 export default function DashHome() {
-  const { user, api } = useDash();
+  const { user, api, lowStockCount } = useDash();
+  const navigate = useNavigate();
   const [locations, setLocations] = useState([]);
   const [summary, setSummary] = useState(null);
   const [staffCount, setStaffCount] = useState(0);
-  const [lowCount, setLowCount] = useState(0);
   const [tenantInfo, setTenantInfo] = useState(null);
   const [savingFeature, setSavingFeature] = useState(null);
 
@@ -41,7 +42,6 @@ export default function DashHome() {
     }).catch(() => {});
     api.get("/reports/summary").then((r) => setSummary(r.data)).catch(() => {});
     api.get("/staff").then((r) => setStaffCount(r.data.filter((s) => s.active).length)).catch(() => {});
-    api.get("/inventory").then((r) => setLowCount(r.data.filter((i) => i.stock <= i.reorder).length)).catch(() => {});
     api.get("/tenant/info").then((r) => setTenantInfo(r.data)).catch(() => {});
   }, [api, user.location_ids]);
 
@@ -58,21 +58,23 @@ export default function DashHome() {
   const roleLabel = { owner: "Owner", area_manager: "Area Manager", manager: "Manager" }[user.dash_role];
 
   return (
-    <div className="p-6 space-y-6" data-testid="dash-home">
+    <div className="p-4 space-y-4" data-testid="dash-home">
       <PendingBrandInviteBanner />
       <div>
-        <h1 className="text-2xl font-bold text-white">Welcome back, {user.name.split(" ")[0]}</h1>
+        <h1 className="text-xl font-bold text-white">Welcome back, {user.name.split(" ")[0]}</h1>
         <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
           {roleLabel} · {locations.length} {locations.length === 1 ? "store" : "stores"} in your scope.
         </p>
       </div>
 
       {/* Top-line KPIs across the user's scope */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Kpi label="Today's sales" value={summary ? `₹${summary.todaySales.toFixed(0)}` : "—"} icon={IndianRupee} accent="#22c55e" testid="kpi-sales" />
         <Kpi label="Orders today" value={summary?.ordersToday ?? "—"} icon={ShoppingBag} accent="#7dd3fc" testid="kpi-orders" />
+        <Kpi label="Avg order value" value={summary ? `₹${(summary.avgOrder ?? 0).toFixed(0)}` : "—"} icon={Receipt} accent="#fb923c" testid="kpi-aov" />
         <Kpi label="Active staff" value={staffCount} icon={Users} accent="#fcd34d" testid="kpi-staff" />
-        <Kpi label="Low-stock items" value={lowCount} icon={Boxes} accent={lowCount > 0 ? "#fca5a5" : "#86efac"} testid="kpi-low" />
+        <Kpi label="Low-stock items" value={lowStockCount} icon={Boxes} accent={lowStockCount > 0 ? "#fca5a5" : "#86efac"} testid="kpi-low" />
+        <Kpi label="Stores in scope" value={locations.length} icon={Store} accent="#c4b5fd" testid="kpi-outlets" />
       </div>
 
       {/* Peak hours heatmap — reveals your busiest weekday × hour buckets */}
@@ -119,10 +121,13 @@ export default function DashHome() {
           ) : null}
         </div>
         {locations.length === 0 ? (
-          <div className="rounded-xl p-6 text-center" style={{ background: "var(--pos-panel)", border: "1px dashed var(--pos-border)" }} data-testid="dash-no-locations">
-            <AlertCircle className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--pos-muted)" }} />
-            <p className="text-sm" style={{ color: "var(--pos-muted)" }}>No stores assigned to you yet.</p>
-          </div>
+          <EmptyState
+            testid="dash-no-locations"
+            icon={AlertCircle}
+            title="No stores assigned to you yet"
+            description={canAddLocation(user) ? "Add your first store to start taking orders." : "Ask the owner to add you to a store."}
+            action={canAddLocation(user) ? { label: "Add location", onClick: () => navigate("/biz/locations") } : undefined}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {locations.map((l) => (
@@ -152,14 +157,14 @@ export default function DashHome() {
 
 function Kpi({ label, value, icon: Icon, accent, testid }) {
   return (
-    <div className="rounded-xl p-4 flex items-center gap-3" data-testid={testid}
+    <div className="rounded-xl p-3 flex items-center gap-2.5" data-testid={testid}
       style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${accent}22` }}>
-        <Icon className="w-5 h-5" style={{ color: accent }} />
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${accent}22` }}>
+        <Icon className="w-4 h-4" style={{ color: accent }} />
       </div>
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{label}</div>
-        <div className="text-xl font-bold text-white tabular-nums truncate">{value}</div>
+        <div className="text-lg font-bold text-white tabular-nums truncate">{value}</div>
       </div>
     </div>
   );
