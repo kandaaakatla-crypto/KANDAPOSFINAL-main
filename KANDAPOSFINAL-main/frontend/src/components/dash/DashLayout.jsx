@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, NavLink, Link, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -97,9 +97,9 @@ function NavRow({ to, end, label, icon: Icon, onNavigate, collapsed, badgeCount 
   );
 }
 
-// Footer row for both the settings link and the password/sign-out action
-// buttons. Collapses to an icon with a tooltip alongside the main nav rows.
-function FooterLink({ to, onClick, onNavigate, icon: Icon, label, collapsed, color, testid }) {
+// Footer action buttons (change password / sign out). Collapses to an icon
+// with a tooltip alongside the main nav rows.
+function FooterLink({ onClick, onNavigate, icon: Icon, label, collapsed, color, testid }) {
   const content = (
     <>
       <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -109,9 +109,7 @@ function FooterLink({ to, onClick, onNavigate, icon: Icon, label, collapsed, col
   const className = `pos-btn w-full flex items-center gap-2 px-3 py-1.5 rounded text-xs ${collapsed ? "justify-center px-0" : ""}`;
   const style = { color: color || "var(--pos-muted)" };
 
-  const el = to
-    ? <Link to={to} data-testid={testid} onClick={onNavigate} className={className} style={style}>{content}</Link>
-    : <button type="button" data-testid={testid} onClick={() => { onNavigate?.(); onClick?.(); }} className={className} style={style}>{content}</button>;
+  const el = <button type="button" data-testid={testid} onClick={() => { onNavigate?.(); onClick?.(); }} className={className} style={style}>{content}</button>;
 
   if (!collapsed) return el;
   return (
@@ -180,8 +178,6 @@ export default function DashLayout() {
         ))}
       </nav>
       <div className="p-2 space-y-0.5" style={{ borderTop: "1px solid var(--pos-border)" }}>
-        <FooterLink to="/biz/locations" onNavigate={onNavigate} icon={Settings} label="Store Settings" collapsed={navCollapsed} />
-        <div className="my-1" style={{ borderTop: "1px solid var(--pos-border)" }} />
         <div className={`flex items-center gap-2.5 rounded-md p-2 ${navCollapsed ? "justify-center" : ""}`} style={{ background: "var(--pos-panel-2)" }}>
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: "var(--pos-accent)", color: "#1a0e04" }}>{initials}</div>
           {!navCollapsed && (
