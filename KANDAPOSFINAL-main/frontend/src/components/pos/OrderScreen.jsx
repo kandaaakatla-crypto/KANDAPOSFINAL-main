@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { motion } from "framer-motion";
 import { usePos } from "../../store/PosContext";
+import { pressableSmall, liftable } from "../../lib/motion";
 import { CATEGORIES, DELIVERY_FEE } from "../../data/mock";
 import ItemModal from "./ItemModal";
 import CartPanel from "./CartPanel";
@@ -498,12 +500,16 @@ export default function OrderScreen() {
           <div className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: "var(--pos-muted)" }}>Categories</div>
           <div className="flex gap-1.5 overflow-x-auto pos-scroll pb-1 -mx-1 px-1 md:mx-0 md:px-0 md:flex-col md:gap-0 md:space-y-1.5 md:overflow-visible md:pb-0">
             {CATEGORIES.map((c) => (
-              <button key={c.id} data-testid={`cat-${c.id}`} onClick={() => setActiveCat(c.id)}
-                className="cat-btn shrink-0 md:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-left whitespace-nowrap md:whitespace-normal"
-                style={{ background: activeCat === c.id ? "var(--pos-panel-2)" : "transparent", color: activeCat === c.id ? "#fff" : "var(--pos-muted)", border: `1px solid ${activeCat === c.id ? c.color : "var(--pos-border)"}` }}>
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
-                {c.name}
-              </button>
+              <motion.button key={c.id} data-testid={`cat-${c.id}`} onClick={() => setActiveCat(c.id)} {...pressableSmall}
+                className="cat-btn relative shrink-0 md:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-left whitespace-nowrap md:whitespace-normal"
+                style={{ border: `1px solid ${activeCat === c.id ? c.color : "var(--pos-border)"}` }}>
+                {activeCat === c.id && (
+                  <motion.div layoutId="order-cat-active-pill" className="absolute inset-0 rounded-lg" style={{ background: "var(--pos-panel-2)" }}
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }} />
+                )}
+                <span className="relative w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
+                <span className="relative" style={{ color: activeCat === c.id ? "var(--pos-text)" : "var(--pos-muted)" }}>{c.name}</span>
+              </motion.button>
             ))}
           </div>
         </div>

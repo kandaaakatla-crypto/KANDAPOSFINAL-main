@@ -45,7 +45,7 @@
   user-select: none;
 }
 .pin-key:hover { background: #f3ead9; }
-.pin-key:active { background: #ece1cd; transform: scale(0.96); }
+.pin-key:active { background: #ece1cd; }
 
 .table-tile { transition: border-color 0.15s ease, background-color 0.15s ease; cursor: pointer; }
 .table-tile:hover { border-color: var(--pos-accent) !important; }
