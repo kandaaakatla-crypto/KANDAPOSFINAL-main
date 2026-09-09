@@ -48,6 +48,10 @@ export default function OwnerTotp() {
           </div>
         </div>
 
+        <p className="text-sm mb-5" style={{ color: "var(--pos-muted)" }}>
+          Open your authenticator app (e.g. Google Authenticator or Authy) and enter the current 6-digit code for this account.
+        </p>
+
         <form onSubmit={onSubmit} className="space-y-3">
           <label className="block">
             <span className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Authenticator code</span>
