@@ -5,6 +5,7 @@ import { Lock, ShoppingBag, IndianRupee, Users, Boxes, MapPin, Plus, AlertCircle
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
 import PeakHoursHeatmap from "./PeakHoursHeatmap";
+import SalesTrendChart from "./SalesTrendChart";
 import PendingBrandInviteBanner from "./PendingBrandInviteBanner";
 import EmptyState from "../ui/empty-state";
 
@@ -76,6 +77,9 @@ export default function DashHome() {
         <Kpi label="Low-stock items" value={lowStockCount} icon={Boxes} accent={lowStockCount > 0 ? "#fca5a5" : "#86efac"} testid="kpi-low" />
         <Kpi label="Stores in scope" value={locations.length} icon={Store} accent="#c4b5fd" testid="kpi-outlets" />
       </div>
+
+      {/* Sales trend — at-a-glance companion to the interactive chart on Reports */}
+      <SalesTrendChart days={14} />
 
       {/* Peak hours heatmap — reveals your busiest weekday × hour buckets */}
       <PeakHoursHeatmap days={28} />
