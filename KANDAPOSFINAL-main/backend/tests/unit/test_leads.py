@@ -4,6 +4,9 @@ state and showed a success toast — nothing was ever sent to the backend, so
 every real visitor submission was silently discarded. This covers the
 /api/leads endpoint that now actually persists them.
 """
+import os
+
+from motor.motor_asyncio import AsyncIOMotorClient
 
 DEMO_PAYLOAD = {
     "type": "demo",
@@ -15,12 +18,26 @@ DEMO_PAYLOAD = {
 }
 
 
-async def test_demo_request_is_persisted(client, db):
+async def _find_lead(db_name: str, email: str) -> dict | None:
+    # A fresh Motor client bound to *this* test's own event loop, rather than
+    # reusing the session-scoped `db` fixture's client — that one is bound to
+    # whichever loop was active when it was first created, and TestClient's
+    # sync client.post() calls can leave that loop closed by the time a
+    # later async test tries to await on it ("RuntimeError: Event loop is
+    # closed"). Cheap enough per-test to not matter.
+    m = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    try:
+        return await m[db_name].landing_leads.find_one({"email": email})
+    finally:
+        m.close()
+
+
+async def test_demo_request_is_persisted(client, db_name):
     r = client.post("/api/leads", json=DEMO_PAYLOAD)
     assert r.status_code == 200, r.text
     assert r.json() == {"ok": True}
 
-    doc = await db.landing_leads.find_one({"email": "asha@example.com"})
+    doc = await _find_lead(db_name, "asha@example.com")
     assert doc is not None
     assert doc["type"] == "demo"
     assert doc["name"] == "Asha Rao"
@@ -28,11 +45,11 @@ async def test_demo_request_is_persisted(client, db):
     assert doc["source"] == "landing_page"
 
 
-async def test_updates_signup_only_needs_an_email(client, db):
+async def test_updates_signup_only_needs_an_email(client, db_name):
     r = client.post("/api/leads", json={"type": "updates", "email": "just-me@example.com"})
     assert r.status_code == 200, r.text
 
-    doc = await db.landing_leads.find_one({"email": "just-me@example.com"})
+    doc = await _find_lead(db_name, "just-me@example.com")
     assert doc is not None
     assert doc["type"] == "updates"
     assert doc["name"] is None
