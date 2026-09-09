@@ -71,13 +71,13 @@ export default function TenantFeaturesCard({ tenant, onChanged }) {
       <div className="px-4 py-3 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-          <span className="text-sm font-semibold text-white">Features</span>
+          <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Features</span>
           <span className="text-[10px]" style={{ color: "var(--pos-muted)" }}>— toggle anything on/off for this client, independent of code or plan.</span>
         </div>
         <div className="flex items-center gap-2">
           {businessType === "retail" ? <Store className="w-3.5 h-3.5" style={{ color: "var(--pos-muted)" }} /> : <UtensilsCrossed className="w-3.5 h-3.5" style={{ color: "var(--pos-muted)" }} />}
           <Select value={businessType} onValueChange={changeBusinessType} disabled={savingType}>
-            <SelectTrigger data-testid="tenant-business-type-select" className="h-8 text-xs text-white w-36" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+            <SelectTrigger data-testid="tenant-business-type-select" className="h-8 text-xs w-36" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -96,7 +96,7 @@ export default function TenantFeaturesCard({ tenant, onChanged }) {
               {g.rows.map(({ key, label, desc }) => (
                 <div key={key} data-testid={`owner-feature-row-${key}`} className="flex items-center justify-between gap-3 rounded-lg p-3" style={{ background: "var(--pos-panel-2)" }}>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-white">{label}</div>
+                    <div className="text-sm font-medium" style={{ color: "var(--pos-text)" }}>{label}</div>
                     <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{desc}</div>
                   </div>
                   <Switch data-testid={`owner-feature-toggle-${key}`} checked={!!features[key]} disabled={savingKey === key}

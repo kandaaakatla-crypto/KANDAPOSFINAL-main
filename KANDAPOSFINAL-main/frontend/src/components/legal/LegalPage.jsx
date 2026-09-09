@@ -12,25 +12,25 @@ export default function LegalPage({ title, updated, path, description, children 
 
   return (
     <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)", minHeight: "100vh" }}>
-      <header className="sticky top-0 z-20" style={{ background: "rgba(11,18,32,0.85)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
+      <header className="sticky top-0 z-20" style={{ background: "rgba(253,250,244,0.85)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2 text-sm font-medium pos-btn" style={{ color: "var(--pos-muted)" }}>
             <ArrowLeft className="w-4 h-4" /> Back to kandapos.com
           </button>
           <div className="flex items-center gap-2">
             <Store className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-            <span className="font-bold text-sm text-white">KANDA POS</span>
+            <span className="font-bold text-sm" style={{ color: "var(--pos-text)" }}>KANDA POS</span>
           </div>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-14">
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs mb-8" style={{ color: "var(--pos-muted)" }}>
-          <Link to="/" className="hover:text-white transition-colors">Home</Link>
+          <Link to="/" className="hover:opacity-70 transition-opacity" style={{ color: "var(--pos-muted)" }}>Home</Link>
           <ChevronRight className="w-3 h-3" />
           <span style={{ color: "var(--pos-text)" }}>{title}</span>
         </nav>
-        <h1 className="text-3xl font-bold text-white mb-2">{title}</h1>
+        <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--pos-text)" }}>{title}</h1>
         <p className="text-sm mb-12" style={{ color: "var(--pos-muted)" }}>Last updated {updated}</p>
         <div className="space-y-10">{children}</div>
       </main>
@@ -45,7 +45,7 @@ export default function LegalPage({ title, updated, path, description, children 
 export function Section({ heading, children }) {
   return (
     <section>
-      <h2 className="text-lg font-semibold text-white mb-3">{heading}</h2>
+      <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--pos-text)" }}>{heading}</h2>
       <div className="text-sm leading-relaxed space-y-3" style={{ color: "var(--pos-muted)" }}>{children}</div>
     </section>
   );

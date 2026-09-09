@@ -57,7 +57,7 @@ export function WastePanel({ presetItemId, presetReason }) {
             <th className="text-left py-2 px-3 uppercase text-[11px]">By</th>
           </tr>
         </thead>
-        <tbody className="text-white">
+        <tbody style={{ color: "var(--pos-text)" }}>
           {list.length === 0 && <tr><td colSpan={5} className="text-center py-8" style={{ color: "var(--pos-muted)" }}>No waste logged yet.</td></tr>}
           {list.map((w) => (
             <tr key={w.id} data-testid={`waste-row-${w.id}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
@@ -72,18 +72,18 @@ export function WastePanel({ presetItemId, presetReason }) {
       </table>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Log waste</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Log waste</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Select value={form.inventory_id} onValueChange={(v) => setForm({ ...form, inventory_id: v })}>
-              <SelectTrigger data-testid="waste-item-select" className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+              <SelectTrigger data-testid="waste-item-select" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                 <SelectValue placeholder="Inventory item" />
               </SelectTrigger>
               <SelectContent>{inv.map((i) => <SelectItem key={i.id} value={i.id}>{i.name} ({i.stock} {i.unit})</SelectItem>)}</SelectContent>
             </Select>
-            <Input data-testid="waste-qty-input" placeholder="Quantity wasted" type="number" step="0.1" value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-            <Input data-testid="waste-reason-input" placeholder="Reason (e.g. expired, spilled)" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <Input data-testid="waste-qty-input" placeholder="Quantity wasted" type="number" step="0.1" value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            <Input data-testid="waste-reason-input" placeholder="Reason (e.g. expired, spilled)" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setOpen(false)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+              <button onClick={() => setOpen(false)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
               <button data-testid="waste-save-btn" onClick={save} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
             </div>
           </div>
@@ -120,7 +120,7 @@ export function CashDrawerPanel() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Drawer open since {new Date(current.opened_at).toLocaleString()}</div>
-              <div className="text-2xl font-bold text-white">Opening float: ₹{current.opening_float.toFixed(2)}</div>
+              <div className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Opening float: ₹{current.opening_float.toFixed(2)}</div>
               <div className="text-xs" style={{ color: "var(--pos-muted)" }}>Opened by {current.opened_by}</div>
             </div>
             <button data-testid="drawer-close-btn" onClick={() => setOpenModal("close")} className="pos-btn h-10 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Close drawer</button>
@@ -129,13 +129,13 @@ export function CashDrawerPanel() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>No drawer is open</div>
-              <div className="text-lg text-white">Open the drawer at the start of the shift to track cash variance.</div>
+              <div className="text-lg" style={{ color: "var(--pos-text)" }}>Open the drawer at the start of the shift to track cash variance.</div>
             </div>
             <button data-testid="drawer-open-btn" onClick={() => setOpenModal("open")} className="pos-btn h-10 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Open drawer</button>
           </div>
         )}
       </div>
-      <h2 className="text-sm font-bold text-white mb-2">History</h2>
+      <h2 className="text-sm font-bold mb-2" style={{ color: "var(--pos-text)" }}>History</h2>
       <table className="w-full text-sm">
         <thead style={{ color: "var(--pos-muted)" }}>
           <tr style={{ borderBottom: "1px solid var(--pos-border)" }}>
@@ -147,7 +147,7 @@ export function CashDrawerPanel() {
             <th className="text-left py-2 px-3 uppercase text-[11px]">Closed by</th>
           </tr>
         </thead>
-        <tbody className="text-white">
+        <tbody style={{ color: "var(--pos-text)" }}>
           {history.length === 0 && <tr><td colSpan={6} className="text-center py-6" style={{ color: "var(--pos-muted)" }}>No history.</td></tr>}
           {history.map((d) => (
             <tr key={d.id} data-testid={`drawer-row-${d.id}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
@@ -166,21 +166,21 @@ export function CashDrawerPanel() {
 
       <Dialog open={openModal === "open"} onOpenChange={(o) => !o && setOpenModal(null)}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Open drawer</DialogTitle></DialogHeader>
-          <Input data-testid="drawer-opening-input" type="number" placeholder="Opening float (₹)" value={opening} onChange={(e) => setOpening(e.target.value)} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Open drawer</DialogTitle></DialogHeader>
+          <Input data-testid="drawer-opening-input" type="number" placeholder="Opening float (₹)" value={opening} onChange={(e) => setOpening(e.target.value)} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <div className="flex justify-end gap-2 mt-3">
-            <button onClick={() => setOpenModal(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+            <button onClick={() => setOpenModal(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
             <button data-testid="drawer-open-confirm" onClick={open} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Open</button>
           </div>
         </DialogContent>
       </Dialog>
       <Dialog open={openModal === "close"} onOpenChange={(o) => !o && setOpenModal(null)}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Close drawer</DialogTitle></DialogHeader>
-          <Input data-testid="drawer-counted-input" type="number" placeholder="Counted cash (₹)" value={counted} onChange={(e) => setCounted(e.target.value)} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-          <Input placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Close drawer</DialogTitle></DialogHeader>
+          <Input data-testid="drawer-counted-input" type="number" placeholder="Counted cash (₹)" value={counted} onChange={(e) => setCounted(e.target.value)} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+          <Input placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <div className="flex justify-end gap-2 mt-3">
-            <button onClick={() => setOpenModal(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+            <button onClick={() => setOpenModal(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
             <button data-testid="drawer-close-confirm" onClick={close} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Close</button>
           </div>
         </DialogContent>
@@ -219,13 +219,13 @@ export function TipPoolPanel() {
           <div key={t.id} data-testid={`tip-pool-${t.id}`} className="rounded-lg p-4" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <div className="text-sm font-bold text-white">{t.shift_date} · ₹{t.total_pool.toFixed(2)}</div>
+                <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>{t.shift_date} · ₹{t.total_pool.toFixed(2)}</div>
                 <div className="text-xs" style={{ color: "var(--pos-muted)" }}>By {t.created_by} · {new Date(t.at).toLocaleString()}</div>
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <button className="pos-btn p-2 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
-                    <Trash2 className="w-4 h-4 text-white" />
+                    <Trash2 className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
                   </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -243,8 +243,8 @@ export function TipPoolPanel() {
             <div className="space-y-1">
               {t.allocations.map((a) => (
                 <div key={a.user_id} className="flex justify-between text-xs">
-                  <span className="text-white">{a.user_name} <span style={{ color: "var(--pos-muted)" }}>· {a.hours.toFixed(2)}h</span></span>
-                  <span className="text-white tabular-nums">₹{a.share.toFixed(2)}</span>
+                  <span style={{ color: "var(--pos-text)" }}>{a.user_name} <span style={{ color: "var(--pos-muted)" }}>· {a.hours.toFixed(2)}h</span></span>
+                  <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>₹{a.share.toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -253,12 +253,12 @@ export function TipPoolPanel() {
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">New tip pool</DialogTitle></DialogHeader>
-          <Input type="date" value={form.shift_date} onChange={(e) => setForm({ ...form, shift_date: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-          <Input data-testid="tip-pool-input" type="number" placeholder="Total pool (₹)" value={form.total_pool} onChange={(e) => setForm({ ...form, total_pool: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>New tip pool</DialogTitle></DialogHeader>
+          <Input type="date" value={form.shift_date} onChange={(e) => setForm({ ...form, shift_date: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+          <Input data-testid="tip-pool-input" type="number" placeholder="Total pool (₹)" value={form.total_pool} onChange={(e) => setForm({ ...form, total_pool: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <p className="text-xs" style={{ color: "var(--pos-muted)" }}>Shares are computed pro-rata from each employee's clocked hours that day.</p>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setOpen(false)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+            <button onClick={() => setOpen(false)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
             <button data-testid="tip-pool-save" onClick={create} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Distribute</button>
           </div>
         </DialogContent>

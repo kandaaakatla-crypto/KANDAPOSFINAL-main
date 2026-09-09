@@ -32,7 +32,7 @@ export default function DashChangePassword() {
     <div className="p-8 max-w-md mx-auto" data-testid="dash-password-screen">
       <div className="flex items-center gap-2 mb-2">
         <KeyRound className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
-        <h1 className="text-xl font-bold text-white">{forced ? "Set your password" : "Change password"}</h1>
+        <h1 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>{forced ? "Set your password" : "Change password"}</h1>
       </div>
       <p className="text-sm mb-5" style={{ color: "var(--pos-muted)" }}>
         {forced ? "Pick a new password to continue using the dashboard." : "Pick a new password — at least 8 characters."}
@@ -42,18 +42,18 @@ export default function DashChangePassword() {
           <div>
             <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Current password</label>
             <Input data-testid="pw-current" type="password" value={curr} onChange={(e) => setCurr(e.target.value)}
-              className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
         )}
         <div>
           <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>New password</label>
           <Input data-testid="pw-new" type="password" value={pw1} onChange={(e) => setPw1(e.target.value)}
-            className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </div>
         <div>
           <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Confirm new password</label>
           <Input data-testid="pw-confirm" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)}
-            className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </div>
         <button data-testid="pw-submit" type="submit" disabled={busy}
           className="pos-btn w-full h-11 rounded-lg font-bold text-white text-sm disabled:opacity-50"

@@ -88,7 +88,7 @@ export default function DashDigest() {
     <div className="p-6 space-y-6" data-testid="dash-digest">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <Sparkles className="w-6 h-6" style={{ color: "#a78bfa" }} />
             Daily Digest
           </h1>
@@ -99,8 +99,8 @@ export default function DashDigest() {
         <div className="flex items-center gap-2">
           <button data-testid="digest-refresh"
             onClick={loadPreview} disabled={previewLoading}
-            className="pos-btn px-3 py-2 rounded-lg text-xs text-white flex items-center gap-1.5"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+            className="pos-btn px-3 py-2 rounded-lg text-xs flex items-center gap-1.5"
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             <RefreshCw className={`w-3.5 h-3.5 ${previewLoading ? "animate-spin" : ""}`} /> Refresh
           </button>
           <button data-testid="digest-send-now"
@@ -116,7 +116,7 @@ export default function DashDigest() {
         {/* Preview */}
         <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">Today&apos;s preview</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>Today&apos;s preview</div>
           </div>
           <div className="p-5">
             {previewLoading && <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading preview…</div>}
@@ -131,8 +131,8 @@ export default function DashDigest() {
                 <Metrics data={preview.data} />
                 <div>
                   <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--pos-muted)" }}>AI summary</div>
-                  <div className="text-sm text-white whitespace-pre-wrap leading-relaxed p-4 rounded-lg"
-                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} data-testid="digest-ai-text">
+                  <div className="text-sm whitespace-pre-wrap leading-relaxed p-4 rounded-lg"
+                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} data-testid="digest-ai-text">
                     {preview.ai_text}
                   </div>
                 </div>
@@ -145,7 +145,7 @@ export default function DashDigest() {
         {/* Config */}
         <div className="rounded-xl overflow-hidden h-fit" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">Delivery settings</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>Delivery settings</div>
           </div>
           <div className="p-5 space-y-4">
             {cfgError && !cfgLoading && (
@@ -168,7 +168,7 @@ export default function DashDigest() {
                   </label>
                   <div className="flex gap-2 mt-1.5">
                     <NumInput testid="digest-hour" value={cfg.send_hour_ist} min={0} max={23} onChange={(v) => setCfg({ ...cfg, send_hour_ist: v })} />
-                    <span className="text-white self-center">:</span>
+                    <span className="self-center" style={{ color: "var(--pos-text)" }}>:</span>
                     <NumInput testid="digest-minute" value={cfg.send_minute} min={0} max={59} onChange={(v) => setCfg({ ...cfg, send_minute: v })} />
                   </div>
                 </div>
@@ -231,7 +231,7 @@ function MetricCard({ label, value, sub }) {
   return (
     <div className="rounded-lg p-3" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
       <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{label}</div>
-      <div className="text-xl font-bold text-white mt-1">{value}</div>
+      <div className="text-xl font-bold mt-1" style={{ color: "var(--pos-text)" }}>{value}</div>
       <div className="text-[10px] mt-1" style={{ color: "var(--pos-muted)" }}>{sub}</div>
     </div>
   );
@@ -249,7 +249,7 @@ function TopLowLists({ data }) {
           {data.top_items.map((it, i) => (
             <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 rounded"
               style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-              <span className="text-white">{it.name}</span>
+              <span style={{ color: "var(--pos-text)" }}>{it.name}</span>
               <span style={{ color: "var(--pos-muted)" }}>×{it.qty} · ₹{it.revenue.toFixed(0)}</span>
             </div>
           ))}
@@ -264,7 +264,7 @@ function TopLowLists({ data }) {
           {data.low_stock.slice(0, 6).map((it, i) => (
             <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 rounded"
               style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-              <span className="text-white">{it.name}</span>
+              <span style={{ color: "var(--pos-text)" }}>{it.name}</span>
               <span className="text-amber-400">{it.stock} {it.unit || ""}</span>
             </div>
           ))}
@@ -277,7 +277,7 @@ function TopLowLists({ data }) {
 function Toggle({ label, checked, onChange, testid }) {
   return (
     <label className="flex items-center justify-between cursor-pointer">
-      <span className="text-xs text-white">{label}</span>
+      <span className="text-xs" style={{ color: "var(--pos-text)" }}>{label}</span>
       <button data-testid={testid} type="button" onClick={() => onChange(!checked)}
         className="pos-btn w-10 h-5 rounded-full relative"
         style={{ background: checked ? "#7c3aed" : "#374151" }}>
@@ -293,8 +293,8 @@ function NumInput({ value, min, max, onChange, testid }) {
     <input type="number" min={min} max={max} value={value}
       data-testid={testid}
       onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value) || 0)))}
-      className="w-16 rounded px-2 py-1 text-sm text-white outline-none"
-      style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+      className="w-16 rounded px-2 py-1 text-sm outline-none"
+      style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
   );
 }
 
@@ -306,7 +306,7 @@ function RecipientList({ label, items, onAdd, onRemove, newValue, setNewValue, p
         {items.map((v, i) => (
           <div key={i} className="flex items-center justify-between text-xs px-2 py-1 rounded"
             style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-            <span className="text-white truncate">{v}</span>
+            <span className="truncate" style={{ color: "var(--pos-text)" }}>{v}</span>
             <button data-testid={`${testidPrefix}-remove-${i}`} onClick={() => onRemove(i)} className="text-red-400 pos-btn ml-2">
               <Trash2 className="w-3 h-3" />
             </button>
@@ -318,8 +318,8 @@ function RecipientList({ label, items, onAdd, onRemove, newValue, setNewValue, p
           value={newValue} onChange={(e) => setNewValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), onAdd())}
           placeholder={placeholder}
-          className="flex-1 rounded px-2 py-1 text-xs text-white outline-none"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+          className="flex-1 rounded px-2 py-1 text-xs outline-none"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
         <button data-testid={`${testidPrefix}-add`} onClick={onAdd}
           className="pos-btn px-2 rounded text-white"
           style={{ background: "var(--pos-accent)" }}>

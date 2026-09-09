@@ -38,7 +38,7 @@ export default function ContactSupportModal({ open, onClose }) {
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="contact-support-modal">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2"><LifeBuoy className="w-4 h-4" /> Contact support</DialogTitle>
+          <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><LifeBuoy className="w-4 h-4" /> Contact support</DialogTitle>
           <DialogDescription className="text-xs" style={{ color: "var(--pos-muted)" }}>
             Drop us a note and our platform team will respond directly to your inbox.
           </DialogDescription>
@@ -47,14 +47,14 @@ export default function ContactSupportModal({ open, onClose }) {
           <label className="block">
             <span className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Subject</span>
             <Input data-testid="support-subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={140}
-              placeholder="Payment stuck on UPI" className="mt-1 h-11 text-white"
-              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              placeholder="Payment stuck on UPI" className="mt-1 h-11"
+              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </label>
           <label className="block">
             <span className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>What happened?</span>
             <Textarea data-testid="support-body" value={body} onChange={(e) => setBody(e.target.value)} rows={4} maxLength={4000}
               placeholder="Describe the issue and the steps that led to it. Include order numbers if relevant."
-              className="mt-1 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              className="mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </label>
           <div>
             <span className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Severity</span>

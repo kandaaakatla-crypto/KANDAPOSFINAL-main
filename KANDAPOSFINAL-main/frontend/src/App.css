@@ -1,19 +1,19 @@
 /* Kanda POS styles */
 
 :root {
-  --pos-bg: #0b1220;
-  --pos-panel: #111a2c;
-  --pos-panel-2: #16213a;
-  --pos-border: #243352;
+  --pos-bg: #fdfaf4;
+  --pos-panel: #ffffff;
+  --pos-panel-2: #f7f0e3;
+  --pos-border: #ece1cd;
   --pos-accent: #f97316;
   --pos-accent-hover: #ea580c;
   --pos-blue: #2563eb;
-  --pos-text: #e8edf7;
-  --pos-muted: #8b9bb8;
+  --pos-text: #251d13;
+  --pos-muted: #93805f;
 }
 
 .App {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--pos-bg);
   min-height: 100vh;
   color: var(--pos-text);
@@ -21,8 +21,8 @@
 
 .pos-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .pos-scroll::-webkit-scrollbar-track { background: transparent; }
-.pos-scroll::-webkit-scrollbar-thumb { background: #2c3d61; border-radius: 4px; }
-.pos-scroll::-webkit-scrollbar-thumb:hover { background: #3a4f7c; }
+.pos-scroll::-webkit-scrollbar-thumb { background: #ddd0b8; border-radius: 4px; }
+.pos-scroll::-webkit-scrollbar-thumb:hover { background: #c9b78f; }
 
 .pos-btn {
   transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
@@ -34,7 +34,7 @@
   cursor: pointer;
   user-select: none;
 }
-.menu-tile:hover { border-color: var(--pos-accent) !important; background: #1b2742; }
+.menu-tile:hover { border-color: var(--pos-accent) !important; background: rgba(249,115,22,0.06); }
 .menu-tile:active { transform: scale(0.98); }
 
 .cat-btn { transition: background-color 0.15s ease, border-color 0.15s ease; cursor: pointer; user-select: none; }
@@ -44,8 +44,8 @@
   cursor: pointer;
   user-select: none;
 }
-.pin-key:hover { background: #1e2c4d; }
-.pin-key:active { background: #2a3b63; transform: scale(0.96); }
+.pin-key:hover { background: #f3ead9; }
+.pin-key:active { background: #ece1cd; transform: scale(0.96); }
 
 .table-tile { transition: border-color 0.15s ease, background-color 0.15s ease; cursor: pointer; }
 .table-tile:hover { border-color: var(--pos-accent) !important; }

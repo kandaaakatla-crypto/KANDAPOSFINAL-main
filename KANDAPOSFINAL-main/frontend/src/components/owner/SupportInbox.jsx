@@ -58,12 +58,12 @@ export default function SupportInbox() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <LifeBuoy className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
-          <h1 className="text-2xl font-bold text-white">Support inbox</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Support inbox</h1>
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>{tickets.length}</span>
         </div>
         <div className="flex items-center gap-2">
           <select data-testid="support-filter-status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-9 px-3 rounded-lg text-xs text-white" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+            className="h-9 px-3 rounded-lg text-xs" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             <option value="">All status</option>
             <option value="open">Open</option>
             <option value="in_progress">In progress</option>
@@ -80,7 +80,7 @@ export default function SupportInbox() {
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-5 rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           {busy ? (
-            <div className="p-6 flex items-center gap-2 text-white"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
+            <div className="p-6 flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
           ) : !tickets.length ? (
             <div className="p-8 text-sm text-center" style={{ color: "var(--pos-muted)" }}>No tickets.</div>
           ) : tickets.map((t) => (
@@ -88,7 +88,7 @@ export default function SupportInbox() {
               className="w-full text-left px-3 py-3 hover:bg-white/[0.02]"
               style={{ borderTop: "1px solid var(--pos-border)", background: active?.id === t.id ? "rgba(255,255,255,0.03)" : "transparent" }}>
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-white truncate max-w-[220px]">{t.subject}</div>
+                <div className="text-sm font-semibold truncate max-w-[220px]" style={{ color: "var(--pos-text)" }}>{t.subject}</div>
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.05)", color: SEV_COLOR[t.severity] }}>{t.severity}</span>
               </div>
               <div className="text-[11px] mt-0.5 flex items-center justify-between" style={{ color: "var(--pos-muted)" }}>
@@ -108,7 +108,7 @@ export default function SupportInbox() {
           ) : (
             <div data-testid="ticket-detail" className="rounded-xl p-5 space-y-4" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
               <div>
-                <div className="text-xl font-bold text-white">{active.subject}</div>
+                <div className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>{active.subject}</div>
                 <div className="text-[11px] mt-1" style={{ color: "var(--pos-muted)" }}>
                   {active.tenant_name} · {active.opened_by_name} ({active.opened_by_role}) · {new Date(active.at).toLocaleString()}
                 </div>
@@ -117,7 +117,7 @@ export default function SupportInbox() {
                 <span className="px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.05)", color: SEV_COLOR[active.severity] }}>severity · {active.severity}</span>
                 <span className="px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.05)", color: STATUS_LABEL[active.status]?.color }}>status · {STATUS_LABEL[active.status]?.label}</span>
               </div>
-              <div className="text-sm text-white whitespace-pre-wrap rounded-lg p-3" style={{ background: "var(--pos-panel-2)" }}>{active.body}</div>
+              <div className="text-sm whitespace-pre-wrap rounded-lg p-3" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>{active.body}</div>
 
               {active.replies?.map((r) => (
                 <div key={r.id} className="rounded-lg p-3 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
@@ -125,14 +125,14 @@ export default function SupportInbox() {
                     <MessageSquare className="w-3 h-3 inline mr-1" />
                     {r.by_name} · {new Date(r.at).toLocaleString()}
                   </div>
-                  <div className="text-white whitespace-pre-wrap">{r.body}</div>
+                  <div className="whitespace-pre-wrap" style={{ color: "var(--pos-text)" }}>{r.body}</div>
                 </div>
               ))}
 
               <form onSubmit={onReply} className="space-y-2">
                 <textarea data-testid="ticket-reply" rows={3} value={reply} onChange={(e) => setReply(e.target.value)}
-                  placeholder="Write a reply…" className="w-full rounded-lg p-2 text-sm text-white"
-                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  placeholder="Write a reply…" className="w-full rounded-lg p-2 text-sm"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
                 <div className="flex items-center justify-between">
                   <div className="flex gap-1.5">
                     {["in_progress", "resolved", "closed"].map((s) => (

@@ -65,22 +65,22 @@ export default function TwilioNumberDialog({ open, onClose, onPurchased }) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <ShoppingCart className="w-4 h-4" style={{ color: "#86efac" }} />
             Buy a Twilio phone number
           </DialogTitle>
         </DialogHeader>
 
         <p className="text-xs" style={{ color: "var(--pos-muted)" }}>
-          Purchases go through your Twilio account (SID <code className="text-white">AC…</code> in .env).
+          Purchases go through your Twilio account (SID <code style={{ color: "var(--pos-text)" }}>AC…</code> in .env).
           You will be billed by Twilio directly for the monthly rental + per-minute usage.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-white block mb-1">Country</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "var(--pos-text)" }}>Country</label>
             <Select value={country} onValueChange={setCountry}>
-              <SelectTrigger data-testid="buy-country" className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+              <SelectTrigger data-testid="buy-country" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -89,26 +89,24 @@ export default function TwilioNumberDialog({ open, onClose, onPurchased }) {
             </Select>
           </div>
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-white block mb-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "var(--pos-text)" }}>
               {country === "US" || country === "CA" ? "Area code (3 digits)" : "Prefix / area"}
             </label>
             <Input data-testid="buy-area-code" value={areaCode}
               onChange={(e) => setAreaCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
               placeholder={country === "US" ? "415" : ""}
-              className="text-white"
-              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-white block mb-1">
+            <label className="text-[10px] font-bold uppercase tracking-wider block mb-1" style={{ color: "var(--pos-text)" }}>
               Contains (optional — letters map to keypad, e.g. &quot;PIZZA&quot;)
             </label>
             <Input data-testid="buy-contains" value={contains}
               onChange={(e) => setContains(e.target.value.toUpperCase().replace(/[^A-Z0-9*]/g, "").slice(0, 12))}
               placeholder="PIZZA or 555"
-              className="text-white"
-              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
-          <label className="text-xs flex items-center gap-2 text-white sm:col-span-2">
+          <label className="text-xs flex items-center gap-2 sm:col-span-2" style={{ color: "var(--pos-text)" }}>
             <input type="checkbox" data-testid="buy-sms" checked={smsToo}
               onChange={(e) => setSmsToo(e.target.checked)} className="accent-emerald-400" />
             Must also support SMS (for order confirmations)
@@ -134,7 +132,7 @@ export default function TwilioNumberDialog({ open, onClose, onPurchased }) {
                 <th className="text-right py-2 px-3 uppercase text-[10px] tracking-wider">Buy</th>
               </tr>
             </thead>
-            <tbody className="text-white">
+            <tbody style={{ color: "var(--pos-text)" }}>
               {results.length === 0 && !searching && (
                 <tr><td colSpan={4} className="text-center py-8" style={{ color: "var(--pos-muted)" }}>
                   Set your filters and hit Search.

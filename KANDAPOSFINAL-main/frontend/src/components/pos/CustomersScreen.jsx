@@ -58,12 +58,12 @@ export default function CustomersScreen() {
   return (
     <div className="h-full flex flex-col p-4 gap-4" data-testid="customers-screen">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-white">Customers</h2>
+        <h2 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Customers</h2>
         <div className="flex flex-wrap gap-2">
           <div className="relative flex-1 min-w-[180px] sm:flex-none">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
             <Input data-testid="customer-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, phone, address..."
-              className="h-10 pl-9 w-full sm:w-72 text-white" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+              className="h-10 pl-9 w-full sm:w-72" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
           <button data-testid="add-customer-btn" onClick={() => setEditing({ ...EMPTY })}
             className="pos-btn h-10 px-4 rounded-lg text-sm font-bold text-white flex items-center gap-2 shrink-0" style={{ background: "var(--pos-accent)" }}>
@@ -85,7 +85,7 @@ export default function CustomersScreen() {
             <div key={c.id} className="rounded-xl p-4 fade-in" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid={`customer-${c.id}`}>
               <div className="flex items-start justify-between">
                 <div className="min-w-0">
-                  <div className="font-semibold text-white">{c.name}</div>
+                  <div className="font-semibold" style={{ color: "var(--pos-text)" }}>{c.name}</div>
                   <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><Phone className="w-3 h-3" /> {c.phone}</div>
                   <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><MapPin className="w-3 h-3" /> {c.address}{c.postcode ? `, ${c.postcode}` : ""}</div>
                   {c.birthday && <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><Cake className="w-3 h-3" /> {fmtBirthday(c.birthday)}</div>}
@@ -112,7 +112,7 @@ export default function CustomersScreen() {
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="customer-modal">
-          <DialogHeader><DialogTitle className="text-white">{editing?.id ? "Edit Customer" : "New Customer"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>{editing?.id ? "Edit Customer" : "New Customer"}</DialogTitle></DialogHeader>
           {editing && (
             <div className="space-y-3">
               {[
@@ -124,14 +124,14 @@ export default function CustomersScreen() {
               ].map((f) => (
                 <Input key={f.key} data-testid={`cust-field-${f.key}`} placeholder={f.ph} value={editing[f.key] || ""}
                   onChange={(e) => setEditing({ ...editing, [f.key]: e.target.value })}
-                  className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               ))}
               <div>
                 <label className="text-xs" style={{ color: "var(--pos-muted)" }}>Birthday (optional)</label>
                 <Input data-testid="cust-field-birthday" type="date"
                   value={editing.birthday ? `2000-${editing.birthday}` : ""}
                   onChange={(e) => setEditing({ ...editing, birthday: e.target.value ? e.target.value.slice(5) : "" })}
-                  className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               </div>
               <button data-testid="save-customer-btn" onClick={save} className="pos-btn w-full h-11 rounded-lg font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
             </div>
@@ -142,7 +142,7 @@ export default function CustomersScreen() {
       <Dialog open={trashOpen} onOpenChange={setTrashOpen}>
         <DialogContent className="max-w-xl border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="customer-trash-modal">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
               <Undo2 className="w-4 h-4" /> Recently deleted customers
             </DialogTitle>
           </DialogHeader>
@@ -156,7 +156,7 @@ export default function CustomersScreen() {
                 <div key={c.id} data-testid={`trash-row-${c.id}`} className="rounded-lg p-3 flex items-center justify-between"
                   style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white truncate">{c.name}</div>
+                    <div className="text-sm font-semibold truncate" style={{ color: "var(--pos-text)" }}>{c.name}</div>
                     <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
                       {c.phone}{c.address ? ` · ${c.address}` : ""}
                     </div>

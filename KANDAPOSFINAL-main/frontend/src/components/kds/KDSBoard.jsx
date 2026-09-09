@@ -56,7 +56,7 @@ function TicketCard({ ticket, onItemStatus, onRecall, justArrived }) {
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-extrabold text-white tabular-nums">#{ticket.number}</span>
+          <span className="text-lg font-extrabold tabular-nums" style={{ color: "var(--pos-text)" }}>#{ticket.number}</span>
           <span className="text-[11px] uppercase font-bold px-1.5 py-0.5 rounded-md"
             style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
             {ticket.type === "dine-in" ? `Table ${ticket.table || "?"}` : ticket.type}
@@ -85,7 +85,7 @@ function TicketCard({ ticket, onItemStatus, onRecall, justArrived }) {
               {it.kds_status === "ready" ? <CheckCircle2 className="w-3.5 h-3.5" /> : it.kds_status === "preparing" ? "•" : ""}
             </button>
             <div className="flex-1 min-w-0">
-              <div className={`text-sm ${it.kds_status === "ready" ? "line-through opacity-60" : ""} text-white`}>
+              <div className={`text-sm ${it.kds_status === "ready" ? "line-through opacity-60" : ""}`} style={{ color: "var(--pos-text)" }}>
                 <span className="font-bold tabular-nums mr-1">×{it.qty}</span>
                 {it.name}
               </div>
@@ -227,7 +227,7 @@ export default function KDSBoard() {
       <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "var(--pos-bg)" }}>
         <div className="max-w-md text-center" data-testid="kds-error">
           <AlertTriangle className="w-10 h-10 mx-auto mb-3" style={{ color: "#ef4444" }} />
-          <h1 className="text-xl font-bold text-white">Cannot open Kitchen Display</h1>
+          <h1 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Cannot open Kitchen Display</h1>
           <p className="text-sm mt-2" style={{ color: "var(--pos-muted)" }}>
             {error || "This screen requires a long-lived KDS token in the URL."}
           </p>
@@ -245,7 +245,7 @@ export default function KDSBoard() {
         <div className="flex items-center gap-3">
           <ChefHat className="w-6 h-6" style={{ color: "var(--pos-accent)" }} />
           <div>
-            <div className="text-base font-extrabold text-white">Kitchen Display</div>
+            <div className="text-base font-extrabold" style={{ color: "var(--pos-text)" }}>Kitchen Display</div>
             <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{data?.tenant?.name || "—"} · {station}</div>
           </div>
         </div>
@@ -281,7 +281,7 @@ export default function KDSBoard() {
         ))}
       </main>
       {busy && !data && (
-        <div className="absolute inset-0 flex items-center justify-center text-white">
+        <div className="absolute inset-0 flex items-center justify-center" style={{ color: "var(--pos-text)" }}>
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       )}

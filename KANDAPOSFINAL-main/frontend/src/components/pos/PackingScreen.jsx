@@ -22,17 +22,17 @@ function OrderCard({ order, onPacked }) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-          <span className="font-bold text-white">#{order.number}</span>
+          <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{order.number}</span>
           <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>{order.type}</span>
         </div>
         {order.table != null && <span className="text-xs" style={{ color: "var(--pos-muted)" }}>Table {order.table}</span>}
       </div>
-      <div className="text-sm text-white mb-2">{order.customer?.name || "—"}</div>
+      <div className="text-sm mb-2" style={{ color: "var(--pos-text)" }}>{order.customer?.name || "—"}</div>
       <div className="space-y-1.5 mb-3">
         {order.items.map((it, i) => (
           <label key={i} className="flex items-center gap-2 text-xs cursor-pointer select-none" data-testid={`pack-item-${order.number}-${i}`}>
             <input type="checkbox" checked={checked.has(i)} onChange={() => toggle(i)} className="w-3.5 h-3.5 accent-orange-500" />
-            <span className={checked.has(i) ? "line-through" : ""} style={{ color: checked.has(i) ? "var(--pos-muted)" : "white" }}>
+            <span className={checked.has(i) ? "line-through" : ""} style={{ color: checked.has(i) ? "var(--pos-muted)" : "var(--pos-text)" }}>
               {it.qty}× {it.name}{it.mods?.length ? ` · ${it.mods.join(", ")}` : ""}
             </span>
           </label>
@@ -100,7 +100,7 @@ export default function PackingScreen() {
             <Pizza className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="text-lg font-bold text-white">{data?.tenant?.name || "Kanda POS"}</div>
+            <div className="text-lg font-bold" style={{ color: "var(--pos-text)" }}>{data?.tenant?.name || "Kanda POS"}</div>
             <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Packing station</div>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function PackingScreen() {
                 {packed.map((o) => (
                   <div key={o.id} data-testid={`packed-card-${o.number}`} className="rounded-xl p-3 flex items-center justify-between" style={{ background: "var(--pos-panel)", border: "1px solid #2e7d4f" }}>
                     <div>
-                      <span className="font-bold text-white">#{o.number}</span>
+                      <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{o.number}</span>
                       <span className="text-xs ml-2" style={{ color: "var(--pos-muted)" }}>{o.customer?.name}</span>
                     </div>
                     <button data-testid={`pack-undo-${o.number}`} onClick={() => undoPacked(o)} className="text-[11px] font-bold" style={{ color: "var(--pos-muted)" }}>Undo</button>

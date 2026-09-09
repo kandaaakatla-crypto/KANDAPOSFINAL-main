@@ -27,7 +27,7 @@ export default function TenantsList() {
   return (
     <div className="space-y-4" data-testid="tenants-list">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-white">Tenants</h1>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Tenants</h1>
         <button data-testid="new-tenant-btn" onClick={() => navigate("/owner/tenants/new")}
           className="pos-btn h-10 px-4 rounded-lg text-sm font-bold text-white flex items-center gap-1.5"
           style={{ background: "var(--pos-accent)" }}>
@@ -39,7 +39,7 @@ export default function TenantsList() {
         <Search className="w-4 h-4 absolute left-3 top-3.5" style={{ color: "var(--pos-muted)" }} />
         <Input data-testid="tenants-search" placeholder="Search by name, slug, or contact email"
           value={q} onChange={(e) => setQ(e.target.value)}
-          className="pl-9 h-11 text-white" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+          className="pl-9 h-11" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
       </div>
 
       <div className="rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
@@ -52,12 +52,12 @@ export default function TenantsList() {
             className="w-full grid grid-cols-[1fr_120px_120px_120px_120px] gap-3 px-4 py-3 items-center text-left hover:bg-white/[0.02]"
             style={{ borderBottom: "1px solid var(--pos-border)" }}>
             <div>
-              <div className="font-semibold text-white">{t.name}</div>
+              <div className="font-semibold" style={{ color: "var(--pos-text)" }}>{t.name}</div>
               <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{t.slug} · {t.contact_email || "—"}</div>
             </div>
-            <div className="text-sm text-white capitalize">{t.plan}</div>
-            <div className="text-sm tabular-nums text-white">{t.staffCount ?? 0}</div>
-            <div className="text-sm tabular-nums text-white">{t.ordersToday ?? 0}</div>
+            <div className="text-sm capitalize" style={{ color: "var(--pos-text)" }}>{t.plan}</div>
+            <div className="text-sm tabular-nums" style={{ color: "var(--pos-text)" }}>{t.staffCount ?? 0}</div>
+            <div className="text-sm tabular-nums" style={{ color: "var(--pos-text)" }}>{t.ordersToday ?? 0}</div>
             <div className="text-right">
               <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full"
                 style={{ background: t.status === "active" ? "#13271a" : "#321519", color: t.status === "active" ? "#22c55e" : "#f87171" }}>

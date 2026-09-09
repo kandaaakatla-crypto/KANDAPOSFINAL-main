@@ -23,18 +23,16 @@ export default function OwnerLayout() {
           <ShieldCheck className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
           <div>
             <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Kanda POS</div>
-            <div className="font-bold text-white">Owner Portal</div>
+            <div className="font-bold" style={{ color: "var(--pos-text)" }}>Owner Portal</div>
           </div>
         </div>
         <nav className="px-2 space-y-1 flex-1 min-h-0 overflow-y-auto">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end}
-              className={({ isActive }) => `flex items-center gap-2.5 h-10 px-3 rounded-lg text-sm font-medium ${
-                isActive ? "text-white" : ""
-              }`}
+              className="flex items-center gap-2.5 h-10 px-3 rounded-lg text-sm font-medium"
               style={({ isActive }) => ({
                 background: isActive ? "var(--pos-panel-2)" : "transparent",
-                color: isActive ? "#fff" : "var(--pos-muted)",
+                color: isActive ? "var(--pos-text)" : "var(--pos-muted)",
                 border: `1px solid ${isActive ? "var(--pos-border)" : "transparent"}`,
               })}
               data-testid={`owner-nav-${n.label.toLowerCase().replace(/\s/g, "-")}`}>
@@ -43,7 +41,7 @@ export default function OwnerLayout() {
           ))}
         </nav>
         <div className="px-3 py-3" style={{ borderTop: "1px solid var(--pos-border)" }}>
-          <div className="text-xs text-white font-semibold">{owner?.name}</div>
+          <div className="text-xs font-semibold" style={{ color: "var(--pos-text)" }}>{owner?.name}</div>
           <div className="text-[10px]" style={{ color: "var(--pos-muted)" }}>{owner?.email}</div>
           <button data-testid="owner-logout" onClick={() => { logout(); navigate("/owner/login"); }}
             className="mt-2 w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5"

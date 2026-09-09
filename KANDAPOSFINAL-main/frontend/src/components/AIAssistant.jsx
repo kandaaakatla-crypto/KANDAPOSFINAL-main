@@ -264,8 +264,8 @@ export default function AIAssistant() {
                 {suggested.map((s) => (
                   <button key={s} data-testid={`ai-suggest-${s.slice(0, 15)}`}
                     onClick={() => { setInput(s); setTimeout(() => send(s), 30); }}
-                    className="pos-btn w-full text-left px-3 py-2 rounded-lg text-xs text-white"
-                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                    className="pos-btn w-full text-left px-3 py-2 rounded-lg text-xs"
+                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                     {s}
                   </button>
                 ))}
@@ -284,7 +284,7 @@ export default function AIAssistant() {
                     ? <UserIcon className="w-3 h-3 text-white" />
                     : <Bot className="w-3 h-3 text-white" />}
                 </div>
-                <div className="text-sm text-white whitespace-pre-wrap flex-1 leading-relaxed">
+                <div className="text-sm whitespace-pre-wrap flex-1 leading-relaxed" style={{ color: "var(--pos-text)" }}>
                   {m.content}
                   {m.tools_used && m.tools_used.length > 0 && (
                     <div className="text-[10px] mt-1" style={{ color: "var(--pos-muted)" }}>
@@ -337,8 +337,8 @@ export default function AIAssistant() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
                   placeholder="Ask about this page or your business…"
-                  className="flex-1 rounded-lg px-3 py-2 text-sm text-white outline-none"
-                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  className="flex-1 rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
                 <button data-testid="ai-send" onClick={() => send()} disabled={busy || !input.trim()}
                   className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center"
                   style={{ background: "#7c3aed", opacity: (busy || !input.trim()) ? 0.5 : 1 }}>

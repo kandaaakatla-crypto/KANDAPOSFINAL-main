@@ -45,7 +45,7 @@ export default function PendingBrandInviteBanner() {
           style={{ background: "linear-gradient(135deg, rgba(249,115,22,0.15), rgba(234,88,12,0.08))", border: "1px solid rgba(249,115,22,0.4)" }}>
           <div className="flex items-center gap-2.5">
             <Mail className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} />
-            <div className="text-sm text-white">
+            <div className="text-sm" style={{ color: "var(--pos-text)" }}>
               <b>{inv.brand_name}</b> invited your store to join their brand.
             </div>
           </div>

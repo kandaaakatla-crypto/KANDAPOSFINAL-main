@@ -32,7 +32,7 @@ export default function MenuEngineeringTab() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <p className="text-xs max-w-lg" style={{ color: "var(--pos-muted)" }}>
           Classic menu-engineering matrix — popularity vs. margin (selling price minus recipe cost), using the 70% popularity rule.
-          {data?.avg_margin != null && <> Average margin across costed items: <span className="text-white font-semibold">₹{data.avg_margin.toFixed(2)}</span>.</>}
+          {data?.avg_margin != null && <> Average margin across costed items: <span className="font-semibold" style={{ color: "var(--pos-text)" }}>₹{data.avg_margin.toFixed(2)}</span>.</>}
         </p>
         <div className="flex gap-1">
           {RANGE_OPTIONS.map((r) => (
@@ -59,7 +59,7 @@ export default function MenuEngineeringTab() {
             <div key={q.key} data-testid={`quadrant-${q.key}`} className="rounded-xl p-4" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
               <div className="flex items-center gap-2 mb-1">
                 <q.icon className="w-4 h-4" style={{ color: q.color }} />
-                <div className="font-semibold text-white">{q.label}</div>
+                <div className="font-semibold" style={{ color: "var(--pos-text)" }}>{q.label}</div>
                 <span className="text-xs tabular-nums ml-auto" style={{ color: "var(--pos-muted)" }}>{q.items.length}</span>
               </div>
               <div className="text-[11px] mb-3" style={{ color: "var(--pos-muted)" }}>{q.hint}</div>
@@ -70,7 +70,7 @@ export default function MenuEngineeringTab() {
                   {q.items.map((it) => (
                     <div key={it.name} data-testid={`menu-eng-item-${it.name}`} className="flex items-center justify-between gap-2 rounded-md px-2.5 py-2" style={{ background: "var(--pos-panel-2)" }}>
                       <div className="min-w-0">
-                        <div className="text-sm text-white font-medium truncate">{it.name}</div>
+                        <div className="text-sm font-medium truncate" style={{ color: "var(--pos-text)" }}>{it.name}</div>
                         <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>
                           {it.qty_sold} sold · ₹{it.revenue.toFixed(0)} revenue
                           {it.has_recipe && <> · margin ₹{it.margin.toFixed(2)}</>}

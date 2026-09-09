@@ -69,7 +69,7 @@ export default function DispatchScreen() {
   return (
     <div className="h-full flex flex-col gap-3 p-4" data-testid="dispatch-screen">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Delivery Dispatch</h2>
+        <h2 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Delivery Dispatch</h2>
         <div className="text-xs px-2 py-1 rounded-full" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
           {dispatchList.length} active route{dispatchList.length === 1 ? "" : "s"}
         </div>
@@ -90,12 +90,12 @@ export default function DispatchScreen() {
                 className="pos-btn w-full text-left rounded-lg p-3"
                 style={{ background: active ? "var(--pos-panel-2)" : "transparent", border: `1px solid ${active ? "var(--pos-accent)" : "var(--pos-border)"}` }}>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-white">#{o.number}</span>
+                  <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{o.number}</span>
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide" style={{ background: o.status === "ready" ? "#13271a" : "#2a1a3a", color: o.status === "ready" ? "#22c55e" : "#a855f7" }}>
                     {o.status === "ready" ? "Ready" : "Out"}
                   </span>
                 </div>
-                <div className="text-sm text-white mt-1">{o.customer?.name}</div>
+                <div className="text-sm mt-1" style={{ color: "var(--pos-text)" }}>{o.customer?.name}</div>
                 <div className="text-xs flex items-center gap-1.5 mt-0.5" style={{ color: "var(--pos-muted)" }}>
                   <MapPin className="w-3 h-3" /> {o.customer?.address?.slice(0, 38) || "—"}
                 </div>
@@ -123,23 +123,23 @@ export default function DispatchScreen() {
                   <div>
                     <div className="flex items-center gap-2">
                       <Bike className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
-                      <span className="text-lg font-bold text-white">Order #{current.number}</span>
+                      <span className="text-lg font-bold" style={{ color: "var(--pos-text)" }}>Order #{current.number}</span>
                       <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full" style={{ background: current.status === "ready" ? "#13271a" : "#2a1a3a", color: current.status === "ready" ? "#22c55e" : "#a855f7" }}>
                         {current.status}
                       </span>
                     </div>
-                    <div className="text-sm text-white mt-1">{current.customer?.name} · {current.customer?.phone}</div>
+                    <div className="text-sm mt-1" style={{ color: "var(--pos-text)" }}>{current.customer?.name} · {current.customer?.phone}</div>
                     <div className="text-xs mt-0.5" style={{ color: "var(--pos-muted)" }}>{fullAddress(current)}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold tabular-nums text-white">₹{current.total.toFixed(2)}</div>
+                    <div className="text-2xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>₹{current.total.toFixed(2)}</div>
                     <div className="text-[11px] uppercase" style={{ color: current.payment === "unpaid" ? "#f87171" : "#7ee2a8" }}>{current.payment}</div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
                   <Select value={current.driver || ""} onValueChange={handleAssign}>
-                    <SelectTrigger data-testid="driver-select" className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+                    <SelectTrigger data-testid="driver-select" className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                       <SelectValue placeholder="Assign driver" />
                     </SelectTrigger>
                     <SelectContent>
@@ -161,8 +161,8 @@ export default function DispatchScreen() {
                     </button>
                   )}
                   <a data-testid="maps-open" href={mapsOpenUrl} target="_blank" rel="noreferrer"
-                    className="pos-btn h-10 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-1.5"
-                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                    className="pos-btn h-10 rounded-lg text-sm font-bold flex items-center justify-center gap-1.5"
+                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                     <ExternalLink className="w-4 h-4" /> Open in Maps
                   </a>
                 </div>
@@ -186,7 +186,7 @@ export default function DispatchScreen() {
                 {current.items.map((it, i) => (
                   <div key={`${current.id}-it-${i}`} className="flex justify-between">
                     <span>{it.qty}× {it.name}{it.mods?.length ? ` · ${it.mods.join(", ")}` : ""}</span>
-                    <span className="tabular-nums text-white">₹{(it.qty * it.price).toFixed(2)}</span>
+                    <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>₹{(it.qty * it.price).toFixed(2)}</span>
                   </div>
                 ))}
               </div>

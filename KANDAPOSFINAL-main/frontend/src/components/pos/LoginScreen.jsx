@@ -83,18 +83,18 @@ export default function LoginScreen() {
   return (
     <div className="min-h-screen flex" style={{ background: "var(--pos-bg)" }} data-testid="login-screen">
       {/* Left brand panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[42%] p-12" style={{ background: "linear-gradient(160deg, #101a30 0%, #0b1220 100%)", borderRight: "1px solid var(--pos-border)" }}>
+      <div className="hidden lg:flex flex-col justify-between w-[42%] p-12" style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
             <BrandIcon className="w-7 h-7 text-white" />
           </div>
           <div>
-            <div className="text-2xl font-bold tracking-tight text-white">KANDA</div>
+            <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA</div>
             <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "var(--pos-muted)" }}>Point of Sale</div>
           </div>
         </div>
         <div>
-          <h1 className="text-4xl font-bold text-white leading-tight mb-4">{copy.headline}</h1>
+          <h1 className="text-4xl font-bold leading-tight mb-4" style={{ color: "var(--pos-text)" }}>{copy.headline}</h1>
           <p className="text-base leading-relaxed max-w-md" style={{ color: "var(--pos-muted)" }}>
             {copy.body}
           </p>
@@ -111,14 +111,14 @@ export default function LoginScreen() {
             <div className="lg:hidden w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
               <BrandIcon className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-white">Staff Sign In</h2>
+            <h2 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Staff Sign In</h2>
             <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>Enter your 4-digit PIN</p>
           </div>
 
           {/* PIN dots */}
           <div className="flex justify-center gap-4 mb-8" data-testid="pin-dots">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="w-4 h-4 rounded-full transition-colors" style={{ background: i < pin.length ? "var(--pos-accent)" : "#243352", boxShadow: error ? "0 0 0 2px #ef4444" : "none" }} />
+              <div key={i} className="w-4 h-4 rounded-full transition-colors" style={{ background: i < pin.length ? "var(--pos-accent)" : "var(--pos-border)", boxShadow: error ? "0 0 0 2px #ef4444" : "none" }} />
             ))}
           </div>
 
@@ -126,8 +126,8 @@ export default function LoginScreen() {
           <div className="grid grid-cols-3 gap-3 mb-6">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
               <button key={n} data-testid={`pin-key-${n}`} onClick={() => press(String(n))}
-                className="pin-key h-16 rounded-xl text-2xl font-semibold text-white"
-                style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                className="pin-key h-16 rounded-xl text-2xl font-semibold"
+                style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                 {n}
               </button>
             ))}
@@ -137,8 +137,8 @@ export default function LoginScreen() {
               <Delete className="w-6 h-6" style={{ color: "var(--pos-muted)" }} />
             </button>
             <button data-testid="pin-key-0" onClick={() => press("0")}
-              className="pin-key h-16 rounded-xl text-2xl font-semibold text-white"
-              style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+              className="pin-key h-16 rounded-xl text-2xl font-semibold"
+              style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
               0
             </button>
             <button data-testid="pin-enter" onClick={handleEnter} disabled={pin.length !== 4 || busy}
@@ -157,7 +157,7 @@ export default function LoginScreen() {
                   <button key={s.id} data-testid={`staff-quick-${s.id}`} onClick={() => submit(s.pin)}
                     className="pos-btn text-left rounded-lg px-3 py-2"
                     style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-                    <div className="text-sm font-medium text-white">{s.name}</div>
+                    <div className="text-sm font-medium" style={{ color: "var(--pos-text)" }}>{s.name}</div>
                     <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{s.role} · PIN {s.pin}</div>
                   </button>
                 ))}
@@ -166,8 +166,8 @@ export default function LoginScreen() {
           )}
 
           <button data-testid="open-timeclock-btn" onClick={() => navigate("/clock")}
-            className="pos-btn w-full mt-4 h-10 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-2"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+            className="pos-btn w-full mt-4 h-10 rounded-lg text-xs font-bold flex items-center justify-center gap-2"
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             Open Time Clock terminal →
           </button>
         </div>

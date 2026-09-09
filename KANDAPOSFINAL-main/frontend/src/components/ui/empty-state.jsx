@@ -8,7 +8,7 @@ export default function EmptyState({ icon: Icon, title, description, action, tes
   return (
     <div className="rounded-xl p-8 text-center" style={{ background: "var(--pos-panel)", border: "1px dashed var(--pos-border)" }} data-testid={testid}>
       {Icon ? <Icon className="w-6 h-6 mx-auto mb-3" style={{ color: "var(--pos-muted)" }} /> : null}
-      {title ? <div className="text-sm font-bold text-white mb-1">{title}</div> : null}
+      {title ? <div className="text-sm font-bold mb-1" style={{ color: "var(--pos-text)" }}>{title}</div> : null}
       {description ? <p className="text-xs" style={{ color: "var(--pos-muted)" }}>{description}</p> : null}
       {action ? (
         <button

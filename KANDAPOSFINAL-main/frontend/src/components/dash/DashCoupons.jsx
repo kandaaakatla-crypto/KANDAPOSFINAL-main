@@ -75,7 +75,7 @@ export default function DashCoupons() {
   return (
     <div className="p-6 space-y-6" data-testid="dash-coupons">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
           <Tag className="w-6 h-6" style={{ color: "#7dd3fc" }} />
           Coupons
         </h1>
@@ -88,7 +88,7 @@ export default function DashCoupons() {
         {/* List */}
         <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">All coupons</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>All coupons</div>
           </div>
           <div className="p-5">
             {loading && <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
@@ -101,7 +101,7 @@ export default function DashCoupons() {
                   style={{ background: "var(--pos-panel-2)" }}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-bold tracking-wider">{c.code}</span>
+                      <span className="font-bold tracking-wider" style={{ color: "var(--pos-text)" }}>{c.code}</span>
                       <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)" }}>
                         {c.kind === "percent" ? `${c.value}%` : `₹${c.value}`} off
                       </span>
@@ -147,12 +147,12 @@ export default function DashCoupons() {
         {/* Create */}
         <div className="rounded-xl overflow-hidden h-fit" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">New coupon</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>New coupon</div>
           </div>
           <div className="p-5 space-y-3">
             <Field label="Code">
               <input data-testid="coupon-form-code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                placeholder="SAVE20" className="w-full rounded px-2 py-1.5 text-sm text-white tracking-wider outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                placeholder="SAVE20" className="w-full rounded px-2 py-1.5 text-sm tracking-wider outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
             </Field>
 
             <div className="grid grid-cols-2 gap-2">
@@ -172,22 +172,22 @@ export default function DashCoupons() {
               </Field>
               <Field label="Value">
                 <input data-testid="coupon-form-value" type="number" min={0} value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })}
-                  placeholder={form.kind === "percent" ? "20" : "100"} className="w-full rounded px-2 py-1.5 text-sm text-white outline-none h-9" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  placeholder={form.kind === "percent" ? "20" : "100"} className="w-full rounded px-2 py-1.5 text-sm outline-none h-9" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               </Field>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <Field label="Valid from"><input data-testid="coupon-form-from" type="date" value={form.valid_from} onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
-                className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} /></Field>
+                className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} /></Field>
               <Field label="Valid to"><input data-testid="coupon-form-to" type="date" value={form.valid_to} onChange={(e) => setForm({ ...form, valid_to: e.target.value })}
-                className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} /></Field>
+                className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} /></Field>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <Field label="Max uses (optional)"><input data-testid="coupon-form-max-uses" type="number" min={1} value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })}
-                placeholder="Unlimited" className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} /></Field>
+                placeholder="Unlimited" className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} /></Field>
               <Field label="Min subtotal (₹)"><input data-testid="coupon-form-min-subtotal" type="number" min={0} value={form.min_subtotal} onChange={(e) => setForm({ ...form, min_subtotal: e.target.value })}
-                placeholder="0" className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} /></Field>
+                placeholder="0" className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} /></Field>
             </div>
 
             <button data-testid="coupon-create-btn" onClick={create} disabled={creating}

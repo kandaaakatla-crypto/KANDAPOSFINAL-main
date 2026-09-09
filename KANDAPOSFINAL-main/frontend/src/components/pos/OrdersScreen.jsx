@@ -12,7 +12,7 @@ const STATUS_META = {
   "in-kitchen": { label: "In Kitchen", color: "#f59e0b", bg: "#33260e" },
   "ready": { label: "Ready", color: "#22c55e", bg: "#13271a" },
   "out-for-delivery": { label: "Out for Delivery", color: "#a855f7", bg: "#2a1a3a" },
-  "completed": { label: "Completed", color: "#8b9bb8", bg: "#1a2235" },
+  "completed": { label: "Completed", color: "var(--pos-muted)", bg: "#1a2235" },
 };
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
 
@@ -61,7 +61,7 @@ export default function OrdersScreen() {
   return (
     <div className="h-full flex flex-col p-4 gap-3" data-testid="orders-screen">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Order Tickets</h2>
+        <h2 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Order Tickets</h2>
         <div className="flex gap-1.5 flex-wrap">
           {FILTERS.map((f) => (
             <button key={f.id} data-testid={`filter-${f.id}`} onClick={() => setFilter(f.id)}
@@ -87,11 +87,11 @@ export default function OrdersScreen() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">#{o.number}</span>
+                        <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{o.number}</span>
                         <TypeIcon className="w-4 h-4" style={{ color: "var(--pos-muted)" }} />
                         <span className="text-xs capitalize" style={{ color: "var(--pos-muted)" }}>{o.type}{o.table ? ` · Table ${o.table}` : ""}</span>
                       </div>
-                      <div className="text-sm mt-0.5 text-white">{o.customer?.name}</div>
+                      <div className="text-sm mt-0.5" style={{ color: "var(--pos-text)" }}>{o.customer?.name}</div>
                       {o.customer?.address && <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{o.customer.address}{o.customer.postcode ? `, ${o.customer.postcode}` : ""}</div>}
                     </div>
                     <span className="text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide shrink-0" style={{ background: meta.bg, color: meta.color }}>{meta.label}</span>
@@ -100,7 +100,7 @@ export default function OrdersScreen() {
                   <div className="rounded-lg p-2.5 mb-2 space-y-1" style={{ background: "var(--pos-panel-2)" }}>
                     {o.items.map((it, i) => (
                       <div key={`${o.id}-item-${i}`} className="text-xs">
-                        <div className="flex justify-between text-white"><span>{it.qty}× {it.name}</span><span className="tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(it.price * it.qty).toFixed(2)}</span></div>
+                        <div className="flex justify-between" style={{ color: "var(--pos-text)" }}><span>{it.qty}× {it.name}</span><span className="tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(it.price * it.qty).toFixed(2)}</span></div>
                         {it.mods?.length > 0 && <div style={{ color: "var(--pos-muted)" }} className="pl-4">{it.mods.join(" · ")}</div>}
                       </div>
                     ))}
@@ -110,7 +110,7 @@ export default function OrdersScreen() {
                     <div className="text-xs flex items-center gap-1" style={{ color: "var(--pos-muted)" }}>
                       <Clock className="w-3.5 h-3.5" /> {minsAgo(o.placedAt)} · <span className="uppercase font-semibold" style={{ color: o.payment === "unpaid" ? "#f87171" : "#7ee2a8" }}>{o.payment}</span>
                     </div>
-                    <div className="font-bold text-white tabular-nums">₹{o.total.toFixed(2)}</div>
+                    <div className="font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>₹{o.total.toFixed(2)}</div>
                   </div>
 
                   {ns && (

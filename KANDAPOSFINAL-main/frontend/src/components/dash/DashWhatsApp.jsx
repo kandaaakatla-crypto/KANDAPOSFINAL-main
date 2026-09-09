@@ -137,7 +137,7 @@ export default function DashWhatsApp() {
     <div className="h-full flex flex-col" data-testid="dash-whatsapp">
       <div className="px-6 pt-6 pb-3 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <MessageCircle className="w-6 h-6" style={{ color: "#25D366" }} />
             WhatsApp
           </h1>
@@ -146,8 +146,8 @@ export default function DashWhatsApp() {
           </p>
         </div>
         <button data-testid="wa-sandbox-toggle" onClick={() => setShowSandbox(!showSandbox)}
-          className="pos-btn px-3 py-2 rounded-lg text-xs text-white flex items-center gap-1.5"
-          style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+          className="pos-btn px-3 py-2 rounded-lg text-xs flex items-center gap-1.5"
+          style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           <Info className="w-3.5 h-3.5" /> Sandbox setup
         </button>
       </div>
@@ -156,7 +156,7 @@ export default function DashWhatsApp() {
         <div className="mx-6 mb-3 rounded-lg p-4 text-xs"
           style={{ background: "rgba(37,211,102,0.08)", border: "1px solid rgba(37,211,102,0.35)", color: "#d4f7e0" }}>
           <div className="flex items-center justify-between mb-2">
-            <div className="font-bold text-white text-sm">WhatsApp Setup</div>
+            <div className="font-bold text-sm" style={{ color: "var(--pos-text)" }}>WhatsApp Setup</div>
             {sandbox.sender_status && (
               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
                 style={{
@@ -238,8 +238,8 @@ export default function DashWhatsApp() {
               <input data-testid="wa-search"
                 value={query} onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search chats…"
-                className="w-full pl-8 rounded px-2 py-1.5 text-sm text-white outline-none"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                className="w-full pl-8 rounded px-2 py-1.5 text-sm outline-none"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
             </div>
             <button data-testid="wa-new-chat" onClick={() => setShowNew(!showNew)}
               className="pos-btn w-full text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1 text-white"
@@ -252,8 +252,8 @@ export default function DashWhatsApp() {
                   value={newTo} onChange={(e) => setNewTo(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), startNew())}
                   placeholder="+91… phone number"
-                  className="flex-1 rounded px-2 py-1 text-xs text-white outline-none"
-                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  className="flex-1 rounded px-2 py-1 text-xs outline-none"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
                 <button data-testid="wa-new-start" onClick={startNew}
                   className="pos-btn text-xs px-2 py-1 rounded text-white"
                   style={{ background: "#25D366" }}>Start</button>
@@ -281,7 +281,7 @@ export default function DashWhatsApp() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-white truncate">{c.customer_name || c.phone}</span>
+                    <span className="text-sm truncate" style={{ color: "var(--pos-text)" }}>{c.customer_name || c.phone}</span>
                     {c.unread_count > 0 && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full text-white shrink-0 ml-1"
                         style={{ background: "#25D366" }}>{c.unread_count}</span>
@@ -309,14 +309,14 @@ export default function DashWhatsApp() {
             <>
               <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
                 <button className="pos-btn md:hidden" onClick={() => setActive(null)}>
-                  <ArrowLeft className="w-4 h-4 text-white" />
+                  <ArrowLeft className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
                 </button>
                 <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs"
                   style={{ background: "#128C7E" }}>
                   {(active.customer_name || active.phone).slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-white">{active.customer_name || active.phone}</div>
+                  <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>{active.customer_name || active.phone}</div>
                   <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{active.phone}</div>
                 </div>
               </div>
@@ -379,14 +379,14 @@ export default function DashWhatsApp() {
                   className="pos-btn w-10 h-10 rounded-full flex items-center justify-center"
                   style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}
                   title="Send a WhatsApp template (bypasses 24-h window)">
-                  <FileText className="w-4 h-4 text-white" />
+                  <FileText className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
                 </button>
                 <input data-testid="wa-input"
                   value={body} onChange={(e) => setBody(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
                   placeholder="Type a message…"
-                  className="flex-1 rounded-full px-4 py-2 text-sm text-white outline-none"
-                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  className="flex-1 rounded-full px-4 py-2 text-sm outline-none"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
                 <button data-testid="wa-send" onClick={send}
                   disabled={sending || !body.trim()}
                   className="pos-btn w-10 h-10 rounded-full flex items-center justify-center"

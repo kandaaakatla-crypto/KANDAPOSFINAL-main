@@ -54,14 +54,14 @@ export default function PayrollScreen() {
     <div className="p-5" data-testid="payroll-screen">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2"><Banknote className="w-5 h-5" style={{ color: "var(--pos-accent)" }} /> Payroll</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Banknote className="w-5 h-5" style={{ color: "var(--pos-accent)" }} /> Payroll</h1>
           <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
             Wages from hours worked or salary, plus tips owed, for the selected period.
           </p>
         </div>
         <button data-testid="payroll-export-csv" onClick={downloadCsv}
-          className="pos-btn h-10 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+          className="pos-btn h-10 px-4 rounded-md text-xs font-bold flex items-center gap-2"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           <Download className="w-4 h-4" /> Export CSV
         </button>
       </div>
@@ -70,12 +70,12 @@ export default function PayrollScreen() {
         <label className="block">
           <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--pos-muted)" }}>From</div>
           <Input data-testid="payroll-start" type="date" value={start} onChange={(e) => setStart(e.target.value)}
-            className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </label>
         <label className="block">
           <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--pos-muted)" }}>To</div>
           <Input data-testid="payroll-end" type="date" value={end} onChange={(e) => setEnd(e.target.value)}
-            className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </label>
       </div>
 
@@ -93,7 +93,7 @@ export default function PayrollScreen() {
             {!loading && rows.length === 0 && <tr><td colSpan={8} className="text-center py-8" style={{ color: "var(--pos-muted)" }}>No staff found.</td></tr>}
             {rows.map((r) => (
               <tr key={r.user_id} data-testid={`payroll-row-${r.user_id}`} style={{ borderBottom: "1px solid var(--pos-border)" }}>
-                <td className="px-4 py-3 font-medium text-white">{r.user_name}</td>
+                <td className="px-4 py-3 font-medium" style={{ color: "var(--pos-text)" }}>{r.user_name}</td>
                 <td className="px-4 py-3" style={{ color: "var(--pos-muted)" }}>{r.role}</td>
                 <td className="px-4 py-3 capitalize" style={{ color: "var(--pos-muted)" }}>{r.pay_type}</td>
                 <td className="px-4 py-3 tabular-nums">{r.pay_type === "hourly" ? r.total_hours.toFixed(2) : "—"}</td>
@@ -107,11 +107,11 @@ export default function PayrollScreen() {
           {rows.length > 0 && (
             <tfoot>
               <tr style={{ background: "var(--pos-panel)" }}>
-                <td className="px-4 py-3 font-bold text-white" colSpan={3}>Total</td>
-                <td className="px-4 py-3 tabular-nums font-bold text-white">{totals.hours.toFixed(2)}</td>
-                <td className="px-4 py-3 tabular-nums font-bold text-white">{totals.overtime.toFixed(2)}</td>
-                <td className="px-4 py-3 tabular-nums font-bold text-white">₹{totals.wage.toFixed(2)}</td>
-                <td className="px-4 py-3 tabular-nums font-bold text-white">₹{totals.tips.toFixed(2)}</td>
+                <td className="px-4 py-3 font-bold" style={{ color: "var(--pos-text)" }} colSpan={3}>Total</td>
+                <td className="px-4 py-3 tabular-nums font-bold" style={{ color: "var(--pos-text)" }}>{totals.hours.toFixed(2)}</td>
+                <td className="px-4 py-3 tabular-nums font-bold" style={{ color: "var(--pos-text)" }}>{totals.overtime.toFixed(2)}</td>
+                <td className="px-4 py-3 tabular-nums font-bold" style={{ color: "var(--pos-text)" }}>₹{totals.wage.toFixed(2)}</td>
+                <td className="px-4 py-3 tabular-nums font-bold" style={{ color: "var(--pos-text)" }}>₹{totals.tips.toFixed(2)}</td>
                 <td className="px-4 py-3 tabular-nums font-bold" style={{ color: "var(--pos-accent)" }}>₹{totals.gross.toFixed(2)}</td>
               </tr>
             </tfoot>
@@ -125,7 +125,7 @@ export default function PayrollScreen() {
           {rows.map((r) => (
             <div key={r.user_id} data-testid={`payroll-row-${r.user_id}`} className="p-3 flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <div className="font-medium text-white text-sm">{r.user_name}</div>
+                <div className="font-medium text-sm" style={{ color: "var(--pos-text)" }}>{r.user_name}</div>
                 <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{r.role} · {r.pay_type}</div>
               </div>
               {r.pay_type === "hourly" && (
@@ -141,7 +141,7 @@ export default function PayrollScreen() {
             </div>
           ))}
           {rows.length > 0 && (
-            <div className="p-3 flex items-center justify-between font-bold text-white" style={{ background: "var(--pos-panel)" }}>
+            <div className="p-3 flex items-center justify-between font-bold" style={{ background: "var(--pos-panel)", color: "var(--pos-text)" }}>
               <span>Total</span>
               <span className="tabular-nums" style={{ color: "var(--pos-accent)" }}>₹{totals.gross.toFixed(2)}</span>
             </div>

@@ -59,7 +59,7 @@ export default function LiveCallsPanel() {
         style={{ background: "var(--pos-panel)", border: "1px dashed var(--pos-border)" }}>
         <Radio className="w-4 h-4" style={{ color: "var(--pos-muted)" }} />
         <div>
-          <div className="text-sm font-bold text-white">No active calls</div>
+          <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>No active calls</div>
           <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
             When a call is in progress you&apos;ll see its live transcript here — and can whisper instructions to the AI.
           </div>

@@ -22,13 +22,13 @@ export default function AuditLog() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ClipboardCheck className="w-5 h-5" style={{ color: "#22c55e" }} />
-          <h1 className="text-2xl font-bold text-white">Audit log</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Audit log</h1>
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>{rows.length}</span>
         </div>
         <div className="flex items-center gap-2">
           <input data-testid="audit-tenant-filter" value={tenantFilter} onChange={(e) => setTenantFilter(e.target.value)}
-            placeholder="Filter by tenant id" className="h-9 px-3 rounded-lg text-xs text-white"
-            style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} />
+            placeholder="Filter by tenant id" className="h-9 px-3 rounded-lg text-xs"
+            style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           <button data-testid="audit-refresh" onClick={load} className="pos-btn h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5"
             style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <RefreshCw className={`w-3.5 h-3.5 ${busy ? "animate-spin" : ""}`} /> Refresh
@@ -37,7 +37,7 @@ export default function AuditLog() {
       </div>
 
       {busy ? (
-        <div className="flex items-center gap-2 text-white"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
+        <div className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : !rows.length ? (
         <div className="rounded-xl p-8 text-center text-sm" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
           No audit entries yet.
@@ -59,8 +59,8 @@ export default function AuditLog() {
               {rows.map((r) => (
                 <tr key={r.id} data-testid={`audit-row-${r.id}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
                   <td className="px-3 py-2 text-[11px] tabular-nums" style={{ color: "var(--pos-muted)" }}>{new Date(r.at).toLocaleString()}</td>
-                  <td className="px-3 py-2 text-white">{r.tenant_id || "—"}</td>
-                  <td className="px-3 py-2 text-white text-[11px]">
+                  <td className="px-3 py-2" style={{ color: "var(--pos-text)" }}>{r.tenant_id || "—"}</td>
+                  <td className="px-3 py-2 text-[11px]" style={{ color: "var(--pos-text)" }}>
                     <span className="font-mono">{r.actor_id}</span>
                     <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px]" style={{ background: "rgba(255,255,255,0.05)", color: ACTOR_COLOR[r.actor_type] || "#a3a3a3" }}>
                       {r.actor_type}{r.actor_role ? ` · ${r.actor_role}` : ""}
@@ -72,7 +72,7 @@ export default function AuditLog() {
                     )}
                   </td>
                   <td className="px-3 py-2 font-bold text-[11px]" style={{ color: METHOD_COLOR[r.method] || "#fff" }}>{r.method}</td>
-                  <td className="px-3 py-2 font-mono text-[11px] text-white">{r.route}</td>
+                  <td className="px-3 py-2 font-mono text-[11px]" style={{ color: "var(--pos-text)" }}>{r.route}</td>
                   <td className="px-3 py-2 tabular-nums" style={{ color: r.status >= 400 ? "#f59e0b" : "#a3a3a3" }}>{r.status}</td>
                 </tr>
               ))}

@@ -61,7 +61,7 @@ export default function DashHome() {
     <div className="p-4 space-y-4" data-testid="dash-home">
       <PendingBrandInviteBanner />
       <div>
-        <h1 className="text-xl font-bold text-white">Welcome back, {user.name.split(" ")[0]}</h1>
+        <h1 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Welcome back, {user.name.split(" ")[0]}</h1>
         <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
           {roleLabel} · {locations.length} {locations.length === 1 ? "store" : "stores"} in your scope.
         </p>
@@ -85,7 +85,7 @@ export default function DashHome() {
         <div className="rounded-xl p-4" data-testid="store-features-card" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="flex items-center gap-2 mb-1">
             <Settings2 className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-            <h2 className="text-base font-bold text-white">Store features</h2>
+            <h2 className="text-base font-bold" style={{ color: "var(--pos-text)" }}>Store features</h2>
             <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
               {tenantInfo.businessType === "retail" ? "Retail store" : "Restaurant"}
             </span>
@@ -97,7 +97,7 @@ export default function DashHome() {
             {FEATURE_LABELS.map(({ key, label, desc }) => (
               <div key={key} data-testid={`feature-row-${key}`} className="flex items-center justify-between gap-3 rounded-lg p-3" style={{ background: "var(--pos-panel-2)" }}>
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-white">{label}</div>
+                  <div className="text-sm font-medium" style={{ color: "var(--pos-text)" }}>{label}</div>
                   <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{desc}</div>
                 </div>
                 <Switch data-testid={`feature-toggle-${key}`} checked={!!tenantInfo.features?.[key]} disabled={savingFeature === key}
@@ -111,7 +111,7 @@ export default function DashHome() {
       {/* Store cards */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-bold text-white">Your stores</h2>
+          <h2 className="text-base font-bold" style={{ color: "var(--pos-text)" }}>Your stores</h2>
           {canAddLocation(user) ? (
             <Link to="/biz/locations" data-testid="dash-add-location-btn"
               className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-2 text-white"
@@ -135,7 +135,7 @@ export default function DashHome() {
                 style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <div className="font-bold text-white flex items-center gap-2">
+                    <div className="font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
                       <MapPin className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> {l.name}
                       {l.is_default && <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: "#0e2515", color: "#86efac" }}>Default</span>}
                     </div>
@@ -164,7 +164,7 @@ function Kpi({ label, value, icon: Icon, accent, testid }) {
       </div>
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{label}</div>
-        <div className="text-lg font-bold text-white tabular-nums truncate">{value}</div>
+        <div className="text-lg font-bold tabular-nums truncate" style={{ color: "var(--pos-text)" }}>{value}</div>
       </div>
     </div>
   );
@@ -174,7 +174,7 @@ function Mini({ label, value }) {
   return (
     <div className="rounded-md px-2 py-1.5" style={{ background: "var(--pos-panel-2)" }}>
       <div className="text-[9px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{label}</div>
-      <div className="text-xs text-white truncate">{value}</div>
+      <div className="text-xs truncate" style={{ color: "var(--pos-text)" }}>{value}</div>
     </div>
   );
 }

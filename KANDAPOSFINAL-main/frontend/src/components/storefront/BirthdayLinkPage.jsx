@@ -66,7 +66,7 @@ export default function BirthdayLinkPage() {
               <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "#fb718522" }}>
                 <Cake className="w-6 h-6" style={{ color: "#fb7185" }} />
               </div>
-              <h1 className="text-lg font-bold text-white">Hi {name.split(" ")[0] || "there"}!</h1>
+              <h1 className="text-lg font-bold" style={{ color: "var(--pos-text)" }}>Hi {name.split(" ")[0] || "there"}!</h1>
               <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
                 {existing ? "You've already told us your birthday. Update it below if it's wrong." : "When's your birthday? We'll send you a treat every year."}
               </p>
@@ -75,8 +75,8 @@ export default function BirthdayLinkPage() {
             <label className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Birthday</label>
             <input data-testid="birthday-date-input" type="date" value={value}
               onChange={(e) => setValue(e.target.value)}
-              className="w-full h-11 rounded-lg px-3 mt-1.5 text-sm text-white outline-none"
-              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+              className="w-full h-11 rounded-lg px-3 mt-1.5 text-sm outline-none"
+              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
             <p className="text-[10px] mt-1.5" style={{ color: "var(--pos-muted)" }}>We only keep the month and day, not the year.</p>
 
             <button data-testid="birthday-submit-btn" onClick={submit} disabled={!value || saving}
@@ -90,7 +90,7 @@ export default function BirthdayLinkPage() {
         {done && (
           <div className="flex flex-col items-center text-center gap-3 py-6">
             <PartyPopper className="w-10 h-10" style={{ color: "#fcd34d" }} />
-            <h1 className="text-lg font-bold text-white flex items-center gap-2">
+            <h1 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
               <CheckCircle2 className="w-5 h-5" style={{ color: "#4ade80" }} /> Got it!
             </h1>
             <p className="text-sm" style={{ color: "var(--pos-muted)" }}>Thanks, see you on your birthday.</p>

@@ -55,7 +55,7 @@ export default function OnboardingBanner() {
             className="pos-btn flex items-center gap-2 rounded-md px-2 py-1.5 text-left"
             style={{ background: it.done ? "#0e2515" : "var(--pos-panel-2)", border: `1px solid ${it.done ? "#1d4d2d" : "var(--pos-border)"}`, opacity: it.done ? 0.7 : 1 }}>
             {it.done ? <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: "#86efac" }} /> : <Circle className="w-4 h-4 shrink-0" style={{ color: "var(--pos-muted)" }} />}
-            <span className="text-xs text-white">{it.label}</span>
+            <span className="text-xs" style={{ color: it.done ? "#fff" : "var(--pos-text)" }}>{it.label}</span>
           </button>
         ))}
       </div>

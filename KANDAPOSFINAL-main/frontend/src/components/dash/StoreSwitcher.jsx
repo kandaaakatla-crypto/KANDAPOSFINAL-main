@@ -35,7 +35,7 @@ export default function StoreSwitcher() {
         <Store className="w-3 h-3" /> Active store
       </div>
       <Select value={user.tenant_id} onValueChange={onChange} disabled={busy}>
-        <SelectTrigger data-testid="store-switcher" className="h-9 text-xs text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+        <SelectTrigger data-testid="store-switcher" className="h-9 text-xs" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

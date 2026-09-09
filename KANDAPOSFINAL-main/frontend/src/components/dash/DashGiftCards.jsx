@@ -24,7 +24,7 @@ export default function DashGiftCards() {
   return (
     <div className="p-6 space-y-6" data-testid="dash-gift-cards">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
           <Wallet className="w-6 h-6" style={{ color: "#7ee2a8" }} />
           Gift Cards &amp; Store Credit
         </h1>
@@ -35,13 +35,13 @@ export default function DashGiftCards() {
 
       <div className="flex gap-2">
         <button data-testid="tab-gift-cards" onClick={() => setTab("cards")}
-          className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white"
-          style={{ background: tab === "cards" ? "var(--pos-accent)" : "var(--pos-panel-2)" }}>
+          className="pos-btn h-9 px-4 rounded-md text-xs font-bold"
+          style={{ background: tab === "cards" ? "var(--pos-accent)" : "var(--pos-panel-2)", color: tab === "cards" ? "#fff" : "var(--pos-text)" }}>
           Gift Cards
         </button>
         <button data-testid="tab-store-credit" onClick={() => setTab("credit")}
-          className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white"
-          style={{ background: tab === "credit" ? "var(--pos-accent)" : "var(--pos-panel-2)" }}>
+          className="pos-btn h-9 px-4 rounded-md text-xs font-bold"
+          style={{ background: tab === "credit" ? "var(--pos-accent)" : "var(--pos-panel-2)", color: tab === "credit" ? "#fff" : "var(--pos-text)" }}>
           Store Credit
         </button>
       </div>
@@ -105,7 +105,7 @@ function GiftCardsTab() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
         <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-          <div className="text-sm font-bold text-white">All gift cards</div>
+          <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>All gift cards</div>
         </div>
         <div className="p-5">
           {loading && <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
@@ -118,7 +118,7 @@ function GiftCardsTab() {
                 style={{ background: "var(--pos-panel-2)" }}>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => copyCode(c.code)} className="pos-btn text-white font-bold tracking-wider flex items-center gap-1" title="Copy code">
+                    <button onClick={() => copyCode(c.code)} className="pos-btn font-bold tracking-wider flex items-center gap-1" style={{ color: "var(--pos-text)" }} title="Copy code">
                       {c.code} <Copy className="w-3 h-3" style={{ color: "var(--pos-muted)" }} />
                     </button>
                     <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel)", color: STATUS_COLOR[c.status] }}>{c.status}</span>
@@ -158,24 +158,24 @@ function GiftCardsTab() {
 
       <div className="rounded-xl overflow-hidden h-fit" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
         <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-          <div className="text-sm font-bold text-white">Issue a gift card</div>
+          <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>Issue a gift card</div>
         </div>
         <div className="p-5 space-y-3">
           <Field label="Value (₹)">
             <input data-testid="gift-card-form-value" type="number" min={1} value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })}
-              placeholder="500" className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+              placeholder="500" className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           </Field>
           <Field label="Recipient name (optional)">
             <input data-testid="gift-card-form-name" value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })}
-              className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+              className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           </Field>
           <Field label="Recipient phone (optional — texts the code)">
             <input data-testid="gift-card-form-phone" value={form.recipient_phone} onChange={(e) => setForm({ ...form, recipient_phone: e.target.value })}
-              className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+              className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           </Field>
           <Field label="Recipient email (optional — emails the code)">
             <input data-testid="gift-card-form-email" type="email" value={form.recipient_email} onChange={(e) => setForm({ ...form, recipient_email: e.target.value })}
-              className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+              className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           </Field>
           <button data-testid="gift-card-issue-btn" onClick={issue} disabled={issuing}
             className="pos-btn w-full mt-1 px-3 py-2 rounded-lg text-xs text-white flex items-center justify-center gap-1.5 disabled:opacity-40"
@@ -235,13 +235,13 @@ function StoreCreditTab() {
   return (
     <div className="rounded-xl overflow-hidden max-w-2xl" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
       <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-        <div className="text-sm font-bold text-white">Find a customer</div>
+        <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>Find a customer</div>
       </div>
       <div className="p-5 space-y-4">
         <div className="flex gap-2">
           <input data-testid="credit-search-phone" value={phone} onChange={(e) => setPhone(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && search()}
-            placeholder="Phone number" className="flex-1 rounded px-3 py-2 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+            placeholder="Phone number" className="flex-1 rounded px-3 py-2 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           <button data-testid="credit-search-btn" onClick={search} disabled={searching}
             className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-1.5 disabled:opacity-40" style={{ background: "var(--pos-accent)" }}>
             {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />} Find
@@ -251,7 +251,7 @@ function StoreCreditTab() {
         {credit && (
           <div className="space-y-4">
             <div className="rounded-lg p-4" style={{ background: "var(--pos-panel-2)" }}>
-              <div className="text-white font-bold">{credit.name}</div>
+              <div className="font-bold" style={{ color: "var(--pos-text)" }}>{credit.name}</div>
               <div className="text-xs mt-0.5" style={{ color: "var(--pos-muted)" }}>{credit.phone}</div>
               <div className="text-2xl font-bold mt-2" style={{ color: "#7ee2a8" }}>₹{credit.store_credit.toFixed(2)}</div>
               <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Current balance</div>
@@ -260,11 +260,11 @@ function StoreCreditTab() {
             <div className="flex gap-2 items-end flex-wrap">
               <Field label="Adjustment (₹, can be negative)">
                 <input data-testid="credit-adjust-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
-                  placeholder="100" className="w-32 rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  placeholder="100" className="w-32 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               </Field>
               <Field label="Reason">
                 <input data-testid="credit-adjust-note" value={note} onChange={(e) => setNote(e.target.value)}
-                  placeholder="Goodwill gesture" className="w-56 rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  placeholder="Goodwill gesture" className="w-56 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               </Field>
               <button data-testid="credit-adjust-btn" onClick={adjust} disabled={saving}
                 className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-1.5 disabled:opacity-40" style={{ background: "var(--pos-accent)" }}>
@@ -279,7 +279,7 @@ function StoreCreditTab() {
                 {credit.transactions.map((t) => (
                   <div key={t.id} className="flex items-center justify-between text-xs px-2 py-1.5 rounded" style={{ background: "var(--pos-panel-2)" }}>
                     <div className="min-w-0">
-                      <span className="capitalize text-white">{t.kind}</span>
+                      <span className="capitalize" style={{ color: "var(--pos-text)" }}>{t.kind}</span>
                       {t.note && <span className="ml-2" style={{ color: "var(--pos-muted)" }}>{t.note}</span>}
                     </div>
                     <span className="tabular-nums shrink-0 ml-2" style={{ color: t.amount >= 0 ? "#4ade80" : "#f87171" }}>

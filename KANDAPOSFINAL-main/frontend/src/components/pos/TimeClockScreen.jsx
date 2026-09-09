@@ -87,19 +87,19 @@ export default function TimeClockScreen() {
   return (
     <div className="min-h-screen flex" style={{ background: "var(--pos-bg)" }} data-testid="timeclock-screen">
       <div className="hidden lg:flex flex-col justify-between w-[42%] p-12"
-        style={{ background: "linear-gradient(160deg, #101a30 0%, #0b1220 100%)", borderRight: "1px solid var(--pos-border)" }}>
+        style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-3">
           <button data-testid="timeclock-back-btn" onClick={() => navigate("/login")}
             className="pos-btn p-2 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
-            <ArrowLeft className="w-4 h-4 text-white" />
+            <ArrowLeft className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
           </button>
           <div>
-            <div className="text-2xl font-bold tracking-tight text-white">KANDA</div>
+            <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA</div>
             <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "var(--pos-muted)" }}>Time Clock</div>
           </div>
         </div>
         <div>
-          <div className="text-6xl font-bold text-white mb-2 tabular-nums" data-testid="timeclock-time">
+          <div className="text-6xl font-bold mb-2 tabular-nums" style={{ color: "var(--pos-text)" }} data-testid="timeclock-time">
             {now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </div>
           <div className="text-base" style={{ color: "var(--pos-muted)" }}>
@@ -146,17 +146,17 @@ export default function TimeClockScreen() {
         <div className="grid grid-cols-3 gap-3 max-w-xs w-full">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
             <button key={n} data-testid={`tc-pin-${n}`} onClick={() => press(String(n))} disabled={busy}
-              className="pos-btn h-16 rounded-lg text-xl font-bold text-white disabled:opacity-50"
-              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>{n}</button>
+              className="pos-btn h-16 rounded-lg text-xl font-bold disabled:opacity-50"
+              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>{n}</button>
           ))}
           <button data-testid="tc-pin-clear" onClick={clear} disabled={busy}
             className="pos-btn h-16 rounded-lg flex items-center justify-center disabled:opacity-50"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "white" }}>
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             <Delete className="w-6 h-6" />
           </button>
           <button data-testid="tc-pin-0" onClick={() => press("0")} disabled={busy}
-            className="pos-btn h-16 rounded-lg text-xl font-bold text-white disabled:opacity-50"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>0</button>
+            className="pos-btn h-16 rounded-lg text-xl font-bold disabled:opacity-50"
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>0</button>
           <div />
         </div>
 

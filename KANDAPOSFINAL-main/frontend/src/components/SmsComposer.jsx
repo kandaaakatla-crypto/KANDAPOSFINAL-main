@@ -52,22 +52,22 @@ export default function SmsComposer({ open, onClose, to, name, customerId = null
       <DialogContent data-testid="sms-composer" className="max-w-lg border"
         style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <MessageSquare className="w-4 h-4" style={{ color: "#a78bfa" }} />
             SMS to {name || to}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
-            To: <span className="text-white tabular-nums">{to || "—"}</span>
+            To: <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>{to || "—"}</span>
           </div>
 
           <div className="flex flex-wrap gap-1.5">
             {TEMPLATES.map((t) => (
               <button key={t.label} data-testid={`sms-tpl-${t.label}`}
                 onClick={() => setBody(t.body)}
-                className="pos-btn text-xs px-2.5 py-1 rounded-full text-white"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                className="pos-btn text-xs px-2.5 py-1 rounded-full"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                 {t.label}
               </button>
             ))}
@@ -77,11 +77,11 @@ export default function SmsComposer({ open, onClose, to, name, customerId = null
             value={body} onChange={(e) => setBody(e.target.value)}
             rows={5} maxLength={1000}
             placeholder="Type your message… use {name} to personalise."
-            className="w-full rounded-lg px-3 py-2 text-sm text-white outline-none resize-none"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none"
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
 
           <div className="flex items-center justify-between text-[11px]" style={{ color: "var(--pos-muted)" }}>
-            <span>Preview: <span className="text-white">{rendered.slice(0, 80)}{rendered.length > 80 ? "…" : ""}</span></span>
+            <span>Preview: <span style={{ color: "var(--pos-text)" }}>{rendered.slice(0, 80)}{rendered.length > 80 ? "…" : ""}</span></span>
             <span>{body.length}/1000</span>
           </div>
 

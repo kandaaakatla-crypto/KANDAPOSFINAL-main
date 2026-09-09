@@ -146,7 +146,7 @@ export default function MenuScreen() {
   return (
     <div className="h-full flex flex-col p-4 gap-4" data-testid="menu-screen">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-bold text-white">Menu Management</h2>
+        <h2 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Menu Management</h2>
         <div className="flex items-center gap-2 flex-wrap">
           {editable && (
             <>
@@ -210,7 +210,7 @@ export default function MenuScreen() {
           <tbody>
             {items.map((m) => (
               <tr key={m.id} data-testid={`menu-row-${m.id}`} style={{ borderBottom: "1px solid var(--pos-border)", opacity: m.available ? 1 : 0.55 }}>
-                <td className="px-4 py-3 font-medium text-white">{m.name}</td>
+                <td className="px-4 py-3 font-medium" style={{ color: "var(--pos-text)" }}>{m.name}</td>
                 <td className="px-4 py-3 max-w-xs truncate" style={{ color: "var(--pos-muted)" }}>{m.desc || "—"}</td>
                 <td className="px-4 py-3 tabular-nums font-semibold" style={{ color: "var(--pos-accent)" }}>
                   {priceLabel(m)}
@@ -246,7 +246,7 @@ export default function MenuScreen() {
             <div key={m.id} data-testid={`menu-row-${m.id}`} className="p-3 flex flex-col gap-2" style={{ opacity: m.available ? 1 : 0.55 }}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="font-medium text-white text-sm">{m.name}</div>
+                  <div className="font-medium text-sm" style={{ color: "var(--pos-text)" }}>{m.name}</div>
                   {m.desc && <div className="text-xs truncate mt-0.5" style={{ color: "var(--pos-muted)" }}>{m.desc}</div>}
                 </div>
                 <Switch data-testid={`toggle-${m.id}`} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} className="shrink-0" />
@@ -278,16 +278,16 @@ export default function MenuScreen() {
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="menu-item-modal">
-          <DialogHeader><DialogTitle className="text-white">{editing?.id ? "Edit Item" : "New Menu Item"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>{editing?.id ? "Edit Item" : "New Menu Item"}</DialogTitle></DialogHeader>
           {editing && (
             <div className="space-y-3">
               <Input data-testid="menu-field-name" placeholder="Item name *" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               <Input data-testid="menu-field-desc" placeholder="Description" value={editing.desc || ""} onChange={(e) => setEditing({ ...editing, desc: e.target.value })}
-                className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               <div className="flex items-center gap-2">
                 <Input data-testid="menu-field-image" placeholder="Image URL — shown on the QR ordering menu" value={editing.imageUrl || ""} onChange={(e) => setEditing({ ...editing, imageUrl: e.target.value })}
-                  className="h-10 text-white flex-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-10 flex-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 {editing.imageUrl && (
                   <img src={editing.imageUrl} alt="" className="w-10 h-10 rounded-md object-cover shrink-0" style={{ border: "1px solid var(--pos-border)" }}
                     onError={(e) => { e.currentTarget.style.display = "none"; }} />
@@ -296,10 +296,10 @@ export default function MenuScreen() {
               <div className="relative">
                 <ScanLine className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
                 <Input data-testid="menu-field-barcode" placeholder="Barcode / SKU (optional)" value={editing.barcode || ""} onChange={(e) => setEditing({ ...editing, barcode: e.target.value })}
-                  className="h-10 pl-9 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-10 pl-9" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               </div>
               <Select value={editing.catId} onValueChange={(v) => setEditing({ ...editing, catId: v })}>
-                <SelectTrigger data-testid="menu-field-cat" className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+                <SelectTrigger data-testid="menu-field-cat" className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -307,7 +307,7 @@ export default function MenuScreen() {
                 </SelectContent>
               </Select>
               {features.pizza_sizing && (
-                <label className="flex items-center gap-2 text-xs text-white">
+                <label className="flex items-center gap-2 text-xs" style={{ color: "var(--pos-text)" }}>
                   <Switch data-testid="menu-field-ispizza" checked={!!editing.isPizza} onCheckedChange={(v) => setEditing({ ...editing, isPizza: v })} />
                   Sized item (3 prices)
                 </label>
@@ -316,12 +316,12 @@ export default function MenuScreen() {
                 <div className="grid grid-cols-3 gap-2">
                   {[{ k: "sm", l: 'Small ₹' }, { k: "md", l: 'Medium ₹' }, { k: "lg", l: 'Large ₹' }].map((s) => (
                     <Input key={s.k} data-testid={`menu-field-${s.k}`} type="number" placeholder={s.l} value={editing[s.k]} onChange={(e) => setEditing({ ...editing, [s.k]: e.target.value })}
-                      className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                      className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                   ))}
                 </div>
               ) : (
                 <Input data-testid="menu-field-price" type="number" placeholder="Price ₹ *" value={editing.price} onChange={(e) => setEditing({ ...editing, price: e.target.value })}
-                  className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               )}
 
               <label className="block">
@@ -330,7 +330,7 @@ export default function MenuScreen() {
                 </div>
                 <Input data-testid="menu-field-tax-rate" type="number" placeholder="Auto" value={editing.tax_rate}
                   onChange={(e) => setEditing({ ...editing, tax_rate: e.target.value })}
-                  className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               </label>
 
               {!editing.isPizza && (
@@ -341,11 +341,11 @@ export default function MenuScreen() {
                   {(editing.variants || []).map((v, i) => (
                     <div key={i} className="flex items-center gap-1.5" data-testid={`variant-row-${i}`}>
                       <Input data-testid={`variant-label-${i}`} placeholder="Label (e.g. Medium, Red)" value={v.label} onChange={(e) => updateVariant(i, { label: e.target.value })}
-                        className="h-9 text-white text-xs flex-1" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                        className="h-9 text-xs flex-1" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                       <Input data-testid={`variant-price-${i}`} type="number" placeholder="₹" value={v.price} onChange={(e) => updateVariant(i, { price: e.target.value })}
-                        className="h-9 text-white text-xs w-20 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                        className="h-9 text-xs w-20 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                       <Input data-testid={`variant-sku-${i}`} placeholder="SKU" value={v.sku || ""} onChange={(e) => updateVariant(i, { sku: e.target.value })}
-                        className="h-9 text-white text-xs w-20 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                        className="h-9 text-xs w-20 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                       <button type="button" data-testid={`variant-remove-${i}`} onClick={() => removeVariant(i)} className="pos-btn w-9 h-9 shrink-0 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}>
                         <Trash2 className="w-3.5 h-3.5 text-red-400" />
                       </button>
@@ -367,7 +367,7 @@ export default function MenuScreen() {
                   {(editing.dealGroups || []).map((g, i) => (
                     <div key={i} className="flex items-center gap-1.5" data-testid={`deal-group-row-${i}`}>
                       <Select value={g.cat_id} onValueChange={(v) => updateDealGroup(i, { cat_id: v, size: v === "pizzas" ? (g.size || "md") : null })}>
-                        <SelectTrigger data-testid={`deal-group-cat-${i}`} className="h-9 text-white text-xs w-28 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+                        <SelectTrigger data-testid={`deal-group-cat-${i}`} className="h-9 text-xs w-28 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                           <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -376,7 +376,7 @@ export default function MenuScreen() {
                       </Select>
                       {g.cat_id === "pizzas" && (
                         <Select value={g.size || "md"} onValueChange={(v) => updateDealGroup(i, { size: v })}>
-                          <SelectTrigger data-testid={`deal-group-size-${i}`} className="h-9 text-white text-xs w-16 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+                          <SelectTrigger data-testid={`deal-group-size-${i}`} className="h-9 text-xs w-16 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -387,9 +387,9 @@ export default function MenuScreen() {
                         </Select>
                       )}
                       <Input data-testid={`deal-group-label-${i}`} placeholder="Label shown to staff" value={g.label} onChange={(e) => updateDealGroup(i, { label: e.target.value })}
-                        className="h-9 text-white text-xs flex-1" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                        className="h-9 text-xs flex-1" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                       <Input data-testid={`deal-group-count-${i}`} type="number" min={1} value={g.count} onChange={(e) => updateDealGroup(i, { count: parseInt(e.target.value) || 1 })}
-                        className="h-9 text-white text-xs w-14 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                        className="h-9 text-xs w-14 shrink-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                       <button type="button" data-testid={`deal-group-remove-${i}`} onClick={() => removeDealGroup(i)} className="pos-btn w-9 h-9 shrink-0 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}>
                         <Trash2 className="w-3.5 h-3.5 text-red-400" />
                       </button>
@@ -423,7 +423,7 @@ export default function MenuScreen() {
 
       <Dialog open={!!importPreview} onOpenChange={(o) => !o && setImportPreview(null)}>
         <DialogContent className="max-w-2xl border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="csv-preview-modal">
-          <DialogHeader><DialogTitle className="text-white">Import preview — {importPreview?.file?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Import preview — {importPreview?.file?.name}</DialogTitle></DialogHeader>
           {importPreview && (
             <div className="space-y-3">
               <div className="flex gap-3 text-xs">
@@ -444,7 +444,7 @@ export default function MenuScreen() {
                       <tr key={c.row} data-testid={`csv-preview-row-${c.row}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
                         <td className="px-2 py-1 tabular-nums" style={{ color: "var(--pos-muted)" }}>{c.row}</td>
                         <td className="px-2 py-1 font-bold" style={{ color: c.action === "update" ? "#7dd3fc" : "#86efac" }}>{c.action}</td>
-                        <td className="px-2 py-1 text-white">{c.name}</td>
+                        <td className="px-2 py-1" style={{ color: "var(--pos-text)" }}>{c.name}</td>
                         <td className="px-2 py-1" style={{ color: "var(--pos-muted)" }}>{c.category}</td>
                       </tr>
                     ))}

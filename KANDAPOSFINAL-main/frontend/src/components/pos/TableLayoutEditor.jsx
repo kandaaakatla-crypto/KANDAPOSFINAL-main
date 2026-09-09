@@ -186,7 +186,7 @@ export default function TableLayoutEditor({ onExit }) {
       <div className="flex items-center justify-between px-4 py-2" style={{ background: "var(--pos-panel)", borderBottom: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-2">
           <LayoutGrid className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-          <span className="text-sm font-bold text-white">Floor layout</span>
+          <span className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>Floor layout</span>
           {!isManager && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>Read-only</span>}
         </div>
         <div className="flex items-center gap-1.5">
@@ -259,8 +259,8 @@ export default function TableLayoutEditor({ onExit }) {
             <label className="text-[10px] uppercase tracking-wider block" style={{ color: "var(--pos-muted)" }}>
               seats
               <input type="number" value={selected.seats || 0} onChange={(e) => patch({ seats: Number(e.target.value) })}
-                className="mt-1 w-full h-9 px-2 rounded-md text-sm text-white"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                className="mt-1 w-full h-9 px-2 rounded-md text-sm"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
             </label>
 
             <div className="rounded-md px-3 py-2 text-xs tabular-nums" data-testid="layout-dimensions" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>

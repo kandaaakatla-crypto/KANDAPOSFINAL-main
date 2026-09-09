@@ -13,7 +13,7 @@ function QrBlock({ title, icon: Icon, loading, data, testid }) {
     <div className="rounded-xl p-4 flex items-center gap-4" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} data-testid={testid}>
       <img src={`data:image/png;base64,${data.qrPngBase64}`} alt={title} className="w-24 h-24 rounded-lg bg-white p-1.5 shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-bold text-white flex items-center gap-1.5 mb-1"><Icon className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> {title}</div>
+        <div className="text-sm font-bold flex items-center gap-1.5 mb-1" style={{ color: "var(--pos-text)" }}><Icon className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> {title}</div>
         <div className="text-[11px] font-mono truncate mb-2" style={{ color: "var(--pos-muted)" }}>{data.url}</div>
         <div className="flex gap-1.5">
           <button onClick={() => { navigator.clipboard.writeText(data.url); toast.success("Link copied"); }}
@@ -36,7 +36,7 @@ function LinkBlock({ title, icon: Icon, url, testid }) {
       <div className="flex items-center gap-2 min-w-0">
         <Icon className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} />
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-white">{title}</div>
+          <div className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{title}</div>
           <div className="text-[11px] font-mono truncate" style={{ color: "var(--pos-muted)" }}>{url}</div>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function QrCodesModal({ open, onClose }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-        <DialogHeader><DialogTitle className="text-white flex items-center gap-2"><QrCode className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Ordering QR Codes &amp; Screens</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><QrCode className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Ordering QR Codes &amp; Screens</DialogTitle></DialogHeader>
 
         <div className="space-y-5">
           <div>
@@ -96,7 +96,7 @@ export default function QrCodesModal({ open, onClose }) {
           <div>
             <div className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: "var(--pos-muted)" }}>Table ordering</div>
             <Select value={tableId} onValueChange={loadTableQr}>
-              <SelectTrigger data-testid="qr-table-select" className="h-10 text-white mb-2" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+              <SelectTrigger data-testid="qr-table-select" className="h-10 mb-2" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                 <SelectValue placeholder="Choose a table" />
               </SelectTrigger>
               <SelectContent>

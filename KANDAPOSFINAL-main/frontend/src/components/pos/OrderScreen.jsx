@@ -401,7 +401,7 @@ export default function OrderScreen() {
                   onFocus={() => setSuggestOpen(true)}
                   placeholder="Name or phone number..."
                   onKeyDown={(e) => e.key === "Enter" && lookupCustomer()}
-                  className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 <button data-testid="phone-search-btn" onClick={lookupCustomer} className="pos-btn h-10 w-10 shrink-0 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-blue)" }}>
                   <Search className="w-4 h-4 text-white" />
                 </button>
@@ -412,7 +412,7 @@ export default function OrderScreen() {
                   {deliveryMatches.map((c) => (
                     <button key={c.id} data-testid={`customer-suggestion-${c.id}`} type="button" onClick={() => pickCustomer(c)}
                       className="pos-btn w-full text-left px-3 py-2.5 text-sm flex items-center justify-between gap-2"
-                      style={{ color: "white", borderBottom: "1px solid var(--pos-border)" }}>
+                      style={{ color: "var(--pos-text)", borderBottom: "1px solid var(--pos-border)" }}>
                       <span className="truncate">{c.name}</span>
                       <span className="text-xs shrink-0" style={{ color: "var(--pos-muted)" }}>{c.phone}</span>
                     </button>
@@ -425,7 +425,7 @@ export default function OrderScreen() {
               <div className="mt-3 rounded-lg p-3 fade-in" data-testid="customer-card" style={{ background: "var(--pos-panel-2)", border: "1px solid #2e4a2e" }}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="font-semibold text-white text-sm">{customer.name}</div>
+                    <div className="font-semibold text-sm" style={{ color: "var(--pos-text)" }}>{customer.name}</div>
                     <div className="text-xs mt-0.5 flex items-center gap-1" style={{ color: "var(--pos-muted)" }}><Phone className="w-3 h-3" />{customer.phone}</div>
                     <div className="text-xs mt-1" style={{ color: "var(--pos-muted)" }}>{customer.address}, {customer.postcode}</div>
                     {customer.notes && <div className="text-xs mt-1 italic text-amber-400">⚠ {customer.notes}</div>}
@@ -439,9 +439,9 @@ export default function OrderScreen() {
             {newCust && (
               <div className="mt-3 space-y-2 fade-in" data-testid="new-customer-form">
                 <div className="text-xs font-semibold flex items-center gap-1" style={{ color: "var(--pos-accent)" }}><UserPlus className="w-3.5 h-3.5" /> New Customer</div>
-                <Input data-testid="new-cust-name" placeholder="Full name" value={newCust.name} onChange={(e) => setNewCust({ ...newCust, name: e.target.value })} className="h-9 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-                <Input data-testid="new-cust-address" placeholder="Address" value={newCust.address} onChange={(e) => setNewCust({ ...newCust, address: e.target.value })} className="h-9 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-                <Input data-testid="new-cust-postcode" placeholder="Postcode" value={newCust.postcode} onChange={(e) => setNewCust({ ...newCust, postcode: e.target.value })} className="h-9 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                <Input data-testid="new-cust-name" placeholder="Full name" value={newCust.name} onChange={(e) => setNewCust({ ...newCust, name: e.target.value })} className="h-9" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+                <Input data-testid="new-cust-address" placeholder="Address" value={newCust.address} onChange={(e) => setNewCust({ ...newCust, address: e.target.value })} className="h-9" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+                <Input data-testid="new-cust-postcode" placeholder="Postcode" value={newCust.postcode} onChange={(e) => setNewCust({ ...newCust, postcode: e.target.value })} className="h-9" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 <button data-testid="save-new-customer" onClick={saveNewCustomer} className="pos-btn w-full h-9 rounded-lg text-sm font-semibold text-white" style={{ background: "var(--pos-accent)" }}>Save Customer</button>
               </div>
             )}
@@ -455,7 +455,7 @@ export default function OrderScreen() {
               <Input data-testid="collection-name" placeholder="Customer name (optional)" value={collectionName}
                 onChange={(e) => { setCollectionName(e.target.value); setSuggestOpen(true); }}
                 onFocus={() => setSuggestOpen(true)}
-                className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               {suggestOpen && collectionMatches.length > 0 && (
                 <div className="absolute left-0 right-0 mt-1 z-10 rounded-lg overflow-hidden fade-in" data-testid="collection-suggestions"
                   style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
@@ -463,7 +463,7 @@ export default function OrderScreen() {
                     <button key={c.id} data-testid={`collection-suggestion-${c.id}`} type="button"
                       onClick={() => { setCollectionName(c.name); setPhoneQuery(c.phone); setSuggestOpen(false); }}
                       className="pos-btn w-full text-left px-3 py-2.5 text-sm flex items-center justify-between gap-2"
-                      style={{ color: "white", borderBottom: "1px solid var(--pos-border)" }}>
+                      style={{ color: "var(--pos-text)", borderBottom: "1px solid var(--pos-border)" }}>
                       <span className="truncate">{c.name}</span>
                       <span className="text-xs shrink-0" style={{ color: "var(--pos-muted)" }}>{c.phone}</span>
                     </button>
@@ -471,8 +471,8 @@ export default function OrderScreen() {
                 </div>
               )}
             </div>
-            <Input data-testid="collection-phone" placeholder="Phone (optional)" value={phoneQuery} onChange={(e) => setPhoneQuery(e.target.value)} className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-            <div className="text-xs" style={{ color: "var(--pos-muted)" }}>Est. ready in <span className="text-white font-semibold">15–20 min</span></div>
+            <Input data-testid="collection-phone" placeholder="Phone (optional)" value={phoneQuery} onChange={(e) => setPhoneQuery(e.target.value)} className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            <div className="text-xs" style={{ color: "var(--pos-muted)" }}>Est. ready in <span className="font-semibold" style={{ color: "var(--pos-text)" }}>15–20 min</span></div>
           </div>
         )}
 
@@ -480,7 +480,7 @@ export default function OrderScreen() {
           <div className="rounded-xl p-3 fade-in space-y-2" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
             <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--pos-muted)" }}>Select Table</div>
             <Select value={tableNo} onValueChange={setTableNo}>
-              <SelectTrigger data-testid="table-select" className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+              <SelectTrigger data-testid="table-select" className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                 <SelectValue placeholder="Choose available table" />
               </SelectTrigger>
               <SelectContent>
@@ -521,7 +521,7 @@ export default function OrderScreen() {
                 style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", opacity: item.available ? 1 : 0.45 }}>
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <div className="font-semibold text-white text-sm leading-snug">{item.name}</div>
+                    <div className="font-semibold text-sm leading-snug" style={{ color: "var(--pos-text)" }}>{item.name}</div>
                     <span className="w-2 h-2 rounded-full mt-1 shrink-0" style={{ background: cat?.color }} />
                   </div>
                   {item.desc && <div className="text-[11px] mt-1 leading-snug" style={{ color: "var(--pos-muted)" }}>{item.desc}</div>}
@@ -577,13 +577,13 @@ export default function OrderScreen() {
 
       <Dialog open={zReportOpen} onOpenChange={setZReportOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto pos-scroll border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Z-Report · Cash Drawer</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Z-Report · Cash Drawer</DialogTitle></DialogHeader>
           <CashDrawerPanel />
         </DialogContent>
       </Dialog>
       <Dialog open={tipPoolOpen} onOpenChange={setTipPoolOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pos-scroll border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Tip Pool</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Tip Pool</DialogTitle></DialogHeader>
           <TipPoolPanel />
         </DialogContent>
       </Dialog>
