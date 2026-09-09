@@ -7,16 +7,23 @@ Currently:
   - birthday_bonus_loop: at 09:00 IST every day, credit each tenant's
     configured birthday-bonus loyalty points to customers whose birthday
     (month+day) is today, and text them a happy-birthday message.
+  - leads_digest_loop: at 23:55 IST every day, email SUPPORT_TO_EMAIL a
+    summary of that day's kandapos.com "Book a demo" / "Sign up for
+    updates" submissions. Separate from the per-submission notification
+    already sent in routes/leads.py — this is the once-a-day recap for
+    someone who doesn't want to watch their inbox in real time.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import uuid
 from datetime import datetime, timezone, timedelta
 from tz import now_ist
 from routes.loyalty import _get_config as _get_loyalty_config
 from sms_service import send_sms
+from email_service import send_email, landing_leads_digest_email
 
 logger = logging.getLogger("kanda.cron")
 
@@ -213,4 +220,56 @@ async def birthday_bonus_loop(get_db_fn, target_hour_ist: int = 9,
                     logger.info("Birthday bonus cron completed — %d customer(s) credited", count)
         except Exception:
             logger.exception("birthday_bonus_loop tick failed")
+        await asyncio.sleep(interval_sec)
+
+
+async def _send_leads_digest(db) -> int:
+    """Email SUPPORT_TO_EMAIL a summary of today's landing-page leads.
+    Returns the number of leads included (0 still sends — a "nothing today"
+    email confirms the job is alive rather than looking like it silently
+    stopped working)."""
+    to = os.environ.get("SUPPORT_TO_EMAIL", "").strip()
+    if not to:
+        logger.info("leads digest: SUPPORT_TO_EMAIL not set, skipping send")
+        return 0
+
+    now = now_ist()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    leads = await db.landing_leads.find(
+        {"at": {"$gte": today_start.isoformat()}}, {"_id": 0},
+    ).sort("at", 1).to_list(1000)
+
+    subject, html = landing_leads_digest_email(leads, today_start.strftime("%d %b %Y"))
+    await send_email(to, subject, html)
+    return len(leads)
+
+
+async def leads_digest_loop(get_db_fn, target_hour_ist: int = 23,
+                            target_minute_ist: int = 55,
+                            interval_sec: int = 60):
+    """Fire once per IST day around the configured hour:minute (default
+    23:55, so the whole day's submissions are captured). Same
+    once-per-day-via-cron_state dedupe as the other loops in this file."""
+    logger.info("Leads digest cron loop started (target=%02d:%02d IST)",
+                target_hour_ist, target_minute_ist)
+    while True:
+        try:
+            db = get_db_fn()
+            now = now_ist()
+            today_ist = now.strftime("%Y-%m-%d")
+            target = now.replace(hour=target_hour_ist, minute=target_minute_ist,
+                                 second=0, microsecond=0)
+            if now >= target:
+                last = await db.cron_state.find_one({"id": "leads_digest"}, {"_id": 0})
+                if not last or (last.get("last_run_date") != today_ist):
+                    count = await _send_leads_digest(db)
+                    await db.cron_state.replace_one(
+                        {"id": "leads_digest"},
+                        {"id": "leads_digest", "last_run_date": today_ist,
+                         "last_run_at": now.isoformat(), "lead_count": count},
+                        upsert=True,
+                    )
+                    logger.info("Leads digest cron completed — %d lead(s)", count)
+        except Exception:
+            logger.exception("leads_digest_loop tick failed")
         await asyncio.sleep(interval_sec)
