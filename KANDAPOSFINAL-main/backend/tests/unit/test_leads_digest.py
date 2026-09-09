@@ -2,6 +2,8 @@
 leads_digest_loop / _send_leads_digest) and its email template."""
 import os
 
+from motor.motor_asyncio import AsyncIOMotorClient
+
 from email_service import landing_leads_digest_email
 from background_tasks import _send_leads_digest
 
@@ -31,12 +33,20 @@ async def test_send_leads_digest_skips_without_support_email(db, monkeypatch):
     assert count == 0
 
 
-async def test_send_leads_digest_counts_todays_leads(client, db, monkeypatch):
+async def test_send_leads_digest_counts_todays_leads(client, db_name, monkeypatch):
     monkeypatch.setenv("SUPPORT_TO_EMAIL", "owner@example.com")
     # RESEND_API_KEY stays unset in the unit-test env, so send_email() is a
     # documented no-op ({"skipped": True}) — this only exercises the query
     # + count logic, not real delivery.
     client.post("/api/leads", json={"type": "updates", "email": "digest-check@example.com"})
 
-    count = await _send_leads_digest(db)
+    # A fresh Motor client bound to this test's own event loop, rather than
+    # the shared `db` fixture — see the same fix in test_leads.py's
+    # _find_lead: TestClient's sync client.post() above can leave the
+    # shared client's loop closed by the time we await here.
+    m = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    try:
+        count = await _send_leads_digest(m[db_name])
+    finally:
+        m.close()
     assert count >= 1
