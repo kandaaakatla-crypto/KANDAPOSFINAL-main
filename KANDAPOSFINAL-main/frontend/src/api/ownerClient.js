@@ -66,6 +66,7 @@ export const ownerData = {
   // Ops
   errors: (params = {}) => ownerApi.get("/ops/errors", { params }).then((r) => r.data),
   audit: (params = {}) => ownerApi.get("/ops/audit", { params }).then((r) => r.data),
+  leads: (params = {}) => ownerApi.get("/ops/leads", { params }).then((r) => r.data),
   tickets: (params = {}) => ownerApi.get("/ops/support", { params }).then((r) => r.data),
   replyTicket: (id, body) => ownerApi.post(`/ops/support/${id}/reply`, { body }).then((r) => r.data),
   setTicketStatus: (id, status) => ownerApi.patch(`/ops/support/${id}/status`, { status }).then((r) => r.data),
