@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { usePos } from "../../store/PosContext";
 import { tablesApi } from "../../api/client";
 import { Users, CircleDot, LayoutGrid, CalendarClock, IndianRupee, QrCode } from "lucide-react";
@@ -114,14 +115,16 @@ export default function TablesScreen() {
           const radius = t.shape === "round" ? "50%" : t.shape === "rect" ? "12px" : "10px";
           const w = t.width || 90, h = t.height || 90;
           return (
-            <button key={t.id} data-testid={`table-${t.number}`} onClick={() => handleClick(t)}
-              className="pos-btn absolute flex flex-col items-center justify-center text-white cursor-pointer transition-transform hover:scale-105 active:scale-100"
+            <motion.button key={t.id} data-testid={`table-${t.number}`} onClick={() => handleClick(t)}
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 22 }}
+              className="pos-btn absolute flex flex-col items-center justify-center text-white cursor-pointer"
               style={{
                 left: t.x ?? 0, top: t.y ?? 0, width: w, height: h,
                 background: s.color + "26",
                 border: `2px solid ${s.color}`,
                 borderRadius: radius,
-                transform: `rotate(${t.rotation || 0}deg)`,
+                rotate: t.rotation || 0,
                 boxShadow: `0 4px 14px ${s.color}22`,
               }}
               title={`Table ${t.number} · ${s.label}${order ? ` · Order #${order.number}` : ""}`}>
@@ -139,7 +142,7 @@ export default function TablesScreen() {
                 style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}` }}>
                 {s.label[0]}
               </span>
-            </button>
+            </motion.button>
           );
         })}
 

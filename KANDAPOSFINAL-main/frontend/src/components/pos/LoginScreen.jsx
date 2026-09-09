@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, useAnimation } from "framer-motion";
 import { usePos } from "../../store/PosContext";
 import { DEMO_STAFF_HINTS_BY_TENANT } from "../../data/mock";
 import { Pizza, ShoppingBag, Delete, LogIn, Loader2 } from "lucide-react";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 import { api, tenantStore } from "../../api/client";
 import { impersonationCtx } from "../../api/ownerClient";
 import useSeo from "../../hooks/useSeo";
+import { pressableSmall } from "../../lib/motion";
 
 const BRAND_COPY = {
   restaurant: {
@@ -26,6 +28,7 @@ export default function LoginScreen() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const dotsShake = useAnimation();
   // Defaults to "restaurant" until the fetch below resolves, so the panel
   // still renders something sensible before the network round-trip finishes.
   const [businessType, setBusinessType] = useState("restaurant");
@@ -73,6 +76,7 @@ export default function LoginScreen() {
       setError(true);
       setPin("");
       toast.error("Invalid PIN. Try again.");
+      dotsShake.start({ x: [0, -10, 10, -6, 6, -3, 3, 0], transition: { duration: 0.4, ease: "easeInOut" } });
     }
   };
 
@@ -116,36 +120,39 @@ export default function LoginScreen() {
           </div>
 
           {/* PIN dots */}
-          <div className="flex justify-center gap-4 mb-8" data-testid="pin-dots">
+          <motion.div animate={dotsShake} className="flex justify-center gap-4 mb-8" data-testid="pin-dots">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="w-4 h-4 rounded-full transition-colors" style={{ background: i < pin.length ? "var(--pos-accent)" : "var(--pos-border)", boxShadow: error ? "0 0 0 2px #ef4444" : "none" }} />
+              <motion.div key={i} className="w-4 h-4 rounded-full"
+                animate={{ background: i < pin.length ? "var(--pos-accent)" : "var(--pos-border)", scale: i < pin.length ? 1.15 : 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                style={{ boxShadow: error ? "0 0 0 2px #ef4444" : "none" }} />
             ))}
-          </div>
+          </motion.div>
 
           {/* Keypad */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-              <button key={n} data-testid={`pin-key-${n}`} onClick={() => press(String(n))}
+              <motion.button key={n} data-testid={`pin-key-${n}`} onClick={() => press(String(n))} {...pressableSmall}
                 className="pin-key h-16 rounded-xl text-2xl font-semibold"
                 style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                 {n}
-              </button>
+              </motion.button>
             ))}
-            <button data-testid="pin-key-clear" onClick={() => setPin("")}
+            <motion.button data-testid="pin-key-clear" onClick={() => setPin("")} {...pressableSmall}
               className="pin-key h-16 rounded-xl flex items-center justify-center"
               style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
               <Delete className="w-6 h-6" style={{ color: "var(--pos-muted)" }} />
-            </button>
-            <button data-testid="pin-key-0" onClick={() => press("0")}
+            </motion.button>
+            <motion.button data-testid="pin-key-0" onClick={() => press("0")} {...pressableSmall}
               className="pin-key h-16 rounded-xl text-2xl font-semibold"
               style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
               0
-            </button>
-            <button data-testid="pin-enter" onClick={handleEnter} disabled={pin.length !== 4 || busy}
+            </motion.button>
+            <motion.button data-testid="pin-enter" onClick={handleEnter} disabled={pin.length !== 4 || busy} {...pressableSmall}
               className="pin-key h-16 rounded-xl flex items-center justify-center disabled:opacity-40"
               style={{ background: "var(--pos-accent)" }}>
               {busy ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <LogIn className="w-6 h-6 text-white" />}
-            </button>
+            </motion.button>
           </div>
 
           {/* Quick staff hint — only for tenants we have known demo PINs for */}

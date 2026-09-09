@@ -37,7 +37,7 @@ export default function OwnerDashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {STAT_TILES(k).map((t) => (
-          <div key={t.label} className="rounded-xl p-4" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid={`owner-kpi-${t.label.toLowerCase().replace(/\s/g, "-")}`}>
+          <div key={t.label} className="dash-card rounded-xl p-4" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid={`owner-kpi-${t.label.toLowerCase().replace(/\s/g, "-")}`}>
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{t.label}</span>
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: t.color + "22", color: t.color }}>

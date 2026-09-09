@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, useAnimation } from "framer-motion";
 import { Camera, Delete, LogIn, LogOut, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { timeclockApi } from "../../api/client";
+import { pressableSmall } from "../../lib/motion";
 
 /**
  * Public-ish "Time Clock" terminal. Anyone can walk up, type their 4-digit PIN,
@@ -19,6 +21,7 @@ export default function TimeClockScreen() {
   const [cameraError, setCameraError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [lastPunch, setLastPunch] = useState(null);
+  const dotsShake = useAnimation();
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -71,6 +74,7 @@ export default function TimeClockScreen() {
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Punch failed");
       setPin("");
+      dotsShake.start({ x: [0, -10, 10, -6, 6, -3, 3, 0], transition: { duration: 0.4, ease: "easeInOut" } });
     } finally {
       setBusy(false);
     }
@@ -136,27 +140,29 @@ export default function TimeClockScreen() {
           {cameraReady ? "Camera ready — selfie will capture on submit" : (cameraError ? `Camera off — punches will save without selfie` : "Starting camera…")}
         </div>
 
-        <div className="flex justify-center gap-4 mb-8" data-testid="timeclock-pin-dots">
+        <motion.div animate={dotsShake} className="flex justify-center gap-4 mb-8" data-testid="timeclock-pin-dots">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="w-4 h-4 rounded-full transition-colors"
-              style={{ background: i < pin.length ? "var(--pos-accent)" : "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+            <motion.div key={i} className="w-4 h-4 rounded-full"
+              animate={{ background: i < pin.length ? "var(--pos-accent)" : "var(--pos-panel-2)", scale: i < pin.length ? 1.15 : 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 25 }}
+              style={{ border: "1px solid var(--pos-border)" }} />
           ))}
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-3 gap-3 max-w-xs w-full">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-            <button key={n} data-testid={`tc-pin-${n}`} onClick={() => press(String(n))} disabled={busy}
+            <motion.button key={n} data-testid={`tc-pin-${n}`} onClick={() => press(String(n))} disabled={busy} {...pressableSmall}
               className="pos-btn h-16 rounded-lg text-xl font-bold disabled:opacity-50"
-              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>{n}</button>
+              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>{n}</motion.button>
           ))}
-          <button data-testid="tc-pin-clear" onClick={clear} disabled={busy}
+          <motion.button data-testid="tc-pin-clear" onClick={clear} disabled={busy} {...pressableSmall}
             className="pos-btn h-16 rounded-lg flex items-center justify-center disabled:opacity-50"
             style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             <Delete className="w-6 h-6" />
-          </button>
-          <button data-testid="tc-pin-0" onClick={() => press("0")} disabled={busy}
+          </motion.button>
+          <motion.button data-testid="tc-pin-0" onClick={() => press("0")} disabled={busy} {...pressableSmall}
             className="pos-btn h-16 rounded-lg text-xl font-bold disabled:opacity-50"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>0</button>
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>0</motion.button>
           <div />
         </div>
 

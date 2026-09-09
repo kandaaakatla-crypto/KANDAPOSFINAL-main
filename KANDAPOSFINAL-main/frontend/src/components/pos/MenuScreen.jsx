@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { usePos } from "../../store/PosContext";
+import { pressableSmall } from "../../lib/motion";
 import { menuApi } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
@@ -189,12 +191,16 @@ export default function MenuScreen() {
 
       <div className="flex gap-1.5 flex-wrap">
         {cats.map((c) => (
-          <button key={c.id} data-testid={`menu-cat-${c.id}`} onClick={() => setActiveCat(c.id)}
-            className="pos-btn px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2"
-            style={{ background: activeCat === c.id ? "var(--pos-panel-2)" : "var(--pos-panel)", color: activeCat === c.id ? "#fff" : "var(--pos-muted)", border: `1px solid ${activeCat === c.id ? c.color : "var(--pos-border)"}` }}>
-            <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
-            {c.name}
-          </button>
+          <motion.button key={c.id} data-testid={`menu-cat-${c.id}`} onClick={() => setActiveCat(c.id)} {...pressableSmall}
+            className="pos-btn relative px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2"
+            style={{ border: `1px solid ${activeCat === c.id ? c.color : "var(--pos-border)"}` }}>
+            {activeCat === c.id && (
+              <motion.div layoutId="menu-cat-active-pill" className="absolute inset-0 rounded-lg" style={{ background: "var(--pos-panel-2)" }}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }} />
+            )}
+            <span className="relative w-2 h-2 rounded-full" style={{ background: c.color }} />
+            <span className="relative" style={{ color: activeCat === c.id ? "var(--pos-text)" : "var(--pos-muted)" }}>{c.name}</span>
+          </motion.button>
         ))}
       </div>
 

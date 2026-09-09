@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { kdsApi } from "../../api/kdsClient";
 import { ChefHat, AlertTriangle, Loader2, RotateCcw, CheckCircle2, Clock, Volume2, VolumeX, RefreshCw } from "lucide-react";
 
@@ -44,7 +45,12 @@ function TicketCard({ ticket, onItemStatus, onRecall, justArrived }) {
   const elapsedMin = ticket.placed_at ? (Date.now() - new Date(ticket.placed_at).getTime()) / 60000 : 0;
   const overdue = elapsedMin > 15 && lane !== "ready";
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.92 }}
+      transition={{ type: "spring", stiffness: 420, damping: 32 }}
       data-testid={`kds-ticket-${ticket.id}`}
       data-lane={lane}
       className={`rounded-xl p-3 transition-all ${justArrived ? "animate-pulse" : ""}`}
@@ -105,7 +111,7 @@ function TicketCard({ ticket, onItemStatus, onRecall, justArrived }) {
           <RotateCcw className="w-3 h-3" /> Recall
         </button>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -121,9 +127,13 @@ function Lane({ laneKey, label, accent, tickets, onItemStatus, onRecall, newIds 
       <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
         {tickets.length === 0 ? (
           <div className="text-center text-[11px] py-8" style={{ color: "var(--pos-muted)" }}>—</div>
-        ) : tickets.map((t) => (
-          <TicketCard key={t.id} ticket={t} onItemStatus={onItemStatus} onRecall={onRecall} justArrived={newIds.has(t.id) && laneKey === "new"} />
-        ))}
+        ) : (
+          <AnimatePresence initial={false}>
+            {tickets.map((t) => (
+              <TicketCard key={t.id} ticket={t} onItemStatus={onItemStatus} onRecall={onRecall} justArrived={newIds.has(t.id) && laneKey === "new"} />
+            ))}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );

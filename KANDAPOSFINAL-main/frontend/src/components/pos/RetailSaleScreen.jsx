@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { usePos } from "../../store/PosContext";
+import { pressableSmall } from "../../lib/motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import PaymentModal from "./PaymentModal";
@@ -124,11 +126,15 @@ export default function RetailSaleScreen() {
 
         <div className="flex gap-1.5 overflow-x-auto pos-scroll pb-1">
           {categories.map((c) => (
-            <button key={c.id} data-testid={`retail-cat-${c.id}`} onClick={() => setActiveCat(c.id)}
-              className="shrink-0 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap"
-              style={{ background: activeCat === c.id ? "var(--pos-panel-2)" : "var(--pos-panel)", color: activeCat === c.id ? "#fff" : "var(--pos-muted)", border: `1px solid ${activeCat === c.id ? c.color : "var(--pos-border)"}` }}>
-              {c.name}
-            </button>
+            <motion.button key={c.id} data-testid={`retail-cat-${c.id}`} onClick={() => setActiveCat(c.id)} {...pressableSmall}
+              className="relative shrink-0 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap"
+              style={{ border: `1px solid ${activeCat === c.id ? c.color : "var(--pos-border)"}` }}>
+              {activeCat === c.id && (
+                <motion.div layoutId="retail-cat-active-pill" className="absolute inset-0 rounded-lg" style={{ background: "var(--pos-panel-2)" }}
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }} />
+              )}
+              <span className="relative" style={{ color: activeCat === c.id ? "var(--pos-text)" : "var(--pos-muted)" }}>{c.name}</span>
+            </motion.button>
           ))}
         </div>
 
