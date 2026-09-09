@@ -24,18 +24,22 @@
 .pos-scroll::-webkit-scrollbar-thumb { background: #ddd0b8; border-radius: 4px; }
 .pos-scroll::-webkit-scrollbar-thumb:hover { background: #c9b78f; }
 
+/* A "back-out" easing with slight overshoot — a spring feel without JS,
+   used for hover-lift/press feedback on tiles, cards and buttons. */
+:root { --spring-ease: cubic-bezier(0.34, 1.56, 0.64, 1); }
+
 .pos-btn {
-  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, transform 0.25s var(--spring-ease);
 }
-.pos-btn:active { transform: scale(0.97); }
+.pos-btn:active { transform: scale(0.96); }
 
 .menu-tile {
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.25s var(--spring-ease), box-shadow 0.25s ease;
   cursor: pointer;
   user-select: none;
 }
-.menu-tile:hover { border-color: var(--pos-accent) !important; background: rgba(249,115,22,0.06); }
-.menu-tile:active { transform: scale(0.98); }
+.menu-tile:hover { border-color: var(--pos-accent) !important; background: rgba(249,115,22,0.06); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(28,26,22,0.08); }
+.menu-tile:active { transform: scale(0.98) translateY(0); }
 
 .cat-btn { transition: background-color 0.15s ease, border-color 0.15s ease; cursor: pointer; user-select: none; }
 
@@ -47,8 +51,18 @@
 .pin-key:hover { background: #f3ead9; }
 .pin-key:active { background: #ece1cd; }
 
-.table-tile { transition: border-color 0.15s ease, background-color 0.15s ease; cursor: pointer; }
-.table-tile:hover { border-color: var(--pos-accent) !important; }
+.table-tile {
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.25s var(--spring-ease), box-shadow 0.25s ease;
+  cursor: pointer;
+}
+.table-tile:hover { border-color: var(--pos-accent) !important; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(28,26,22,0.08); }
+.table-tile:active { transform: scale(0.98) translateY(0); }
+
+/* Dashboard-style summary/KPI cards — same hover-lift language as tiles. */
+.dash-card {
+  transition: transform 0.25s var(--spring-ease), box-shadow 0.25s ease, border-color 0.15s ease;
+}
+.dash-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(28,26,22,0.08); }
 
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(6px); }

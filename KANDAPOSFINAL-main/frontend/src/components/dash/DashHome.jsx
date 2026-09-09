@@ -157,7 +157,7 @@ export default function DashHome() {
 
 function Kpi({ label, value, icon: Icon, accent, testid }) {
   return (
-    <div className="rounded-xl p-3 flex items-center gap-2.5" data-testid={testid}
+    <div className="dash-card rounded-xl p-3 flex items-center gap-2.5" data-testid={testid}
       style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${accent}22` }}>
         <Icon className="w-4 h-4" style={{ color: accent }} />

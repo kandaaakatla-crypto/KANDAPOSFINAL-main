@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, Trash2, Percent, Send, CreditCard, Bike, ShoppingBag, UtensilsCrossed, Tag, Gift, Mail, Coins, X, Wallet, Loader2 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
@@ -109,33 +110,40 @@ export default function CartPanel({
             </p>
           </div>
         ) : (
-          cart.map((l) => (
-            <div key={l.lineId} className="rounded-lg p-2.5 mb-2 fade-in" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} data-testid="cart-line">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold leading-snug" style={{ color: "var(--pos-text)" }}>{l.name}</div>
-                  {l.mods?.length > 0 && (
-                    <div className="text-[11px] mt-0.5 leading-snug" style={{ color: "var(--pos-muted)" }}>{l.mods.join(" · ")}</div>
-                  )}
+          <AnimatePresence initial={false}>
+            {cart.map((l) => (
+              <motion.div key={l.lineId} layout
+                initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 40, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                className="rounded-lg p-2.5 mb-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} data-testid="cart-line">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold leading-snug" style={{ color: "var(--pos-text)" }}>{l.name}</div>
+                    {l.mods?.length > 0 && (
+                      <div className="text-[11px] mt-0.5 leading-snug" style={{ color: "var(--pos-muted)" }}>{l.mods.join(" · ")}</div>
+                    )}
+                  </div>
+                  <div className="text-sm font-bold shrink-0" style={{ color: "var(--pos-text)" }}>₹{(l.price * l.qty).toFixed(2)}</div>
                 </div>
-                <div className="text-sm font-bold shrink-0" style={{ color: "var(--pos-text)" }}>₹{(l.price * l.qty).toFixed(2)}</div>
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2">
-                  <button data-testid="line-qty-minus" onClick={() => onQty(l.lineId, -1)} className="pos-btn w-7 h-7 rounded flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                    <Minus className="w-3 h-3" style={{ color: "var(--pos-text)" }} />
-                  </button>
-                  <span className="text-sm font-bold w-5 text-center" style={{ color: "var(--pos-text)" }}>{l.qty}</span>
-                  <button data-testid="line-qty-plus" onClick={() => onQty(l.lineId, 1)} className="pos-btn w-7 h-7 rounded flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                    <Plus className="w-3 h-3" style={{ color: "var(--pos-text)" }} />
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-2">
+                    <button data-testid="line-qty-minus" onClick={() => onQty(l.lineId, -1)} className="pos-btn w-7 h-7 rounded flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                      <Minus className="w-3 h-3" style={{ color: "var(--pos-text)" }} />
+                    </button>
+                    <span className="text-sm font-bold w-5 text-center" style={{ color: "var(--pos-text)" }}>{l.qty}</span>
+                    <button data-testid="line-qty-plus" onClick={() => onQty(l.lineId, 1)} className="pos-btn w-7 h-7 rounded flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                      <Plus className="w-3 h-3" style={{ color: "var(--pos-text)" }} />
+                    </button>
+                  </div>
+                  <button data-testid="line-remove" onClick={() => onRemove(l.lineId)} className="pos-btn p-1.5 rounded" style={{ color: "#f87171" }}>
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <button data-testid="line-remove" onClick={() => onRemove(l.lineId)} className="pos-btn p-1.5 rounded" style={{ color: "#f87171" }}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
       </div>
 
