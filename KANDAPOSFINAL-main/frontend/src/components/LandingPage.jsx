@@ -52,7 +52,7 @@ function Reveal({ children, className, delay = 0, ...rest }) {
 
 function SectionLabel({ children }) {
   return (
-    <div className="inline-flex items-center gap-1.5 text-xs font-bold tracking-[0.3em] uppercase mb-3 px-3 py-1 rounded-full" style={{ color: "var(--pos-accent)", border: "1px solid var(--pos-border)" }}>
+    <div className="inline-flex items-center gap-1.5 text-xs font-bold tracking-[0.3em] uppercase mb-3 px-3 py-1 rounded-full" style={{ color: "var(--pos-accent)", border: "1px solid #243352" }}>
       <Sparkles className="w-3 h-3" /> {children}
     </div>
   );
@@ -119,9 +119,9 @@ export default function LandingPage() {
   };
 
   return (
-    <div style={{ background: "#050506", color: "var(--pos-text)" }} className="overflow-x-hidden" data-testid="landing-page">
+    <div style={{ background: "#050506", color: "#e8edf7", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }} className="overflow-x-hidden" data-testid="landing-page">
       {/* Nav */}
-      <header className="sticky top-0 z-20" style={{ background: "rgba(5,5,6,0.75)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
+      <header className="sticky top-0 z-20" style={{ background: "rgba(5,5,6,0.75)", backdropFilter: "blur(10px)", borderBottom: "1px solid #243352" }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             {/* The logo file's wordmark is dark brown, illegible on this dark
@@ -130,9 +130,9 @@ export default function LandingPage() {
             <div className="h-8 w-8 overflow-hidden shrink-0">
               <img src="/kanda-logo.png" alt="Kanda POS" className="h-8 w-auto max-w-none" />
             </div>
-            <span className="font-bold text-lg tracking-tight" style={{ color: "var(--pos-text)" }}>Kanda POS</span>
+            <span className="font-bold text-lg tracking-tight" style={{ color: "#e8edf7" }}>Kanda POS</span>
           </div>
-          <nav className="hidden md:flex items-center gap-8 text-sm" style={{ color: "var(--pos-muted)" }}>
+          <nav className="hidden md:flex items-center gap-8 text-sm" style={{ color: "#8b9bb8" }}>
             {NAV_LINKS.map((l) => (
               <a key={l.href} href={l.href} className="hover:text-white transition-colors">{l.label}</a>
             ))}
@@ -144,7 +144,7 @@ export default function LandingPage() {
             <button
               type="button"
               className="md:hidden rounded-lg p-2"
-              style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}
+              style={{ background: "#111a2c", border: "1px solid #243352", color: "#e8edf7" }}
               onClick={() => setMobileNavOpen((v) => !v)}
               aria-label="Toggle navigation menu"
               aria-expanded={mobileNavOpen}
@@ -161,7 +161,7 @@ export default function LandingPage() {
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="md:hidden overflow-hidden"
-              style={{ borderTop: "1px solid var(--pos-border)" }}
+              style={{ borderTop: "1px solid #243352" }}
             >
               <div className="flex flex-col px-6 py-2">
                 {NAV_LINKS.map((l) => (
@@ -170,7 +170,7 @@ export default function LandingPage() {
                     href={l.href}
                     onClick={() => setMobileNavOpen(false)}
                     className="py-3 text-sm hover:text-white transition-colors"
-                    style={{ color: "var(--pos-muted)", borderBottom: "1px solid var(--pos-border)" }}
+                    style={{ color: "#8b9bb8", borderBottom: "1px solid #243352" }}
                   >
                     {l.label}
                   </a>
@@ -205,7 +205,7 @@ export default function LandingPage() {
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg max-w-2xl mx-auto mb-10" style={{ color: "var(--pos-muted)" }}
+            className="text-lg max-w-2xl mx-auto mb-10" style={{ color: "#8b9bb8" }}
           >
             One connected system for restaurants and retail: GST-ready billing, kitchen sync
             and reporting in one place. We're putting the finishing touches on Kanda POS
@@ -218,7 +218,7 @@ export default function LandingPage() {
             <a href="#contact" className="pos-btn rounded-xl px-6 py-3 font-semibold text-white" style={{ background: "var(--pos-accent)" }}>
               Book a demo
             </a>
-            <a href="#updates" className="pos-btn rounded-xl px-6 py-3 font-semibold text-white" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+            <a href="#updates" className="pos-btn rounded-xl px-6 py-3 font-semibold text-white" style={{ background: "#111a2c", border: "1px solid #243352" }}>
               Sign up for updates
             </a>
           </motion.div>
@@ -226,7 +226,7 @@ export default function LandingPage() {
       </section>
 
       {/* Live view */}
-      <section id="live" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="live" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid #243352" }}>
         <Reveal className="text-center mb-14">
           <SectionLabel>Everywhere at once</SectionLabel>
           <h2 className="text-3xl md:text-4xl font-bold">Four channels. One live view.</h2>
@@ -234,12 +234,12 @@ export default function LandingPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
           {LIVE_CHANNELS.map(({ icon: Icon, title, note }, i) => (
             <Reveal key={title} delay={i * 0.06}>
-              <div className="land-card h-full rounded-2xl p-6" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+              <div className="land-card h-full rounded-2xl p-6" style={{ background: "#111a2c", border: "1px solid #243352" }}>
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style={{ background: "rgba(249,115,22,0.14)" }}>
                   <Icon className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
                 </div>
                 <div className="font-semibold mb-1">{title}</div>
-                <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{note}</div>
+                <div className="text-xs" style={{ color: "#8b9bb8" }}>{note}</div>
               </div>
             </Reveal>
           ))}
@@ -247,12 +247,12 @@ export default function LandingPage() {
       </section>
 
       {/* GST */}
-      <section id="gst" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="gst" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid #243352" }}>
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <Reveal>
             <SectionLabel>Built for India</SectionLabel>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Every bill, GST-ready.</h2>
-            <p style={{ color: "var(--pos-muted)" }} className="leading-relaxed mb-6">
+            <p style={{ color: "#8b9bb8" }} className="leading-relaxed mb-6">
               GSTIN, tax breakdowns and store details print on every invoice automatically,
               whether it's a dine-in check or a retail receipt. Nothing to configure by hand
               for tax season.
@@ -262,20 +262,20 @@ export default function LandingPage() {
             </a>
           </Reveal>
           <Reveal delay={0.1}>
-            <div className="rounded-2xl p-6 text-sm" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-              <div className="flex justify-between py-2" style={{ borderBottom: "1px solid var(--pos-border)" }}><span>Butter Chicken (Full)</span><span className="font-mono">₹420</span></div>
-              <div className="flex justify-between py-2" style={{ borderBottom: "1px solid var(--pos-border)" }}><span>Tandoori Roti ×4</span><span className="font-mono">₹160</span></div>
-              <div className="flex justify-between py-2" style={{ borderBottom: "1px solid var(--pos-border)" }}><span>CGST 2.5%</span><span className="font-mono">₹14.50</span></div>
-              <div className="flex justify-between py-2" style={{ borderBottom: "1px solid var(--pos-border)" }}><span>SGST 2.5%</span><span className="font-mono">₹14.50</span></div>
+            <div className="rounded-2xl p-6 text-sm" style={{ background: "#111a2c", border: "1px solid #243352" }}>
+              <div className="flex justify-between py-2" style={{ borderBottom: "1px solid #243352" }}><span>Butter Chicken (Full)</span><span className="font-mono">₹420</span></div>
+              <div className="flex justify-between py-2" style={{ borderBottom: "1px solid #243352" }}><span>Tandoori Roti ×4</span><span className="font-mono">₹160</span></div>
+              <div className="flex justify-between py-2" style={{ borderBottom: "1px solid #243352" }}><span>CGST 2.5%</span><span className="font-mono">₹14.50</span></div>
+              <div className="flex justify-between py-2" style={{ borderBottom: "1px solid #243352" }}><span>SGST 2.5%</span><span className="font-mono">₹14.50</span></div>
               <div className="flex justify-between pt-3 font-bold" style={{ color: "var(--pos-accent)" }}><span>Total</span><span className="font-mono">₹609</span></div>
-              <div className="mt-3 text-xs font-mono" style={{ color: "var(--pos-muted)" }}>GSTIN 36ABCDE1234F1Z5 · Demo Restaurant, Hyderabad</div>
+              <div className="mt-3 text-xs font-mono" style={{ color: "#8b9bb8" }}>GSTIN 36ABCDE1234F1Z5 · Demo Restaurant, Hyderabad</div>
             </div>
           </Reveal>
         </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="features" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid #243352" }}>
         <Reveal className="text-center mb-14">
           <SectionLabel>Everything else, included</SectionLabel>
           <h2 className="text-3xl md:text-4xl font-bold">Everything a restaurant or retail store needs to run</h2>
@@ -283,12 +283,12 @@ export default function LandingPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-fr">
           {FEATURES.map(({ icon: Icon, title, desc, big }, i) => (
             <Reveal key={title} delay={(i % 3) * 0.06} className={big ? "sm:col-span-2" : ""}>
-              <div className="land-card h-full rounded-2xl p-6" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+              <div className="land-card h-full rounded-2xl p-6" style={{ background: "#111a2c", border: "1px solid #243352" }}>
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, var(--pos-accent), #ea580c)" }}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
                 <div className="font-semibold text-lg mb-1.5">{title}</div>
-                <div className="text-sm" style={{ color: "var(--pos-muted)" }}>{desc}</div>
+                <div className="text-sm" style={{ color: "#8b9bb8" }}>{desc}</div>
               </div>
             </Reveal>
           ))}
@@ -296,12 +296,12 @@ export default function LandingPage() {
       </section>
 
       {/* Contact + updates */}
-      <section id="contact" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="contact" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid #243352" }}>
         <div className="grid md:grid-cols-2 gap-5">
           {/* Contact info + sign-up for updates */}
-          <Reveal id="updates" className="rounded-2xl p-10" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+          <Reveal id="updates" className="rounded-2xl p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
             <h2 className="text-2xl md:text-3xl font-bold mb-3">Let's get your business on Kanda POS</h2>
-            <p style={{ color: "var(--pos-muted)" }} className="leading-relaxed mb-6">
+            <p style={{ color: "#8b9bb8" }} className="leading-relaxed mb-6">
               Tell us about your restaurant or retail store and we'll set up a walkthrough,
               or reach us directly using the details below.
             </p>
@@ -317,16 +317,16 @@ export default function LandingPage() {
               </div>
             </div>
             {updatesSubmitted ? (
-              <div className="flex items-center gap-2 text-sm pt-6" style={{ borderTop: "1px solid var(--pos-border)", color: "var(--pos-accent)" }}>
+              <div className="flex items-center gap-2 text-sm pt-6" style={{ borderTop: "1px solid #243352", color: "var(--pos-accent)" }}>
                 <CheckCircle2 className="w-4 h-4" /> You're on the list — we'll email you at launch.
               </div>
             ) : (
-              <form onSubmit={submitUpdates} className="flex gap-3 pt-6" style={{ borderTop: "1px solid var(--pos-border)" }}>
+              <form onSubmit={submitUpdates} className="flex gap-3 pt-6" style={{ borderTop: "1px solid #243352" }}>
                 <input
                   type="email" required placeholder="you@yourbusiness.com"
                   value={updatesEmail} onChange={(e) => setUpdatesEmail(e.target.value)}
                   className="flex-1 rounded-lg px-4 py-2.5 text-sm min-w-0"
-                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}
+                  style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }}
                 />
                 <button type="submit" className="pos-btn shrink-0 rounded-lg px-5 py-2.5 text-sm font-semibold text-white" style={{ background: "var(--pos-accent)" }}>
                   Sign up for updates
@@ -336,27 +336,27 @@ export default function LandingPage() {
           </Reveal>
 
           {/* Book a demo form */}
-          <Reveal delay={0.1} className="rounded-2xl p-10" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+          <Reveal delay={0.1} className="rounded-2xl p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
             {submitted ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-10">
                 <CheckCircle2 className="w-12 h-12 mb-3" style={{ color: "var(--pos-accent)" }} />
                 <div className="font-semibold text-lg mb-1">Request received</div>
-                <div className="text-sm" style={{ color: "var(--pos-muted)" }}>We'll be in touch at {form.email} shortly.</div>
+                <div className="text-sm" style={{ color: "#8b9bb8" }}>We'll be in touch at {form.email} shortly.</div>
               </div>
             ) : (
               <form onSubmit={submitDemo} className="grid gap-4">
                 <input required placeholder="Your name" value={form.name} onChange={update("name")}
-                  className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
+                  className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                 <input required type="email" placeholder="Email address" value={form.email} onChange={update("email")}
-                  className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
+                  className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                 <div className="grid grid-cols-2 gap-4">
                   <input placeholder="Phone number" value={form.phone} onChange={update("phone")}
-                    className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
+                    className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                   <input placeholder="Business name" value={form.business} onChange={update("business")}
-                    className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
+                    className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                 </div>
                 <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}
-                  className="rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
+                  className="rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                 <motion.button whileTap={{ scale: 0.97 }} type="submit" className="rounded-lg px-6 py-3 font-semibold text-white" style={{ background: "var(--pos-accent)" }}>
                   Book a demo
                 </motion.button>
@@ -367,8 +367,8 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative overflow-hidden" style={{ borderTop: "1px solid var(--pos-border)" }}>
-        <div className="relative max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm" style={{ color: "var(--pos-muted)" }}>
+      <footer className="relative overflow-hidden" style={{ borderTop: "1px solid #243352" }}>
+        <div className="relative max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm" style={{ color: "#8b9bb8" }}>
           <span>© {new Date().getFullYear()} Kanda POS. All rights reserved.</span>
           <div className="flex items-center gap-6">
             {NAV_LINKS.map((l) => (
