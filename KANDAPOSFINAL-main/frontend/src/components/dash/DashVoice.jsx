@@ -95,7 +95,7 @@ export default function DashVoice() {
   return (
     <div className="p-6 max-w-5xl space-y-6" data-testid="dash-voice">
       <div>
-        <h1 className="text-2xl font-bold text-white">AI Calling Agent</h1>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>AI Calling Agent</h1>
         <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
           A multilingual phone agent that picks up calls, takes orders, books reservations,
           and answers questions in English, Hindi, or Telugu — auto-detected from the caller.
@@ -111,7 +111,7 @@ export default function DashVoice() {
             ? <CheckCircle2 className="w-6 h-6" style={{ color: "#86efac" }} />
             : <AlertTriangle className="w-6 h-6" style={{ color: "#fbbf24" }} />}
           <div>
-            <div className="text-base font-bold text-white">
+            <div className="text-base font-bold" style={{ color: cfg.enabled ? "#fff" : "var(--pos-text)" }}>
               {cfg.enabled ? "Agent is LIVE" : "Agent is OFF"}
             </div>
             <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
@@ -129,7 +129,7 @@ export default function DashVoice() {
       {/* Configuration panel */}
       <div className="rounded-xl p-5 space-y-4"
         style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider">Configuration</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: "var(--pos-text)" }}>Configuration</h2>
 
         <Field label="Twilio phone number" hint="The Twilio number customers will dial. Must already exist in your Twilio account.">
           <div className="flex items-center gap-2 flex-wrap">
@@ -137,8 +137,8 @@ export default function DashVoice() {
               onChange={(e) => setCfg({ ...cfg, twilio_number: e.target.value })}
               onBlur={(e) => e.target.value !== cfg.twilio_number && save({ twilio_number: e.target.value })}
               placeholder="+19086498077"
-              className="text-white max-w-xs"
-              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              className="max-w-xs"
+              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <button data-testid="voice-auto-configure" onClick={autoConfigure} disabled={busy || !cfg.twilio_number}
               className="pos-btn h-9 px-3 rounded-md text-xs font-bold text-white flex items-center gap-2"
               style={{ background: "var(--pos-accent)", opacity: (busy || !cfg.twilio_number) ? 0.5 : 1 }}>
@@ -163,7 +163,7 @@ export default function DashVoice() {
 
         <Field label="Default language" hint="Which language the agent speaks first. It will switch if the caller responds in a different language.">
           <Select value={cfg.default_language || "te"} onValueChange={(v) => save({ default_language: v })}>
-            <SelectTrigger data-testid="voice-lang-select" className="text-white max-w-xs" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+            <SelectTrigger data-testid="voice-lang-select" className="max-w-xs" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -177,7 +177,7 @@ export default function DashVoice() {
 
         <Field label="Voice" hint="'marin' / 'sage' / 'coral' sound the most natural for Indian languages. Avoid 'alloy' — it's the most robotic.">
           <Select value={cfg.voice || "marin"} onValueChange={(v) => save({ voice: v })}>
-            <SelectTrigger data-testid="voice-voice-select" className="text-white max-w-xs" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+            <SelectTrigger data-testid="voice-voice-select" className="max-w-xs" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -192,13 +192,13 @@ export default function DashVoice() {
             <Input data-testid="voice-greeting" value={greetingDraft}
               onChange={(e) => setGreetingDraft(e.target.value)}
               placeholder="Hello, thank you for calling Kanda Pizza! How can I help you today?"
-              className="text-white flex-1"
-              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              className="flex-1"
+              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <button data-testid="voice-greeting-save"
               onClick={() => save({ greeting: greetingDraft })}
               disabled={!greetingDirty || busy}
-              className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white shrink-0"
-              style={{ background: greetingDirty ? "var(--pos-accent)" : "var(--pos-panel-2)", opacity: (!greetingDirty || busy) ? 0.5 : 1 }}>
+              className="pos-btn h-9 px-4 rounded-md text-xs font-bold shrink-0"
+              style={{ background: greetingDirty ? "var(--pos-accent)" : "var(--pos-panel-2)", opacity: (!greetingDirty || busy) ? 0.5 : 1, color: greetingDirty ? "#fff" : "var(--pos-text)" }}>
               {greetingDirty ? "Save" : "Saved"}
             </button>
           </div>
@@ -209,8 +209,8 @@ export default function DashVoice() {
             onChange={(e) => setPersonaDraft(e.target.value)}
             placeholder="Be warm and friendly. Suggest pairing drinks with pizza orders. Mention our 10% loyalty discount for repeat customers."
             rows={3}
-            className="w-full rounded-md px-3 py-2 text-sm text-white"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+            className="w-full rounded-md px-3 py-2 text-sm"
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           <div className="flex items-center justify-between mt-2">
             <span className="text-[11px]" style={{ color: personaDirty ? "#fbbf24" : "var(--pos-muted)" }}>
               {personaDirty ? "Unsaved changes" : "Changes saved. The AI will use these on the next call."}
@@ -219,15 +219,15 @@ export default function DashVoice() {
               <button data-testid="voice-persona-clear"
                 onClick={() => { setPersonaDraft(""); save({ persona: "" }); }}
                 disabled={busy || (!personaDraft && !cfg.persona)}
-                className="pos-btn h-9 px-3 rounded-md text-xs text-white"
-                style={{ background: "var(--pos-panel-2)", opacity: (busy || (!personaDraft && !cfg.persona)) ? 0.5 : 1 }}>
+                className="pos-btn h-9 px-3 rounded-md text-xs"
+                style={{ background: "var(--pos-panel-2)", opacity: (busy || (!personaDraft && !cfg.persona)) ? 0.5 : 1, color: "var(--pos-text)" }}>
                 Clear
               </button>
               <button data-testid="voice-persona-save"
                 onClick={() => save({ persona: personaDraft })}
                 disabled={!personaDirty || busy}
-                className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white"
-                style={{ background: personaDirty ? "var(--pos-accent)" : "var(--pos-panel-2)", opacity: (!personaDirty || busy) ? 0.5 : 1 }}>
+                className="pos-btn h-9 px-4 rounded-md text-xs font-bold"
+                style={{ background: personaDirty ? "var(--pos-accent)" : "var(--pos-panel-2)", opacity: (!personaDirty || busy) ? 0.5 : 1, color: personaDirty ? "#fff" : "var(--pos-text)" }}>
                 {personaDirty ? "Save instructions" : "Saved"}
               </button>
             </div>
@@ -284,7 +284,7 @@ export default function DashVoice() {
       {/* OpenAI billing notice */}
       <div className="rounded-xl p-4 text-xs"
         style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-muted)" }}>
-        <strong className="text-white">Heads up:</strong> The AI brain runs on OpenAI&apos;s Realtime API
+        <strong style={{ color: "var(--pos-text)" }}>Heads up:</strong> The AI brain runs on OpenAI&apos;s Realtime API
         (~₹5 per call minute). Make sure your OpenAI account at
         {" "}<a href="https://platform.openai.com/account/billing" target="_blank" rel="noreferrer" className="underline" style={{ color: "#7dd3fc" }}>platform.openai.com/account/billing</a>
         {" "}has at least $5 credit before going live, or every call will end immediately after pickup.
@@ -297,8 +297,8 @@ export default function DashVoice() {
       <div className="rounded-xl"
         style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
         <div className="p-5 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">Call Log ({calls.length})</h2>
-          <button onClick={load} className="pos-btn h-8 px-3 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Refresh</button>
+          <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: "var(--pos-text)" }}>Call Log ({calls.length})</h2>
+          <button onClick={load} className="pos-btn h-8 px-3 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Refresh</button>
         </div>
         <table className="w-full text-sm">
           <thead style={{ color: "var(--pos-muted)" }}>
@@ -311,7 +311,7 @@ export default function DashVoice() {
               <th className="py-2 px-4"></th>
             </tr>
           </thead>
-          <tbody className="text-white">
+          <tbody style={{ color: "var(--pos-text)" }}>
             {calls.length === 0 && <tr><td colSpan={6} className="text-center py-12" style={{ color: "var(--pos-muted)" }}>
               <Phone className="w-8 h-8 mx-auto mb-2 opacity-30" />
               No calls yet. Toggle the agent on and dial your Twilio number to test.
@@ -386,7 +386,7 @@ export default function DashVoice() {
 function Field({ label, hint, children }) {
   return (
     <div>
-      <label className="text-xs font-bold text-white block mb-1">{label}</label>
+      <label className="text-xs font-bold block mb-1" style={{ color: "var(--pos-text)" }}>{label}</label>
       {hint && <p className="text-[11px] mb-2" style={{ color: "var(--pos-muted)" }}>{hint}</p>}
       {children}
     </div>
@@ -472,7 +472,7 @@ function CallTranscriptDialog({ call: initialCall, onClose, onCallBack, testDial
       <DialogContent className="max-w-2xl border max-h-[85vh] overflow-y-auto"
         style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <PhoneCall className="w-4 h-4" /> Call transcript
             {call && <span className="text-xs font-normal" style={{ color: "var(--pos-muted)" }}>
               · {other} · {call.duration_seconds}s · <IntentBadge intent={call.intent} />
@@ -510,8 +510,8 @@ function CallTranscriptDialog({ call: initialCall, onClose, onCallBack, testDial
             )}
             <button data-testid="call-download-transcript" onClick={downloadTranscript}
               disabled={messages.length === 0}
-              className="pos-btn h-9 px-3 rounded-md text-xs font-bold text-white flex items-center gap-2"
-              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", opacity: messages.length === 0 ? 0.5 : 1 }}>
+              className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-2"
+              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", opacity: messages.length === 0 ? 0.5 : 1, color: "var(--pos-text)" }}>
               <Download className="w-3.5 h-3.5" /> Download .txt
             </button>
             <button data-testid="call-callback-btn" onClick={() => onCallBack && onCallBack(other)}
@@ -537,7 +537,7 @@ function CallTranscriptDialog({ call: initialCall, onClose, onCallBack, testDial
                   style={{ color: m.role === "user" ? "#fbbf24" : "#7dd3fc" }}>
                   {m.role === "user" ? "Caller" : "Agent"}
                 </div>
-                <div className="text-sm text-white">{m.text}</div>
+                <div className="text-sm" style={{ color: "var(--pos-text)" }}>{m.text}</div>
               </div>
             ))}
           </div>}

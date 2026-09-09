@@ -49,7 +49,7 @@ function TokenSetup({ onSaved }) {
           <div className="w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
             <Link2 className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-white">Set up this device</h2>
+          <h2 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Set up this device</h2>
           <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>
             Paste the station link or token from Owner Portal → Tenant detail → Kiosk tablet tokens.
           </p>
@@ -60,8 +60,8 @@ function TokenSetup({ onSaved }) {
           value={draft}
           onChange={(e) => { setDraft(e.target.value); setError(false); }}
           placeholder="Paste link or token"
-          className="w-full h-12 rounded-xl px-4 text-white mb-3"
-          style={{ background: "var(--pos-panel)", border: `1px solid ${error ? "#ef4444" : "var(--pos-border)"}` }}
+          className="w-full h-12 rounded-xl px-4 mb-3"
+          style={{ background: "var(--pos-panel)", border: `1px solid ${error ? "#ef4444" : "var(--pos-border)"}`, color: "var(--pos-text)" }}
         />
         {error && <p className="text-xs mb-3" style={{ color: "#ef4444" }}>That doesn't look like a valid link or token.</p>}
         <button type="submit" data-testid="display-token-continue" className="pos-btn w-full h-12 rounded-xl text-sm font-bold text-white" style={{ background: "var(--pos-accent)" }}>
@@ -87,7 +87,7 @@ export default function RolePicker() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: "var(--pos-bg)" }} data-testid="display-role-picker">
       <div className="text-center mb-8">
-        <div className="text-2xl font-bold tracking-tight text-white">KANDA DISPLAY</div>
+        <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA DISPLAY</div>
         <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>What is this device?</p>
       </div>
       <div className="w-full max-w-sm flex flex-col gap-3">
@@ -103,7 +103,7 @@ export default function RolePicker() {
               <Icon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="text-base font-semibold text-white">{label}</div>
+              <div className="text-base font-semibold" style={{ color: "var(--pos-text)" }}>{label}</div>
               <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{description}</div>
             </div>
           </button>

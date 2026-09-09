@@ -84,12 +84,12 @@ export default function ReservationModal({ open, onClose }) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="reservation-modal">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2"><CalendarClock className="w-4 h-4" /> Reservations</DialogTitle>
+          <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><CalendarClock className="w-4 h-4" /> Reservations</DialogTitle>
         </DialogHeader>
 
         <div className="flex items-center gap-2">
           <Input data-testid="reservation-date" type="date" value={date} onChange={(e) => setDate(e.target.value)}
-            className="h-10 w-44 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10 w-44" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <span className="text-xs" style={{ color: "var(--pos-muted)" }}>
             {busy ? "Loading…" : `${list.length} reservation${list.length === 1 ? "" : "s"}`}
           </span>
@@ -103,7 +103,7 @@ export default function ReservationModal({ open, onClose }) {
               style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white truncate">{r.customer_name}</span>
+                  <span className="text-sm font-semibold truncate" style={{ color: "var(--pos-text)" }}>{r.customer_name}</span>
                   <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.05)", color: STATUS_COLOR[r.status] }}>{r.status}</span>
                 </div>
                 <div className="text-[11px] mt-0.5 flex flex-wrap gap-2" style={{ color: "var(--pos-muted)" }}>
@@ -145,25 +145,25 @@ export default function ReservationModal({ open, onClose }) {
 
         <div className="pt-3 grid grid-cols-2 gap-2" style={{ borderTop: "1px solid var(--pos-border)" }}>
           <select data-testid="reservation-table" value={form.table_id} onChange={(e) => setForm({ ...form, table_id: e.target.value })}
-            className="h-10 px-3 rounded-md text-sm text-white" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+            className="h-10 px-3 rounded-md text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             <option value="">Table…</option>
             {tables.map((t) => <option key={t.id} value={t.id}>T{t.number} · {t.seats} seats</option>)}
           </select>
           <Input data-testid="reservation-customer" placeholder="Customer name" value={form.customer_name}
             onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
-            className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <Input data-testid="reservation-phone" placeholder="Phone (optional)" value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <Input data-testid="reservation-party" type="number" placeholder="Party size" value={form.party_size}
             onChange={(e) => setForm({ ...form, party_size: e.target.value })}
-            className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <Input data-testid="reservation-at" type="datetime-local" value={form.at}
             onChange={(e) => setForm({ ...form, at: e.target.value })}
-            className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <Input data-testid="reservation-duration" type="number" placeholder="Duration (min)" value={form.duration_min}
             onChange={(e) => setForm({ ...form, duration_min: e.target.value })}
-            className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </div>
         <button data-testid="reservation-create" onClick={create} disabled={busy}
           className="pos-btn w-full h-10 rounded-md text-xs font-bold text-white flex items-center justify-center gap-1.5 disabled:opacity-40"

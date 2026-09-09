@@ -175,12 +175,12 @@ export default function InventoryScreen() {
   return (
     <div className="h-full flex flex-col p-4 gap-4" data-testid="inventory-screen">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-bold text-white">Inventory &amp; Stock</h2>
+        <h2 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Inventory &amp; Stock</h2>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
             <Input data-testid="inv-search" placeholder="Search items…" value={query} onChange={(e) => setQuery(e.target.value)}
-              className="h-8 pl-8 text-xs text-white w-40" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+              className="h-8 pl-8 text-xs w-40" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
           <button data-testid="inv-filter-all" onClick={() => setView("all")} className="pos-btn px-3 py-1.5 rounded-lg text-xs font-semibold"
             style={{ background: view === "all" ? "var(--pos-accent)" : "var(--pos-panel)", color: view === "all" ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
@@ -234,7 +234,7 @@ export default function InventoryScreen() {
       {showWaste && (
         <div className="rounded-xl p-4" data-testid="waste-section"
           style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-          <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <Trash className="w-4 h-4" /> Wastage / spoilage log
           </h3>
           <WastePanel presetItemId={wastePreset} presetReason="Expired" />
@@ -275,7 +275,7 @@ export default function InventoryScreen() {
               const expired = days !== null && days < 0;
               return (
                 <tr key={i.id} data-testid={`inv-row-${i.id}`} style={{ borderBottom: "1px solid var(--pos-border)", background: low ? "#2a141077" : expiring ? "#2a220f77" : "transparent" }}>
-                  <td className="px-4 py-3 font-medium text-white">
+                  <td className="px-4 py-3 font-medium" style={{ color: "var(--pos-text)" }}>
                     {i.name}
                     {i.location_id && (
                       <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded align-middle"
@@ -304,8 +304,8 @@ export default function InventoryScreen() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button data-testid={`stock-minus-${i.id}`} onClick={() => adjustStock(i.id, -1)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Minus className="w-3.5 h-3.5 text-white" /></button>
-                      <button data-testid={`stock-plus-${i.id}`} onClick={() => adjustStock(i.id, 1)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Plus className="w-3.5 h-3.5 text-white" /></button>
+                      <button data-testid={`stock-minus-${i.id}`} onClick={() => adjustStock(i.id, -1)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Minus className="w-3.5 h-3.5" style={{ color: "var(--pos-text)" }} /></button>
+                      <button data-testid={`stock-plus-${i.id}`} onClick={() => adjustStock(i.id, 1)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Plus className="w-3.5 h-3.5" style={{ color: "var(--pos-text)" }} /></button>
                       {low && (
                         <>
                           <button data-testid={`reorder-${i.id}`} onClick={() => doReorder(i)}
@@ -314,7 +314,7 @@ export default function InventoryScreen() {
                           </button>
                           <button data-testid={`download-po-${i.id}`} onClick={() => downloadPO(i)} title="Download purchase order PDF"
                             className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-                            <Download className="w-3.5 h-3.5 text-white" />
+                            <Download className="w-3.5 h-3.5" style={{ color: "var(--pos-text)" }} />
                           </button>
                         </>
                       )}
@@ -330,7 +330,7 @@ export default function InventoryScreen() {
                       )}
                       {isManager && (
                         <>
-                          <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-3.5 h-3.5 text-white" /></button>
+                          <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-3.5 h-3.5" style={{ color: "var(--pos-text)" }} /></button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <button data-testid={`inv-delete-${i.id}`} className="pos-btn w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
@@ -369,7 +369,7 @@ export default function InventoryScreen() {
             return (
               <div key={i.id} data-testid={`inv-row-${i.id}`} className="p-3 flex flex-col gap-2" style={{ background: low ? "#2a141077" : expiring ? "#2a220f77" : "transparent", borderColor: "var(--pos-border)" }}>
                 <div className="flex items-start justify-between gap-2">
-                  <div className="font-medium text-white text-sm">
+                  <div className="font-medium text-sm" style={{ color: "var(--pos-text)" }}>
                     {i.name}
                     {i.location_id && (
                       <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded align-middle"
@@ -398,8 +398,8 @@ export default function InventoryScreen() {
                   {i.supplier && <span>Supplier: {i.supplier}</span>}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap pt-1">
-                  <button data-testid={`stock-minus-${i.id}`} onClick={() => adjustStock(i.id, -1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Minus className="w-4 h-4 text-white" /></button>
-                  <button data-testid={`stock-plus-${i.id}`} onClick={() => adjustStock(i.id, 1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Plus className="w-4 h-4 text-white" /></button>
+                  <button data-testid={`stock-minus-${i.id}`} onClick={() => adjustStock(i.id, -1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Minus className="w-4 h-4" style={{ color: "var(--pos-text)" }} /></button>
+                  <button data-testid={`stock-plus-${i.id}`} onClick={() => adjustStock(i.id, 1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Plus className="w-4 h-4" style={{ color: "var(--pos-text)" }} /></button>
                   {low && (
                     <>
                       <button data-testid={`reorder-${i.id}`} onClick={() => doReorder(i)}
@@ -408,7 +408,7 @@ export default function InventoryScreen() {
                       </button>
                       <button data-testid={`download-po-${i.id}`} onClick={() => downloadPO(i)} title="Download purchase order PDF"
                         className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-                        <Download className="w-4 h-4 text-white" />
+                        <Download className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
                       </button>
                     </>
                   )}
@@ -423,7 +423,7 @@ export default function InventoryScreen() {
                   )}
                   {isManager && (
                     <>
-                      <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-4 h-4 text-white" /></button>
+                      <button data-testid={`inv-edit-${i.id}`} onClick={() => openEdit(i)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Pencil className="w-4 h-4" style={{ color: "var(--pos-text)" }} /></button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <button data-testid={`inv-delete-${i.id}`} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}><Trash2 className="w-4 h-4 text-red-400" /></button>
@@ -450,25 +450,25 @@ export default function InventoryScreen() {
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">{editing?.id ? "Edit item" : "Add inventory item"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>{editing?.id ? "Edit item" : "Add inventory item"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input data-testid="inv-form-name" placeholder="Item name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <Input data-testid="inv-form-name" placeholder="Item name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <div className="grid grid-cols-2 gap-3">
-              <Input data-testid="inv-form-unit" placeholder="Unit (kg, pcs…)" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              <Input data-testid="inv-form-unit" placeholder="Unit (kg, pcs…)" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               {!editing?.id && (
-                <Input data-testid="inv-form-stock" type="number" placeholder="Starting stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                <Input data-testid="inv-form-stock" type="number" placeholder="Starting stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Input data-testid="inv-form-reorder" type="number" placeholder="Reorder level" value={form.reorder} onChange={(e) => setForm({ ...form, reorder: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-              <Input data-testid="inv-form-cost" type="number" placeholder="Cost per unit (₹)" value={form.cost_per_unit} onChange={(e) => setForm({ ...form, cost_per_unit: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              <Input data-testid="inv-form-reorder" type="number" placeholder="Reorder level" value={form.reorder} onChange={(e) => setForm({ ...form, reorder: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+              <Input data-testid="inv-form-cost" type="number" placeholder="Cost per unit (₹)" value={form.cost_per_unit} onChange={(e) => setForm({ ...form, cost_per_unit: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             </div>
-            <Input data-testid="inv-form-supplier" list="supplier-names" placeholder="Supplier" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <Input data-testid="inv-form-supplier" list="supplier-names" placeholder="Supplier" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             {locations.length > 0 && (
               <div>
                 <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Location</label>
                 <Select value={form.location_id || "shared"} onValueChange={(v) => setForm({ ...form, location_id: v === "shared" ? "" : v })}>
-                  <SelectTrigger data-testid="inv-form-location" className="h-10 text-white mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+                  <SelectTrigger data-testid="inv-form-location" className="h-10 mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -480,13 +480,13 @@ export default function InventoryScreen() {
             )}
             <div>
               <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Expiry date (optional)</label>
-              <Input data-testid="inv-form-expiry" type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              <Input data-testid="inv-form-expiry" type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             </div>
             <datalist id="supplier-names">
               {suppliers.map((s) => <option key={s.id} value={s.name} />)}
             </datalist>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+              <button onClick={() => setEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
               <button data-testid="inv-form-save" onClick={save} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
             </div>
           </div>
@@ -495,7 +495,7 @@ export default function InventoryScreen() {
 
       <Dialog open={suppliersOpen} onOpenChange={setSuppliersOpen}>
         <DialogContent className="max-w-lg border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Suppliers</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Suppliers</DialogTitle></DialogHeader>
           <p className="text-xs -mt-2" style={{ color: "var(--pos-muted)" }}>
             Add a supplier's email so clicking <b>Reorder</b> on a matching item auto-sends them a purchase order.
           </p>
@@ -504,13 +504,13 @@ export default function InventoryScreen() {
             {suppliers.map((s) => (
               <div key={s.id} data-testid={`supplier-row-${s.id}`} className="rounded-lg p-3 flex items-center justify-between gap-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold text-white">{s.name}</div>
+                  <div className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{s.name}</div>
                   <div className="text-xs flex items-center gap-1 mt-0.5" style={{ color: s.email ? "var(--pos-muted)" : "#f87171" }}>
                     <Mail className="w-3 h-3 shrink-0" /> {s.email || "No email on file"}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button data-testid={`supplier-edit-${s.id}`} onClick={() => openEditSupplier(s)} className="pos-btn w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}><Pencil className="w-3.5 h-3.5 text-white" /></button>
+                  <button data-testid={`supplier-edit-${s.id}`} onClick={() => openEditSupplier(s)} className="pos-btn w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}><Pencil className="w-3.5 h-3.5" style={{ color: "var(--pos-text)" }} /></button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <button data-testid={`supplier-delete-${s.id}`} className="pos-btn w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)" }}><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
@@ -540,13 +540,13 @@ export default function InventoryScreen() {
 
       <Dialog open={!!supplierEditing} onOpenChange={(o) => !o && setSupplierEditing(null)}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">{supplierEditing?.id ? "Edit supplier" : "New supplier"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>{supplierEditing?.id ? "Edit supplier" : "New supplier"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Input data-testid="supplier-form-name" placeholder="Supplier name" value={supplierForm.name} onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-            <Input data-testid="supplier-form-email" type="email" placeholder="Email address" value={supplierForm.email} onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-            <Input data-testid="supplier-form-phone" placeholder="Phone (optional)" value={supplierForm.phone} onChange={(e) => setSupplierForm({ ...supplierForm, phone: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <Input data-testid="supplier-form-name" placeholder="Supplier name" value={supplierForm.name} onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            <Input data-testid="supplier-form-email" type="email" placeholder="Email address" value={supplierForm.email} onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            <Input data-testid="supplier-form-phone" placeholder="Phone (optional)" value={supplierForm.phone} onChange={(e) => setSupplierForm({ ...supplierForm, phone: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setSupplierEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+              <button onClick={() => setSupplierEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
               <button data-testid="supplier-form-save" onClick={saveSupplier} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
             </div>
           </div>
@@ -555,16 +555,16 @@ export default function InventoryScreen() {
 
       <Dialog open={!!transferFor} onOpenChange={(o) => !o && setTransferFor(null)}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="transfer-modal">
-          <DialogHeader><DialogTitle className="text-white">Transfer {transferFor?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Transfer {transferFor?.name}</DialogTitle></DialogHeader>
           {transferFor && (
             <div className="space-y-3">
               <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
-                From <b style={{ color: "white" }}>{locationName(transferFor.location_id)}</b> · {transferFor.stock} {transferFor.unit} available
+                From <b style={{ color: "var(--pos-text)" }}>{locationName(transferFor.location_id)}</b> · {transferFor.stock} {transferFor.unit} available
               </div>
               <div>
                 <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>To location</label>
                 <Select value={transferForm.to_location_id || "shared"} onValueChange={(v) => setTransferForm({ ...transferForm, to_location_id: v === "shared" ? "" : v })}>
-                  <SelectTrigger data-testid="transfer-form-to" className="h-10 text-white mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+                  <SelectTrigger data-testid="transfer-form-to" className="h-10 mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -575,11 +575,11 @@ export default function InventoryScreen() {
               </div>
               <Input data-testid="transfer-form-qty" type="number" min={0} max={transferFor.stock} placeholder={`Quantity (${transferFor.unit})`}
                 value={transferForm.qty} onChange={(e) => setTransferForm({ ...transferForm, qty: e.target.value })}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               <Input data-testid="transfer-form-note" placeholder="Note (optional)" value={transferForm.note} onChange={(e) => setTransferForm({ ...transferForm, note: e.target.value })}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               <div className="flex justify-end gap-2">
-                <button onClick={() => setTransferFor(null)} disabled={transferBusy} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+                <button onClick={() => setTransferFor(null)} disabled={transferBusy} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
                 <button data-testid="transfer-submit-btn" onClick={submitTransfer} disabled={transferBusy}
                   className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white disabled:opacity-40" style={{ background: "var(--pos-accent)" }}>
                   {transferBusy ? "Transferring…" : "Transfer"}
@@ -592,13 +592,13 @@ export default function InventoryScreen() {
 
       <Dialog open={transfersOpen} onOpenChange={setTransfersOpen}>
         <DialogContent className="max-w-lg border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="transfers-log-modal">
-          <DialogHeader><DialogTitle className="text-white">Transfer log</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Transfer log</DialogTitle></DialogHeader>
           <div className="space-y-2 max-h-96 overflow-y-auto pos-scroll">
             {transfers.length === 0 && <p className="text-sm text-center py-6" style={{ color: "var(--pos-muted)" }}>No transfers yet.</p>}
             {transfers.map((t) => (
               <div key={t.id} data-testid={`transfer-row-${t.id}`} className="rounded-lg p-3" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="text-sm font-semibold text-white">{t.item_name} — {t.qty} {t.unit}</div>
+                  <div className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{t.item_name} — {t.qty} {t.unit}</div>
                   {t.source === "brand_supply" && (
                     <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#1e2a4a", color: "#93c5fd" }}>Central supply</span>
                   )}

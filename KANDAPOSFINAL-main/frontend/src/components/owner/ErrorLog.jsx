@@ -26,7 +26,7 @@ export default function ErrorLog() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <AlertOctagon className="w-5 h-5" style={{ color: "#ef4444" }} />
-          <h1 className="text-2xl font-bold text-white">Error log</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Error log</h1>
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>{rows.length}</span>
         </div>
         <button data-testid="errors-refresh" onClick={load} className="pos-btn h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5"
@@ -36,7 +36,7 @@ export default function ErrorLog() {
       </div>
 
       {busy ? (
-        <div className="flex items-center gap-2 text-white"><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
+        <div className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Loader2 className="w-5 h-5 animate-spin" /> Loading…</div>
       ) : !rows.length ? (
         <div className="rounded-xl p-8 text-center text-sm" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
           No errors captured. 🎉
@@ -59,11 +59,11 @@ export default function ErrorLog() {
                 <tr key={r.id} data-testid={`error-row-${r.id}`} onClick={() => setOpen(r)}
                   className="cursor-pointer hover:bg-white/[0.02]" style={{ borderTop: "1px solid var(--pos-border)" }}>
                   <td className="px-3 py-2 text-[11px] tabular-nums" style={{ color: "var(--pos-muted)" }}>{new Date(r.at).toLocaleString()}</td>
-                  <td className="px-3 py-2 text-white">{r.tenant_id || "—"}</td>
-                  <td className="px-3 py-2 text-white">{r.actor_id || "—"} <span className="text-[10px]" style={{ color: "var(--pos-muted)" }}>{r.actor_type}</span></td>
-                  <td className="px-3 py-2 font-mono text-[11px] text-white">{r.method} {r.route}</td>
+                  <td className="px-3 py-2" style={{ color: "var(--pos-text)" }}>{r.tenant_id || "—"}</td>
+                  <td className="px-3 py-2" style={{ color: "var(--pos-text)" }}>{r.actor_id || "—"} <span className="text-[10px]" style={{ color: "var(--pos-muted)" }}>{r.actor_type}</span></td>
+                  <td className="px-3 py-2 font-mono text-[11px]" style={{ color: "var(--pos-text)" }}>{r.method} {r.route}</td>
                   <td className="px-3 py-2 font-bold tabular-nums" style={{ color: STATUS_COLOR(r.status) }}>{r.status}</td>
-                  <td className="px-3 py-2 text-white truncate max-w-[280px]">{r.message}</td>
+                  <td className="px-3 py-2 truncate max-w-[280px]" style={{ color: "var(--pos-text)" }}>{r.message}</td>
                 </tr>
               ))}
             </tbody>
@@ -75,11 +75,11 @@ export default function ErrorLog() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.6)" }} onClick={() => setOpen(null)}>
           <div onClick={(e) => e.stopPropagation()} className="w-full max-w-3xl rounded-xl p-5" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid="error-detail">
             <div className="flex items-center justify-between mb-2">
-              <div className="font-bold text-white">{open.method} {open.route}</div>
+              <div className="font-bold" style={{ color: "var(--pos-text)" }}>{open.method} {open.route}</div>
               <button onClick={() => setOpen(null)} className="text-xs" style={{ color: "var(--pos-muted)" }}>Close</button>
             </div>
             <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{new Date(open.at).toLocaleString()} · status {open.status} · tenant {open.tenant_id || "—"} · actor {open.actor_id || "—"}</div>
-            <div className="mt-3 text-sm text-white">{open.message}</div>
+            <div className="mt-3 text-sm" style={{ color: "var(--pos-text)" }}>{open.message}</div>
             {open.traceback && (
               <pre className="mt-3 max-h-[55vh] overflow-auto p-3 text-[11px] font-mono rounded-lg whitespace-pre-wrap"
                 style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid var(--pos-border)" }}>{open.traceback}</pre>

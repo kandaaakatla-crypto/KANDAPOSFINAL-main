@@ -87,7 +87,7 @@ export default function PlanUpgradeDialog({ open, onClose, onUpgraded }) {
       <DialogContent data-testid="plan-upgrade-dialog" className="max-w-md border"
         style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <Store className="w-5 h-5" style={{ color: "#a78bfa" }} />
             Add another location
           </DialogTitle>
@@ -103,7 +103,7 @@ export default function PlanUpgradeDialog({ open, onClose, onUpgraded }) {
               <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>
                 Your locations
               </div>
-              <div className="mt-1 text-sm text-white">
+              <div className="mt-1 text-sm" style={{ color: "var(--pos-text)" }}>
                 {slots.used} / {slots.total_slots} used
                 <span className="ml-2 text-[11px]" style={{ color: "var(--pos-muted)" }}>
                   ({slots.free_slots} free · {slots.paid_slots} paid)
@@ -117,7 +117,7 @@ export default function PlanUpgradeDialog({ open, onClose, onUpgraded }) {
               <div className="text-[11px] uppercase tracking-wider" style={{ color: "#c4b5fd" }}>
                 One-time charge
               </div>
-              <div className="mt-1 text-4xl font-bold text-white tabular-nums">
+              <div className="mt-1 text-4xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>
                 ₹{slots.price_per_location.toFixed(0)}
               </div>
               <div className="text-[11px] mt-1" style={{ color: "var(--pos-muted)" }}>

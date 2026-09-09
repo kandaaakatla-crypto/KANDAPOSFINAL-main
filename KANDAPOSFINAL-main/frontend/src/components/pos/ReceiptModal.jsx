@@ -77,7 +77,7 @@ export default function ReceiptModal({ orderId, open, onClose }) {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md border print-receipt-modal p-0" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="receipt-modal">
         {loading && (
-          <div className="p-10 flex items-center justify-center gap-2 text-white">
+          <div className="p-10 flex items-center justify-center gap-2" style={{ color: "var(--pos-text)" }}>
             <Loader2 className="w-5 h-5 animate-spin" /> Loading receipt…
           </div>
         )}
@@ -157,13 +157,13 @@ export default function ReceiptModal({ orderId, open, onClose }) {
                 <FileText className="w-3.5 h-3.5" /> Tax Invoice (PDF)
               </button>
               <button data-testid="escpos-customer-btn" disabled={downloading} onClick={() => downloadEscpos("customer")}
-                className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-xs text-white disabled:opacity-40"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-xs disabled:opacity-40"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                 <Download className="w-3.5 h-3.5" /> ESC/POS
               </button>
               <button data-testid="escpos-kitchen-btn" disabled={downloading} onClick={() => downloadEscpos("kitchen")}
-                className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-xs text-white disabled:opacity-40"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-xs disabled:opacity-40"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                 <Download className="w-3.5 h-3.5" /> KOT
               </button>
             </div>

@@ -44,7 +44,7 @@ export default function OwnerTotp() {
           </div>
           <div>
             <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Step 2 of 2</div>
-            <div className="text-xl font-bold text-white">Enter 6-digit code</div>
+            <div className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Enter 6-digit code</div>
           </div>
         </div>
 
@@ -59,8 +59,8 @@ export default function OwnerTotp() {
               <KeyRound className="w-4 h-4 absolute left-3 top-3.5" style={{ color: "var(--pos-muted)" }} />
               <Input data-testid="owner-totp-input" inputMode="numeric" pattern="[0-9]*" maxLength={6} autoFocus required
                 value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="pl-9 h-12 text-white text-xl tabular-nums tracking-[0.4em] text-center"
-                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                className="pl-9 h-12 text-xl tabular-nums tracking-[0.4em] text-center"
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             </div>
           </label>
           <button data-testid="owner-totp-submit" type="submit" disabled={busy || code.length !== 6}

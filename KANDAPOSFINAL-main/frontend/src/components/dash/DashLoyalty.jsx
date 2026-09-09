@@ -97,7 +97,7 @@ export default function DashLoyalty() {
     <div className="p-6 space-y-6" data-testid="dash-loyalty">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <Gift className="w-6 h-6" style={{ color: "#fcd34d" }} />
             Loyalty program
           </h1>
@@ -106,8 +106,8 @@ export default function DashLoyalty() {
           </p>
         </div>
         <button data-testid="loyalty-refresh" onClick={loadOverview} disabled={overviewLoading}
-          className="pos-btn px-3 py-2 rounded-lg text-xs text-white flex items-center gap-1.5"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+          className="pos-btn px-3 py-2 rounded-lg text-xs flex items-center gap-1.5"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           <RefreshCw className={`w-3.5 h-3.5 ${overviewLoading ? "animate-spin" : ""}`} /> Refresh
         </button>
       </div>
@@ -116,7 +116,7 @@ export default function DashLoyalty() {
         {/* Overview */}
         <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">Overview</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>Overview</div>
           </div>
           <div className="p-5">
             {overviewLoading && <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
@@ -167,7 +167,7 @@ export default function DashLoyalty() {
                       <div key={t.id} className="flex items-center justify-between text-xs px-2 py-1.5 rounded"
                         style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                         <div className="min-w-0">
-                          <span className="text-white">{t.customer_name}</span>
+                          <span style={{ color: "var(--pos-text)" }}>{t.customer_name}</span>
                           <span className="ml-2 capitalize" style={{ color: "var(--pos-muted)" }}>{t.kind}</span>
                           {t.note && <span className="ml-1" style={{ color: "var(--pos-muted)" }}>· {t.note}</span>}
                         </div>
@@ -186,7 +186,7 @@ export default function DashLoyalty() {
         {/* Settings */}
         <div className="rounded-xl overflow-hidden h-fit" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">Program rules</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>Program rules</div>
           </div>
           <div className="p-5 space-y-4">
             {cfgLoading || !cfg ? (
@@ -229,12 +229,12 @@ export default function DashLoyalty() {
                   style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
                   <Award className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#fcd34d" }} />
                   <span>
-                    A ₹{Number(cfg.earn_rate) * 5 || 500} order earns <b className="text-white">5 points</b> at Bronze,{" "}
-                    <b className="text-white">{Math.floor(5 * (Number(cfg.silver_multiplier) || 1))} at Silver</b>, or{" "}
-                    <b className="text-white">{Math.floor(5 * (Number(cfg.gold_multiplier) || 1))} at Gold</b> — worth{" "}
-                    <b className="text-white">₹{(5 * (Number(cfg.redeem_value) || 1)).toFixed(0)}</b>+ off a future order.
-                    New customers start with <b className="text-white">{cfg.welcome_bonus_points || 0} pts</b>, and everyone
-                    gets <b className="text-white">{cfg.birthday_bonus_points || 0} pts</b> on their birthday.
+                    A ₹{Number(cfg.earn_rate) * 5 || 500} order earns <b style={{ color: "var(--pos-text)" }}>5 points</b> at Bronze,{" "}
+                    <b style={{ color: "var(--pos-text)" }}>{Math.floor(5 * (Number(cfg.silver_multiplier) || 1))} at Silver</b>, or{" "}
+                    <b style={{ color: "var(--pos-text)" }}>{Math.floor(5 * (Number(cfg.gold_multiplier) || 1))} at Gold</b> — worth{" "}
+                    <b style={{ color: "var(--pos-text)" }}>₹{(5 * (Number(cfg.redeem_value) || 1)).toFixed(0)}</b>+ off a future order.
+                    New customers start with <b style={{ color: "var(--pos-text)" }}>{cfg.welcome_bonus_points || 0} pts</b>, and everyone
+                    gets <b style={{ color: "var(--pos-text)" }}>{cfg.birthday_bonus_points || 0} pts</b> on their birthday.
                   </span>
                 </div>
 
@@ -280,8 +280,8 @@ function NumField({ label, suffix, value, min, step, onChange, testid }) {
       <div className="flex items-center gap-2 mt-1.5">
         <input data-testid={testid} type="number" min={min} step={step} value={value}
           onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
-          className="w-24 rounded px-2 py-1.5 text-sm text-white outline-none"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+          className="w-24 rounded px-2 py-1.5 text-sm outline-none"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
         <span className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{suffix}</span>
       </div>
     </div>

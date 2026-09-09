@@ -66,7 +66,7 @@ export default function ReportsScreen() {
   return (
     <div className="h-full overflow-y-auto pos-scroll p-4 space-y-4" data-testid="reports-screen">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-bold text-white">Sales Dashboard</h2>
+        <h2 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Sales Dashboard</h2>
         <div className="flex gap-1.5">
           <button data-testid="reports-tab-sales" onClick={() => setTab("sales")}
             className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
@@ -121,7 +121,7 @@ export default function ReportsScreen() {
               <s.icon className="w-5 h-5" style={{ color: s.color }} />
             </div>
             <div>
-              <div className="text-xl font-bold text-white tabular-nums">{s.value}</div>
+              <div className="text-xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>{s.value}</div>
               <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{s.label}</div>
             </div>
           </div>
@@ -132,7 +132,7 @@ export default function ReportsScreen() {
         {/* Sales trend — adjustable range */}
         <div className="lg:col-span-2 rounded-xl p-5" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid="weekly-chart">
           <div className="flex items-center justify-between mb-1">
-            <div className="font-semibold text-white">Sales Trend</div>
+            <div className="font-semibold" style={{ color: "var(--pos-text)" }}>Sales Trend</div>
             <div className="flex gap-1">
               {RANGE_OPTIONS.map((r) => (
                 <button key={r} data-testid={`range-${r}d`} onClick={() => setRange(r)}
@@ -164,12 +164,12 @@ export default function ReportsScreen() {
         {/* Payment split + top items */}
         <div className="space-y-4">
           <div className="rounded-xl p-5" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid="payment-split">
-            <div className="font-semibold text-white mb-3">Payment Methods (today)</div>
+            <div className="font-semibold mb-3" style={{ color: "var(--pos-text)" }}>Payment Methods (today)</div>
             {[{ label: "Card", val: cardTotal, color: "#3b82f6" }, { label: "Cash", val: cashTotal, color: "#22c55e" }, { label: "Unpaid / Open", val: unpaidTotal, color: "#f59e0b" }].map((p) => (
               <div key={p.label} className="mb-3">
                 <div className="flex justify-between text-xs mb-1">
                   <span style={{ color: "var(--pos-muted)" }}>{p.label}</span>
-                  <span className="text-white tabular-nums font-semibold">₹{p.val.toFixed(2)}</span>
+                  <span className="tabular-nums font-semibold" style={{ color: "var(--pos-text)" }}>₹{p.val.toFixed(2)}</span>
                 </div>
                 <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--pos-panel-2)" }}>
                   <div className="h-full rounded-full" style={{ width: `${(p.val / payTotal) * 100}%`, background: p.color, transition: "width 0.4s ease" }} />
@@ -179,17 +179,17 @@ export default function ReportsScreen() {
           </div>
 
           <div className="rounded-xl p-5" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid="top-items">
-            <div className="font-semibold text-white mb-3">Top Sellers (this week)</div>
+            <div className="font-semibold mb-3" style={{ color: "var(--pos-text)" }}>Top Sellers (this week)</div>
             {topItems.map((t, i) => (
               <div key={t.name} className="flex items-center justify-between py-2" style={{ borderBottom: i < topItems.length - 1 ? "1px solid var(--pos-border)" : "none" }}>
                 <div className="flex items-center gap-2.5">
                   <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold" style={{ background: "var(--pos-panel-2)", color: "var(--pos-accent)" }}>{i + 1}</span>
                   <div>
-                    <div className="text-sm text-white font-medium">{t.name}</div>
+                    <div className="text-sm font-medium" style={{ color: "var(--pos-text)" }}>{t.name}</div>
                     <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{t.sold} sold</div>
                   </div>
                 </div>
-                <span className="text-sm font-bold text-white tabular-nums">₹{t.revenue.toFixed(0)}</span>
+                <span className="text-sm font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>₹{t.revenue.toFixed(0)}</span>
               </div>
             ))}
           </div>

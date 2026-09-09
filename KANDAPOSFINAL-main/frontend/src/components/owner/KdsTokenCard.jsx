@@ -11,8 +11,8 @@ function TokenUrlRow({ testid, url }) {
   return (
     <div className="flex gap-2">
       <input data-testid={testid} readOnly value={url} onFocus={(e) => e.target.select()}
-        className="flex-1 h-10 px-3 rounded-md text-[11px] text-white font-mono"
-        style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+        className="flex-1 h-10 px-3 rounded-md text-[11px] font-mono"
+        style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
       <button data-testid={`${testid}-copy`} onClick={() => { navigator.clipboard.writeText(url); toast.success("URL copied"); }}
         className="pos-btn h-10 px-3 rounded-md text-xs font-bold flex items-center gap-1.5 text-white"
         style={{ background: "var(--pos-accent)" }}>
@@ -58,7 +58,7 @@ export default function KdsTokenCard({ tenantId }) {
       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-2">
           <ChefHat className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-          <span className="text-sm font-semibold text-white">Kiosk tablet tokens</span>
+          <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Kiosk tablet tokens</span>
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -84,7 +84,7 @@ export default function KdsTokenCard({ tenantId }) {
       </div>
       <div className="p-4 space-y-5">
         <div className="space-y-3">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white"><ChefHat className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> Kitchen Display</div>
+          <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: "var(--pos-text)" }}><ChefHat className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> Kitchen Display</div>
           <div>
             <div className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: "var(--pos-muted)" }}>Station</div>
             <div className="flex flex-wrap gap-1.5">
@@ -108,7 +108,7 @@ export default function KdsTokenCard({ tenantId }) {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white"><Package className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> Packing Station</div>
+          <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: "var(--pos-text)" }}><Package className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> Packing Station</div>
           <label className="block">
             <div className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: "var(--pos-muted)" }}>Tablet URL</div>
             <TokenUrlRow testid="packing-url" url={packingUrl} />
@@ -116,7 +116,7 @@ export default function KdsTokenCard({ tenantId }) {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-white"><Monitor className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> Customer Display (order status)</div>
+          <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: "var(--pos-text)" }}><Monitor className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> Customer Display (order status)</div>
           <label className="block">
             <div className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: "var(--pos-muted)" }}>Tablet URL</div>
             <TokenUrlRow testid="display-url" url={displayUrl} />

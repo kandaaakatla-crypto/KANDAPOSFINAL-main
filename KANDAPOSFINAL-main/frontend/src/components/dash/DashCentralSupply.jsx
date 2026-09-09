@@ -113,7 +113,7 @@ export default function DashCentralSupply() {
       <div className="p-6">
         <div className="rounded-xl p-6 text-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <Warehouse className="w-8 h-8 mx-auto mb-2" style={{ color: "var(--pos-muted)" }} />
-          <div className="text-white font-semibold">Central supply needs a brand</div>
+          <div className="font-semibold" style={{ color: "var(--pos-text)" }}>Central supply needs a brand</div>
           <div className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>Set up a brand from the Brand screen first, then come back here to stock a shared warehouse for your stores.</div>
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function DashCentralSupply() {
     <div className="p-6 space-y-6" data-testid="dash-central-supply">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <Warehouse className="w-6 h-6" style={{ color: "#7dd3fc" }} />
             Central Supply
           </h1>
@@ -142,7 +142,7 @@ export default function DashCentralSupply() {
         {/* List */}
         <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">Central catalog</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>Central catalog</div>
           </div>
           <div className="p-5">
             {loading && <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
@@ -155,7 +155,7 @@ export default function DashCentralSupply() {
                   style={{ background: editingId === i.id ? "var(--pos-bg)" : "var(--pos-panel-2)", border: editingId === i.id ? "1px solid var(--pos-accent)" : "1px solid transparent" }}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-white font-bold">{i.name}</span>
+                      <span className="font-bold" style={{ color: "var(--pos-text)" }}>{i.name}</span>
                       <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: i.stock <= i.reorder ? "#3a1515" : "var(--pos-panel)", color: i.stock <= i.reorder ? "#f87171" : "var(--pos-muted)" }}>
                         {i.stock} {i.unit} in stock
                       </span>
@@ -198,25 +198,25 @@ export default function DashCentralSupply() {
         {/* Create / edit */}
         <div className="rounded-xl overflow-hidden h-fit" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">{editingId ? "Edit item" : "New central item"}</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>{editingId ? "Edit item" : "New central item"}</div>
             {editingId && <button onClick={startNew} className="text-[11px]" style={{ color: "var(--pos-accent)" }}>+ New instead</button>}
           </div>
           <div className="p-5 space-y-3">
             <Input data-testid="central-form-name" placeholder="Item name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <div className="grid grid-cols-2 gap-3">
               <Input data-testid="central-form-unit" placeholder="Unit (kg, pcs…)" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               {!editingId && (
                 <Input data-testid="central-form-stock" type="number" placeholder="Starting stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })}
-                  className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Input data-testid="central-form-cost" type="number" placeholder="Cost/unit (₹)" value={form.cost_per_unit} onChange={(e) => setForm({ ...form, cost_per_unit: e.target.value })}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               <Input data-testid="central-form-reorder" type="number" placeholder="Reorder level" value={form.reorder} onChange={(e) => setForm({ ...form, reorder: e.target.value })}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             </div>
             <button data-testid="central-form-save" onClick={save} disabled={saving}
               className="pos-btn w-full mt-1 px-3 py-2 rounded-lg text-xs text-white flex items-center justify-center gap-1.5 disabled:opacity-40"
@@ -230,7 +230,7 @@ export default function DashCentralSupply() {
       {/* Push modal */}
       <Dialog open={!!pushFor} onOpenChange={(o) => !o && setPushFor(null)}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="push-modal">
-          <DialogHeader><DialogTitle className="text-white">Push {pushFor?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Push {pushFor?.name}</DialogTitle></DialogHeader>
           {pushFor && (
             <div className="space-y-3">
               <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{pushFor.stock} {pushFor.unit} available centrally</div>
@@ -238,7 +238,7 @@ export default function DashCentralSupply() {
                 <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Target stores</label>
                 <div className="max-h-40 overflow-y-auto pos-scroll space-y-1 rounded p-2 mt-1" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                   {stores.map((s) => (
-                    <label key={s.id} className="flex items-center gap-2 text-xs text-white" data-testid={`push-target-${s.id}`}>
+                    <label key={s.id} className="flex items-center gap-2 text-xs" style={{ color: "var(--pos-text)" }} data-testid={`push-target-${s.id}`}>
                       <input type="checkbox" checked={pushTenantIds.includes(s.id)} onChange={() => toggleTarget(s.id)} />
                       {s.name}
                     </label>
@@ -246,16 +246,16 @@ export default function DashCentralSupply() {
                 </div>
               </div>
               <Input data-testid="push-form-qty" type="number" min={0} placeholder={`Qty per store (${pushFor.unit})`} value={pushQty} onChange={(e) => setPushQty(e.target.value)}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               <Input data-testid="push-form-note" placeholder="Note (optional)" value={pushNote} onChange={(e) => setPushNote(e.target.value)}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               {pushTenantIds.length > 0 && pushQty && (
                 <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>
                   Total: {(parseFloat(pushQty) || 0) * pushTenantIds.length} {pushFor.unit} across {pushTenantIds.length} store{pushTenantIds.length === 1 ? "" : "s"}
                 </div>
               )}
               <div className="flex justify-end gap-2">
-                <button onClick={() => setPushFor(null)} disabled={pushBusy} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+                <button onClick={() => setPushFor(null)} disabled={pushBusy} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
                 <button data-testid="push-submit-btn" onClick={submitPush} disabled={pushBusy}
                   className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white disabled:opacity-40" style={{ background: "var(--pos-accent)" }}>
                   {pushBusy ? "Pushing…" : "Push stock"}
@@ -269,12 +269,12 @@ export default function DashCentralSupply() {
       {/* Push log */}
       <Dialog open={logOpen} onOpenChange={setLogOpen}>
         <DialogContent className="max-w-lg border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="push-log-modal">
-          <DialogHeader><DialogTitle className="text-white">Push log</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Push log</DialogTitle></DialogHeader>
           <div className="space-y-2 max-h-96 overflow-y-auto pos-scroll">
             {log.length === 0 && <p className="text-sm text-center py-6" style={{ color: "var(--pos-muted)" }}>No pushes yet.</p>}
             {log.map((l) => (
               <div key={l.id} data-testid={`push-log-row-${l.id}`} className="rounded-lg p-3" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-                <div className="text-sm font-semibold text-white">{l.item_name} — {l.qty} {l.unit} → {l.store_name}</div>
+                <div className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{l.item_name} — {l.qty} {l.unit} → {l.store_name}</div>
                 <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
                   {l.by_user_name && <>by {l.by_user_name} · </>}{new Date(l.at).toLocaleString("en-GB")}{l.note && <> · {l.note}</>}
                 </div>

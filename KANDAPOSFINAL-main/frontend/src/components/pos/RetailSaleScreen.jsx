@@ -118,7 +118,7 @@ export default function RetailSaleScreen() {
             <ScanLine className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
             <Input ref={barcodeRef} data-testid="retail-barcode-input" value={barcode} onChange={(e) => setBarcode(e.target.value)}
               placeholder="Scan or type a barcode / SKU, then Enter"
-              className="h-11 pl-9 text-white" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+              className="h-11 pl-9" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
         </form>
 
@@ -144,7 +144,7 @@ export default function RetailSaleScreen() {
                 </div>
               )}
               <div className="p-2.5">
-                <div className="font-semibold text-white text-sm leading-snug">{item.name}</div>
+                <div className="font-semibold text-sm leading-snug" style={{ color: "var(--pos-text)" }}>{item.name}</div>
                 <div className="text-sm font-bold mt-1" style={{ color: "var(--pos-accent)" }}>
                   {item.available ? (Array.isArray(item.variants) && item.variants.length ? `From ₹${Math.min(...item.variants.map(v => v.price)).toFixed(0)}` : `₹${(item.price || 0).toFixed(0)}`) : "Out of stock"}
                 </div>
@@ -169,9 +169,9 @@ export default function RetailSaleScreen() {
         <div className="flex flex-col h-full w-full" style={{ background: "var(--pos-panel)", borderLeft: "1px solid var(--pos-border)" }}>
           <div className="flex items-center justify-between p-4 shrink-0" style={{ borderBottom: "1px solid var(--pos-border)" }}>
             <button data-testid="retail-cart-close-btn" onClick={() => setCartOpen(false)} className="pos-btn -ml-2 w-11 h-11 flex items-center justify-center rounded-lg md:hidden">
-              <X className="w-5 h-5 text-white" />
+              <X className="w-5 h-5" style={{ color: "var(--pos-text)" }} />
             </button>
-            <div className="font-bold text-white flex items-center gap-2"><ShoppingCart className="w-4 h-4" /> Basket</div>
+            <div className="font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}><ShoppingCart className="w-4 h-4" /> Basket</div>
             <div className="w-11 md:hidden" />
           </div>
 
@@ -181,13 +181,13 @@ export default function RetailSaleScreen() {
             ) : cart.map((l) => (
               <div key={l.lineId} data-testid={`retail-line-${l.lineId}`} className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-sm text-white truncate">{l.name}</div>
+                  <div className="text-sm truncate" style={{ color: "var(--pos-text)" }}>{l.name}</div>
                   <div className="text-xs" style={{ color: "var(--pos-muted)" }}>₹{l.price.toFixed(2)} each</div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button onClick={() => updateQty(l.lineId, -1)} className="w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}><Minus className="w-3.5 h-3.5 text-white" /></button>
-                  <span className="text-sm text-white w-5 text-center">{l.qty}</span>
-                  <button onClick={() => updateQty(l.lineId, 1)} className="w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}><Plus className="w-3.5 h-3.5 text-white" /></button>
+                  <button onClick={() => updateQty(l.lineId, -1)} className="w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}><Minus className="w-3.5 h-3.5" style={{ color: "var(--pos-text)" }} /></button>
+                  <span className="text-sm w-5 text-center" style={{ color: "var(--pos-text)" }}>{l.qty}</span>
+                  <button onClick={() => updateQty(l.lineId, 1)} className="w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}><Plus className="w-3.5 h-3.5" style={{ color: "var(--pos-text)" }} /></button>
                   <button onClick={() => removeLine(l.lineId)} className="w-8 h-8 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel-2)" }}><X className="w-3.5 h-3.5 text-red-400" /></button>
                 </div>
               </div>
@@ -210,7 +210,7 @@ export default function RetailSaleScreen() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between" style={{ color: "var(--pos-muted)" }}><span>Subtotal</span><span className="tabular-nums">₹{subtotal.toFixed(2)}</span></div>
               {discountAmt > 0 && <div className="flex justify-between" style={{ color: "var(--pos-muted)" }}><span>Discount</span><span className="tabular-nums">-₹{discountAmt.toFixed(2)}</span></div>}
-              <div className="flex justify-between text-base font-bold text-white pt-1"><span>Total</span><span className="tabular-nums">₹{total.toFixed(2)}</span></div>
+              <div className="flex justify-between text-base font-bold pt-1" style={{ color: "var(--pos-text)" }}><span>Total</span><span className="tabular-nums">₹{total.toFixed(2)}</span></div>
               {gst.taxTotal > 0 && (
                 <div className="text-[11px] pt-1" style={{ color: "var(--pos-muted)" }}>
                   Includes GST ₹{gst.taxTotal.toFixed(2)} (CGST ₹{gst.cgst.toFixed(2)} + SGST ₹{gst.sgst.toFixed(2)})
@@ -230,13 +230,13 @@ export default function RetailSaleScreen() {
 
       <Dialog open={!!variantItem} onOpenChange={(o) => !o && setVariantItem(null)}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">{variantItem?.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>{variantItem?.name}</DialogTitle></DialogHeader>
           <div className="space-y-2">
             {(variantItem?.variants || []).map((v, i) => (
               <button key={i} disabled={!v.available} onClick={() => addVariant(variantItem, v)}
                 className="pos-btn w-full h-12 rounded-lg flex items-center justify-between px-4 disabled:opacity-40"
                 style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-                <span className="text-sm font-semibold text-white">{v.label}</span>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{v.label}</span>
                 <span className="text-sm font-bold" style={{ color: "var(--pos-accent)" }}>{v.available ? `₹${v.price.toFixed(2)}` : "Unavailable"}</span>
               </button>
             ))}

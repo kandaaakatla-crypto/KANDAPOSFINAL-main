@@ -159,7 +159,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="payment-modal">
         <DialogHeader>
-          <DialogTitle className="text-white">Take Payment</DialogTitle>
+          <DialogTitle style={{ color: "var(--pos-text)" }}>Take Payment</DialogTitle>
         </DialogHeader>
 
         <div className="text-center py-2">
@@ -190,14 +190,14 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
             <div className="grid grid-cols-4 gap-2">
               {quickAmounts.map((a) => (
                 <button key={a} data-testid={`tender-${a}`} onClick={() => setTendered(String(a))}
-                  className="pos-btn h-11 rounded-lg font-bold text-sm text-white"
-                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                  className="pos-btn h-11 rounded-lg font-bold text-sm"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                   ₹{a}
                 </button>
               ))}
             </div>
             <Input data-testid="tendered-input" type="number" placeholder="Amount tendered" value={tendered} onChange={(e) => setTendered(e.target.value)}
-              className="h-12 text-white text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              className="h-12 text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             {tenderedNum >= total && (
               <div className="flex justify-between items-center rounded-lg px-4 py-3" style={{ background: "#15281b", border: "1px solid #2e7d4f" }} data-testid="change-due">
                 <span className="text-sm font-semibold" style={{ color: "#7ee2a8" }}>Change due</span>
@@ -222,19 +222,19 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
             {cardState === "creating" && (
               <div className="flex items-center justify-center gap-3 h-14 rounded-xl" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--pos-accent)" }} />
-                <span className="text-sm font-semibold text-white">Creating order...</span>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Creating order...</span>
               </div>
             )}
             {cardState === "opening" && (
               <div className="flex items-center justify-center gap-3 h-14 rounded-xl" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} data-testid="card-processing">
                 <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--pos-accent)" }} />
-                <span className="text-sm font-semibold text-white">Awaiting cardholder at Razorpay...</span>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Awaiting cardholder at Razorpay...</span>
               </div>
             )}
             {cardState === "verifying" && (
               <div className="flex items-center justify-center gap-3 h-14 rounded-xl" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--pos-accent)" }} />
-                <span className="text-sm font-semibold text-white">Verifying signature...</span>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Verifying signature...</span>
               </div>
             )}
             {cardState === "approved" && (
@@ -250,7 +250,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
               </div>
             )}
             <div className="text-[11px] text-center" style={{ color: "var(--pos-muted)" }}>
-              Test card: <span className="font-mono text-white">4111 1111 1111 1111</span> · any future expiry · CVV 123
+              Test card: <span className="font-mono" style={{ color: "var(--pos-text)" }}>4111 1111 1111 1111</span> · any future expiry · CVV 123
             </div>
           </div>
         )}
@@ -264,7 +264,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
                 </label>
                 <Input data-testid="split-cash-input" type="number" step="0.5" placeholder="0.00"
                   value={splitCash} onChange={(e) => setSplitCash(e.target.value)}
-                  className="h-12 text-white text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-12 text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               </div>
               <div>
                 <label className="text-[11px] uppercase tracking-wider flex items-center gap-1" style={{ color: "var(--pos-muted)" }}>
@@ -272,21 +272,21 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
                 </label>
                 <Input data-testid="split-card-input" type="number" step="0.5" placeholder="0.00"
                   value={splitCard} onChange={(e) => setSplitCard(e.target.value)}
-                  className="h-12 text-white text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                  className="h-12 text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button data-testid="split-half" onClick={() => { const h = +(total / 2).toFixed(2); setSplitCash(String(h)); setSplitCard(String(+(total - h).toFixed(2))); }}
-                className="pos-btn h-9 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>50/50</button>
+                className="pos-btn h-9 rounded-md text-xs font-bold" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>50/50</button>
               <button data-testid="split-remainder-card" onClick={() => setSplitCard(String(Math.max(0, +(total - splitCashNum).toFixed(2))))}
-                className="pos-btn h-9 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>Card = remainder</button>
+                className="pos-btn h-9 rounded-md text-xs font-bold" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>Card = remainder</button>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-2 text-sm"
               style={{ background: splitValid ? "#15281b" : Math.abs(splitDelta) < 0.01 ? "var(--pos-panel-2)" : "#321519",
                        border: `1px solid ${splitValid ? "#2e7d4f" : Math.abs(splitDelta) < 0.01 ? "var(--pos-border)" : "#7d2e2e"}` }}
               data-testid="split-summary">
               <span style={{ color: "var(--pos-muted)" }}>Cash + Card</span>
-              <span className="tabular-nums font-bold text-white">₹{splitSum.toFixed(2)} <span style={{ color: "var(--pos-muted)", fontWeight: 400 }}>/ ₹{total.toFixed(2)}</span></span>
+              <span className="tabular-nums font-bold" style={{ color: splitValid || Math.abs(splitDelta) >= 0.01 ? "#fff" : "var(--pos-text)" }}>₹{splitSum.toFixed(2)} <span style={{ color: "var(--pos-muted)", fontWeight: 400 }}>/ ₹{total.toFixed(2)}</span></span>
             </div>
             <button data-testid="confirm-split-btn" onClick={confirmSplit} disabled={!splitValid || busy}
               className="pos-btn w-full h-14 rounded-xl font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "var(--pos-accent)" }}>

@@ -63,7 +63,7 @@ export default function TenantBillingCard({ tenantId }) {
       <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-2">
           <CreditCard className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-          <span className="text-sm font-semibold text-white">Subscription</span>
+          <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Subscription</span>
         </div>
         <span className="text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider"
           style={{ background: "rgba(255,255,255,0.05)", color: STATUS_COLOR[billing.status] || "#a3a3a3" }}>
@@ -74,19 +74,19 @@ export default function TenantBillingCard({ tenantId }) {
       <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
         <div>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Plan</div>
-          <div className="text-white font-bold mt-0.5" data-testid="billing-plan">{billing.plan}</div>
+          <div className="font-bold mt-0.5" style={{ color: "var(--pos-text)" }} data-testid="billing-plan">{billing.plan}</div>
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Renews</div>
-          <div className="text-white tabular-nums mt-0.5">{billing.current_period_end ? new Date(billing.current_period_end).toLocaleDateString() : "—"}</div>
+          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.current_period_end ? new Date(billing.current_period_end).toLocaleDateString() : "—"}</div>
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Grace until</div>
-          <div className="text-white tabular-nums mt-0.5">{billing.grace_until ? new Date(billing.grace_until).toLocaleDateString() : "—"}</div>
+          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.grace_until ? new Date(billing.grace_until).toLocaleDateString() : "—"}</div>
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Last paid</div>
-          <div className="text-white tabular-nums mt-0.5">{billing.last_payment_at ? new Date(billing.last_payment_at).toLocaleDateString() : "—"}</div>
+          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.last_payment_at ? new Date(billing.last_payment_at).toLocaleDateString() : "—"}</div>
         </div>
       </div>
 

@@ -51,8 +51,8 @@ export default function BrandScreen() {
   useEffect(() => { load(); }, [user?.brand_id]); // eslint-disable-line
 
   if (!user?.brand_id) return <CreateBrandOnboarding />;
-  if (loading) return <div className="p-6 flex items-center gap-2 text-white"><Loader2 className="w-5 h-5 animate-spin" /> Loading brand…</div>;
-  if (!brand) return <div className="p-6 text-white">Brand not found.</div>;
+  if (loading) return <div className="p-6 flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Loader2 className="w-5 h-5 animate-spin" /> Loading brand…</div>;
+  if (!brand) return <div className="p-6" style={{ color: "var(--pos-text)" }}>Brand not found.</div>;
 
   return <BrandDashboard brand={brand} onBrandChanged={setBrand} />;
 }
@@ -81,7 +81,7 @@ function CreateBrandOnboarding() {
     <div className="p-6 max-w-lg mx-auto" data-testid="brand-onboarding">
       <div className="text-center mb-6">
         <Store className="w-10 h-10 mx-auto mb-2" style={{ color: "var(--pos-accent)" }} />
-        <h1 className="text-2xl font-bold text-white">Turn this store into a brand</h1>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Turn this store into a brand</h1>
         <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>
           Group multiple stores or franchisees under one brand — this store becomes the first one.
           You'll be able to switch between every store, push shared menus and defaults, and see combined reporting.
@@ -92,19 +92,19 @@ function CreateBrandOnboarding() {
           <span className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Brand slug</span>
           <Input data-testid="brand-slug" required placeholder="zzfoods" value={form.slug}
             onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.replace(/[^a-z0-9]/gi, "").toLowerCase() }))}
-            className="h-10 text-white mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10 mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </label>
         <label className="block">
           <span className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Brand name</span>
           <Input data-testid="brand-name" required placeholder="ZZ Foods" value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="h-10 text-white mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10 mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </label>
         <label className="block">
           <span className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Default royalty % (per store, owed to you)</span>
           <Input data-testid="brand-royalty" type="number" min="0" max="100" step="0.5" value={form.royalty_percent}
             onChange={(e) => setForm((f) => ({ ...f, royalty_percent: Number(e.target.value) }))}
-            className="h-10 text-white mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10 mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </label>
         <button data-testid="brand-create-submit" type="submit" disabled={busy}
           className="pos-btn w-full h-11 rounded-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40"
@@ -130,15 +130,15 @@ function BrandDashboard({ brand, onBrandChanged }) {
     <div className="p-5" data-testid="brand-screen">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2"><Store className="w-5 h-5" style={{ color: "var(--pos-accent)" }} /> {brand.name}</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Store className="w-5 h-5" style={{ color: "var(--pos-accent)" }} /> {brand.name}</h1>
           <p className="text-sm" style={{ color: "var(--pos-muted)" }}>Brand-wide reporting, shared menu, defaults, royalties, and marketing.</p>
         </div>
       </div>
       <div className="flex gap-2 mt-4 mb-5 flex-wrap">
         {tabs.map(([key, label]) => (
           <button key={key} data-testid={`brand-tab-${key}`} onClick={() => setTab(key)}
-            className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white"
-            style={{ background: tab === key ? "var(--pos-accent)" : "var(--pos-panel-2)" }}>{label}</button>
+            className="pos-btn h-9 px-4 rounded-md text-xs font-bold"
+            style={{ background: tab === key ? "var(--pos-accent)" : "var(--pos-panel-2)", color: tab === key ? "#fff" : "var(--pos-text)" }}>{label}</button>
         ))}
       </div>
 
@@ -173,11 +173,11 @@ function OverviewTab({ brand }) {
       <div className="grid grid-cols-3 gap-3 max-w-xl">
         <Card>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Stores</div>
-          <div className="text-2xl font-bold text-white tabular-nums">{totals?.store_count ?? "—"}</div>
+          <div className="text-2xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>{totals?.store_count ?? "—"}</div>
         </Card>
         <Card>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Orders (30d)</div>
-          <div className="text-2xl font-bold text-white tabular-nums">{totals?.orders ?? "—"}</div>
+          <div className="text-2xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>{totals?.orders ?? "—"}</div>
         </Card>
         <Card>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Sales (30d)</div>
@@ -197,8 +197,8 @@ function OverviewTab({ brand }) {
             {loading && <tr><td colSpan={3} className="text-center py-6" style={{ color: "var(--pos-muted)" }}>Loading…</td></tr>}
             {!loading && rows.map((r) => (
               <tr key={r.tenant_id} data-testid={`rollup-row-${r.tenant_id}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
-                <td className="py-2 text-white">{r.store_name}</td>
-                <td className="py-2 text-right tabular-nums text-white">{r.orders}</td>
+                <td className="py-2" style={{ color: "var(--pos-text)" }}>{r.store_name}</td>
+                <td className="py-2 text-right tabular-nums" style={{ color: "var(--pos-text)" }}>{r.orders}</td>
                 <td className="py-2 text-right tabular-nums font-bold" style={{ color: "var(--pos-accent)" }}>₹{r.sales.toFixed(2)}</td>
               </tr>
             ))}
@@ -276,7 +276,7 @@ function StoresTab({ brand }) {
           {stores.map((s) => (
             <div key={s.id} data-testid={`brand-store-row-${s.id}`} className="flex items-center justify-between rounded-lg p-3" style={{ background: "var(--pos-panel-2)" }}>
               <div>
-                <div className="text-sm font-bold text-white">{s.name}</div>
+                <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>{s.name}</div>
                 <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{s.slug} · {s.business_type}</div>
               </div>
               {editingRoyalty === s.id ? (
@@ -284,7 +284,7 @@ function StoresTab({ brand }) {
                   <Input type="number" min="0" max="100" step="0.5" autoFocus value={royaltyValue}
                     onChange={(e) => setRoyaltyValue(e.target.value)}
                     placeholder={String(brand.royalty_percent)}
-                    className="h-8 w-20 text-white text-xs" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} />
+                    className="h-8 w-20 text-xs" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                   <button onClick={() => saveRoyalty(s.id)} className="pos-btn h-8 px-2 rounded-md text-[11px] font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
                   <button onClick={() => setEditingRoyalty(null)} className="pos-btn h-8 px-2 rounded-md text-[11px]" style={{ color: "var(--pos-muted)" }}>Cancel</button>
                 </div>
@@ -301,13 +301,13 @@ function StoresTab({ brand }) {
       </Card>
 
       <Card testid="brand-invite-card">
-        <div className="text-sm font-bold text-white mb-1 flex items-center gap-2"><Mail className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Invite an existing store</div>
+        <div className="text-sm font-bold mb-1 flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Mail className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Invite an existing store</div>
         <p className="text-xs mb-3" style={{ color: "var(--pos-muted)" }}>
           For a store that's already up and running on its own. Its own owner has to accept from their dashboard before it joins — you don't get access until they do.
         </p>
         <form onSubmit={sendInvite} className="flex gap-2 mb-3">
           <Input placeholder="store-slug" value={inviteSlug} onChange={(e) => setInviteSlug(e.target.value.toLowerCase())}
-            className="h-9 text-white text-sm" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-9 text-sm" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <button type="submit" disabled={inviting} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white shrink-0 disabled:opacity-40" style={{ background: "var(--pos-accent)" }}>
             {inviting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send invite"}
           </button>
@@ -316,7 +316,7 @@ function StoresTab({ brand }) {
           {invites.map((inv) => (
             <div key={inv.id} data-testid={`brand-invite-${inv.id}`} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: "var(--pos-panel-2)" }}>
               <div className="text-xs">
-                <span className="text-white font-bold">{inv.tenant_name}</span>
+                <span className="font-bold" style={{ color: "var(--pos-text)" }}>{inv.tenant_name}</span>
                 <span style={{ color: "var(--pos-muted)" }}> · {inv.tenant_slug} · {inv.status}</span>
               </div>
               {inv.status === "pending" && (
@@ -330,14 +330,14 @@ function StoresTab({ brand }) {
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Add a store to {brand.name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Add a store to {brand.name}</DialogTitle></DialogHeader>
           <NewStoreForm brand={brand} onDone={(res) => { setCreating(false); setCreated(res); load(); }} />
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!created} onOpenChange={(o) => !o && setCreated(null)}>
         <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white flex items-center gap-2"><CheckCircle2 className="w-5 h-5" style={{ color: "var(--pos-accent)" }} /> {created?.name} added</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><CheckCircle2 className="w-5 h-5" style={{ color: "var(--pos-accent)" }} /> {created?.name} added</DialogTitle></DialogHeader>
           <p className="text-xs mb-2" style={{ color: "var(--pos-muted)" }}>
             Dashboard accounts for this store, shown <b>only here, once</b> — copy them down.
           </p>
@@ -346,8 +346,8 @@ function StoresTab({ brand }) {
               <div key={a.email} className="flex items-center justify-between gap-2 rounded-lg p-2.5" style={{ background: "var(--pos-panel-2)" }}>
                 <div className="min-w-0 text-xs">
                   <div className="font-bold uppercase tracking-wider" style={{ color: "var(--pos-accent)" }}>{a.dash_role}</div>
-                  <div className="text-white font-mono truncate">{a.email}</div>
-                  <div className="text-white font-mono truncate">{a.password}</div>
+                  <div className="font-mono truncate" style={{ color: "var(--pos-text)" }}>{a.email}</div>
+                  <div className="font-mono truncate" style={{ color: "var(--pos-text)" }}>{a.password}</div>
                 </div>
                 <button onClick={() => { navigator.clipboard.writeText(`${a.email} / ${a.password}`); toast.success("Copied"); }}
                   className="pos-btn h-8 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-1 shrink-0"
@@ -428,8 +428,8 @@ function NewStoreForm({ brand, onDone }) {
     }
   };
 
-  const fld = "h-9 text-white text-sm mt-1";
-  const fldStyle = { background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" };
+  const fld = "h-9 text-sm mt-1";
+  const fldStyle = { background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" };
 
   if (paymentNeeded) {
     return (
@@ -437,7 +437,7 @@ function NewStoreForm({ brand, onDone }) {
         <div className="p-4 rounded-xl text-center"
           style={{ background: "linear-gradient(135deg, rgba(249,115,22,0.20), rgba(234,88,12,0.10))", border: "1px solid rgba(249,115,22,0.40)" }}>
           <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>One-time charge</div>
-          <div className="mt-1 text-4xl font-bold text-white tabular-nums">₹{paymentNeeded.price.toFixed(0)}</div>
+          <div className="mt-1 text-4xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>₹{paymentNeeded.price.toFixed(0)}</div>
           <div className="text-[11px] mt-1" style={{ color: "var(--pos-muted)" }}>
             {paymentNeeded.used}/{paymentNeeded.total_slots} store slots used — pay to add another
           </div>
@@ -448,8 +448,8 @@ function NewStoreForm({ brand, onDone }) {
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} Pay ₹{paymentNeeded.price.toFixed(0)} & add store
         </button>
         <button type="button" onClick={() => setPaymentNeeded(null)}
-          className="pos-btn w-full h-9 rounded-lg text-xs font-bold text-white"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+          className="pos-btn w-full h-9 rounded-lg text-xs font-bold"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           Back to store details
         </button>
         <div className="text-[10px] text-center" style={{ color: "var(--pos-muted)" }}>
@@ -482,7 +482,7 @@ function NewStoreForm({ brand, onDone }) {
           <Input required inputMode="numeric" maxLength={6} value={form.manager_pin} onChange={(e) => set("manager_pin", e.target.value.replace(/\D/g, "").slice(0, 6))} className={fld} style={fldStyle} /></label>
       </div>
       <div className="flex items-center justify-between rounded-lg p-2.5 mt-1" style={{ background: "var(--pos-panel-2)" }}>
-        <span className="text-xs text-white">Apply brand defaults on creation</span>
+        <span className="text-xs" style={{ color: "var(--pos-text)" }}>Apply brand defaults on creation</span>
         <Switch checked={form.apply_brand_defaults} onCheckedChange={(v) => set("apply_brand_defaults", v)} />
       </div>
       <button type="submit" disabled={busy} className="pos-btn w-full h-10 rounded-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40 mt-2"
@@ -544,7 +544,7 @@ function MenuDefaultsTab({ brand, onBrandChanged }) {
   return (
     <div className="space-y-4 max-w-2xl">
       <Card testid="brand-menu-push-card">
-        <div className="text-sm font-bold text-white mb-1">Shared menu template</div>
+        <div className="text-sm font-bold mb-1" style={{ color: "var(--pos-text)" }}>Shared menu template</div>
         <p className="text-xs mb-3" style={{ color: "var(--pos-muted)" }}>
           Pushes categories and items from your currently-active store into every other store in the brand.
           New ones are added, and existing ones (matched by name) are updated to match — so price/description/image
@@ -575,32 +575,32 @@ function MenuDefaultsTab({ brand, onBrandChanged }) {
       </Card>
 
       <Card testid="brand-defaults-card">
-        <div className="text-sm font-bold text-white mb-1">Brand-wide defaults</div>
+        <div className="text-sm font-bold mb-1" style={{ color: "var(--pos-text)" }}>Brand-wide defaults</div>
         <p className="text-xs mb-3" style={{ color: "var(--pos-muted)" }}>
           Saved here, applied to every store only when you push — a store keeps whatever it has until then.
         </p>
         <label className="block mb-2">
           <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Receipt footer</span>
           <Input value={defaults.store_footer} onChange={(e) => setDefaults((d) => ({ ...d, store_footer: e.target.value }))}
-            className="h-9 text-white text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-9 text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </label>
         <label className="block mb-3">
           <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Logo URL</span>
           <Input value={defaults.logo_url} onChange={(e) => setDefaults((d) => ({ ...d, logo_url: e.target.value }))}
-            className="h-9 text-white text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-9 text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </label>
         <div className="grid grid-cols-2 gap-2 mb-3">
           {FEATURE_ROWS.map(([key, label]) => (
             <div key={key} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: "var(--pos-panel-2)" }}>
-              <span className="text-xs text-white">{label}</span>
+              <span className="text-xs" style={{ color: "var(--pos-text)" }}>{label}</span>
               <Switch checked={!!defaults.features?.[key]} onCheckedChange={(v) => toggleFeature(key, v)} />
             </div>
           ))}
         </div>
         <div className="flex gap-2">
           <button data-testid="brand-save-defaults-btn" onClick={saveDefaults} disabled={saving}
-            className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white disabled:opacity-40"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+            className="pos-btn h-9 px-4 rounded-md text-xs font-bold disabled:opacity-40"
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             {saving ? "Saving…" : "Save defaults"}
           </button>
           <AlertDialog>
@@ -706,8 +706,8 @@ function RoyaltiesTab({ brand }) {
             {loading && <tr><td colSpan={4} className="text-center py-6" style={{ color: "var(--pos-muted)" }}>Loading…</td></tr>}
             {!loading && rows.map((r) => (
               <tr key={r.tenant_id} data-testid={`royalty-row-${r.tenant_id}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
-                <td className="py-2 text-white">{r.store_name}</td>
-                <td className="py-2 text-right tabular-nums text-white">₹{r.sales.toFixed(2)}</td>
+                <td className="py-2" style={{ color: "var(--pos-text)" }}>{r.store_name}</td>
+                <td className="py-2 text-right tabular-nums" style={{ color: "var(--pos-text)" }}>₹{r.sales.toFixed(2)}</td>
                 <td className="py-2 text-right tabular-nums" style={{ color: "var(--pos-muted)" }}>{r.royalty_percent}%</td>
                 <td className="py-2 text-right tabular-nums font-bold" style={{ color: "var(--pos-accent)" }}>₹{r.owed.toFixed(2)}</td>
               </tr>
@@ -717,15 +717,15 @@ function RoyaltiesTab({ brand }) {
       </Card>
 
       <Card testid="brand-invoices-card">
-        <div className="text-sm font-bold text-white mb-1 flex items-center gap-2"><FileText className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Royalty invoices</div>
+        <div className="text-sm font-bold mb-1 flex items-center gap-2" style={{ color: "var(--pos-text)" }}><FileText className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Royalty invoices</div>
         <p className="text-xs mb-3" style={{ color: "var(--pos-muted)" }}>Generate a tracked invoice per store for a period, then mark it paid as royalties come in.</p>
         <div className="flex items-end gap-2 mb-3 flex-wrap">
           <label><span className="text-[10px] uppercase" style={{ color: "var(--pos-muted)" }}>From</span>
             <Input type="date" value={range.start} onChange={(e) => setRange((r) => ({ ...r, start: e.target.value }))}
-              className="h-9 text-white text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} /></label>
+              className="h-9 text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} /></label>
           <label><span className="text-[10px] uppercase" style={{ color: "var(--pos-muted)" }}>To</span>
             <Input type="date" value={range.end} onChange={(e) => setRange((r) => ({ ...r, end: e.target.value }))}
-              className="h-9 text-white text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} /></label>
+              className="h-9 text-sm mt-1" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} /></label>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <button data-testid="brand-generate-invoices-btn" disabled={generating}
@@ -752,7 +752,7 @@ function RoyaltiesTab({ brand }) {
           {invoices.map((inv) => (
             <div key={inv.id} data-testid={`brand-invoice-${inv.id}`} className="flex items-center justify-between gap-2 rounded-lg px-3 py-2" style={{ background: "var(--pos-panel-2)" }}>
               <div className="text-xs min-w-0">
-                <div className="text-white font-bold truncate">{inv.store_name}</div>
+                <div className="font-bold truncate" style={{ color: "var(--pos-text)" }}>{inv.store_name}</div>
                 <div style={{ color: "var(--pos-muted)" }}>{inv.period_start.slice(0, 10)} → {inv.period_end.slice(0, 10)} · ₹{inv.sales.toFixed(2)} × {inv.royalty_percent}%</div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -760,7 +760,7 @@ function RoyaltiesTab({ brand }) {
                 <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ color: INVOICE_STATUS_COLOR[inv.status], border: `1px solid ${INVOICE_STATUS_COLOR[inv.status]}` }}>{inv.status}</span>
                 <button data-testid={`brand-invoice-download-${inv.id}`} onClick={() => downloadInvoice(inv.id)}
                   className="pos-btn h-7 w-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} title="Download PDF">
-                  <Download className="w-3.5 h-3.5 text-white" />
+                  <Download className="w-3.5 h-3.5" style={{ color: "var(--pos-text)" }} />
                 </button>
                 {inv.status === "pending" && (
                   <button data-testid={`brand-invoice-mark-paid-${inv.id}`} onClick={() => setInvoiceStatus(inv.id, "paid")}
@@ -821,25 +821,25 @@ function MarketingTab({ brand }) {
   return (
     <div className="space-y-4 max-w-2xl">
       <Card testid="brand-assets-card">
-        <div className="text-sm font-bold text-white mb-1 flex items-center gap-2"><ImageIcon className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Shared asset library</div>
+        <div className="text-sm font-bold mb-1 flex items-center gap-2" style={{ color: "var(--pos-text)" }}><ImageIcon className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Shared asset library</div>
         <p className="text-xs mb-3" style={{ color: "var(--pos-muted)" }}>Logos, promo images, and ad copy any store's staff can reuse.</p>
         <form onSubmit={addAsset} className="flex gap-2 mb-3 flex-wrap">
           <select value={form.kind} onChange={(e) => setForm((f) => ({ ...f, kind: e.target.value }))}
-            className="h-9 rounded-md px-2 text-xs text-white" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+            className="h-9 rounded-md px-2 text-xs" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             <option value="text">Text</option>
             <option value="image">Image URL</option>
           </select>
           <Input placeholder="Title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            className="h-9 text-white text-sm flex-1 min-w-[120px]" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-9 text-sm flex-1 min-w-[120px]" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <Input placeholder={form.kind === "image" ? "https://…" : "Promo copy"} value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-            className="h-9 text-white text-sm flex-[2] min-w-[160px]" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-9 text-sm flex-[2] min-w-[160px]" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <button type="submit" className="pos-btn h-9 px-3 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Add</button>
         </form>
         <div className="space-y-2">
           {assets.map((a) => (
             <div key={a.id} data-testid={`brand-asset-${a.id}`} className="flex items-center justify-between gap-2 rounded-lg p-2.5" style={{ background: "var(--pos-panel-2)" }}>
               <div className="min-w-0">
-                <div className="text-xs font-bold text-white">{a.title} <span style={{ color: "var(--pos-muted)" }}>· {a.kind}</span></div>
+                <div className="text-xs font-bold" style={{ color: "var(--pos-text)" }}>{a.title} <span style={{ color: "var(--pos-muted)" }}>· {a.kind}</span></div>
                 <div className="text-xs truncate" style={{ color: "var(--pos-muted)" }}>{a.content}</div>
               </div>
               <button onClick={() => removeAsset(a.id)} className="pos-btn p-1.5 rounded-md shrink-0" style={{ color: "#f87171" }}><Trash2 className="w-3.5 h-3.5" /></button>
@@ -850,12 +850,12 @@ function MarketingTab({ brand }) {
       </Card>
 
       <Card testid="brand-sms-card">
-        <div className="text-sm font-bold text-white mb-1 flex items-center gap-2"><MessageSquare className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Coordinated SMS campaign</div>
+        <div className="text-sm font-bold mb-1 flex items-center gap-2" style={{ color: "var(--pos-text)" }}><MessageSquare className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> Coordinated SMS campaign</div>
         <p className="text-xs mb-3" style={{ color: "var(--pos-muted)" }}>
           Sends to every customer with a phone number across every store in the brand (capped at 200/store). Use <code>{"{name}"}</code> to personalise.
         </p>
         <Textarea value={smsBody} onChange={(e) => setSmsBody(e.target.value)} rows={3} placeholder="Hi {name}, this weekend only…"
-          className="text-white text-sm mb-3" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+          className="text-sm mb-3" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <button data-testid="brand-send-campaign-btn" disabled={sending || !smsBody.trim()}

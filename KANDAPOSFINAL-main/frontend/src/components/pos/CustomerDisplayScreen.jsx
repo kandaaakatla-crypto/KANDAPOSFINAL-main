@@ -34,7 +34,7 @@ export default function CustomerDisplayScreen() {
 
   const OrderChip = ({ o }) => (
     <div data-testid={`display-order-${o.number}`} className="rounded-2xl px-6 py-4 text-center" style={{ background: "var(--pos-panel)", border: "2px solid var(--pos-border)" }}>
-      <div className="text-4xl font-black text-white tabular-nums">#{o.number}</div>
+      <div className="text-4xl font-black tabular-nums" style={{ color: "var(--pos-text)" }}>#{o.number}</div>
       {o.table != null ? (
         <div className="text-sm mt-1 uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Table {o.table}</div>
       ) : (
@@ -50,7 +50,7 @@ export default function CustomerDisplayScreen() {
           <Pizza className="w-6 h-6 text-white" />
         </div>
         <div>
-          <div className="text-2xl font-bold text-white tracking-tight">{data?.tenant?.name || "Kanda POS"}</div>
+          <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>{data?.tenant?.name || "Kanda POS"}</div>
           <div className="text-xs uppercase tracking-[0.3em]" style={{ color: "var(--pos-muted)" }}>Order status</div>
         </div>
       </div>

@@ -33,7 +33,7 @@ export default function OwnerLogin() {
           </div>
           <div>
             <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Kanda POS</div>
-            <div className="text-xl font-bold text-white">Owner Portal</div>
+            <div className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Owner Portal</div>
           </div>
         </div>
 
@@ -43,7 +43,7 @@ export default function OwnerLogin() {
             <div className="relative mt-1">
               <Mail className="w-4 h-4 absolute left-3 top-3.5" style={{ color: "var(--pos-muted)" }} />
               <Input data-testid="owner-email" type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
-                className="pl-9 h-11 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                className="pl-9 h-11" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             </div>
           </label>
           <label className="block">
@@ -51,7 +51,7 @@ export default function OwnerLogin() {
             <div className="relative mt-1">
               <Lock className="w-4 h-4 absolute left-3 top-3.5" style={{ color: "var(--pos-muted)" }} />
               <Input data-testid="owner-password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                className="pl-9 h-11 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                className="pl-9 h-11" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             </div>
           </label>
           <button data-testid="owner-login-submit" type="submit" disabled={busy}

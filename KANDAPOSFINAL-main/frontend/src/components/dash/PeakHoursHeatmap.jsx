@@ -58,18 +58,18 @@ export default function PeakHoursHeatmap({ days = 28 }) {
       style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
       <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
         <div>
-          <div className="text-sm font-bold text-white flex items-center gap-2">
+          <div className="text-sm font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <Flame className="w-4 h-4" style={{ color: "#f97316" }} /> Peak hours
           </div>
           <div className="text-[10px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
             Revenue intensity across the last {days} days (IST). {hasData && peak.day >= 0 && (
-              <>Busiest: <span className="text-white font-bold">{DOW[peak.day]} · {String(peak.hour).padStart(2, "0")}:00 IST</span></>
+              <>Busiest: <span className="font-bold" style={{ color: "var(--pos-text)" }}>{DOW[peak.day]} · {String(peak.hour).padStart(2, "0")}:00 IST</span></>
             )}
           </div>
         </div>
         <button data-testid="heatmap-refresh" onClick={load} disabled={loading}
-          className="pos-btn text-[11px] px-2 py-1 rounded flex items-center gap-1 text-white"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+          className="pos-btn text-[11px] px-2 py-1 rounded flex items-center gap-1"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} /> Refresh
         </button>
       </div>
@@ -114,7 +114,7 @@ export default function PeakHoursHeatmap({ days = 28 }) {
                           title={`${dow} ${String(hi).padStart(2, "0")}:00 IST — ₹${v.toFixed(0)}`}
                           style={{ background: cellColor(v, max), border: "1px solid rgba(255,255,255,0.02)" }} />
                       ))}
-                      <td className="pl-2 text-right text-white">₹{weekTotals[di].toFixed(0)}</td>
+                      <td className="pl-2 text-right" style={{ color: "var(--pos-text)" }}>₹{weekTotals[di].toFixed(0)}</td>
                     </tr>
                   ))}
                   <tr>
@@ -148,11 +148,11 @@ export default function PeakHoursHeatmap({ days = 28 }) {
                   <>
                     <div className="p-2.5 rounded" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                       <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Best weekday</div>
-                      <div className="text-sm font-bold text-white mt-0.5">{DOW[busiestDay]} · ₹{weekTotals[busiestDay].toFixed(0)}</div>
+                      <div className="text-sm font-bold mt-0.5" style={{ color: "var(--pos-text)" }}>{DOW[busiestDay]} · ₹{weekTotals[busiestDay].toFixed(0)}</div>
                     </div>
                     <div className="p-2.5 rounded" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                       <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Peak hour (IST)</div>
-                      <div className="text-sm font-bold text-white mt-0.5">{String(busiestHour).padStart(2, "0")}:00 · ₹{hourTotals[busiestHour].toFixed(0)}</div>
+                      <div className="text-sm font-bold mt-0.5" style={{ color: "var(--pos-text)" }}>{String(busiestHour).padStart(2, "0")}:00 · ₹{hourTotals[busiestHour].toFixed(0)}</div>
                     </div>
                   </>
                 );

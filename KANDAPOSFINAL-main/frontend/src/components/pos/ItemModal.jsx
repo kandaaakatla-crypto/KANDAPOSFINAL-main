@@ -71,7 +71,7 @@ export default function ItemModal({ item, menuItems = [], onClose, onAdd }) {
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto pos-scroll border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="item-modal">
         <DialogHeader>
-          <DialogTitle className="text-white">{item.name}</DialogTitle>
+          <DialogTitle style={{ color: "var(--pos-text)" }}>{item.name}</DialogTitle>
         </DialogHeader>
         {item.desc && <p className="text-sm -mt-2" style={{ color: "var(--pos-muted)" }}>{item.desc}</p>}
 
@@ -143,17 +143,17 @@ export default function ItemModal({ item, menuItems = [], onClose, onAdd }) {
         <div>
           <div className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: "var(--pos-muted)" }}>Special Instructions</div>
           <Input data-testid="item-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. well done, cut in squares, allergy info..."
-            className="h-10 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
         </div>
 
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-3">
             <button data-testid="qty-minus" onClick={() => setQty((q) => Math.max(1, q - 1))} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-              <Minus className="w-4 h-4 text-white" />
+              <Minus className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
             </button>
-            <span className="text-xl font-bold text-white w-8 text-center" data-testid="qty-value">{qty}</span>
+            <span className="text-xl font-bold w-8 text-center" style={{ color: "var(--pos-text)" }} data-testid="qty-value">{qty}</span>
             <button data-testid="qty-plus" onClick={() => setQty((q) => q + 1)} className="pos-btn w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-              <Plus className="w-4 h-4 text-white" />
+              <Plus className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
             </button>
           </div>
           <button data-testid="add-to-order-btn" onClick={add} disabled={!dealComplete}

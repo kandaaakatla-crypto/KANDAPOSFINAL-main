@@ -17,7 +17,7 @@ const Card = ({ order, mine, busy, onClaim, onOnTheWay, onCash, onDelivered }) =
       style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
       <div className="flex items-center justify-between mb-2">
         <div>
-          <div className="text-lg font-extrabold text-white tabular-nums">#{order.number}</div>
+          <div className="text-lg font-extrabold tabular-nums" style={{ color: "var(--pos-text)" }}>#{order.number}</div>
           <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>
             ₹{order.total} · {order.payment} · {order.source || "in-store"}
           </div>
@@ -28,7 +28,7 @@ const Card = ({ order, mine, busy, onClaim, onOnTheWay, onCash, onDelivered }) =
         }}>{order.status}</span>
       </div>
 
-      <div className="text-base font-bold text-white">{c.name}</div>
+      <div className="text-base font-bold" style={{ color: "var(--pos-text)" }}>{c.name}</div>
       {telHref && (
         <a data-testid={`driver-tel-${order.id}`} href={telHref}
           className="mt-1 inline-flex items-center gap-1.5 text-sm" style={{ color: "var(--pos-accent)" }}>
@@ -145,7 +145,7 @@ export default function DriverScreen() {
         <div className="flex items-center gap-2">
           <Bike className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
           <div>
-            <div className="text-sm font-bold text-white">{driverName}</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>{driverName}</div>
             <div className="text-[10px]" style={{ color: "var(--pos-muted)" }}>Driver · {mine.length} active</div>
           </div>
         </div>
@@ -192,14 +192,14 @@ export default function DriverScreen() {
       </main>
 
       {busy && !orders.length && (
-        <div className="fixed inset-0 flex items-center justify-center text-white">
+        <div className="fixed inset-0 flex items-center justify-center" style={{ color: "var(--pos-text)" }}>
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
       )}
 
       <Dialog open={rotaOpen} onOpenChange={setRotaOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">My Rota</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>My Rota</DialogTitle></DialogHeader>
           <MyRotaTab weekStart={weekStart} weekEnd={weekEnd} />
         </DialogContent>
       </Dialog>

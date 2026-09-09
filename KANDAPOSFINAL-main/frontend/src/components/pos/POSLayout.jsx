@@ -131,7 +131,7 @@ export default function POSLayout() {
               <div className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--pos-accent)" }}>
                 {businessType === "retail" ? <Store className="w-4 h-4 text-white" /> : <Pizza className="w-4 h-4 text-white" />}
               </div>
-              <span className="hidden md:inline font-bold text-white tracking-tight">KANDA POS</span>
+              <span className="hidden md:inline font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA POS</span>
               <LocationSwitcher storeName="Store" isManager={staffUser?.role === "Manager"} />
             </div>
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
@@ -157,7 +157,7 @@ export default function POSLayout() {
               <div className="flex items-center gap-2" data-testid="header-staff">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: "var(--pos-blue)" }}>{staffUser?.initials}</div>
                 <div className="hidden sm:block leading-tight">
-                  <div className="text-sm font-medium text-white truncate max-w-[120px]">{staffUser?.name}</div>
+                  <div className="text-sm font-medium truncate max-w-[120px]" style={{ color: "var(--pos-text)" }}>{staffUser?.name}</div>
                   <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{staffUser?.role}</div>
                 </div>
               </div>
@@ -197,7 +197,7 @@ export default function POSLayout() {
         <SheetContent side="right" className="w-[280px] p-0 border-l" data-testid="mobile-more-sheet"
           style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
           <div className="p-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <span className="font-bold text-white">More</span>
+            <span className="font-bold" style={{ color: "var(--pos-text)" }}>More</span>
             <button data-testid="mobile-more-close" onClick={() => setMoreOpen(false)} className="pos-btn p-1 rounded" style={{ color: "var(--pos-muted)" }}>
               <X className="w-5 h-5" />
             </button>

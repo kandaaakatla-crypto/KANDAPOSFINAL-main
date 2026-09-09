@@ -121,7 +121,7 @@ export default function DashSchedules() {
   return (
     <div className="p-6 space-y-6" data-testid="dash-schedules">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
           <Clock className="w-6 h-6" style={{ color: "#7dd3fc" }} />
           Schedules
         </h1>
@@ -134,7 +134,7 @@ export default function DashSchedules() {
         {/* List */}
         <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">All schedules</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>All schedules</div>
           </div>
           <div className="p-5">
             {loading && <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
@@ -147,7 +147,7 @@ export default function DashSchedules() {
                   style={{ background: editingId === s.id ? "var(--pos-bg)" : "var(--pos-panel-2)", border: editingId === s.id ? "1px solid var(--pos-accent)" : "1px solid transparent" }}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-white font-bold">{s.name}</span>
+                      <span className="font-bold" style={{ color: "var(--pos-text)" }}>{s.name}</span>
                       <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)" }}>
                         {s.start_time}–{s.end_time}
                       </span>
@@ -193,13 +193,13 @@ export default function DashSchedules() {
         {/* Create / edit */}
         <div className="rounded-xl overflow-hidden h-fit" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white">{editingId ? "Edit schedule" : "New schedule"}</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>{editingId ? "Edit schedule" : "New schedule"}</div>
             {editingId && <button onClick={startNew} className="text-[11px]" style={{ color: "var(--pos-accent)" }}>+ New instead</button>}
           </div>
           <div className="p-5 space-y-3">
             <Field label="Name">
               <input data-testid="schedule-form-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Happy Hour" className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                placeholder="Happy Hour" className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
             </Field>
 
             <Field label="Days">
@@ -217,17 +217,17 @@ export default function DashSchedules() {
 
             <div className="grid grid-cols-2 gap-2">
               <Field label="Start"><input data-testid="schedule-form-start" type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} /></Field>
+                className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} /></Field>
               <Field label="End"><input data-testid="schedule-form-end" type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                className="w-full rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} /></Field>
+                className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} /></Field>
             </div>
 
-            <label className="flex items-center gap-2 text-xs text-white">
+            <label className="flex items-center gap-2 text-xs" style={{ color: "var(--pos-text)" }}>
               <input type="checkbox" data-testid="schedule-form-active" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
               Active
             </label>
 
-            <label className="flex items-center gap-2 text-xs text-white">
+            <label className="flex items-center gap-2 text-xs" style={{ color: "var(--pos-text)" }}>
               <input type="checkbox" data-testid="schedule-form-restrict" checked={form.restrict_availability} onChange={(e) => setForm({ ...form, restrict_availability: e.target.checked })} />
               Day-part menu — hide members outside the window
             </label>
@@ -244,11 +244,11 @@ export default function DashSchedules() {
               </div>
               {form.pricing_mode === "percent" && (
                 <input data-testid="schedule-form-discount" type="number" min={0} max={100} value={form.discount_pct} onChange={(e) => setForm({ ...form, discount_pct: e.target.value })}
-                  placeholder="Discount % — e.g. 20" className="w-full mt-2 rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  placeholder="Discount % — e.g. 20" className="w-full mt-2 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               )}
               {form.pricing_mode === "fixed" && (
                 <input data-testid="schedule-form-fixed-price" type="number" min={0} value={form.fixed_price} onChange={(e) => setForm({ ...form, fixed_price: e.target.value })}
-                  placeholder="Flat ₹ price — e.g. 99" className="w-full mt-2 rounded px-2 py-1.5 text-sm text-white outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                  placeholder="Flat ₹ price — e.g. 99" className="w-full mt-2 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               )}
               {form.pricing_mode === "fixed" && (
                 <div className="text-[10px] mt-1" style={{ color: "var(--pos-muted)" }}>Applied to every member item (and every pizza size / variant) — replaces the price outright, not a discount off it.</div>
@@ -258,7 +258,7 @@ export default function DashSchedules() {
             <Field label="Categories included">
               <div className="max-h-32 overflow-y-auto pos-scroll space-y-1 rounded p-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 {cats.map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 text-xs text-white" data-testid={`schedule-form-cat-${c.id}`}>
+                  <label key={c.id} className="flex items-center gap-2 text-xs" style={{ color: "var(--pos-text)" }} data-testid={`schedule-form-cat-${c.id}`}>
                     <input type="checkbox" checked={form.category_ids.includes(c.id)} onChange={() => toggleCategory(c.id)} />
                     {c.name}
                   </label>
@@ -269,7 +269,7 @@ export default function DashSchedules() {
             <Field label="Individual items included">
               <div className="max-h-40 overflow-y-auto pos-scroll space-y-1 rounded p-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 {items.filter((it) => !form.category_ids.includes(it.catId)).map((it) => (
-                  <label key={it.id} className="flex items-center gap-2 text-xs text-white" data-testid={`schedule-form-item-${it.id}`}>
+                  <label key={it.id} className="flex items-center gap-2 text-xs" style={{ color: "var(--pos-text)" }} data-testid={`schedule-form-item-${it.id}`}>
                     <input type="checkbox" checked={form.item_ids.includes(it.id)} onChange={() => toggleItem(it.id)} />
                     {it.name}
                   </label>

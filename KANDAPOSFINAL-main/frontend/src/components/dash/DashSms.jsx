@@ -76,7 +76,7 @@ export default function DashSms() {
   return (
     <div className="p-6 space-y-6" data-testid="dash-sms">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
           <MessageSquare className="w-6 h-6" style={{ color: "#a78bfa" }} />
           Customer SMS
         </h1>
@@ -89,12 +89,12 @@ export default function DashSms() {
         {/* Recipients + composer */}
         <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white flex items-center gap-2">
+            <div className="text-sm font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
               <Users className="w-4 h-4" /> Recipients ({totalRecipients})
             </div>
             <button data-testid="sms-select-all" onClick={toggleAll}
-              className="pos-btn text-xs px-2.5 py-1 rounded-full text-white"
-              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+              className="pos-btn text-xs px-2.5 py-1 rounded-full"
+              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
               {selected.size === filtered.length && filtered.length > 0 ? "Clear all" : "Select all visible"}
             </button>
           </div>
@@ -105,8 +105,8 @@ export default function DashSms() {
               <input data-testid="sms-search"
                 value={query} onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search customers by name or phone…"
-                className="w-full pl-9 rounded-lg px-3 py-2 text-sm text-white outline-none"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                className="w-full pl-9 rounded-lg px-3 py-2 text-sm outline-none"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
             </div>
 
             <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
@@ -116,7 +116,7 @@ export default function DashSms() {
                   style={{ background: selected.has(c.id) ? "rgba(124,58,237,0.15)" : "transparent" }}>
                   <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggle(c.id)}
                     disabled={!c.phone} className="accent-purple-500" />
-                  <span className="text-white flex-1 truncate">{c.name}</span>
+                  <span className="flex-1 truncate" style={{ color: "var(--pos-text)" }}>{c.name}</span>
                   <span className="tabular-nums" style={{ color: "var(--pos-muted)" }}>{c.phone || "no phone"}</span>
                 </label>
               ))}
@@ -132,8 +132,8 @@ export default function DashSms() {
               <input data-testid="sms-extra-phones"
                 value={extraPhones} onChange={(e) => setExtraPhones(e.target.value)}
                 placeholder="+91…, +91…"
-                className="w-full mt-1 rounded px-3 py-2 text-sm text-white outline-none"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                className="w-full mt-1 rounded px-3 py-2 text-sm outline-none"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               <div className="text-[10px] mt-1" style={{ color: "var(--pos-muted)" }}>
                 Comma- or space-separated. Not saved as customers.
               </div>
@@ -147,8 +147,8 @@ export default function DashSms() {
                 value={body} onChange={(e) => setBody(e.target.value)}
                 rows={4} maxLength={1000}
                 placeholder="Hi {name}, we have a special offer today…"
-                className="w-full mt-1 rounded-lg px-3 py-2 text-sm text-white outline-none resize-none"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                className="w-full mt-1 rounded-lg px-3 py-2 text-sm outline-none resize-none"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               <div className="text-[10px] mt-1" style={{ color: "var(--pos-muted)" }}>
                 Tip: use <code>{"{name}"}</code> to personalise with each customer&apos;s first name.
               </div>
@@ -168,12 +168,12 @@ export default function DashSms() {
         {/* History */}
         <div className="rounded-xl overflow-hidden h-fit" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold text-white flex items-center gap-2">
+            <div className="text-sm font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
               <History className="w-4 h-4" /> Recent SMS
             </div>
             <button data-testid="sms-refresh-history" onClick={loadHistory}
-              className="pos-btn text-xs px-2 py-1 rounded text-white"
-              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+              className="pos-btn text-xs px-2 py-1 rounded"
+              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
               Refresh
             </button>
           </div>
@@ -186,12 +186,12 @@ export default function DashSms() {
               <div key={s.id} className="rounded p-2 text-xs" data-testid={`sms-log-${s.id}`}
                 style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 <div className="flex items-center justify-between">
-                  <span className="text-white tabular-nums">{s.to}</span>
+                  <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>{s.to}</span>
                   {s.status === "sent"
                     ? <span className="flex items-center gap-1 text-emerald-400"><Check className="w-3 h-3" /> sent</span>
                     : <span className="flex items-center gap-1 text-red-400"><X className="w-3 h-3" /> {s.status}</span>}
                 </div>
-                <div className="mt-1 text-white line-clamp-2">{s.body}</div>
+                <div className="mt-1 line-clamp-2" style={{ color: "var(--pos-text)" }}>{s.body}</div>
                 {s.error && <div className="mt-1 text-[10px] text-red-400">{s.error}</div>}
                 <div className="mt-1 text-[10px]" style={{ color: "var(--pos-muted)" }}>
                   {s.sent_by} · {new Date(s.sent_at).toLocaleString()}

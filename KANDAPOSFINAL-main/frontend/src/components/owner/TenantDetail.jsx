@@ -20,7 +20,7 @@ export default function TenantDetail() {
   }, [id]);
 
   if (!data) {
-    return <div className="flex items-center gap-2 text-white"><Loader2 className="w-5 h-5 animate-spin" /> Loading tenant…</div>;
+    return <div className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Loader2 className="w-5 h-5 animate-spin" /> Loading tenant…</div>;
   }
   const { tenant, kpis, staff } = data;
 
@@ -41,7 +41,7 @@ export default function TenantDetail() {
 
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white">{tenant.name}</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>{tenant.name}</h1>
           <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
             <code>{tenant.slug}.kanda.app</code> · {tenant.contact_email || "—"} · {tenant.plan}
           </div>
@@ -67,7 +67,7 @@ export default function TenantDetail() {
               <span className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{t.label}</span>
               <t.icon className="w-3.5 h-3.5" style={{ color: t.color }} />
             </div>
-            <div className="text-lg font-bold text-white tabular-nums mt-2">{t.value}</div>
+            <div className="text-lg font-bold tabular-nums mt-2" style={{ color: "var(--pos-text)" }}>{t.value}</div>
           </div>
         ))}
       </div>
@@ -77,12 +77,12 @@ export default function TenantDetail() {
       <KdsTokenCard tenantId={tenant.id} />
 
       <div className="rounded-xl" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-        <div className="px-4 py-3 text-sm font-semibold text-white" style={{ borderBottom: "1px solid var(--pos-border)" }}>Staff ({staff.length})</div>
+        <div className="px-4 py-3 text-sm font-semibold" style={{ borderBottom: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>Staff ({staff.length})</div>
         <div className="divide-y" style={{ borderColor: "var(--pos-border)" }}>
           {staff.map((s) => (
             <div key={s.id} className="px-4 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
               <div>
-                <div className="text-sm font-semibold text-white">{s.name}</div>
+                <div className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{s.name}</div>
                 <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{s.role} · {s.initials}</div>
               </div>
               <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{s.id}</div>

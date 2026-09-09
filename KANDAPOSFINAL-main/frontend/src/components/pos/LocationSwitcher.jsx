@@ -89,7 +89,7 @@ export default function LocationSwitcher({ storeName, isManager }) {
           <div className="text-[10px] uppercase tracking-wider leading-none" style={{ color: "var(--pos-muted)" }}>
             {single ? "Store" : "Active location"}
           </div>
-          <div className="text-sm font-bold text-white leading-tight" data-testid="location-active-name">
+          <div className="text-sm font-bold leading-tight" style={{ color: "var(--pos-text)" }} data-testid="location-active-name">
             {activeLoc?.name || storeName || "Store"}
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function LocationSwitcher({ storeName, isManager }) {
                     className="pos-btn flex-1 text-left rounded-md px-3 py-2"
                     style={{ background: l.id === active ? "var(--pos-panel-2)" : "transparent" }}>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-white">{l.name}</span>
+                      <span className="text-sm" style={{ color: "var(--pos-text)" }}>{l.name}</span>
                       {l.is_default && <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: "#0e2515", color: "#86efac" }}>Default</span>}
                     </div>
                     <div className="text-[10px]" style={{ color: "var(--pos-muted)" }}>{l.address || l.phone || "—"}</div>
@@ -161,19 +161,19 @@ export default function LocationSwitcher({ storeName, isManager }) {
 
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
         <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Add new location</DialogTitle></DialogHeader>
-          <Input data-testid="location-name-input" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-          <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Add new location</DialogTitle></DialogHeader>
+          <Input data-testid="location-name-input" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+          <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <div className="grid grid-cols-2 gap-2">
-            <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
-            <Input placeholder="Store #" value={form.store_number} onChange={(e) => setForm({ ...form, store_number: e.target.value })} className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+            <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            <Input placeholder="Store #" value={form.store_number} onChange={(e) => setForm({ ...form, store_number: e.target.value })} style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
           <div className="flex items-center justify-between rounded-md p-3" style={{ background: "var(--pos-panel-2)" }}>
-            <span className="text-sm text-white">Set as default</span>
+            <span className="text-sm" style={{ color: "var(--pos-text)" }}>Set as default</span>
             <Switch checked={form.is_default} onCheckedChange={(v) => setForm({ ...form, is_default: v })} />
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setNewOpen(false)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+            <button onClick={() => setNewOpen(false)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
             <button data-testid="location-save-btn" onClick={createLoc} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Create</button>
           </div>
         </DialogContent>

@@ -37,7 +37,7 @@ export default function WorkforceScreen() {
       <div className="p-5 pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">{isManager ? "Workforce" : "My Schedule"}</h1>
+            <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>{isManager ? "Workforce" : "My Schedule"}</h1>
             <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
               {isManager
                 ? "Timesheets, rota and currently-clocked-in staff."
@@ -46,21 +46,21 @@ export default function WorkforceScreen() {
           </div>
           <div className="flex items-center gap-2">
             <button data-testid="wf-prev-week" onClick={() => shiftWeek(-1)} className="pos-btn p-2 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
-              <ChevronLeft className="w-4 h-4 text-white" />
+              <ChevronLeft className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
             </button>
-            <div className="text-sm text-white tabular-nums px-3" data-testid="wf-week-label">
+            <div className="text-sm tabular-nums px-3" style={{ color: "var(--pos-text)" }} data-testid="wf-week-label">
               {weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – {new Date(weekEnd.getTime() - 86400000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
             </div>
             <button data-testid="wf-next-week" onClick={() => shiftWeek(1)} className="pos-btn p-2 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
-              <ChevronRight className="w-4 h-4 text-white" />
+              <ChevronRight className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
             </button>
           </div>
         </div>
         <div className="flex gap-2 mt-4">
           {tabs.map(([key, label]) => (
             <button key={key} data-testid={`wf-tab-${key}`} onClick={() => setTab(key)}
-              className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white"
-              style={{ background: tab === key ? "var(--pos-accent)" : "var(--pos-panel-2)" }}>{label}</button>
+              className="pos-btn h-9 px-4 rounded-md text-xs font-bold"
+              style={{ background: tab === key ? "var(--pos-accent)" : "var(--pos-panel-2)", color: tab === key ? "#fff" : "var(--pos-text)" }}>{label}</button>
           ))}
         </div>
       </div>
@@ -100,8 +100,8 @@ function TimesheetTab({ weekStart, weekEnd, apiBase }) {
   return (
     <div>
       <div className="flex justify-end mb-3">
-        <button data-testid="ts-export-csv" onClick={downloadCsv} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+        <button data-testid="ts-export-csv" onClick={downloadCsv} className="pos-btn h-9 px-4 rounded-md text-xs font-bold flex items-center gap-2"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           <Download className="w-4 h-4" /> Export CSV
         </button>
       </div>
@@ -117,7 +117,7 @@ function TimesheetTab({ weekStart, weekEnd, apiBase }) {
             <th className="text-right py-2 px-3 uppercase text-[11px] tracking-wider">Gross pay</th>
           </tr>
         </thead>
-        <tbody className="text-white">
+        <tbody style={{ color: "var(--pos-text)" }}>
           {loading && <tr><td colSpan={7} className="text-center py-8" style={{ color: "var(--pos-muted)" }}>Loading…</td></tr>}
           {!loading && rows.length === 0 && <tr><td colSpan={7} className="text-center py-8" style={{ color: "var(--pos-muted)" }}>No data for this week.</td></tr>}
           {rows.map((r) => (
@@ -140,16 +140,16 @@ function TimesheetTab({ weekStart, weekEnd, apiBase }) {
         {!loading && rows.length === 0 && <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>No data for this week.</div>}
         <div className="space-y-2">
           {rows.map((r) => (
-            <div key={r.user_id} data-testid={`ts-row-${r.user_id}`} className="rounded-lg p-3 text-white" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+            <div key={r.user_id} data-testid={`ts-row-${r.user_id}`} className="rounded-lg p-3" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
               <div className="flex items-center justify-between">
                 <div className="font-medium">{r.user_name}</div>
                 <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{r.role}</div>
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs mt-2" style={{ color: "var(--pos-muted)" }}>
-                <span>Days: <b className="text-white">{r.days_worked}</b></span>
-                <span>Hours: <b className="text-white">{r.total_hours.toFixed(2)}</b></span>
+                <span>Days: <b style={{ color: "var(--pos-text)" }}>{r.days_worked}</b></span>
+                <span>Hours: <b style={{ color: "var(--pos-text)" }}>{r.total_hours.toFixed(2)}</b></span>
                 <span>Overtime: <b style={{ color: r.overtime_hours > 0 ? "#fcd34d" : "var(--pos-muted)" }}>{r.overtime_hours.toFixed(2)}</b></span>
-                <span>Rate: <b className="text-white">₹{r.hourly_rate.toFixed(2)}</b></span>
+                <span>Rate: <b style={{ color: "var(--pos-text)" }}>₹{r.hourly_rate.toFixed(2)}</b></span>
               </div>
               <div className="text-right font-bold tabular-nums mt-2">₹{r.gross_pay.toFixed(2)}</div>
             </div>
@@ -271,12 +271,12 @@ function RotaTab({ weekStart, apiBase }) {
   return (
     <div>
       <div className="flex justify-end gap-2 mb-3">
-        <button data-testid="rota-copy-week-btn" onClick={copyLastWeek} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+        <button data-testid="rota-copy-week-btn" onClick={copyLastWeek} className="pos-btn h-9 px-4 rounded-md text-xs font-bold flex items-center gap-2"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           <CopyPlus className="w-4 h-4" /> Copy last week
         </button>
-        <button data-testid="rota-pdf-btn" onClick={downloadPdf} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+        <button data-testid="rota-pdf-btn" onClick={downloadPdf} className="pos-btn h-9 px-4 rounded-md text-xs font-bold flex items-center gap-2"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           <FileText className="w-4 h-4" /> Download PDF
         </button>
         <button data-testid="rota-publish-btn" onClick={publishWeek} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white flex items-center gap-2"
@@ -292,7 +292,7 @@ function RotaTab({ weekStart, apiBase }) {
               {days.map((d, i) => <th key={i} className="text-left py-2 px-2 uppercase text-[10px] tracking-wider">{fmtDay(d)}</th>)}
             </tr>
           </thead>
-          <tbody className="text-white">
+          <tbody style={{ color: "var(--pos-text)" }}>
             {staff.map((s) => (
               <tr key={s.id} data-testid={`rota-row-${s.id}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
                 <td className="py-2 px-2 sticky left-0 font-medium" style={{ background: "var(--pos-bg)" }}>
@@ -307,7 +307,7 @@ function RotaTab({ weekStart, apiBase }) {
                       {ofDay.map((sh) => (
                         <button key={sh.id} data-testid={`rota-shift-${sh.id}`} onClick={() => setEditing({ ...sh, start: sh.start.slice(0, 16), end: sh.end.slice(0, 16) })}
                           className="pos-btn block w-full text-left rounded-md px-2 py-1 mb-1"
-                          style={{ background: sh.published ? "#0e2515" : "#1c2438", border: "1px solid var(--pos-border)" }}>
+                          style={{ background: sh.published ? "#0e2515" : "#1c2438", border: "1px solid var(--pos-border)", color: "#fff" }}>
                           <div className="font-bold">{fmtTime(sh.start)}–{fmtTime(sh.end)}</div>
                           {sh.station && <div className="text-[10px]" style={{ color: "var(--pos-muted)" }}>{sh.station}</div>}
                         </button>
@@ -326,11 +326,11 @@ function RotaTab({ weekStart, apiBase }) {
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">{editing?.id ? "Edit shift" : "New shift"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>{editing?.id ? "Edit shift" : "New shift"}</DialogTitle></DialogHeader>
           {editing && (
             <div className="space-y-3">
               <Select value={editing.user_id} onValueChange={(v) => setEditing({ ...editing, user_id: v })}>
-                <SelectTrigger className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }}>
+                <SelectTrigger style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
                   <SelectValue placeholder="Employee" />
                 </SelectTrigger>
                 <SelectContent>{staff.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} · {s.role}</SelectItem>)}</SelectContent>
@@ -339,18 +339,18 @@ function RotaTab({ weekStart, apiBase }) {
                 <div>
                   <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Start</label>
                   <Input type="datetime-local" value={editing.start.slice(0, 16)} onChange={(e) => setEditing({ ...editing, start: e.target.value })}
-                    className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                    style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 </div>
                 <div>
                   <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>End</label>
                   <Input type="datetime-local" value={editing.end.slice(0, 16)} onChange={(e) => setEditing({ ...editing, end: e.target.value })}
-                    className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                    style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 </div>
               </div>
               <Input placeholder="Station (optional)" value={editing.station || ""} onChange={(e) => setEditing({ ...editing, station: e.target.value })}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               <Input placeholder="Notes" value={editing.notes || ""} onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
-                className="text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+                style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               <div className="flex justify-between pt-2">
                 {editing.id ? (
                   <button onClick={del} className="pos-btn h-9 px-4 rounded-md text-xs flex items-center gap-1" style={{ background: "#2b1212", color: "#fca5a5" }}>
@@ -358,7 +358,7 @@ function RotaTab({ weekStart, apiBase }) {
                   </button>
                 ) : <span />}
                 <div className="flex gap-2">
-                  <button onClick={() => setEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+                  <button onClick={() => setEditing(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
                   <button onClick={save} className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
                 </div>
               </div>
@@ -369,12 +369,12 @@ function RotaTab({ weekStart, apiBase }) {
 
       <Dialog open={!!confirmState} onOpenChange={(o) => !o && setConfirmState(null)}>
         <DialogContent className="max-w-sm border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
-          <DialogHeader><DialogTitle className="text-white">Are you sure?</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--pos-text)" }}>Are you sure?</DialogTitle></DialogHeader>
           {confirmState && (
             <div className="space-y-4">
               <p className="text-sm" style={{ color: "var(--pos-muted)" }}>{confirmState.message}</p>
               <div className="flex justify-end gap-2">
-                <button onClick={() => setConfirmState(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "white" }}>Cancel</button>
+                <button onClick={() => setConfirmState(null)} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
                 <button
                   onClick={async () => { const fn = confirmState.onConfirm; setConfirmState(null); await fn(); }}
                   className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Confirm</button>
@@ -410,7 +410,7 @@ function LiveTab() {
             </div>
           )}
           <div className="flex-1">
-            <div className="font-bold text-white">{p.user_name}</div>
+            <div className="font-bold" style={{ color: "var(--pos-text)" }}>{p.user_name}</div>
             <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{p.role} · since {fmtTime(p.since)}</div>
           </div>
         </div>
@@ -484,7 +484,7 @@ export function MyRotaTab({ weekStart, weekEnd }) {
               {todays.map((sh) => (
                 <div key={sh.id} className="flex items-center justify-between rounded-md px-3 py-2 mb-1"
                   style={{ background: "var(--pos-panel-2)" }}>
-                  <div className="font-bold text-white tabular-nums">{fmtTime(sh.start)} – {fmtTime(sh.end)}</div>
+                  <div className="font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>{fmtTime(sh.start)} – {fmtTime(sh.end)}</div>
                   <div className="text-xs text-right" style={{ color: "var(--pos-muted)" }}>
                     {sh.station ? <span>{sh.station} · </span> : null}
                     {sh.role}

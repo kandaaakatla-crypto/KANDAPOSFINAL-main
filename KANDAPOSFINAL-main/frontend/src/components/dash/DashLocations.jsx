@@ -79,7 +79,7 @@ export default function DashLocations() {
     <div className="p-6 space-y-4" data-testid="dash-locations">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Locations</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Locations</h1>
           <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
             {canManage
               ? "All stores under your brand. Add as many as your plan allows."
@@ -91,7 +91,7 @@ export default function DashLocations() {
             <div className="text-[11px] px-3 py-1.5 rounded-md flex items-center gap-1.5"
               style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
               <Sparkles className="w-3 h-3" style={{ color: "#a78bfa" }} />
-              <span className="text-white">
+              <span style={{ color: "var(--pos-text)" }}>
                 {planInfo.used}/{planInfo.total_slots} locations
               </span>
               <span style={{ color: "var(--pos-muted)" }}>
@@ -123,7 +123,7 @@ export default function DashLocations() {
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 min-w-0">
                 <MapPin className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} />
-                <span className="font-bold text-white truncate">{l.name}</span>
+                <span className="font-bold truncate" style={{ color: "var(--pos-text)" }}>{l.name}</span>
                 {l.is_default && <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: "#0e2515", color: "#86efac" }}>Default</span>}
                 {l.active === false && <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: "#2b1212", color: "#fca5a5" }}>Inactive</span>}
               </div>
@@ -174,7 +174,7 @@ export default function DashLocations() {
         <DialogContent data-testid="location-dialog" className="max-w-md border"
           style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
           <DialogHeader>
-            <DialogTitle className="text-white">
+            <DialogTitle style={{ color: "var(--pos-text)" }}>
               {editing?.id ? "Edit location" : "Add a new location"}
             </DialogTitle>
           </DialogHeader>
@@ -190,14 +190,14 @@ export default function DashLocations() {
                 <Field label="Store #" testid="loc-storenum"
                   value={editing.store_number || ""} onChange={(v) => setEditing({ ...editing, store_number: v })} />
               </div>
-              <label className="flex items-center gap-2 text-xs text-white cursor-pointer">
+              <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: "var(--pos-text)" }}>
                 <input type="checkbox" data-testid="loc-is-default" className="accent-purple-500"
                   checked={!!editing.is_default}
                   onChange={(e) => setEditing({ ...editing, is_default: e.target.checked })} />
                 Make this the default location
               </label>
               {editing.id && (
-                <label className="flex items-center gap-2 text-xs text-white cursor-pointer">
+                <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: "var(--pos-text)" }}>
                   <input type="checkbox" data-testid="loc-active" className="accent-emerald-500"
                     checked={editing.active !== false}
                     onChange={(e) => setEditing({ ...editing, active: e.target.checked })} />
@@ -206,8 +206,8 @@ export default function DashLocations() {
               )}
               <div className="flex justify-end gap-2 pt-2">
                 <button data-testid="loc-cancel" onClick={() => setEditing(null)}
-                  className="pos-btn px-3 py-2 rounded text-xs text-white"
-                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                  className="pos-btn px-3 py-2 rounded text-xs"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                   <X className="w-3 h-3 inline mr-1" /> Cancel
                 </button>
                 <button data-testid="loc-save" onClick={save}
@@ -233,8 +233,8 @@ function Field({ label, value, onChange, testid }) {
     <div>
       <label className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{label}</label>
       <input data-testid={testid} value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded px-3 py-2 text-sm text-white outline-none mt-1"
-        style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+        className="w-full rounded px-3 py-2 text-sm outline-none mt-1"
+        style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
     </div>
   );
 }

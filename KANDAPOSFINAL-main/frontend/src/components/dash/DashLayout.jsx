@@ -182,7 +182,7 @@ export default function DashLayout() {
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0" style={{ background: "var(--pos-accent)", color: "#1a0e04" }}>{initials}</div>
           {!navCollapsed && (
             <div className="min-w-0">
-              <div className="text-xs font-bold text-white truncate">{user.name}</div>
+              <div className="text-xs font-bold truncate" style={{ color: "var(--pos-text)" }}>{user.name}</div>
               <div className="text-[10px]" style={{ color: "var(--pos-muted)" }}>{roleLabel}</div>
             </div>
           )}
@@ -202,7 +202,7 @@ export default function DashLayout() {
         <header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0" style={{ background: "var(--pos-panel)", borderBottom: "1px solid var(--pos-border)" }}>
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
-            <div className="text-sm font-bold text-white">KANDA Dashboard</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>KANDA Dashboard</div>
           </div>
           <button data-testid="dash-mobile-menu-btn" onClick={() => setNavOpen(true)}
             className="pos-btn w-10 h-10 flex items-center justify-center rounded-lg" style={{ color: "var(--pos-muted)" }}>
@@ -217,7 +217,7 @@ export default function DashLayout() {
             <Building2 className="w-5 h-5 shrink-0" style={{ color: "var(--pos-accent)" }} />
             {!collapsed && (
               <div className="leading-tight min-w-0">
-                <div className="text-sm font-bold text-white">KANDA</div>
+                <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>KANDA</div>
                 <div className="text-[10px] tracking-wider uppercase" style={{ color: "var(--pos-muted)" }}>Dashboard</div>
               </div>
             )}
@@ -245,7 +245,7 @@ export default function DashLayout() {
             <div className="p-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--pos-border)" }}>
               <Building2 className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
               <div className="leading-tight">
-                <div className="text-sm font-bold text-white">KANDA</div>
+                <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>KANDA</div>
                 <div className="text-[10px] tracking-wider uppercase" style={{ color: "var(--pos-muted)" }}>Dashboard</div>
               </div>
             </div>

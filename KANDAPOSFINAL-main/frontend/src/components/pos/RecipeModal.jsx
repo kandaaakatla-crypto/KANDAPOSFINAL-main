@@ -84,7 +84,7 @@ export default function RecipeModal({ item, open, onClose }) {
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-lg border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="recipe-modal">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2"><ChefHat className="w-4 h-4" /> Recipe — {item.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><ChefHat className="w-4 h-4" /> Recipe — {item.name}</DialogTitle>
         </DialogHeader>
 
         {item.isPizza && (
@@ -116,13 +116,13 @@ export default function RecipeModal({ item, open, onClose }) {
               <div key={idx} data-testid={`recipe-ingredient-${idx}`} className="flex items-center gap-2 rounded-md p-2"
                 style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white truncate">{inv?.name || ing.inventory_id}</div>
+                  <div className="text-sm truncate" style={{ color: "var(--pos-text)" }}>{inv?.name || ing.inventory_id}</div>
                   <div className="text-[10px]" style={{ color: "var(--pos-muted)" }}>
                     {inv ? `stock ${inv.stock}${inv.unit}` : "missing"}
                   </div>
                 </div>
                 <Input type="number" step="0.1" value={ing.qty} onChange={(e) => updateQty(idx, e.target.value)}
-                  className="w-20 h-9 text-white text-right" style={{ background: "var(--pos-bg)", borderColor: "var(--pos-border)" }} />
+                  className="w-20 h-9 text-right" style={{ background: "var(--pos-bg)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 <span className="text-[11px] w-8" style={{ color: "var(--pos-muted)" }}>{inv?.unit || ""}</span>
                 <button onClick={() => removeIngredient(idx)} className="pos-btn h-8 w-8 rounded-md flex items-center justify-center"
                   style={{ background: "var(--pos-panel)", color: "#fca5a5" }}>
@@ -135,8 +135,8 @@ export default function RecipeModal({ item, open, onClose }) {
 
         <div className="flex gap-2 pt-3" style={{ borderTop: "1px solid var(--pos-border)" }}>
           <select data-testid="recipe-ingredient-picker" value={picker} onChange={(e) => setPicker(e.target.value)}
-            className="flex-1 h-10 px-3 rounded-md text-sm text-white"
-            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+            className="flex-1 h-10 px-3 rounded-md text-sm"
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             <option value="">Add ingredient…</option>
             {inventory.map((i) => (
               <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>

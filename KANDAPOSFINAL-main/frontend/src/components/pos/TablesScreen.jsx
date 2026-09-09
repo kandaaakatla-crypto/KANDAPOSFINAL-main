@@ -56,7 +56,7 @@ export default function TablesScreen() {
   return (
     <div className="h-full flex flex-col p-4 gap-4" data-testid="tables-screen">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-xl font-bold text-white">Table Plan</h2>
+        <h2 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Table Plan</h2>
         <div className="flex items-center gap-3 flex-wrap">
           {Object.entries(STATUS_STYLE).map(([k, s]) => (
             <span key={k} className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--pos-muted)" }}>
@@ -145,7 +145,7 @@ export default function TablesScreen() {
 
         {tables.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-sm" style={{ color: "var(--pos-muted)" }}>
-            No tables yet. Click <b className="text-white mx-1">Edit layout</b> to add your first one.
+            No tables yet. Click <b className="mx-1" style={{ color: "var(--pos-text)" }}>Edit layout</b> to add your first one.
           </div>
         )}
       </div>

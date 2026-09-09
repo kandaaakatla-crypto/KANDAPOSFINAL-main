@@ -24,12 +24,12 @@ export default function OwnerDashboard() {
     return () => { cancel = true; };
   }, []);
 
-  if (busy) return <div className="flex items-center gap-2 text-white"><Loader2 className="w-5 h-5 animate-spin" /> Loading platform metrics…</div>;
+  if (busy) return <div className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}><Loader2 className="w-5 h-5 animate-spin" /> Loading platform metrics…</div>;
 
   return (
     <div data-testid="owner-dashboard" className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Platform overview</h1>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Platform overview</h1>
         <div className="text-xs px-2 py-1 rounded-full" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
           Live
         </div>
@@ -44,7 +44,7 @@ export default function OwnerDashboard() {
                 <t.icon className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-white tabular-nums mt-3">{t.value}</div>
+            <div className="text-2xl font-bold tabular-nums mt-3" style={{ color: "var(--pos-text)" }}>{t.value}</div>
             <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>{t.sub}</div>
           </div>
         ))}
@@ -52,7 +52,7 @@ export default function OwnerDashboard() {
 
       <div className="rounded-xl" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
         <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-          <div className="text-sm font-semibold text-white">Tenants</div>
+          <div className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Tenants</div>
           <button onClick={() => navigate("/owner/tenants")} className="text-xs flex items-center gap-1" style={{ color: "var(--pos-accent)" }}>
             View all <ChevronRight className="w-3 h-3" />
           </button>
@@ -63,11 +63,11 @@ export default function OwnerDashboard() {
               className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/[0.02] text-left"
               style={{ borderBottom: "1px solid var(--pos-border)" }}>
               <div>
-                <div className="font-semibold text-white">{t.name}</div>
+                <div className="font-semibold" style={{ color: "var(--pos-text)" }}>{t.name}</div>
                 <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{t.slug} · {t.staffCount ?? 0} staff · {t.plan}</div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-bold tabular-nums text-white">{t.ordersToday ?? 0}</div>
+                <div className="text-sm font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>{t.ordersToday ?? 0}</div>
                 <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>orders today</div>
               </div>
             </button>

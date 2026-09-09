@@ -77,7 +77,7 @@ export default function WhatsappTemplateDialog({ open, onClose, to, name, onSent
       <DialogContent data-testid="wa-template-dialog" className="max-w-2xl border"
         style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
             <FileText className="w-4 h-4" style={{ color: "#25D366" }} />
             Send WhatsApp Template to {name || to}
           </DialogTitle>
@@ -89,8 +89,8 @@ export default function WhatsappTemplateDialog({ open, onClose, to, name, onSent
                 Approved templates ({templates.length})
               </div>
               <button data-testid="wa-tpl-refresh" onClick={load}
-                className="pos-btn text-[10px] px-2 py-1 rounded text-white flex items-center gap-1"
-                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                className="pos-btn text-[10px] px-2 py-1 rounded flex items-center gap-1"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                 <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} /> Refresh
               </button>
             </div>
@@ -107,10 +107,11 @@ export default function WhatsappTemplateDialog({ open, onClose, to, name, onSent
               {templates.map((t) => (
                 <button key={t.sid} data-testid={`wa-tpl-${t.sid}`}
                   onClick={() => { setSelected(t); setVars({}); }}
-                  className="pos-btn w-full text-left px-2 py-1.5 rounded text-xs text-white"
+                  className="pos-btn w-full text-left px-2 py-1.5 rounded text-xs"
                   style={{
                     background: selected?.sid === t.sid ? "rgba(37,211,102,0.20)" : "var(--pos-panel-2)",
                     border: "1px solid " + (selected?.sid === t.sid ? "#25D366" : "var(--pos-border)"),
+                    color: "var(--pos-text)",
                   }}>
                   <div className="font-bold">{t.friendly_name}</div>
                   <div className="text-[10px] mt-0.5 truncate" style={{ color: "var(--pos-muted)" }}>
@@ -137,8 +138,8 @@ export default function WhatsappTemplateDialog({ open, onClose, to, name, onSent
                       <input data-testid={`wa-tpl-var-${k}`}
                         value={vars[k] || ""} onChange={(e) => setVars({ ...vars, [k]: e.target.value })}
                         placeholder={`value for ${k}`}
-                        className="w-full rounded px-2 py-1 text-xs text-white outline-none"
-                        style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} />
+                        className="w-full rounded px-2 py-1 text-xs outline-none"
+                        style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
                     </div>
                   ))}
                 </div>

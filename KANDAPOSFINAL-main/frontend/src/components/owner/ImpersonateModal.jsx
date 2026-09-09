@@ -34,7 +34,7 @@ export default function ImpersonateModal({ tenant, open, onClose }) {
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       <DialogContent className="max-w-md border" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }} data-testid="impersonate-modal">
         <DialogHeader>
-          <DialogTitle className="text-white">Open {tenant.name}'s POS</DialogTitle>
+          <DialogTitle style={{ color: "var(--pos-text)" }}>Open {tenant.name}'s POS</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -58,7 +58,7 @@ export default function ImpersonateModal({ tenant, open, onClose }) {
             </span>
             <Input data-testid="imp-reason" placeholder={mode === "auditor" ? "e.g. SUP-847: Razorpay mismatch" : "Optional context for the audit log"}
               value={reason} onChange={(e) => setReason(e.target.value)}
-              className="mt-1 h-11 text-white" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)" }} />
+              className="mt-1 h-11" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </label>
 
           <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>
