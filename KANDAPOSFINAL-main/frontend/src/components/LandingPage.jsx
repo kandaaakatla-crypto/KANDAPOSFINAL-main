@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   ShoppingCart, LayoutGrid, ChefHat, Truck, Boxes, Users, BarChart3,
   MessageCircle, Mic, MapPin, Mail, Phone, Sparkles, Menu, X,
-  ShoppingBag, CheckCircle2,
+  ShoppingBag, CheckCircle2, Instagram,
 } from "lucide-react";
 import useSeo, { useStructuredData } from "../hooks/useSeo";
 
@@ -347,6 +347,12 @@ export default function LandingPage() {
               </a>
               <a href="tel:+919000990209" className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> +91 90009 90209
+              </a>
+              <a href="https://wa.me/919000990209" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm">
+                <MessageCircle className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> WhatsApp: +91 90009 90209
+              </a>
+              <a href="https://www.instagram.com/kanda.pos" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm">
+                <Instagram className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> @kanda.pos
               </a>
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> Hyderabad, India
