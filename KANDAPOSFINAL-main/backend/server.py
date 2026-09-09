@@ -74,12 +74,13 @@ async def on_startup():
     import asyncio
     from sms_service import reservation_reminder_loop
     from routes.digest import digest_scheduler_loop
-    from background_tasks import daily_rollup_cron_loop, birthday_bonus_loop
+    from background_tasks import daily_rollup_cron_loop, birthday_bonus_loop, leads_digest_loop
     from ws import redis_subscriber_loop
     asyncio.create_task(reservation_reminder_loop(get_db))
     asyncio.create_task(digest_scheduler_loop(get_db))
     asyncio.create_task(daily_rollup_cron_loop(get_db))
     asyncio.create_task(birthday_bonus_loop(get_db))
+    asyncio.create_task(leads_digest_loop(get_db))
     asyncio.create_task(redis_subscriber_loop())
     logger.info("Kanda POS DB seeded / verified + reminder loop started")
 

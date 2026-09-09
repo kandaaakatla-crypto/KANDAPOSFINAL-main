@@ -66,6 +66,51 @@ def support_ticket_email(ticket: dict, tenant: dict) -> tuple[str, str]:
     )
 
 
+def landing_leads_digest_email(leads: list[dict], date_label: str) -> tuple[str, str]:
+    """Render the end-of-day summary of kandapos.com "Book a demo" /
+    "Sign up for updates" submissions — see background_tasks.py's
+    leads_digest_loop, which fires this once daily at 23:55 IST."""
+    demo_count = sum(1 for l in leads if l["type"] == "demo")
+    updates_count = sum(1 for l in leads if l["type"] == "updates")
+    subject = f"[Kanda POS website] Daily leads digest — {date_label} ({len(leads)} total)"
+
+    if not leads:
+        body_html = '<p style="color:#666;font-size:13px">No submissions today.</p>'
+    else:
+        rows_html = "".join(
+            '<tr style="border-top:1px solid #eee">'
+            f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">'
+            f'<b>{"Demo" if l["type"] == "demo" else "Sign-up"}</b></td>'
+            f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("name") or "—"}</td>'
+            f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l["email"]}</td>'
+            f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("phone") or "—"}</td>'
+            f'<td style="padding:8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("business") or "—"}</td>'
+            "</tr>"
+            for l in leads
+        )
+        body_html = (
+            '<table style="border-collapse:collapse;width:100%">'
+            '<tr><th style="text-align:left;padding:0 12px 6px 0;color:#888;font-size:11px;text-transform:uppercase">Type</th>'
+            '<th style="text-align:left;padding:0 12px 6px 0;color:#888;font-size:11px;text-transform:uppercase">Name</th>'
+            '<th style="text-align:left;padding:0 12px 6px 0;color:#888;font-size:11px;text-transform:uppercase">Email</th>'
+            '<th style="text-align:left;padding:0 12px 6px 0;color:#888;font-size:11px;text-transform:uppercase">Phone</th>'
+            '<th style="text-align:left;padding:0;color:#888;font-size:11px;text-transform:uppercase">Business</th></tr>'
+            f'{rows_html}</table>'
+        )
+
+    return subject, (
+        '<div style="font-family:Inter,Arial,sans-serif;background:#fafafa;padding:24px">'
+        '<div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #eee;border-radius:12px;padding:24px">'
+        f'<h2 style="margin:0 0 4px;color:#111">Daily leads digest</h2>'
+        f'<div style="color:#666;font-size:13px;margin-bottom:16px">{date_label} · '
+        f'{demo_count} demo request{"s" if demo_count != 1 else ""}, '
+        f'{updates_count} sign-up{"s" if updates_count != 1 else ""}</div>'
+        f'{body_html}'
+        '<p style="color:#999;font-size:11px;margin-top:24px">Full list, filterable and always up to date, in the Owner Portal → Website leads.</p>'
+        '</div></div>'
+    )
+
+
 def purchase_order_email(item: dict, tenant: dict, qty_ordered: float) -> tuple[str, str]:
     """Render a reorder notification email sent to a supplier's contact address."""
     store_name = tenant.get("store", {}).get("name") or tenant.get("name") or "Kanda POS"
