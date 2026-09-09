@@ -92,30 +92,66 @@ export default function LandingPage() {
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
   const [updatesEmail, setUpdatesEmail] = useState("");
   const [updatesSubmitted, setUpdatesSubmitted] = useState(false);
+  const [updatesBusy, setUpdatesBusy] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const submitDemo = (e) => {
+  // Public, unauthenticated lead-capture endpoint — no tenant/auth context
+  // on the marketing homepage, so this bypasses the shared `api` client
+  // (which resolves a tenant slug and attaches a staff token) in favor of a
+  // plain fetch straight to the backend.
+  const submitLead = async (payload) => {
+    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/leads`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => null);
+      throw new Error(detail?.detail || "Something went wrong. Please try again.");
+    }
+  };
+
+  const submitDemo = async (e) => {
     e.preventDefault();
+    if (demoBusy) return;
     if (!form.name.trim() || !form.email.trim()) {
       toast.error("Please fill in your name and email.");
       return;
     }
-    setSubmitted(true);
-    toast.success("Thanks! Our team will reach out to schedule your demo.");
+    setDemoBusy(true);
+    try {
+      await submitLead({ type: "demo", ...form });
+      setSubmitted(true);
+      toast.success("Thanks! Our team will reach out to schedule your demo.");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setDemoBusy(false);
+    }
   };
 
-  const submitUpdates = (e) => {
+  const submitUpdates = async (e) => {
     e.preventDefault();
+    if (updatesBusy) return;
     if (!updatesEmail.trim()) {
       toast.error("Please enter an email address.");
       return;
     }
-    setUpdatesSubmitted(true);
-    toast.success("You're on the list — we'll email you at launch.");
+    setUpdatesBusy(true);
+    try {
+      await submitLead({ type: "updates", email: updatesEmail });
+      setUpdatesSubmitted(true);
+      toast.success("You're on the list — we'll email you at launch.");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setUpdatesBusy(false);
+    }
   };
 
   return (
@@ -299,7 +335,7 @@ export default function LandingPage() {
       <section id="contact" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid #243352" }}>
         <div className="grid md:grid-cols-2 gap-5">
           {/* Contact info + sign-up for updates */}
-          <Reveal id="updates" className="rounded-2xl p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
+          <Reveal id="updates" className="rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
             <h2 className="text-2xl md:text-3xl font-bold mb-3">Let's get your business on Kanda POS</h2>
             <p style={{ color: "#8b9bb8" }} className="leading-relaxed mb-6">
               Tell us about your restaurant or retail store and we'll set up a walkthrough,
@@ -321,22 +357,22 @@ export default function LandingPage() {
                 <CheckCircle2 className="w-4 h-4" /> You're on the list — we'll email you at launch.
               </div>
             ) : (
-              <form onSubmit={submitUpdates} className="flex gap-3 pt-6" style={{ borderTop: "1px solid #243352" }}>
+              <form onSubmit={submitUpdates} className="flex flex-col sm:flex-row gap-3 pt-6" style={{ borderTop: "1px solid #243352" }}>
                 <input
                   type="email" required placeholder="you@yourbusiness.com"
                   value={updatesEmail} onChange={(e) => setUpdatesEmail(e.target.value)}
                   className="flex-1 rounded-lg px-4 py-2.5 text-sm min-w-0"
                   style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }}
                 />
-                <button type="submit" className="pos-btn shrink-0 rounded-lg px-5 py-2.5 text-sm font-semibold text-white" style={{ background: "var(--pos-accent)" }}>
-                  Sign up for updates
+                <button type="submit" disabled={updatesBusy} className="pos-btn sm:shrink-0 rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
+                  {updatesBusy ? "Signing up…" : "Sign up for updates"}
                 </button>
               </form>
             )}
           </Reveal>
 
           {/* Book a demo form */}
-          <Reveal delay={0.1} className="rounded-2xl p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
+          <Reveal delay={0.1} className="rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
             {submitted ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-10">
                 <CheckCircle2 className="w-12 h-12 mb-3" style={{ color: "var(--pos-accent)" }} />
@@ -349,7 +385,7 @@ export default function LandingPage() {
                   className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                 <input required type="email" placeholder="Email address" value={form.email} onChange={update("email")}
                   className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input placeholder="Phone number" value={form.phone} onChange={update("phone")}
                     className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                   <input placeholder="Business name" value={form.business} onChange={update("business")}
@@ -357,8 +393,8 @@ export default function LandingPage() {
                 </div>
                 <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}
                   className="rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
-                <motion.button whileTap={{ scale: 0.97 }} type="submit" className="rounded-lg px-6 py-3 font-semibold text-white" style={{ background: "var(--pos-accent)" }}>
-                  Book a demo
+                <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={demoBusy} className="rounded-lg px-6 py-3 font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
+                  {demoBusy ? "Sending…" : "Book a demo"}
                 </motion.button>
               </form>
             )}
