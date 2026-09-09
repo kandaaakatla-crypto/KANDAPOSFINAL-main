@@ -1,7 +1,7 @@
 import React from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useOwner } from "../../store/OwnerContext";
-import { LayoutDashboard, Store, Plus, LogOut, ShieldCheck, AlertOctagon, ClipboardCheck, LifeBuoy } from "lucide-react";
+import { LayoutDashboard, Store, Plus, LogOut, ShieldCheck, AlertOctagon, ClipboardCheck, LifeBuoy, Inbox } from "lucide-react";
 
 export default function OwnerLayout() {
   const { owner, logout } = useOwner();
@@ -11,6 +11,7 @@ export default function OwnerLayout() {
     { to: "/owner", end: true, icon: LayoutDashboard, label: "Dashboard" },
     { to: "/owner/tenants", icon: Store, label: "Tenants" },
     { to: "/owner/tenants/new", icon: Plus, label: "New tenant" },
+    { to: "/owner/ops/leads", icon: Inbox, label: "Website leads" },
     { to: "/owner/ops/support", icon: LifeBuoy, label: "Support" },
     { to: "/owner/ops/audit", icon: ClipboardCheck, label: "Audit log" },
     { to: "/owner/ops/errors", icon: AlertOctagon, label: "Errors" },

@@ -50,6 +50,7 @@ const CreateTenant = lazy(() => import("./components/owner/CreateTenant"));
 const ErrorLog = lazy(() => import("./components/owner/ErrorLog"));
 const AuditLog = lazy(() => import("./components/owner/AuditLog"));
 const SupportInbox = lazy(() => import("./components/owner/SupportInbox"));
+const LeadsInbox = lazy(() => import("./components/owner/LeadsInbox"));
 
 const KDSBoard = lazy(() => import("./components/kds/KDSBoard"));
 
@@ -150,6 +151,7 @@ function App() {
                     <Route path="ops/errors" element={<ErrorLog />} />
                     <Route path="ops/audit" element={<AuditLog />} />
                     <Route path="ops/support" element={<SupportInbox />} />
+                    <Route path="ops/leads" element={<LeadsInbox />} />
                   </Route>
 
                   {/* Restaurant Owner / Area Manager / Store Manager dashboard */}

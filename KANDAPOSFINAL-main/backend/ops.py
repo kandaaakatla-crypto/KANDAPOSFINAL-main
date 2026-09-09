@@ -107,6 +107,18 @@ async def list_audit(owner: dict = Depends(get_current_owner), limit: int = 200,
     return docs
 
 
+@ops_router.get("/leads")
+async def list_leads(owner: dict = Depends(get_current_owner), type: Optional[str] = None, limit: int = 200):
+    """Landing-page "Book a demo" / "Sign up for updates" submissions —
+    see routes/leads.py for where these are written."""
+    db = get_db()
+    q: dict = {}
+    if type:
+        q["type"] = type
+    docs = await db.landing_leads.find(q, {"_id": 0}).sort("at", -1).limit(min(limit, 500)).to_list(500)
+    return docs
+
+
 @ops_router.get("/support")
 async def list_all_tickets(owner: dict = Depends(get_current_owner), status: Optional[str] = None, tenant_id: Optional[str] = None):
     db = get_db()
