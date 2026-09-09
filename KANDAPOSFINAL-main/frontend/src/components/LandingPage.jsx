@@ -93,6 +93,7 @@ export default function LandingPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
+  const [updatesName, setUpdatesName] = useState("");
   const [updatesEmail, setUpdatesEmail] = useState("");
   const [updatesSubmitted, setUpdatesSubmitted] = useState(false);
   const [updatesBusy, setUpdatesBusy] = useState(false);
@@ -138,13 +139,13 @@ export default function LandingPage() {
   const submitUpdates = async (e) => {
     e.preventDefault();
     if (updatesBusy) return;
-    if (!updatesEmail.trim()) {
-      toast.error("Please enter an email address.");
+    if (!updatesName.trim() || !updatesEmail.trim()) {
+      toast.error("Please enter your name and email.");
       return;
     }
     setUpdatesBusy(true);
     try {
-      await submitLead({ type: "updates", email: updatesEmail });
+      await submitLead({ type: "updates", name: updatesName, email: updatesEmail });
       setUpdatesSubmitted(true);
       toast.success("You're on the list — we'll email you at launch.");
     } catch (err) {
@@ -363,14 +364,22 @@ export default function LandingPage() {
                 <CheckCircle2 className="w-4 h-4" /> You're on the list — we'll email you at launch.
               </div>
             ) : (
-              <form onSubmit={submitUpdates} className="flex flex-col sm:flex-row gap-3 pt-6" style={{ borderTop: "1px solid #243352" }}>
-                <input
-                  type="email" required placeholder="you@yourbusiness.com"
-                  value={updatesEmail} onChange={(e) => setUpdatesEmail(e.target.value)}
-                  className="flex-1 rounded-lg px-4 py-2.5 text-sm min-w-0"
-                  style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }}
-                />
-                <button type="submit" disabled={updatesBusy} className="pos-btn sm:shrink-0 rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
+              <form onSubmit={submitUpdates} className="flex flex-col gap-3 pt-6" style={{ borderTop: "1px solid #243352" }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    required placeholder="Your name"
+                    value={updatesName} onChange={(e) => setUpdatesName(e.target.value)}
+                    className="rounded-lg px-4 py-2.5 text-sm min-w-0"
+                    style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }}
+                  />
+                  <input
+                    type="email" required placeholder="you@yourbusiness.com"
+                    value={updatesEmail} onChange={(e) => setUpdatesEmail(e.target.value)}
+                    className="rounded-lg px-4 py-2.5 text-sm min-w-0"
+                    style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }}
+                  />
+                </div>
+                <button type="submit" disabled={updatesBusy} className="pos-btn rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
                   {updatesBusy ? "Signing up…" : "Sign up for updates"}
                 </button>
               </form>
