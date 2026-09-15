@@ -84,7 +84,8 @@ def landing_leads_digest_email(leads: list[dict], date_label: str) -> tuple[str,
             f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("name") or "—"}</td>'
             f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l["email"]}</td>'
             f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("phone") or "—"}</td>'
-            f'<td style="padding:8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("business") or "—"}</td>'
+            f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("business") or "—"}</td>'
+            f'<td style="padding:8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("city") or "—"}</td>'
             "</tr>"
             for l in leads
         )
@@ -94,7 +95,8 @@ def landing_leads_digest_email(leads: list[dict], date_label: str) -> tuple[str,
             '<th style="text-align:left;padding:0 12px 6px 0;color:#888;font-size:11px;text-transform:uppercase">Name</th>'
             '<th style="text-align:left;padding:0 12px 6px 0;color:#888;font-size:11px;text-transform:uppercase">Email</th>'
             '<th style="text-align:left;padding:0 12px 6px 0;color:#888;font-size:11px;text-transform:uppercase">Phone</th>'
-            '<th style="text-align:left;padding:0;color:#888;font-size:11px;text-transform:uppercase">Business</th></tr>'
+            '<th style="text-align:left;padding:0 12px 6px 0;color:#888;font-size:11px;text-transform:uppercase">Business</th>'
+            '<th style="text-align:left;padding:0;color:#888;font-size:11px;text-transform:uppercase">City</th></tr>'
             f'{rows_html}</table>'
         )
 
