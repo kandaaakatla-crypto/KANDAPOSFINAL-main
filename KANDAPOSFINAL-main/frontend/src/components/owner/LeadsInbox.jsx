@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ownerData } from "../../api/ownerClient";
-import { Inbox, Loader2, Mail, Phone, RefreshCw, Store } from "lucide-react";
+import { Inbox, Loader2, Mail, MapPin, Phone, RefreshCw, Store } from "lucide-react";
 
 const TYPE_LABEL = {
   demo: { label: "Demo request", color: "#f97316" },
@@ -63,6 +63,7 @@ export default function LeadsInbox() {
               <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {l.email}</span>
               {l.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {l.phone}</span>}
               {l.business && <span className="flex items-center gap-1"><Store className="w-3 h-3" /> {l.business}</span>}
+              {l.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {l.city}</span>}
             </div>
             {l.message && (
               <div className="text-sm mt-2 rounded-lg p-2.5 whitespace-pre-wrap" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>{l.message}</div>

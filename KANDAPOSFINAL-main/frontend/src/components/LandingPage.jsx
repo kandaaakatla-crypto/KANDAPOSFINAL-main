@@ -90,7 +90,7 @@ export default function LandingPage() {
   });
   useStructuredData("ld-landing", STRUCTURED_DATA);
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", city: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
   const [updatesName, setUpdatesName] = useState("");
@@ -376,10 +376,12 @@ export default function LandingPage() {
                       className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                     <input required type="email" placeholder="Email address" value={form.email} onChange={update("email")}
                       className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
+                    <input placeholder="Business name" value={form.business} onChange={update("business")}
+                      className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <input placeholder="Phone number" value={form.phone} onChange={update("phone")}
                         className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
-                      <input placeholder="Business name" value={form.business} onChange={update("business")}
+                      <input placeholder="City" value={form.city} onChange={update("city")}
                         className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
                     </div>
                     <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}

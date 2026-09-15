@@ -44,6 +44,7 @@ class LeadCreate(BaseModel):
     name: Optional[str] = Field(None, max_length=200)
     phone: Optional[str] = Field(None, max_length=40)
     business: Optional[str] = Field(None, max_length=200)
+    city: Optional[str] = Field(None, max_length=100)
     message: Optional[str] = Field(None, max_length=2000)
 
 
@@ -56,6 +57,7 @@ def _lead_email(lead: dict) -> tuple[str, str]:
         ("Email", lead["email"]),
         ("Phone", lead.get("phone") or "—"),
         ("Business", lead.get("business") or "—"),
+        ("City", lead.get("city") or "—"),
     ]
     meta_html = "".join(
         f'<tr><td style="padding:4px 12px 4px 0;color:#888;font-size:12px">{k}</td>'
@@ -96,6 +98,7 @@ async def create_lead(payload: LeadCreate, request: Request):
         "email": payload.email.strip(),
         "phone": (payload.phone or "").strip() or None,
         "business": (payload.business or "").strip() or None,
+        "city": (payload.city or "").strip() or None,
         "message": (payload.message or "").strip() or None,
         "at": now_ist().isoformat(),
         "source": "landing_page",
