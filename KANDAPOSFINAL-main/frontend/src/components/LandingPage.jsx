@@ -334,15 +334,15 @@ export default function LandingPage() {
 
       {/* Contact + updates */}
       <section id="contact" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid #243352" }}>
-        <div className="grid md:grid-cols-2 gap-5">
-          {/* Contact info + sign-up for updates */}
-          <Reveal id="updates" className="rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
+        <div className="grid md:grid-cols-2 gap-5 items-start">
+          {/* Contact form: business info + book a demo, all in one place */}
+          <Reveal className="rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
             <h2 className="text-2xl md:text-3xl font-bold mb-3">Let's get your business on Kanda POS</h2>
             <p style={{ color: "#8b9bb8" }} className="leading-relaxed mb-6">
               Tell us about your restaurant or retail store and we'll set up a walkthrough,
               or reach us directly using the details below.
             </p>
-            <div className="flex flex-col gap-3 mb-6">
+            <div className="flex flex-col gap-3 mb-6 pb-6" style={{ borderBottom: "1px solid #243352" }}>
               <a href="mailto:connect@kandapos.com" className="flex items-center gap-3 text-sm">
                 <Mail className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> connect@kandapos.com
               </a>
@@ -359,12 +359,46 @@ export default function LandingPage() {
                 <MapPin className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> Hyderabad, India
               </div>
             </div>
+            {submitted ? (
+              <div className="flex flex-col items-center justify-center text-center py-10">
+                <CheckCircle2 className="w-12 h-12 mb-3" style={{ color: "var(--pos-accent)" }} />
+                <div className="font-semibold text-lg mb-1">Request received</div>
+                <div className="text-sm" style={{ color: "#8b9bb8" }}>We'll be in touch at {form.email} shortly.</div>
+              </div>
+            ) : (
+              <form onSubmit={submitDemo} className="grid gap-4">
+                <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--pos-accent)" }}>Contact us</div>
+                <input required placeholder="Your name" value={form.name} onChange={update("name")}
+                  className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
+                <input required type="email" placeholder="Email address" value={form.email} onChange={update("email")}
+                  className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <input placeholder="Phone number" value={form.phone} onChange={update("phone")}
+                    className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
+                  <input placeholder="Business name" value={form.business} onChange={update("business")}
+                    className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
+                </div>
+                <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}
+                  className="rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
+                <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={demoBusy} className="rounded-lg px-6 py-3 font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
+                  {demoBusy ? "Sending…" : "Contact us"}
+                </motion.button>
+              </form>
+            )}
+          </Reveal>
+
+          {/* Sign up for updates — separate from the contact form above */}
+          <Reveal id="updates" delay={0.1} className="rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
+            <h2 className="text-xl md:text-2xl font-bold mb-2">Get product updates</h2>
+            <p style={{ color: "#8b9bb8" }} className="leading-relaxed mb-6">
+              New features and launch news — straight to your inbox, no spam.
+            </p>
             {updatesSubmitted ? (
-              <div className="flex items-center gap-2 text-sm pt-6" style={{ borderTop: "1px solid #243352", color: "var(--pos-accent)" }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: "var(--pos-accent)" }}>
                 <CheckCircle2 className="w-4 h-4" /> You're on the list — we'll email you at launch.
               </div>
             ) : (
-              <form onSubmit={submitUpdates} className="flex flex-col gap-3 pt-6" style={{ borderTop: "1px solid #243352" }}>
+              <form onSubmit={submitUpdates} className="flex flex-col gap-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input
                     required placeholder="Your name"
@@ -382,35 +416,6 @@ export default function LandingPage() {
                 <button type="submit" disabled={updatesBusy} className="pos-btn rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
                   {updatesBusy ? "Signing up…" : "Sign up for updates"}
                 </button>
-              </form>
-            )}
-          </Reveal>
-
-          {/* Book a demo form */}
-          <Reveal delay={0.1} className="rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
-            {submitted ? (
-              <div className="h-full flex flex-col items-center justify-center text-center py-10">
-                <CheckCircle2 className="w-12 h-12 mb-3" style={{ color: "var(--pos-accent)" }} />
-                <div className="font-semibold text-lg mb-1">Request received</div>
-                <div className="text-sm" style={{ color: "#8b9bb8" }}>We'll be in touch at {form.email} shortly.</div>
-              </div>
-            ) : (
-              <form onSubmit={submitDemo} className="grid gap-4">
-                <input required placeholder="Your name" value={form.name} onChange={update("name")}
-                  className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
-                <input required type="email" placeholder="Email address" value={form.email} onChange={update("email")}
-                  className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input placeholder="Phone number" value={form.phone} onChange={update("phone")}
-                    className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
-                  <input placeholder="Business name" value={form.business} onChange={update("business")}
-                    className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
-                </div>
-                <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}
-                  className="rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }} />
-                <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={demoBusy} className="rounded-lg px-6 py-3 font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
-                  {demoBusy ? "Sending…" : "Book a demo"}
-                </motion.button>
               </form>
             )}
           </Reveal>
