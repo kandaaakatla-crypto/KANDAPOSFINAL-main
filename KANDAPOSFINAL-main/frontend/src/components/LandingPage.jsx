@@ -334,9 +334,9 @@ export default function LandingPage() {
 
       {/* Contact + updates */}
       <section id="contact" className="max-w-6xl mx-auto px-6 py-20" style={{ borderTop: "1px solid #243352" }}>
-        <div className="grid md:grid-cols-2 gap-5 items-start">
+        <div className="flex flex-col gap-5">
           {/* Contact form: business info + book a demo, all in one place */}
-          <Reveal className="rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
+          <Reveal className="max-w-2xl mx-auto w-full rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
             <h2 className="text-2xl md:text-3xl font-bold mb-3">Let's get your business on Kanda POS</h2>
             <p style={{ color: "#8b9bb8" }} className="leading-relaxed mb-6">
               Tell us about your restaurant or retail store and we'll set up a walkthrough,
@@ -387,19 +387,21 @@ export default function LandingPage() {
             )}
           </Reveal>
 
-          {/* Sign up for updates — separate from the contact form above */}
-          <Reveal id="updates" delay={0.1} className="rounded-2xl p-6 sm:p-10" style={{ background: "#111a2c", border: "1px solid #243352" }}>
-            <h2 className="text-xl md:text-2xl font-bold mb-2">Get product updates</h2>
-            <p style={{ color: "#8b9bb8" }} className="leading-relaxed mb-6">
-              New features and launch news — straight to your inbox, no spam.
-            </p>
-            {updatesSubmitted ? (
-              <div className="flex items-center gap-2 text-sm" style={{ color: "var(--pos-accent)" }}>
-                <CheckCircle2 className="w-4 h-4" /> You're on the list — we'll email you at launch.
+          {/* Sign up for updates — a separate, slim strip below the contact form, not a competing card */}
+          <Reveal id="updates" delay={0.1} className="rounded-2xl p-6 sm:p-8" style={{ background: "#111a2c", border: "1px solid #243352" }}>
+            <div className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10">
+              <div className="md:flex-1">
+                <h2 className="text-lg font-bold mb-1">Get product updates</h2>
+                <p style={{ color: "#8b9bb8" }} className="text-sm leading-relaxed">
+                  New features and launch news — straight to your inbox, no spam.
+                </p>
               </div>
-            ) : (
-              <form onSubmit={submitUpdates} className="flex flex-col gap-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {updatesSubmitted ? (
+                <div className="flex items-center gap-2 text-sm shrink-0" style={{ color: "var(--pos-accent)" }}>
+                  <CheckCircle2 className="w-4 h-4" /> You're on the list — we'll email you at launch.
+                </div>
+              ) : (
+                <form onSubmit={submitUpdates} className="flex flex-col gap-3 md:w-80 md:shrink-0">
                   <input
                     required placeholder="Your name"
                     value={updatesName} onChange={(e) => setUpdatesName(e.target.value)}
@@ -412,12 +414,12 @@ export default function LandingPage() {
                     className="rounded-lg px-4 py-2.5 text-sm min-w-0"
                     style={{ background: "#16213a", border: "1px solid #243352", color: "#e8edf7" }}
                   />
-                </div>
-                <button type="submit" disabled={updatesBusy} className="pos-btn rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
-                  {updatesBusy ? "Signing up…" : "Sign up for updates"}
-                </button>
-              </form>
-            )}
+                  <button type="submit" disabled={updatesBusy} className="pos-btn rounded-lg px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
+                    {updatesBusy ? "Signing up…" : "Sign up for updates"}
+                  </button>
+                </form>
+              )}
+            </div>
           </Reveal>
         </div>
       </section>
