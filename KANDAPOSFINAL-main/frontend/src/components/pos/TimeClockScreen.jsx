@@ -93,7 +93,7 @@ export default function TimeClockScreen() {
       <div className="hidden lg:flex flex-col justify-between w-[42%] p-12"
         style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-3">
-          <button data-testid="timeclock-back-btn" onClick={() => navigate("/login")}
+          <button data-testid="timeclock-back-btn" onClick={() => navigate("/pos/login")}
             className="pos-btn p-2 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
             <ArrowLeft className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
           </button>

@@ -16,10 +16,10 @@ import CategoryManagerModal from "./CategoryManagerModal";
 export default function MenuScreen() {
   const { menuItems, upsertMenuItem, toggleItemAvailability, refreshMenu, staffUser, features } = usePos();
   const location = useLocation();
-  // Edit affordances live in the Restaurant Dashboard at /biz/menu. The /menu
-  // route inside the POS is intentionally read-only — managers go to the
-  // Dashboard to add/remove/toggle items per product spec.
-  const isDashboard = location.pathname.startsWith("/biz");
+  // Edit affordances live in the Restaurant Dashboard at /dashboard/menu. The
+  // /menu route inside the POS is intentionally read-only — managers go to
+  // the Dashboard to add/remove/toggle items per product spec.
+  const isDashboard = location.pathname.startsWith("/dashboard");
   const editable = isDashboard; // controls visibility of Add/Edit/CSV/Categories
   const [cats, setCats] = useState([]);
   const [activeCat, setActiveCat] = useState(null);

@@ -13,7 +13,7 @@ export default function DashLogin() {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (user) navigate("/biz", { replace: true }); }, [user, navigate]);
+  useEffect(() => { if (user) navigate("/dashboard", { replace: true }); }, [user, navigate]);
 
   const submit = async (e) => {
     e?.preventDefault?.();
@@ -22,7 +22,7 @@ export default function DashLogin() {
     try {
       const res = await login(email.trim(), password);
       toast.success(`Welcome, ${res.user.name}`);
-      navigate(res.must_change_password ? "/biz/account/password" : "/biz", { replace: true });
+      navigate(res.must_change_password ? "/dashboard/account/password" : "/dashboard", { replace: true });
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Login failed");
     } finally { setBusy(false); }
@@ -83,7 +83,7 @@ export default function DashLogin() {
             <LogIn className="w-4 h-4" /> {busy ? "Signing in..." : "Sign in"}
           </button>
           <p className="text-[11px] text-center pt-2" style={{ color: "var(--pos-muted)" }}>
-            POS staff with a 4-digit PIN — use the <a href="/login" className="underline" style={{ color: "var(--pos-text)" }}>terminal login</a> instead.
+            POS staff with a 4-digit PIN — use the <a href="/pos/login" className="underline" style={{ color: "var(--pos-text)" }}>terminal login</a> instead.
           </p>
         </form>
       </div>

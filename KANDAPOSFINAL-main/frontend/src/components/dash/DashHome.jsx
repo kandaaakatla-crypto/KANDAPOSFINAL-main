@@ -117,7 +117,7 @@ export default function DashHome() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-bold" style={{ color: "var(--pos-text)" }}>Your stores</h2>
           {canAddLocation(user) ? (
-            <Link to="/biz/locations" data-testid="dash-add-location-btn"
+            <Link to="/dashboard/locations" data-testid="dash-add-location-btn"
               className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-2 text-white"
               style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)" }}>
               <Plus className="w-3.5 h-3.5" /> Add location
@@ -130,7 +130,7 @@ export default function DashHome() {
             icon={AlertCircle}
             title="No stores assigned to you yet"
             description={canAddLocation(user) ? "Add your first store to start taking orders." : "Ask the owner to add you to a store."}
-            action={canAddLocation(user) ? { label: "Add location", onClick: () => navigate("/biz/locations") } : undefined}
+            action={canAddLocation(user) ? { label: "Add location", onClick: () => navigate("/dashboard/locations") } : undefined}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -48,11 +48,11 @@ export function DashProvider({ children }) {
     localStorage.setItem(STORAGE_TOKEN, r.data.token);
     localStorage.setItem(STORAGE_USER, JSON.stringify(r.data.user));
     // Mirror the token into the POS client's slot so existing screens (Menu,
-    // Staff, Workforce, Coupons) that we reuse under /biz/* authenticate
+    // Staff, Workforce, Coupons) that we reuse under /dashboard/* authenticate
     // transparently against the same backend endpoints.
     localStorage.setItem("kanda_pos_token_v1", r.data.token);
     // Tenant slug header is read by the POS client interceptor; make sure
-    // it's set even when the manager logs in via /biz before visiting /pos.
+    // it's set even when the manager logs in via /dashboard before visiting /pos.
     if (r.data.user?.tenant_slug) {
       localStorage.setItem("kanda_pos_tenant_slug", r.data.user.tenant_slug);
     }
@@ -92,7 +92,7 @@ export function DashProvider({ children }) {
     if (r.user?.tenant_slug) {
       localStorage.setItem("kanda_pos_tenant_slug", r.user.tenant_slug);
     }
-    window.location.assign("/biz");
+    window.location.assign("/dashboard");
   }, []);
 
   const features = { ...DEFAULT_FEATURES, ...(tenantInfo?.features || {}) };

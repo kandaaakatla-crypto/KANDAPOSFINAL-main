@@ -148,7 +148,7 @@ export default function LocationSwitcher({ storeName, isManager }) {
             {isManager && (
               <div className="p-2" style={{ borderTop: "1px solid var(--pos-border)" }}>
                 <button data-testid="location-add-locked-btn" disabled
-                  title="Adding a new location requires a paid plan upgrade — manage from the Dashboard at /biz."
+                  title="Adding a new location requires a paid plan upgrade — manage from the Dashboard at /dashboard."
                   className="pos-btn w-full flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-bold disabled:opacity-50"
                   style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px dashed var(--pos-border)" }}>
                   <span>🔒 Add location · go to Dashboard</span>
