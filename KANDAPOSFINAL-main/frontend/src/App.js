@@ -1,10 +1,11 @@
 import React, { Suspense, lazy } from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { PosProvider, usePos } from "./store/PosContext";
 import { OwnerProvider, useOwner } from "./store/OwnerContext";
 import { DashProvider, useDash } from "./store/DashContext";
+import { tenantStore } from "./api/client";
 
 // Eager: the marketing homepage and legal pages are the first thing a new
 // visitor loads, so they stay in the main bundle. Everything below is
@@ -101,6 +102,7 @@ function RootRoute() {
 
 function Protected({ children }) {
   const { staffUser, bootState } = usePos();
+  const { slug } = useParams();
   if (bootState === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--pos-bg)", color: "var(--pos-muted)" }}>
@@ -108,8 +110,21 @@ function Protected({ children }) {
       </div>
     );
   }
-  if (!staffUser) return <Navigate to="/" replace />;
+  // Also bounce back to login if the signed-in session belongs to a
+  // different restaurant than the one named in the URL — e.g. a shared
+  // kiosk device still signed into Restaurant A gets sent to Restaurant B's
+  // login instead of silently rendering A's data under B's URL.
+  if (!staffUser || tenantStore.get() !== slug) return <Navigate to={`/pos/${slug}/login`} replace />;
   return children;
+}
+
+// Forwards a legacy bare POS path (e.g. /pos) to the caller's pinned
+// restaurant slug (e.g. /demo/pos), or to the restaurant-ID gate if none is
+// pinned yet — preserves old bookmarks/desktop-app/Android-app shortcuts.
+function BareAppRedirect({ sub }) {
+  const slug = tenantStore.get();
+  if (slug) return <Navigate to={`/${slug}/${sub}`} replace />;
+  return <Navigate to="/pos/login" replace />;
 }
 
 function OwnerProtected({ children }) {
@@ -126,10 +141,10 @@ function OwnerProtected({ children }) {
 }
 
 // Every top-level path below also has to be listed in firebase.json's
-// Hosting rewrites (as its own fast static "/index.html" rule) — otherwise
-// Firebase Hosting's catch-all falls through to the backend's soft-404
-// handler (server.py) and a real route gets served as a 404. Add new
-// top-level routes to both places.
+// Hosting rewrites (as its own fast static "/index.html" rule, or a "/:slug/..."
+// rule for tenant-scoped POS paths) — otherwise Firebase Hosting's catch-all
+// falls through to the backend's soft-404 handler (server.py) and a real
+// route gets served as a 404. Add new top-level routes to both places.
 function App() {
   return (
     <div className="App">
@@ -195,7 +210,8 @@ function App() {
                   <Route path="/loyalty/birthday/:token" element={<BirthdayLinkPage />} />
 
                   {/* Driver stripped POS view */}
-                  <Route path="/driver" element={<Protected><DriverScreen /></Protected>} />
+                  <Route path="/:slug/driver" element={<Protected><DriverScreen /></Protected>} />
+                  <Route path="/driver" element={<BareAppRedirect sub="driver" />} />
 
                   {/* Public marketing landing page on web; a native-app
                   identity's own starting screen on pos/display builds
@@ -213,14 +229,24 @@ function App() {
                   <Route path="/pos/:slug/login" element={<LoginScreen />} />
                   <Route path="/demo/login" element={<LoginScreen isDemo />} />
                   <Route path="/clock" element={<TimeClockScreen />} />
-                  <Route element={<Protected><POSLayout /></Protected>}>
-                    <Route path="/pos" element={<HomeScreen />} />
-                    <Route path="/orders" element={<OrdersScreen />} />
-                    <Route path="/tables" element={<TablesScreen />} />
-                    <Route path="/menu" element={<MenuScreen />} />
-                    <Route path="/dispatch" element={<DispatchScreen />} />
-                    <Route path="/workforce" element={<WorkforceScreen />} />
+                  <Route path="/:slug" element={<Protected><POSLayout /></Protected>}>
+                    <Route index element={<Navigate to="pos" replace />} />
+                    <Route path="pos" element={<HomeScreen />} />
+                    <Route path="orders" element={<OrdersScreen />} />
+                    <Route path="tables" element={<TablesScreen />} />
+                    <Route path="menu" element={<MenuScreen />} />
+                    <Route path="dispatch" element={<DispatchScreen />} />
+                    <Route path="workforce" element={<WorkforceScreen />} />
                   </Route>
+                  {/* Legacy bare paths — forward to the caller's own pinned
+                  restaurant slug (or the restaurant-ID gate) instead of 404ing
+                  old bookmarks/desktop-app/Android-app shortcuts. */}
+                  <Route path="/pos" element={<BareAppRedirect sub="pos" />} />
+                  <Route path="/orders" element={<BareAppRedirect sub="orders" />} />
+                  <Route path="/tables" element={<BareAppRedirect sub="tables" />} />
+                  <Route path="/menu" element={<BareAppRedirect sub="menu" />} />
+                  <Route path="/dispatch" element={<BareAppRedirect sub="dispatch" />} />
+                  <Route path="/workforce" element={<BareAppRedirect sub="workforce" />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>

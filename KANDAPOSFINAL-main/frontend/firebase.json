@@ -34,6 +34,13 @@
       { "source": "/menu", "destination": "/index.html" },
       { "source": "/dispatch", "destination": "/index.html" },
       { "source": "/workforce", "destination": "/index.html" },
+      { "source": "/:slug/pos", "destination": "/index.html" },
+      { "source": "/:slug/orders", "destination": "/index.html" },
+      { "source": "/:slug/tables", "destination": "/index.html" },
+      { "source": "/:slug/menu", "destination": "/index.html" },
+      { "source": "/:slug/dispatch", "destination": "/index.html" },
+      { "source": "/:slug/workforce", "destination": "/index.html" },
+      { "source": "/:slug/driver", "destination": "/index.html" },
       {
         "source": "**",
         "run": {
