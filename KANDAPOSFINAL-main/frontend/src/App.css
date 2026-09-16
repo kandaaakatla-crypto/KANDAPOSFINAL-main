@@ -12,6 +12,20 @@
   --pos-muted: #93805f;
 }
 
+/* Dark mode — opt-in via a "data-theme=dark" attribute on <html>, toggled
+   by lib/theme.js. Values are the app's own original dark palette (this
+   whole app ran on these before the light reskin), so nothing here is new
+   design work. --pos-accent/--pos-accent-hover/--pos-blue are unchanged in
+   both themes. Light stays the default with no attribute present. */
+:root[data-theme="dark"] {
+  --pos-bg: #0b1220;
+  --pos-panel: #111a2c;
+  --pos-panel-2: #16213a;
+  --pos-border: #243352;
+  --pos-text: #e8edf7;
+  --pos-muted: #8b9bb8;
+}
+
 .App {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--pos-bg);
@@ -19,10 +33,17 @@
   color: var(--pos-text);
 }
 
+/* Legal pages' sticky header backdrop — a translucent echo of --pos-bg that
+   can't be a plain var() reference since it needs an alpha channel. */
+.legal-header-backdrop { background: rgba(253,250,244,0.85); }
+:root[data-theme="dark"] .legal-header-backdrop { background: rgba(11,18,32,0.85); }
+
 .pos-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .pos-scroll::-webkit-scrollbar-track { background: transparent; }
 .pos-scroll::-webkit-scrollbar-thumb { background: #ddd0b8; border-radius: 4px; }
 .pos-scroll::-webkit-scrollbar-thumb:hover { background: #c9b78f; }
+:root[data-theme="dark"] .pos-scroll::-webkit-scrollbar-thumb { background: #2c3d61; }
+:root[data-theme="dark"] .pos-scroll::-webkit-scrollbar-thumb:hover { background: #3a4f7c; }
 
 /* A "back-out" easing with slight overshoot — a spring feel without JS,
    used for hover-lift/press feedback on tiles, cards and buttons. */
@@ -40,6 +61,7 @@
 }
 .menu-tile:hover { border-color: var(--pos-accent) !important; background: rgba(249,115,22,0.06); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(28,26,22,0.08); }
 .menu-tile:active { transform: scale(0.98) translateY(0); }
+:root[data-theme="dark"] .menu-tile:hover { background: rgba(249,115,22,0.12); box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
 
 .cat-btn { transition: background-color 0.15s ease, border-color 0.15s ease; cursor: pointer; user-select: none; }
 
@@ -50,6 +72,8 @@
 }
 .pin-key:hover { background: #f3ead9; }
 .pin-key:active { background: #ece1cd; }
+:root[data-theme="dark"] .pin-key:hover { background: #1e2c4d; }
+:root[data-theme="dark"] .pin-key:active { background: #2a3b63; }
 
 .table-tile {
   transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.25s var(--spring-ease), box-shadow 0.25s ease;
@@ -57,12 +81,14 @@
 }
 .table-tile:hover { border-color: var(--pos-accent) !important; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(28,26,22,0.08); }
 .table-tile:active { transform: scale(0.98) translateY(0); }
+:root[data-theme="dark"] .table-tile:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
 
 /* Dashboard-style summary/KPI cards — same hover-lift language as tiles. */
 .dash-card {
   transition: transform 0.25s var(--spring-ease), box-shadow 0.25s ease, border-color 0.15s ease;
 }
 .dash-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(28,26,22,0.08); }
+:root[data-theme="dark"] .dash-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
 
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(6px); }

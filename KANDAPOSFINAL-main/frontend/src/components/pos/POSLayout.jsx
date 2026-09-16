@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw } from "lucide-react";
+import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
@@ -9,6 +9,7 @@ import OnboardingBanner from "./OnboardingBanner";
 import LocationSwitcher from "./LocationSwitcher";
 import { Sheet, SheetContent } from "../ui/sheet";
 import useSeo from "../../hooks/useSeo";
+import { getTheme, toggleTheme } from "../../lib/theme";
 
 const ALL_STAFF_WORKFORCE = { to: "/workforce", label: "My Rota", icon: CalendarDays };
 
@@ -22,6 +23,7 @@ export default function POSLayout() {
   const [time, setTime] = useState(new Date());
   const [supportOpen, setSupportOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [theme, setTheme] = useState(getTheme);
 
   // Primary tabs — always visible in the mobile bottom bar. Tables only
   // makes sense for dine-in businesses, so retail tenants skip it.
@@ -116,6 +118,11 @@ export default function POSLayout() {
             className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2 mb-1" style={{ color: "var(--pos-muted)" }}>
             <LifeBuoy className="w-5 h-5" />
             Help
+          </button>
+          <button data-testid="theme-toggle-btn" onClick={() => setTheme(toggleTheme())}
+            className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2 mb-1" style={{ color: "var(--pos-muted)" }}>
+            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {theme === "dark" ? "Light" : "Dark"}
           </button>
           {/* Hard nav, not navigate("/login") — a client-side transition races
               Protected's own staffUser-triggered re-render of the outgoing
@@ -237,6 +244,12 @@ export default function POSLayout() {
               className="pos-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
               style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
               <LifeBuoy className="w-4 h-4" /> Help & Support
+            </button>
+            <button data-testid="mmore-theme-toggle" onClick={() => setTheme(toggleTheme())}
+              className="pos-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
+              style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {theme === "dark" ? "Light mode" : "Dark mode"}
             </button>
             <button data-testid="mmore-logout" onClick={() => { setMoreOpen(false); logout(); window.location.assign("/pos/login"); }}
               className="pos-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"

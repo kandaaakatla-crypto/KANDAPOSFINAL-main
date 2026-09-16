@@ -12,7 +12,7 @@ export default function LegalPage({ title, updated, path, description, children 
 
   return (
     <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)", minHeight: "100vh" }}>
-      <header className="sticky top-0 z-20" style={{ background: "rgba(253,250,244,0.85)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
+      <header className="sticky top-0 z-20 legal-header-backdrop" style={{ backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <button onClick={() => navigate("/")} className="flex items-center gap-2 text-sm font-medium pos-btn" style={{ color: "var(--pos-muted)" }}>
             <ArrowLeft className="w-4 h-4" /> Back to kandapos.com
