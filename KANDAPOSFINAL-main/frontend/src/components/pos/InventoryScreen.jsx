@@ -220,13 +220,13 @@ export default function InventoryScreen() {
 
       {isManager && (
         <div className="rounded-xl p-4 flex items-center gap-4" data-testid="stock-value-widget"
-          style={{ background: "linear-gradient(135deg, #1c2438 0%, #101a30 100%)", border: "1px solid var(--pos-border)" }}>
+          style={{ background: "linear-gradient(135deg, var(--pos-panel) 0%, var(--pos-panel-2) 100%)", border: "1px solid var(--pos-border)" }}>
           <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#34d39922" }}>
             <IndianRupee className="w-6 h-6" style={{ color: "#34d399" }} />
           </div>
           <div>
             <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Total stock value</div>
-            <div className="text-2xl font-bold text-white tabular-nums">₹{stockValue.toFixed(2)}</div>
+            <div className="text-2xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>₹{stockValue.toFixed(2)}</div>
           </div>
         </div>
       )}
@@ -242,14 +242,14 @@ export default function InventoryScreen() {
       )}
 
       {lowItems.length > 0 && view === "all" && (
-        <div className="rounded-xl px-4 py-3 flex items-center gap-3 text-sm" style={{ background: "#33150e", border: "1px solid #7d3a2e", color: "#fca5a5" }} data-testid="low-stock-banner">
+        <div className="rounded-xl px-4 py-3 flex items-center gap-3 text-sm" style={{ background: "rgba(220,38,38,0.14)", border: "1px solid rgba(220,38,38,0.35)", color: "#dc2626" }} data-testid="low-stock-banner">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           {lowItems.length} item{lowItems.length > 1 ? "s" : ""} at or below reorder level: {lowItems.map((i) => i.name).join(", ")}
         </div>
       )}
 
       {expiringItems.length > 0 && view === "all" && (
-        <div className="rounded-xl px-4 py-3 flex items-center gap-3 text-sm" style={{ background: "#332310", border: "1px solid #7d5a2e", color: "#fbbf24" }} data-testid="expiring-banner">
+        <div className="rounded-xl px-4 py-3 flex items-center gap-3 text-sm" style={{ background: "rgba(217,119,6,0.14)", border: "1px solid rgba(217,119,6,0.35)", color: "#d97706" }} data-testid="expiring-banner">
           <CalendarClock className="w-4 h-4 shrink-0" />
           {expiringItems.length} item{expiringItems.length > 1 ? "s" : ""} expired or expiring within {EXPIRY_WARN_DAYS} days: {expiringItems.map((i) => i.name).join(", ")}
         </div>
@@ -274,7 +274,7 @@ export default function InventoryScreen() {
               const expiring = days !== null && days <= EXPIRY_WARN_DAYS;
               const expired = days !== null && days < 0;
               return (
-                <tr key={i.id} data-testid={`inv-row-${i.id}`} style={{ borderBottom: "1px solid var(--pos-border)", background: low ? "#2a141077" : expiring ? "#2a220f77" : "transparent" }}>
+                <tr key={i.id} data-testid={`inv-row-${i.id}`} style={{ borderBottom: "1px solid var(--pos-border)", background: low ? "rgba(220,38,38,0.08)" : expiring ? "rgba(217,119,6,0.08)" : "transparent" }}>
                   <td className="px-4 py-3 font-medium" style={{ color: "var(--pos-text)" }}>
                     {i.name}
                     {i.location_id && (
@@ -284,19 +284,19 @@ export default function InventoryScreen() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 tabular-nums font-bold" style={{ color: low ? "#f87171" : "#7ee2a8" }}>{i.stock} {i.unit}</td>
+                  <td className="px-4 py-3 tabular-nums font-bold" style={{ color: low ? "#dc2626" : "#16a34a" }}>{i.stock} {i.unit}</td>
                   <td className="px-4 py-3 tabular-nums" style={{ color: "var(--pos-muted)" }}>{i.reorder} {i.unit}</td>
                   <td className="px-4 py-3 tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(i.stock * (i.cost_per_unit || 0)).toFixed(0)}</td>
                   <td className="px-4 py-3" style={{ color: "var(--pos-muted)" }}>{i.supplier}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-1 items-start">
                       {low ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#3a1515", color: "#f87171" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "rgba(220,38,38,0.15)", color: "#dc2626" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#13271a", color: "#22c55e" }}><PackageCheck className="w-3 h-3" /> OK</span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "rgba(22,163,74,0.15)", color: "#16a34a" }}><PackageCheck className="w-3 h-3" /> OK</span>
                       )}
                       {expiring && (
-                        <span data-testid={`expiry-badge-${i.id}`} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: expired ? "#3a1515" : "#3a2a10", color: expired ? "#f87171" : "#fbbf24" }}>
+                        <span data-testid={`expiry-badge-${i.id}`} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: expired ? "rgba(220,38,38,0.15)" : "rgba(217,119,6,0.15)", color: expired ? "#dc2626" : "#d97706" }}>
                           <CalendarClock className="w-3 h-3" /> {expiryLabel(days)}
                         </span>
                       )}
@@ -367,7 +367,7 @@ export default function InventoryScreen() {
             const expiring = days !== null && days <= EXPIRY_WARN_DAYS;
             const expired = days !== null && days < 0;
             return (
-              <div key={i.id} data-testid={`inv-row-${i.id}`} className="p-3 flex flex-col gap-2" style={{ background: low ? "#2a141077" : expiring ? "#2a220f77" : "transparent", borderColor: "var(--pos-border)" }}>
+              <div key={i.id} data-testid={`inv-row-${i.id}`} className="p-3 flex flex-col gap-2" style={{ background: low ? "rgba(220,38,38,0.08)" : expiring ? "rgba(217,119,6,0.08)" : "transparent", borderColor: "var(--pos-border)" }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="font-medium text-sm" style={{ color: "var(--pos-text)" }}>
                     {i.name}
@@ -380,19 +380,19 @@ export default function InventoryScreen() {
                   </div>
                   <div className="flex flex-col gap-1 items-end shrink-0">
                     {low ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#3a1515", color: "#f87171" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "rgba(220,38,38,0.15)", color: "#dc2626" }}><AlertTriangle className="w-3 h-3" /> Reorder</span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "#13271a", color: "#22c55e" }}><PackageCheck className="w-3 h-3" /> OK</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: "rgba(22,163,74,0.15)", color: "#16a34a" }}><PackageCheck className="w-3 h-3" /> OK</span>
                     )}
                     {expiring && (
-                      <span data-testid={`expiry-badge-${i.id}`} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: expired ? "#3a1515" : "#3a2a10", color: expired ? "#f87171" : "#fbbf24" }}>
+                      <span data-testid={`expiry-badge-${i.id}`} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full uppercase" style={{ background: expired ? "rgba(220,38,38,0.15)" : "rgba(217,119,6,0.15)", color: expired ? "#dc2626" : "#d97706" }}>
                         <CalendarClock className="w-3 h-3" /> {expiryLabel(days)}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: "var(--pos-muted)" }}>
-                  <span>Stock: <b style={{ color: low ? "#f87171" : "#7ee2a8" }}>{i.stock} {i.unit}</b></span>
+                  <span>Stock: <b style={{ color: low ? "#dc2626" : "#16a34a" }}>{i.stock} {i.unit}</b></span>
                   <span>Reorder at: {i.reorder} {i.unit}</span>
                   <span>Value: ₹{(i.stock * (i.cost_per_unit || 0)).toFixed(0)}</span>
                   {i.supplier && <span>Supplier: {i.supplier}</span>}
@@ -505,7 +505,7 @@ export default function InventoryScreen() {
               <div key={s.id} data-testid={`supplier-row-${s.id}`} className="rounded-lg p-3 flex items-center justify-between gap-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{s.name}</div>
-                  <div className="text-xs flex items-center gap-1 mt-0.5" style={{ color: s.email ? "var(--pos-muted)" : "#f87171" }}>
+                  <div className="text-xs flex items-center gap-1 mt-0.5" style={{ color: s.email ? "var(--pos-muted)" : "#dc2626" }}>
                     <Mail className="w-3 h-3 shrink-0" /> {s.email || "No email on file"}
                   </div>
                 </div>
@@ -600,7 +600,7 @@ export default function InventoryScreen() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{t.item_name} — {t.qty} {t.unit}</div>
                   {t.source === "brand_supply" && (
-                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#1e2a4a", color: "#93c5fd" }}>Central supply</span>
+                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "rgba(37,99,235,0.15)", color: "var(--pos-blue)" }}>Central supply</span>
                   )}
                 </div>
                 <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>

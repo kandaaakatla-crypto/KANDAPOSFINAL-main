@@ -98,7 +98,7 @@ export default function DashLoyalty() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
-            <Gift className="w-6 h-6" style={{ color: "#fcd34d" }} />
+            <Gift className="w-6 h-6" style={{ color: "#d97706" }} />
             Loyalty program
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>
@@ -121,7 +121,7 @@ export default function DashLoyalty() {
           <div className="p-5">
             {overviewLoading && <div className="text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
             {overviewError && !overviewLoading && (
-              <div className="text-sm p-3 rounded space-y-2" style={{ background: "rgba(220,38,38,0.15)", color: "#fca5a5" }}>
+              <div className="text-sm p-3 rounded space-y-2" style={{ background: "rgba(220,38,38,0.15)", color: "#dc2626" }}>
                 <div>{overviewError}</div>
                 <button onClick={loadOverview} className="text-xs font-bold underline">Retry</button>
               </div>
@@ -131,16 +131,16 @@ export default function DashLoyalty() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <MetricCard icon={Users} label="Enrolled customers" value={overview.enrolled_customers} />
                   <MetricCard icon={Coins} label="Outstanding points" value={overview.outstanding_points} sub={`≈ ₹${overview.outstanding_value.toFixed(0)} liability`} />
-                  <MetricCard icon={TrendingUp} label="Earned (30d)" value={`+${overview.earned_last_30d}`} accent="#4ade80" />
-                  <MetricCard icon={TrendingDown} label="Redeemed (30d)" value={`-${overview.redeemed_last_30d}`} accent="#f87171" />
+                  <MetricCard icon={TrendingUp} label="Earned (30d)" value={`+${overview.earned_last_30d}`} accent="#16a34a" />
+                  <MetricCard icon={TrendingDown} label="Redeemed (30d)" value={`-${overview.redeemed_last_30d}`} accent="#dc2626" />
                 </div>
 
                 <div>
                   <div className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--pos-muted)" }}>Tier mix</div>
                   <div className="flex gap-2 flex-wrap">
-                    <TierChip label="Bronze" count={overview.tiers.bronze} color="#a8a29e" />
-                    <TierChip label="Silver" count={overview.tiers.silver} color="#cbd5e1" />
-                    <TierChip label="Gold" count={overview.tiers.gold} color="#fcd34d" />
+                    <TierChip label="Bronze" count={overview.tiers.bronze} color="#92400e" />
+                    <TierChip label="Silver" count={overview.tiers.silver} color="#64748b" />
+                    <TierChip label="Gold" count={overview.tiers.gold} color="#ca8a04" />
                   </div>
                 </div>
 
@@ -148,7 +148,7 @@ export default function DashLoyalty() {
                   <div className="rounded-lg p-3 flex items-center justify-between gap-3 flex-wrap"
                     style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }} data-testid="loyalty-birthdays-missing">
                     <div className="flex items-center gap-2 text-xs" style={{ color: "var(--pos-muted)" }}>
-                      <Cake className="w-4 h-4 shrink-0" style={{ color: "#fb7185" }} />
+                      <Cake className="w-4 h-4 shrink-0" style={{ color: "#e11d48" }} />
                       {overview.birthdays_missing} customer{overview.birthdays_missing === 1 ? "" : "s"} haven't shared their birthday
                     </div>
                     <button data-testid="loyalty-send-birthday-request" onClick={sendBirthdayRequest} disabled={requestingBirthdays}
@@ -171,7 +171,7 @@ export default function DashLoyalty() {
                           <span className="ml-2 capitalize" style={{ color: "var(--pos-muted)" }}>{t.kind}</span>
                           {t.note && <span className="ml-1" style={{ color: "var(--pos-muted)" }}>· {t.note}</span>}
                         </div>
-                        <span className="tabular-nums shrink-0 ml-2" style={{ color: t.points >= 0 ? "#4ade80" : "#f87171" }}>
+                        <span className="tabular-nums shrink-0 ml-2" style={{ color: t.points >= 0 ? "#16a34a" : "#dc2626" }}>
                           {t.points >= 0 ? "+" : ""}{t.points}
                         </span>
                       </div>
@@ -227,7 +227,7 @@ export default function DashLoyalty() {
 
                 <div className="rounded-lg p-3 text-[11px] leading-relaxed flex items-start gap-2"
                   style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
-                  <Award className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#fcd34d" }} />
+                  <Award className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#d97706" }} />
                   <span>
                     A ₹{Number(cfg.earn_rate) * 5 || 500} order earns <b style={{ color: "var(--pos-text)" }}>5 points</b> at Bronze,{" "}
                     <b style={{ color: "var(--pos-text)" }}>{Math.floor(5 * (Number(cfg.silver_multiplier) || 1))} at Silver</b>, or{" "}
@@ -258,7 +258,7 @@ function MetricCard({ icon: Icon, label, value, sub, accent }) {
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>
         <Icon className="w-3 h-3" /> {label}
       </div>
-      <div className="text-xl font-bold mt-1" style={{ color: accent || "#fff" }}>{value}</div>
+      <div className="text-xl font-bold mt-1" style={{ color: accent || "var(--pos-text)" }}>{value}</div>
       {sub && <div className="text-[10px] mt-1" style={{ color: "var(--pos-muted)" }}>{sub}</div>}
     </div>
   );

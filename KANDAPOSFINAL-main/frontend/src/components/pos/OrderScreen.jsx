@@ -326,18 +326,18 @@ export default function OrderScreen() {
       <div className="w-full md:w-[270px] md:shrink-0 flex flex-col gap-3 p-3 overflow-visible md:overflow-y-auto pos-scroll border-b md:border-b-0 md:border-r" style={{ borderColor: "var(--pos-border)" }}>
         {editingOrder && (
           <div className="rounded-xl p-3 flex items-start gap-2 fade-in" data-testid="reopen-banner"
-            style={{ background: "#14233f", border: "1px solid #3b82f6" }}>
-            <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#7ea3d1" }} />
+            style={{ background: "rgba(37,99,235,0.14)", border: "1px solid rgba(37,99,235,0.4)" }}>
+            <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--pos-blue)" }} />
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold text-white">Reopened Bill #{editingOrder.number}</div>
-              <div className="text-[11px] mt-0.5" style={{ color: "#c7d4e6" }}>
+              <div className="text-xs font-bold" style={{ color: "var(--pos-text)" }}>Reopened Bill #{editingOrder.number}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-text)" }}>
                 {editingOrder.type === "dine-in" && editingOrder.table != null ? `Table ${editingOrder.table} · ` : ""}
                 {editingOrder.items?.length} sent · ₹{editingOrder.total.toFixed(2)}
               </div>
-              <div className="text-[10px] mt-1" style={{ color: "#7ea3d1" }}>Add more items or hit Pay to settle.</div>
+              <div className="text-[10px] mt-1" style={{ color: "var(--pos-blue)" }}>Add more items or hit Pay to settle.</div>
             </div>
             <button data-testid="close-reopen" onClick={() => { resetAll(); navigate("/tables"); }}
-              className="pos-btn p-1 rounded" style={{ color: "#7ea3d1" }} title="Back to tables">
+              className="pos-btn p-1 rounded" style={{ color: "var(--pos-blue)" }} title="Back to tables">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -424,7 +424,7 @@ export default function OrderScreen() {
             </div>
 
             {customer && (
-              <div className="mt-3 rounded-lg p-3 fade-in" data-testid="customer-card" style={{ background: "var(--pos-panel-2)", border: "1px solid #2e4a2e" }}>
+              <div className="mt-3 rounded-lg p-3 fade-in" data-testid="customer-card" style={{ background: "var(--pos-panel-2)", border: "1px solid rgba(22,163,74,0.4)" }}>
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="font-semibold text-sm" style={{ color: "var(--pos-text)" }}>{customer.name}</div>
@@ -434,7 +434,7 @@ export default function OrderScreen() {
                   </div>
                   <button data-testid="clear-customer" onClick={() => setCustomer(null)} className="pos-btn p-1 rounded" style={{ color: "var(--pos-muted)" }}><X className="w-4 h-4" /></button>
                 </div>
-                <div className="text-[11px] mt-2 px-2 py-0.5 rounded-full inline-block" style={{ background: "#1c2a1c", color: "#7cc97c" }}>{customer.orders || 0} previous orders</div>
+                <div className="text-[11px] mt-2 px-2 py-0.5 rounded-full inline-block" style={{ background: "rgba(22,163,74,0.15)", color: "#16a34a" }}>{customer.orders || 0} previous orders</div>
               </div>
             )}
 
@@ -491,7 +491,7 @@ export default function OrderScreen() {
                 ))}
               </SelectContent>
             </Select>
-            {tableNo && <div className="text-xs" style={{ color: "#7cc97c" }}>Table {tableNo} selected</div>}
+            {tableNo && <div className="text-xs" style={{ color: "#16a34a" }}>Table {tableNo} selected</div>}
           </div>
         )}
 
@@ -536,7 +536,7 @@ export default function OrderScreen() {
                   <span className="text-sm font-bold" style={{ color: "var(--pos-accent)" }}>{priceLabel}</span>
                   {!item.available && <span className="text-[10px] uppercase font-bold text-red-400">86&apos;d</span>}
                   {item.available && item._onSchedule && (
-                    <span className="text-[10px] uppercase font-bold" style={{ color: "#fcd34d" }}>
+                    <span className="text-[10px] uppercase font-bold" style={{ color: "#d97706" }}>
                       {item._pricingMode === "fixed" ? `₹${item._pricingValue}` : `-${item._pricingValue}%`}
                     </span>
                   )}

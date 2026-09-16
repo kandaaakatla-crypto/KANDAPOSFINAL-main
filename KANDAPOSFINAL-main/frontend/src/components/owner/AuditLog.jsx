@@ -62,18 +62,18 @@ export default function AuditLog() {
                   <td className="px-3 py-2" style={{ color: "var(--pos-text)" }}>{r.tenant_id || "—"}</td>
                   <td className="px-3 py-2 text-[11px]" style={{ color: "var(--pos-text)" }}>
                     <span className="font-mono">{r.actor_id}</span>
-                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px]" style={{ background: "rgba(255,255,255,0.05)", color: ACTOR_COLOR[r.actor_type] || "#a3a3a3" }}>
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px]" style={{ background: "var(--pos-panel-2)", color: ACTOR_COLOR[r.actor_type] || "#a3a3a3" }}>
                       {r.actor_type}{r.actor_role ? ` · ${r.actor_role}` : ""}
                     </span>
                     {r.imp_owner && (
-                      <span className="ml-1 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b" }}>
+                      <span className="ml-1 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(217,119,6,0.15)", color: "#d97706" }}>
                         <ShieldAlert className="w-2.5 h-2.5" /> by {r.imp_owner}{r.auditor_session ? " (auditor)" : ""}
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 font-bold text-[11px]" style={{ color: METHOD_COLOR[r.method] || "#fff" }}>{r.method}</td>
+                  <td className="px-3 py-2 font-bold text-[11px]" style={{ color: METHOD_COLOR[r.method] || "var(--pos-text)" }}>{r.method}</td>
                   <td className="px-3 py-2 font-mono text-[11px]" style={{ color: "var(--pos-text)" }}>{r.route}</td>
-                  <td className="px-3 py-2 tabular-nums" style={{ color: r.status >= 400 ? "#f59e0b" : "#a3a3a3" }}>{r.status}</td>
+                  <td className="px-3 py-2 tabular-nums" style={{ color: r.status >= 400 ? "#d97706" : "var(--pos-muted)" }}>{r.status}</td>
                 </tr>
               ))}
             </tbody>

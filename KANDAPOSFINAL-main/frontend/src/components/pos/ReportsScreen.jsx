@@ -86,26 +86,26 @@ export default function ReportsScreen() {
       {/* Labour cost widget — Manager-only */}
       {staffUser?.role === "Manager" && labour && (
         <div className="rounded-xl p-4 flex items-center gap-4" data-testid="labour-widget"
-          style={{ background: "linear-gradient(135deg, #1c2438 0%, #101a30 100%)", border: "1px solid var(--pos-border)" }}>
+          style={{ background: "linear-gradient(135deg, var(--pos-panel) 0%, var(--pos-panel-2) 100%)", border: "1px solid var(--pos-border)" }}>
           <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#fcd34d22" }}>
             <Users className="w-6 h-6" style={{ color: "#fcd34d" }} />
           </div>
           <div className="flex-1">
             <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Labour cost today</div>
             <div className="flex items-baseline gap-3">
-              <span className="text-2xl font-bold text-white tabular-nums" data-testid="labour-today">₹{labour.today_cost.toFixed(2)}</span>
+              <span className="text-2xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }} data-testid="labour-today">₹{labour.today_cost.toFixed(2)}</span>
               <span className="text-xs" style={{ color: "var(--pos-muted)" }}>
                 {labour.currently_in_count} on shift now
               </span>
             </div>
             <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
-              30-day run-rate at this pace: <span className="text-white tabular-nums">₹{labour.monthly_run_rate.toFixed(2)}</span>
+              30-day run-rate at this pace: <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>₹{labour.monthly_run_rate.toFixed(2)}</span>
             </div>
           </div>
           {todaySales > 0 && (
             <div className="text-right">
               <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Labour vs sales</div>
-              <div className="text-xl font-bold tabular-nums" style={{ color: labour.today_cost / todaySales > 0.4 ? "#fca5a5" : "#86efac" }}>
+              <div className="text-xl font-bold tabular-nums" style={{ color: labour.today_cost / todaySales > 0.4 ? "#dc2626" : "#16a34a" }}>
                 {((labour.today_cost / todaySales) * 100).toFixed(1)}%
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function ReportsScreen() {
               {rollups.map((d) => (
                 <div key={d.date} className="flex-1 min-w-[18px] flex flex-col items-center gap-1.5" title={`${d.date} · ₹${(d.gross_sales || 0).toFixed(2)}`}>
                   {range <= 7 && <span className="text-[10px] tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(d.gross_sales || 0).toFixed(0)}</span>}
-                  <div className="w-full rounded-t-md" style={{ height: `${((d.gross_sales || 0) / maxSales) * 100}%`, background: (d.gross_sales || 0) === maxSales ? "var(--pos-accent)" : "#2c3d61", minHeight: 4, transition: "height 0.4s ease" }} />
+                  <div className="w-full rounded-t-md" style={{ height: `${((d.gross_sales || 0) / maxSales) * 100}%`, background: (d.gross_sales || 0) === maxSales ? "var(--pos-accent)" : "var(--pos-border)", minHeight: 4, transition: "height 0.4s ease" }} />
                   <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: "var(--pos-muted)" }}>{fmtLabel(d.date)}</span>
                 </div>
               ))}

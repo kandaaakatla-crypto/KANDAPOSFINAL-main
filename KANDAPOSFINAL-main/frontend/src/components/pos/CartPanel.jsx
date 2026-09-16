@@ -66,7 +66,7 @@ export default function CartPanel({
           <span className="font-bold text-sm capitalize" style={{ color: "var(--pos-text)" }}>{orderType} Order</span>
         </div>
         {cart.length > 0 && (
-          <button data-testid="clear-cart-btn" onClick={onClear} className="pos-btn text-xs flex items-center gap-1 px-2 py-1 rounded" style={{ color: "#f87171" }}>
+          <button data-testid="clear-cart-btn" onClick={onClear} className="pos-btn text-xs flex items-center gap-1 px-2 py-1 rounded" style={{ color: "#dc2626" }}>
             <Trash2 className="w-3.5 h-3.5" /> Clear
           </button>
         )}
@@ -75,7 +75,7 @@ export default function CartPanel({
         <div className="px-4 py-2 text-xs truncate flex items-center justify-between" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", borderBottom: "1px solid var(--pos-border)" }} data-testid="cart-customer">
           <span className="truncate">{customer.name}{customer.address ? ` · ${customer.address}` : ""}</span>
           {loyaltyBalance != null && loyaltyBalance > 0 && (
-            <span className="ml-2 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: "#1c2438", color: "#fcd34d" }}>
+            <span className="ml-2 flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(245,158,11,0.15)", color: "#d97706" }}>
               <Coins className="w-3 h-3" /> {loyaltyBalance} pts
             </span>
           )}
@@ -85,14 +85,14 @@ export default function CartPanel({
       {/* Lines */}
       <div className="flex-1 min-h-0 overflow-y-auto pos-scroll px-3 py-2" data-testid="cart-lines">
         {runningBill && runningBill.items?.length > 0 && (
-          <div className="rounded-lg p-2.5 mb-3" style={{ background: "#1a2235", border: "1px dashed #3f5170" }} data-testid="running-bill-items">
-            <div className="text-[10px] uppercase tracking-wider mb-1.5 flex items-center justify-between" style={{ color: "#7ea3d1" }}>
+          <div className="rounded-lg p-2.5 mb-3" style={{ background: "var(--pos-panel-2)", border: "1px dashed var(--pos-border)" }} data-testid="running-bill-items">
+            <div className="text-[10px] uppercase tracking-wider mb-1.5 flex items-center justify-between" style={{ color: "var(--pos-muted)" }}>
               <span>Already sent to kitchen · #{runningBill.number}</span>
               <span className="tabular-nums font-bold">₹{runningBill.total.toFixed(2)}</span>
             </div>
             <div className="space-y-0.5">
               {runningBill.items.map((it, i) => (
-                <div key={`sent-${i}`} className="flex justify-between text-[11px]" style={{ color: "#c7d4e6" }}>
+                <div key={`sent-${i}`} className="flex justify-between text-[11px]" style={{ color: "var(--pos-text)" }}>
                   <span>{it.qty}× {it.name}</span>
                   <span className="tabular-nums">₹{(it.price * it.qty).toFixed(2)}</span>
                 </div>
@@ -137,7 +137,7 @@ export default function CartPanel({
                       <Plus className="w-3 h-3" style={{ color: "var(--pos-text)" }} />
                     </button>
                   </div>
-                  <button data-testid="line-remove" onClick={() => onRemove(l.lineId)} className="pos-btn p-1.5 rounded" style={{ color: "#f87171" }}>
+                  <button data-testid="line-remove" onClick={() => onRemove(l.lineId)} className="pos-btn p-1.5 rounded" style={{ color: "#dc2626" }}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -167,21 +167,21 @@ export default function CartPanel({
 
           {/* Coupon */}
           <div className="flex items-center gap-2">
-            <Tag className="w-3 h-3" style={{ color: coupon ? "#86efac" : "var(--pos-muted)" }} />
+            <Tag className="w-3 h-3" style={{ color: coupon ? "#16a34a" : "var(--pos-muted)" }} />
             <Input data-testid="coupon-input" placeholder="Coupon code"
               defaultValue={coupon?.code || ""}
               onBlur={(e) => applyCoupon(e.target.value.trim().toUpperCase())}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(e.target.value.trim().toUpperCase()); } }}
               className="h-7 text-xs tracking-wider" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             {coupon && (
-              <button data-testid="coupon-clear" onClick={() => onCoupon(null)} className="pos-btn text-[10px] px-1" style={{ color: "#fca5a5" }}>×</button>
+              <button data-testid="coupon-clear" onClick={() => onCoupon(null)} className="pos-btn text-[10px] px-1" style={{ color: "#dc2626" }}>×</button>
             )}
           </div>
 
           {/* Loyalty redeem */}
           {loyaltyBalance > 0 && (
             <div className="flex items-center gap-2 text-[11px]">
-              <Coins className="w-3 h-3" style={{ color: "#fcd34d" }} />
+              <Coins className="w-3 h-3" style={{ color: "#d97706" }} />
               <span style={{ color: "var(--pos-muted)" }}>Redeem points ({redeemValue === 1 ? "₹1/pt" : `₹${redeemValue}/pt`})</span>
               <Input data-testid="redeem-points-input" type="number" min={0} max={Math.min(loyaltyBalance, maxRedeemable)}
                 value={redeemPoints || ""} onChange={(e) => onRedeemPoints(Math.max(0, Math.min(loyaltyBalance, maxRedeemable, Math.floor(+e.target.value || 0))))}
@@ -197,7 +197,7 @@ export default function CartPanel({
           {/* Store credit redeem */}
           {storeCreditBalance > 0 && (
             <div className="flex items-center gap-2 text-[11px]">
-              <Wallet className="w-3 h-3" style={{ color: "#7ee2a8" }} />
+              <Wallet className="w-3 h-3" style={{ color: "#16a34a" }} />
               <span style={{ color: "var(--pos-muted)" }}>Store credit (₹{storeCreditBalance.toFixed(2)} avail.)</span>
               <Input data-testid="redeem-credit-input" type="number" min={0} max={Math.min(storeCreditBalance, subtotal)}
                 value={redeemCredit || ""} onChange={(e) => onRedeemCredit(Math.max(0, Math.min(storeCreditBalance, subtotal, +e.target.value || 0)))}
@@ -212,7 +212,7 @@ export default function CartPanel({
 
           {/* Gift card redeem */}
           <div className="flex items-center gap-2 text-[11px] flex-wrap">
-            <Gift className="w-3 h-3" style={{ color: "#c4b5fd" }} />
+            <Gift className="w-3 h-3" style={{ color: "#7c3aed" }} />
             <Input data-testid="gift-card-code-input" placeholder="Gift card code" value={giftCardCode || ""}
               onChange={(e) => onGiftCardCode(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onCheckGiftCard(); } }}
@@ -250,8 +250,8 @@ export default function CartPanel({
       <div className="px-4 py-2 space-y-1" style={{ borderTop: "1px solid var(--pos-border)" }}>
         {runningBill && (
           <div className="flex justify-between text-xs" data-testid="running-bill-summary">
-            <span style={{ color: "#7ea3d1" }}>Running bill (already sent)</span>
-            <span className="tabular-nums" style={{ color: "#c7d4e6" }}>₹{runningBill.total.toFixed(2)}</span>
+            <span style={{ color: "var(--pos-muted)" }}>Running bill (already sent)</span>
+            <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>₹{runningBill.total.toFixed(2)}</span>
           </div>
         )}
         <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>{runningBill ? "New subtotal" : "Subtotal"}</span><span className="tabular-nums" style={{ color: "var(--pos-text)" }} data-testid="cart-subtotal">₹{subtotal.toFixed(2)}</span></div>
@@ -275,19 +275,19 @@ export default function CartPanel({
               ))}
             </span>
           </span>
-          <span className="tabular-nums" style={{ color: discountAmt > 0 ? "#7ee2a8" : "var(--pos-muted)" }}>-₹{discountAmt.toFixed(2)}</span>
+          <span className="tabular-nums" style={{ color: discountAmt > 0 ? "#16a34a" : "var(--pos-muted)" }}>-₹{discountAmt.toFixed(2)}</span>
         </div>
         {couponDiscount > 0 && (
-          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Coupon ({coupon.code})</span><span className="tabular-nums" style={{ color: "#7ee2a8" }}>-₹{couponDiscount.toFixed(2)}</span></div>
+          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Coupon ({coupon.code})</span><span className="tabular-nums" style={{ color: "#16a34a" }}>-₹{couponDiscount.toFixed(2)}</span></div>
         )}
         {loyaltyDiscount > 0 && (
-          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Loyalty ({redeemPoints} pts)</span><span className="tabular-nums" style={{ color: "#fcd34d" }}>-₹{loyaltyDiscount.toFixed(2)}</span></div>
+          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Loyalty ({redeemPoints} pts)</span><span className="tabular-nums" style={{ color: "#d97706" }}>-₹{loyaltyDiscount.toFixed(2)}</span></div>
         )}
         {creditDiscount > 0 && (
-          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Store credit</span><span className="tabular-nums" style={{ color: "#7ee2a8" }}>-₹{creditDiscount.toFixed(2)}</span></div>
+          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Store credit</span><span className="tabular-nums" style={{ color: "#16a34a" }}>-₹{creditDiscount.toFixed(2)}</span></div>
         )}
         {giftDiscount > 0 && (
-          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Gift card ({giftCardCode})</span><span className="tabular-nums" style={{ color: "#c4b5fd" }}>-₹{giftDiscount.toFixed(2)}</span></div>
+          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Gift card ({giftCardCode})</span><span className="tabular-nums" style={{ color: "#7c3aed" }}>-₹{giftDiscount.toFixed(2)}</span></div>
         )}
         {tipAmt > 0 && (
           <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Tip</span><span className="tabular-nums" style={{ color: "var(--pos-text)" }} data-testid="tip-amount">₹{tipAmt.toFixed(2)}</span></div>

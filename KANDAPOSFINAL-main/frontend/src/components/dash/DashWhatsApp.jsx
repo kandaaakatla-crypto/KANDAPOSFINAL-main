@@ -154,14 +154,14 @@ export default function DashWhatsApp() {
 
       {showSandbox && sandbox && (
         <div className="mx-6 mb-3 rounded-lg p-4 text-xs"
-          style={{ background: "rgba(37,211,102,0.08)", border: "1px solid rgba(37,211,102,0.35)", color: "#d4f7e0" }}>
+          style={{ background: "rgba(37,211,102,0.08)", border: "1px solid rgba(37,211,102,0.35)", color: "var(--pos-text)" }}>
           <div className="flex items-center justify-between mb-2">
             <div className="font-bold text-sm" style={{ color: "var(--pos-text)" }}>WhatsApp Setup</div>
             {sandbox.sender_status && (
               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
                 style={{
-                  background: sandbox.sender_status === "ONLINE" ? "rgba(52,211,153,0.20)" : "rgba(220,38,38,0.20)",
-                  color: sandbox.sender_status === "ONLINE" ? "#4ade80" : "#f87171",
+                  background: sandbox.sender_status === "ONLINE" ? "rgba(22,163,74,0.20)" : "rgba(220,38,38,0.20)",
+                  color: sandbox.sender_status === "ONLINE" ? "#16a34a" : "#dc2626",
                 }}>
                 {sandbox.sender_status}
               </span>
@@ -169,17 +169,17 @@ export default function DashWhatsApp() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="p-2 rounded" style={{ background: "rgba(0,0,0,0.30)" }}>
-              <div className="text-[10px] uppercase tracking-wider" style={{ color: "#8fbfa0" }}>Sender number</div>
+            <div className="p-2 rounded" style={{ background: "var(--pos-panel-2)" }}>
+              <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Sender number</div>
               <button onClick={() => { navigator.clipboard?.writeText(sandbox.from_display); toast.success("Copied"); }}
-                className="pos-btn inline-flex items-center gap-1 mt-1 text-emerald-300 font-mono">
+                className="pos-btn inline-flex items-center gap-1 mt-1 font-mono" style={{ color: "#128C7E" }}>
                 {sandbox.from_display} <Copy className="w-2.5 h-2.5" />
               </button>
             </div>
             {sandbox.sender_quality && (
-              <div className="p-2 rounded" style={{ background: "rgba(0,0,0,0.30)" }}>
-                <div className="text-[10px] uppercase tracking-wider" style={{ color: "#8fbfa0" }}>Quality / limit</div>
-                <div className="mt-1 text-white">{sandbox.sender_quality} · {sandbox.sender_limit || "—"}</div>
+              <div className="p-2 rounded" style={{ background: "var(--pos-panel-2)" }}>
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Quality / limit</div>
+                <div className="mt-1" style={{ color: "var(--pos-text)" }}>{sandbox.sender_quality} · {sandbox.sender_limit || "—"}</div>
               </div>
             )}
           </div>
@@ -188,18 +188,18 @@ export default function DashWhatsApp() {
             <ol className="list-decimal ml-5 space-y-1.5">
               <li>
                 Ask each customer to open WhatsApp and send{" "}
-                <code className="px-1.5 py-0.5 rounded bg-black/40 text-emerald-300">
+                <code className="px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel-2)", color: "#128C7E" }}>
                   join {sandbox.join_phrase || "<your-sandbox-phrase>"}
                 </code>{" "}
                 to {sandbox.from_display}.
               </li>
               <li>
-                Once they reply <code className="px-1.5 py-0.5 rounded bg-black/40 text-emerald-300">&ldquo;joined&rdquo;</code>,
+                Once they reply <code className="px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel-2)", color: "#128C7E" }}>&ldquo;joined&rdquo;</code>,
                 you can chat freely for 24 hours after each reply they send.
               </li>
               <li>
                 Find your sandbox phrase in Twilio Console → Messaging → Try it out → Send a WhatsApp message.
-                Set it in <code className="px-1.5 py-0.5 rounded bg-black/40">TWILIO_WHATSAPP_JOIN_PHRASE</code>.
+                Set it in <code className="px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>TWILIO_WHATSAPP_JOIN_PHRASE</code>.
               </li>
             </ol>
           ) : (
@@ -207,10 +207,10 @@ export default function DashWhatsApp() {
               <li>
                 <b>Free-form messages</b> only work within 24 h of the customer&apos;s last inbound message.
                 Outside that window, use an approved <b>Template</b> (
-                <code className="px-1.5 py-0.5 rounded bg-black/40">📄 icon in composer</code>).
+                <code className="px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>📄 icon in composer</code>).
               </li>
               <li>
-                If sends come back as <code className="px-1.5 py-0.5 rounded bg-black/40">undelivered / 63051</code>,
+                If sends come back as <code className="px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>undelivered / 63051</code>,
                 the recipient may not be on WhatsApp, or has blocked business messages. Try a different test number.
               </li>
               <li>
@@ -219,9 +219,9 @@ export default function DashWhatsApp() {
             </ol>
           )}
 
-          <div className="mt-3 pt-3 text-[10px]" style={{ borderTop: "1px solid rgba(37,211,102,0.20)", color: "#8fbfa0" }}>
+          <div className="mt-3 pt-3 text-[10px]" style={{ borderTop: "1px solid rgba(37,211,102,0.20)", color: "var(--pos-muted)" }}>
             Inbound webhook (paste into Twilio Sandbox / Sender settings):{" "}
-            <code className="text-emerald-300 break-all">{sandbox.inbound_webhook_url}</code>
+            <code className="break-all" style={{ color: "#128C7E" }}>{sandbox.inbound_webhook_url}</code>
           </div>
         </div>
       )}
