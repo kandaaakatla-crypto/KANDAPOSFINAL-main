@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { Pizza, Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw } from "lucide-react";
+import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
@@ -82,9 +82,13 @@ export default function POSLayout() {
 
         {/* Desktop sidebar — hidden on mobile in favour of the bottom nav. */}
         <aside className="hidden md:flex w-[92px] flex-col items-center py-4 shrink-0" style={{ background: "var(--pos-panel)", borderRight: "1px solid var(--pos-border)" }} data-testid="sidebar">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-6" style={{ background: "var(--pos-accent)" }}>
-            {businessType === "retail" ? <Store className="w-6 h-6 text-white" /> : <Pizza className="w-6 h-6 text-white" />}
-          </div>
+          {businessType === "retail" ? (
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-6" style={{ background: "var(--pos-accent)" }}>
+              <Store className="w-6 h-6 text-white" />
+            </div>
+          ) : (
+            <img src="/icon-192.png" alt="Kanda POS" className="w-11 h-11 rounded-xl mb-6" />
+          )}
           <nav className="flex flex-col gap-1.5 flex-1 min-h-0 w-full px-2 overflow-y-auto">
             {[...PRIMARY_NAV, ...SECONDARY_NAV].map((n) => (
               <RailLink key={n.to} to={n.to} label={n.label} Icon={n.icon} end={n.end}
@@ -128,9 +132,13 @@ export default function POSLayout() {
           <header className="h-14 flex items-center justify-between px-3 md:px-5 shrink-0 gap-2" style={{ background: "var(--pos-panel)", borderBottom: "1px solid var(--pos-border)" }}>
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
               {/* Mobile brand mark */}
-              <div className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--pos-accent)" }}>
-                {businessType === "retail" ? <Store className="w-4 h-4 text-white" /> : <Pizza className="w-4 h-4 text-white" />}
-              </div>
+              {businessType === "retail" ? (
+                <div className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--pos-accent)" }}>
+                  <Store className="w-4 h-4 text-white" />
+                </div>
+              ) : (
+                <img src="/icon-192.png" alt="Kanda POS" className="md:hidden w-8 h-8 rounded-lg shrink-0" />
+              )}
               <span className="hidden md:inline font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA POS</span>
               <LocationSwitcher storeName="Store" isManager={staffUser?.role === "Manager"} />
             </div>

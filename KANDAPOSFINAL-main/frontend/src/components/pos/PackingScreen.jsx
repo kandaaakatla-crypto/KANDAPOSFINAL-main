@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { kdsApi } from "../../api/kdsClient";
-import { PackageCheck, Package, Bike, ShoppingBag, UtensilsCrossed, CheckCircle2, Pizza } from "lucide-react";
+import { PackageCheck, Package, Bike, ShoppingBag, UtensilsCrossed, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
@@ -96,9 +96,7 @@ export default function PackingScreen() {
     <div className="min-h-screen p-4" style={{ background: "var(--pos-bg)" }} data-testid="packing-screen">
       <div className="flex items-center justify-between mb-6 max-w-5xl mx-auto">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
-            <Pizza className="w-5 h-5 text-white" />
-          </div>
+          <img src="/icon-192.png" alt="Kanda POS" className="w-9 h-9 rounded-lg" />
           <div>
             <div className="text-lg font-bold" style={{ color: "var(--pos-text)" }}>{data?.tenant?.name || "Kanda POS"}</div>
             <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Packing station</div>
