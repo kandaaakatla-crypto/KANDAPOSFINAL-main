@@ -66,7 +66,7 @@ export default function TenantBillingCard({ tenantId }) {
           <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Subscription</span>
         </div>
         <span className="text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider"
-          style={{ background: "rgba(255,255,255,0.05)", color: STATUS_COLOR[billing.status] || "#a3a3a3" }}>
+          style={{ background: "var(--pos-panel-2)", color: STATUS_COLOR[billing.status] || "#a3a3a3" }}>
           {billing.status}
         </span>
       </div>
@@ -120,7 +120,7 @@ export default function TenantBillingCard({ tenantId }) {
               <AlertDialogTrigger asChild>
                 <button data-testid="cancel-sub-btn" disabled={busy}
                   className="pos-btn h-10 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5"
-                  style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+                  style={{ background: "var(--pos-panel-2)", color: "#dc2626", border: "1px solid rgba(220,38,38,0.4)" }}>
                   <XCircle className="w-3.5 h-3.5" /> Cancel at cycle end
                 </button>
               </AlertDialogTrigger>

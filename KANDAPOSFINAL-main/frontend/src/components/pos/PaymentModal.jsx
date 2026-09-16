@@ -199,9 +199,9 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
             <Input data-testid="tendered-input" type="number" placeholder="Amount tendered" value={tendered} onChange={(e) => setTendered(e.target.value)}
               className="h-12 text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             {tenderedNum >= total && (
-              <div className="flex justify-between items-center rounded-lg px-4 py-3" style={{ background: "#15281b", border: "1px solid #2e7d4f" }} data-testid="change-due">
-                <span className="text-sm font-semibold" style={{ color: "#7ee2a8" }}>Change due</span>
-                <span className="text-xl font-bold tabular-nums" style={{ color: "#7ee2a8" }}>₹{change.toFixed(2)}</span>
+              <div className="flex justify-between items-center rounded-lg px-4 py-3" style={{ background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.4)" }} data-testid="change-due">
+                <span className="text-sm font-semibold" style={{ color: "#16a34a" }}>Change due</span>
+                <span className="text-xl font-bold tabular-nums" style={{ color: "#16a34a" }}>₹{change.toFixed(2)}</span>
               </div>
             )}
             <button data-testid="confirm-cash-btn" onClick={confirmCash} disabled={tenderedNum < total || busy}
@@ -238,15 +238,15 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
               </div>
             )}
             {cardState === "approved" && (
-              <div className="flex items-center justify-center gap-3 h-14 rounded-xl" style={{ background: "#15281b", border: "1px solid #2e7d4f" }} data-testid="card-approved">
-                <CheckCircle2 className="w-5 h-5" style={{ color: "#7ee2a8" }} />
-                <span className="text-sm font-bold" style={{ color: "#7ee2a8" }}>APPROVED</span>
+              <div className="flex items-center justify-center gap-3 h-14 rounded-xl" style={{ background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.4)" }} data-testid="card-approved">
+                <CheckCircle2 className="w-5 h-5" style={{ color: "#16a34a" }} />
+                <span className="text-sm font-bold" style={{ color: "#16a34a" }}>APPROVED</span>
               </div>
             )}
             {cardState === "failed" && (
-              <div className="flex items-center justify-center gap-3 h-14 rounded-xl" style={{ background: "#321519", border: "1px solid #7d2e2e" }}>
-                <XCircle className="w-5 h-5" style={{ color: "#f87171" }} />
-                <span className="text-sm font-bold" style={{ color: "#f87171" }}>PAYMENT FAILED</span>
+              <div className="flex items-center justify-center gap-3 h-14 rounded-xl" style={{ background: "rgba(220,38,38,0.14)", border: "1px solid rgba(220,38,38,0.4)" }}>
+                <XCircle className="w-5 h-5" style={{ color: "#dc2626" }} />
+                <span className="text-sm font-bold" style={{ color: "#dc2626" }}>PAYMENT FAILED</span>
               </div>
             )}
             <div className="text-[11px] text-center" style={{ color: "var(--pos-muted)" }}>
@@ -282,8 +282,8 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
                 className="pos-btn h-9 rounded-md text-xs font-bold" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>Card = remainder</button>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-2 text-sm"
-              style={{ background: splitValid ? "#15281b" : Math.abs(splitDelta) < 0.01 ? "var(--pos-panel-2)" : "#321519",
-                       border: `1px solid ${splitValid ? "#2e7d4f" : Math.abs(splitDelta) < 0.01 ? "var(--pos-border)" : "#7d2e2e"}` }}
+              style={{ background: splitValid ? "rgba(22,163,74,0.14)" : Math.abs(splitDelta) < 0.01 ? "var(--pos-panel-2)" : "rgba(220,38,38,0.14)",
+                       border: `1px solid ${splitValid ? "rgba(22,163,74,0.4)" : Math.abs(splitDelta) < 0.01 ? "var(--pos-border)" : "rgba(220,38,38,0.4)"}` }}
               data-testid="split-summary">
               <span style={{ color: "var(--pos-muted)" }}>Cash + Card</span>
               <span className="tabular-nums font-bold" style={{ color: splitValid || Math.abs(splitDelta) >= 0.01 ? "#fff" : "var(--pos-text)" }}>₹{splitSum.toFixed(2)} <span style={{ color: "var(--pos-muted)", fontWeight: 400 }}>/ ₹{total.toFixed(2)}</span></span>

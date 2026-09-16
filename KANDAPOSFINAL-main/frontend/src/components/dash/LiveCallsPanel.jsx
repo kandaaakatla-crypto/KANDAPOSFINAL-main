@@ -70,14 +70,14 @@ export default function LiveCallsPanel() {
 
   return (
     <div className="rounded-xl overflow-hidden" data-testid="live-calls-panel"
-      style={{ background: "linear-gradient(135deg, #071a12, #0e2515)", border: "1px solid #1d4d2d" }}>
-      <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid #1d4d2d" }}>
+      style={{ background: "linear-gradient(135deg, var(--pos-panel) 0%, var(--pos-panel-2) 100%)", border: "1px solid var(--pos-border)" }}>
+      <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid var(--pos-border)" }}>
         <div className="relative">
-          <Radio className="w-4 h-4" style={{ color: "#86efac" }} />
+          <Radio className="w-4 h-4" style={{ color: "#16a34a" }} />
           <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400" />
         </div>
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+        <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: "var(--pos-text)" }}>
           Active calls ({list.length})
         </h2>
       </div>
@@ -116,13 +116,13 @@ function LiveCallCard({ call }) {
 
   return (
     <div className="rounded-lg overflow-hidden" data-testid={`live-call-${call.id}`}
-      style={{ background: "rgba(0,0,0,0.35)", border: "1px solid #1d4d2d" }}>
-      <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid #1d4d2d" }}>
+      style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+      <div className="px-3 py-2 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-2">
-          <PhoneCall className="w-3.5 h-3.5" style={{ color: "#86efac" }} />
-          <span className="text-sm font-bold text-white tabular-nums">{other || "—"}</span>
+          <PhoneCall className="w-3.5 h-3.5" style={{ color: "#16a34a" }} />
+          <span className="text-sm font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>{other || "—"}</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
-            style={{ background: "rgba(134,239,172,0.15)", color: "#86efac" }}>
+            style={{ background: "rgba(22,163,74,0.15)", color: "#16a34a" }}>
             {call.direction}
           </span>
         </div>
@@ -137,34 +137,34 @@ function LiveCallCard({ call }) {
         {(call.lines || []).map((m, i) => (
           <div key={i} className="flex gap-2 text-xs">
             <span className="shrink-0 w-14 uppercase tracking-wider text-[9px] font-bold"
-              style={{ color: m.role === "user" ? "#fbbf24" : "#7dd3fc" }}>
+              style={{ color: m.role === "user" ? "#d97706" : "var(--pos-blue)" }}>
               {m.role === "user" ? "Caller" : "Agent"}
             </span>
-            <span className="text-white">{m.text}</span>
+            <span style={{ color: "var(--pos-text)" }}>{m.text}</span>
           </div>
         ))}
         {(call.whispers || []).map((w, i) => (
           <div key={`w${i}`} className="flex gap-2 text-xs px-2 py-1.5 rounded"
-            style={{ background: "rgba(168,85,247,0.10)", border: "1px dashed rgba(168,85,247,0.35)" }}>
+            style={{ background: "rgba(124,58,237,0.10)", border: "1px dashed rgba(124,58,237,0.35)" }}>
             <span className="shrink-0 w-14 uppercase tracking-wider text-[9px] font-bold"
-              style={{ color: "#c084fc" }}>
+              style={{ color: "#7c3aed" }}>
               Whisper
             </span>
-            <div className="text-white flex-1">
+            <div className="flex-1" style={{ color: "var(--pos-text)" }}>
               <div>{w.text}</div>
-              <div className="text-[9px] mt-0.5" style={{ color: "#a78bfa" }}>from {w.by}</div>
+              <div className="text-[9px] mt-0.5" style={{ color: "#7c3aed" }}>from {w.by}</div>
             </div>
           </div>
         ))}
       </div>
-      <div className="px-3 py-2 flex items-center gap-2" style={{ borderTop: "1px solid #1d4d2d" }}>
-        <Mic className="w-3.5 h-3.5" style={{ color: "#c084fc" }} />
+      <div className="px-3 py-2 flex items-center gap-2" style={{ borderTop: "1px solid var(--pos-border)" }}>
+        <Mic className="w-3.5 h-3.5" style={{ color: "#7c3aed" }} />
         <input data-testid={`whisper-input-${call.id}`}
           value={whisper} onChange={(e) => setWhisper(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendWhisper())}
           placeholder="Whisper an instruction to the AI (caller won't hear)…"
-          className="flex-1 rounded px-2 py-1.5 text-xs text-white outline-none"
-          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(168,85,247,0.30)" }} />
+          className="flex-1 rounded px-2 py-1.5 text-xs outline-none"
+          style={{ background: "var(--pos-panel)", border: "1px solid rgba(124,58,237,0.35)", color: "var(--pos-text)" }} />
         <button data-testid={`whisper-send-${call.id}`}
           onClick={sendWhisper} disabled={sending || !whisper.trim()}
           className="pos-btn px-2.5 py-1.5 rounded flex items-center gap-1 text-white text-xs"

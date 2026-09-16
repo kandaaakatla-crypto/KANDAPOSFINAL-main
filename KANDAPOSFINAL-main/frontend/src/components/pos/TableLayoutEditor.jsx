@@ -24,15 +24,16 @@ function TableShape({ t, selected, editable, onPointerDown, onResizePointerDown,
     <div
       data-testid={`floor-table-${t.id}`}
       onPointerDown={onPointerDown}
-      className="absolute flex flex-col items-center justify-center text-white font-bold cursor-move select-none"
+      className="absolute flex flex-col items-center justify-center font-bold cursor-move select-none"
       style={{
         left: t.x, top: t.y, width: t.width, height: t.height,
         background: STATUS_COLOR[t.status] + (selected ? "" : "33"),
         border: `2px solid ${STATUS_COLOR[t.status]}`,
         borderRadius: radius,
         transform: `rotate(${t.rotation || 0}deg)`,
-        boxShadow: selected ? "0 0 0 3px #fff5, 0 0 24px #00000088" : "none",
+        boxShadow: selected ? "0 0 0 3px var(--pos-accent), 0 0 24px rgba(0,0,0,0.4)" : "none",
         transition: "background 80ms, box-shadow 80ms",
+        color: "var(--pos-text)",
       }}
     >
       <div className="text-base leading-none">T{t.number}</div>
@@ -271,7 +272,7 @@ export default function TableLayoutEditor({ onExit }) {
               <AlertDialogTrigger asChild>
                 <button data-testid="layout-remove-table"
                   className="pos-btn w-full h-9 rounded-md text-xs font-bold flex items-center justify-center gap-1.5"
-                  style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+                  style={{ background: "var(--pos-panel-2)", color: "#dc2626", border: "1px solid rgba(220,38,38,0.4)" }}>
                   <Trash2 className="w-3.5 h-3.5" /> Remove table
                 </button>
               </AlertDialogTrigger>

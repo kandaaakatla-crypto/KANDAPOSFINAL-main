@@ -104,14 +104,14 @@ export default function DashVoice() {
 
       {/* Status banner */}
       <div className="rounded-xl p-4 flex items-center justify-between"
-        style={{ background: cfg.enabled ? "linear-gradient(135deg, #0e2515, #14361f)" : "var(--pos-panel)",
-                 border: `1px solid ${cfg.enabled ? "#1d4d2d" : "var(--pos-border)"}` }}>
+        style={{ background: cfg.enabled ? "rgba(22,163,74,0.14)" : "var(--pos-panel)",
+                 border: `1px solid ${cfg.enabled ? "rgba(22,163,74,0.4)" : "var(--pos-border)"}` }}>
         <div className="flex items-center gap-3">
           {cfg.enabled
-            ? <CheckCircle2 className="w-6 h-6" style={{ color: "#86efac" }} />
-            : <AlertTriangle className="w-6 h-6" style={{ color: "#fbbf24" }} />}
+            ? <CheckCircle2 className="w-6 h-6" style={{ color: "#16a34a" }} />
+            : <AlertTriangle className="w-6 h-6" style={{ color: "#d97706" }} />}
           <div>
-            <div className="text-base font-bold" style={{ color: cfg.enabled ? "#fff" : "var(--pos-text)" }}>
+            <div className="text-base font-bold" style={{ color: "var(--pos-text)" }}>
               {cfg.enabled ? "Agent is LIVE" : "Agent is OFF"}
             </div>
             <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
@@ -155,7 +155,7 @@ export default function DashVoice() {
             Or set this URL manually in your Twilio number&apos;s
             <em> Voice & Fax → A CALL COMES IN → Webhook</em>:
             <button onClick={() => copy(cfg.webhook_url)} className="ml-2 underline inline-flex items-center gap-1">
-              <code className="text-xs" style={{ color: "#7dd3fc" }}>{cfg.webhook_url}</code>
+              <code className="text-xs" style={{ color: "var(--pos-blue)" }}>{cfg.webhook_url}</code>
               <Copy className="w-3 h-3" />
             </button>
           </p>
@@ -212,7 +212,7 @@ export default function DashVoice() {
             className="w-full rounded-md px-3 py-2 text-sm"
             style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           <div className="flex items-center justify-between mt-2">
-            <span className="text-[11px]" style={{ color: personaDirty ? "#fbbf24" : "var(--pos-muted)" }}>
+            <span className="text-[11px]" style={{ color: personaDirty ? "#d97706" : "var(--pos-muted)" }}>
               {personaDirty ? "Unsaved changes" : "Changes saved. The AI will use these on the next call."}
             </span>
             <div className="flex items-center gap-2">
@@ -237,10 +237,10 @@ export default function DashVoice() {
 
       {/* Outbound Test Call panel */}
       <div className="rounded-xl p-5 space-y-3"
-        style={{ background: "linear-gradient(135deg, #14213a, #1a2b4d)", border: "1px solid #1e3a5f" }}>
+        style={{ background: "linear-gradient(135deg, var(--pos-panel) 0%, var(--pos-panel-2) 100%)", border: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-2">
-          <PhoneCall className="w-4 h-4" style={{ color: "#7dd3fc" }} />
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">Place a test call</h2>
+          <PhoneCall className="w-4 h-4" style={{ color: "var(--pos-blue)" }} />
+          <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: "var(--pos-text)" }}>Place a test call</h2>
         </div>
         <p className="text-xs" style={{ color: "var(--pos-muted)" }}>
           Dial any number and the AI agent will call it, greeting the caller in English / Hindi / Telugu.
@@ -250,8 +250,8 @@ export default function DashVoice() {
           <Input data-testid="voice-test-to" value={testTo}
             onChange={(e) => setTestTo(e.target.value)}
             placeholder="+916303435484"
-            className="text-white flex-1"
-            style={{ background: "rgba(0,0,0,0.3)", borderColor: "#1e3a5f" }} />
+            className="flex-1"
+            style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           <button data-testid="voice-test-call-btn" onClick={placeTestCall}
             disabled={testDialing || !testTo.trim()}
             className="pos-btn h-10 px-5 rounded-md text-xs font-bold text-white flex items-center justify-center gap-2 shrink-0"
@@ -263,19 +263,19 @@ export default function DashVoice() {
         <textarea data-testid="voice-test-message" value={testMessage}
           onChange={(e) => setTestMessage(e.target.value)}
           rows={2} placeholder="What should the AI say/do on this call?"
-          className="w-full rounded-md px-3 py-2 text-xs text-white"
-          style={{ background: "rgba(0,0,0,0.3)", border: "1px solid #1e3a5f" }} />
+          className="w-full rounded-md px-3 py-2 text-xs"
+          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
         <div className="flex items-center justify-between">
           <p className="text-[11px]" style={{ color: "var(--pos-muted)" }}>
-            <strong style={{ color: "#fbbf24" }}>Tip:</strong> save this as your default script so you don&apos;t retype it every time.
+            <strong style={{ color: "#d97706" }}>Tip:</strong> save this as your default script so you don&apos;t retype it every time.
           </p>
           <button data-testid="voice-test-msg-save"
             onClick={() => {
               localStorage.setItem("kanda_voice_test_msg", testMessage);
               toast.success("Saved as your default test-call script");
             }}
-            className="pos-btn h-8 px-3 rounded-md text-[11px] font-bold text-white"
-            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid #1e3a5f" }}>
+            className="pos-btn h-8 px-3 rounded-md text-[11px] font-bold"
+            style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             Save as default
           </button>
         </div>
@@ -286,7 +286,7 @@ export default function DashVoice() {
         style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-muted)" }}>
         <strong style={{ color: "var(--pos-text)" }}>Heads up:</strong> The AI brain runs on OpenAI&apos;s Realtime API
         (~₹5 per call minute). Make sure your OpenAI account at
-        {" "}<a href="https://platform.openai.com/account/billing" target="_blank" rel="noreferrer" className="underline" style={{ color: "#7dd3fc" }}>platform.openai.com/account/billing</a>
+        {" "}<a href="https://platform.openai.com/account/billing" target="_blank" rel="noreferrer" className="underline" style={{ color: "var(--pos-blue)" }}>platform.openai.com/account/billing</a>
         {" "}has at least $5 credit before going live, or every call will end immediately after pickup.
       </div>
 
@@ -349,14 +349,14 @@ export default function DashVoice() {
                         onClick={() => voiceApi.call(c.id).then(setSelected)}
                         title="View transcript"
                         className="pos-btn p-1.5 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
-                        <PhoneCall className="w-3.5 h-3.5" style={{ color: "#7dd3fc" }} />
+                        <PhoneCall className="w-3.5 h-3.5" style={{ color: "var(--pos-blue)" }} />
                       </button>
                       {hasRec && (
                         <button data-testid={`call-rec-${c.id}`}
                           onClick={(e) => { e.stopPropagation(); voiceApi.call(c.id).then(setSelected); }}
                           title={`Play recording (${c.recording_duration || "?"}s)`}
                           className="pos-btn p-1.5 rounded-md flex items-center" style={{ background: "var(--pos-panel-2)" }}>
-                          <Play className="w-3.5 h-3.5" style={{ color: "#86efac" }} />
+                          <Play className="w-3.5 h-3.5" style={{ color: "#16a34a" }} />
                         </button>
                       )}
                       <button data-testid={`call-back-${c.id}`}
@@ -364,7 +364,7 @@ export default function DashVoice() {
                         disabled={!other || testDialing}
                         title={`Call ${other || "(no number)"} back`}
                         className="pos-btn p-1.5 rounded-md" style={{ background: "var(--pos-panel-2)", opacity: !other || testDialing ? 0.4 : 1 }}>
-                        <PhoneOutgoing className="w-3.5 h-3.5" style={{ color: "#fbbf24" }} />
+                        <PhoneOutgoing className="w-3.5 h-3.5" style={{ color: "#d97706" }} />
                       </button>
                     </div>
                   </td>
@@ -396,8 +396,8 @@ function Field({ label, hint, children }) {
 function IntentBadge({ intent }) {
   if (!intent) return <span className="text-xs" style={{ color: "var(--pos-muted)" }}>—</span>;
   const colour = {
-    order_placed: ["#0e2515", "#86efac"],
-    reservation_booked: ["#13283c", "#7dd3fc"],
+    order_placed: ["rgba(22,163,74,0.15)", "#16a34a"],
+    reservation_booked: ["rgba(37,99,235,0.15)", "var(--pos-blue)"],
   }[intent] || ["var(--pos-panel-2)", "var(--pos-muted)"];
   return (
     <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: colour[0], color: colour[1] }}>
@@ -486,14 +486,14 @@ function CallTranscriptDialog({ call: initialCall, onClose, onCallBack, testDial
               recSrc ? (
                 <div className="flex items-center gap-2 rounded-lg px-3 py-2 flex-1 min-w-[280px]"
                   style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-                  <Play className="w-4 h-4" style={{ color: "#86efac" }} />
+                  <Play className="w-4 h-4" style={{ color: "#16a34a" }} />
                   <audio data-testid="call-recording-player" controls preload="metadata"
                     src={recSrc} className="flex-1" style={{ height: 32 }} />
                   <a href={recSrc} download={`call-${call.id}.mp3`}
                     data-testid="call-recording-download"
                     title="Download MP3" className="pos-btn p-1.5 rounded-md"
                     style={{ background: "var(--pos-panel)" }}>
-                    <Download className="w-3.5 h-3.5" style={{ color: "#7dd3fc" }} />
+                    <Download className="w-3.5 h-3.5" style={{ color: "var(--pos-blue)" }} />
                   </a>
                 </div>
               ) : (
@@ -534,7 +534,7 @@ function CallTranscriptDialog({ call: initialCall, onClose, onCallBack, testDial
                   {new Date(m.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </div>
                 <div className="text-[10px] uppercase tracking-wider shrink-0 w-16"
-                  style={{ color: m.role === "user" ? "#fbbf24" : "#7dd3fc" }}>
+                  style={{ color: m.role === "user" ? "#d97706" : "var(--pos-blue)" }}>
                   {m.role === "user" ? "Caller" : "Agent"}
                 </div>
                 <div className="text-sm" style={{ color: "var(--pos-text)" }}>{m.text}</div>
