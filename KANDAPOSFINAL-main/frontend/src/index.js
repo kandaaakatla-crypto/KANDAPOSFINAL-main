@@ -12,6 +12,11 @@ import "@fontsource/ibm-plex-mono/500.css";
 import "@fontsource/ibm-plex-mono/600.css";
 import "@/index.css";
 import App from "@/App";
+import { getTheme, applyTheme } from "@/lib/theme";
+
+// Set before first paint so a device already in dark mode doesn't flash
+// light-then-dark on load.
+applyTheme(getTheme());
 
 // Optional — unset REACT_APP_SENTRY_DSN (e.g. local dev) leaves this a no-op.
 if (process.env.REACT_APP_SENTRY_DSN) {

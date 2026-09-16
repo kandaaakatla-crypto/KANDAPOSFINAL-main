@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useOwner } from "../../store/OwnerContext";
-import { LayoutDashboard, Store, Plus, LogOut, ShieldCheck, AlertOctagon, ClipboardCheck, LifeBuoy, Inbox, Menu as MenuIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Store, Plus, LogOut, ShieldCheck, AlertOctagon, ClipboardCheck, LifeBuoy, Inbox, Menu as MenuIcon, ChevronLeft, ChevronRight, Sun, Moon } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { getTheme, toggleTheme } from "../../lib/theme";
 
 const SIDEBAR_COLLAPSED_KEY = "kanda_owner_sidebar_collapsed_v1";
 
@@ -54,6 +55,7 @@ export default function OwnerLayout() {
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1"; } catch { return false; }
   });
+  const [theme, setTheme] = useState(getTheme);
 
   useEffect(() => {
     try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0"); } catch { /* ignore */ }
@@ -74,6 +76,12 @@ export default function OwnerLayout() {
             <div className="text-[10px]" style={{ color: "var(--pos-muted)" }}>{owner?.email}</div>
           </>
         )}
+        <button data-testid="owner-theme-toggle" onClick={() => setTheme(toggleTheme())}
+          className="mt-2 w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5"
+          style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+          {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+          {!navCollapsed && (theme === "dark" ? "Light mode" : "Dark mode")}
+        </button>
         <button data-testid="owner-logout" onClick={() => { onNavigate?.(); logout(); navigate("/owner/login"); }}
           className="mt-2 w-full h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5"
           style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>

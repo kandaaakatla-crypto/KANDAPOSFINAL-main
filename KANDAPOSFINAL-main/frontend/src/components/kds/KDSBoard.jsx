@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { kdsApi } from "../../api/kdsClient";
-import { ChefHat, AlertTriangle, Loader2, RotateCcw, CheckCircle2, Clock, Volume2, VolumeX, RefreshCw } from "lucide-react";
+import { ChefHat, AlertTriangle, Loader2, RotateCcw, CheckCircle2, Clock, Volume2, VolumeX, RefreshCw, Sun, Moon } from "lucide-react";
+import { getTheme, toggleTheme } from "../../lib/theme";
 
 const LANES = [
   { key: "new",        label: "New",        accent: "#3b82f6" },
@@ -154,6 +155,7 @@ export default function KDSBoard() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(true);
   const [soundOn, setSoundOn] = useState(true);
+  const [theme, setTheme] = useState(getTheme);
   const knownIds = useRef(new Set());
   const newIds = useRef(new Set());
 
@@ -277,6 +279,12 @@ export default function KDSBoard() {
             style={{ background: "var(--pos-panel-2)", color: soundOn ? "var(--pos-accent)" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}
             title={soundOn ? "Mute alerts" : "Enable audio alerts"}>
             {soundOn ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </button>
+          <button data-testid="kds-theme-toggle" onClick={() => setTheme(toggleTheme())}
+            className="pos-btn h-8 w-8 rounded-md flex items-center justify-center"
+            style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}
+            title={theme === "dark" ? "Light mode" : "Dark mode"}>
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           <button data-testid="kds-refresh" onClick={refresh} className="pos-btn h-8 w-8 rounded-md flex items-center justify-center"
             style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
