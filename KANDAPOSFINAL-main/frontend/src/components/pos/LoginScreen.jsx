@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, useAnimation } from "framer-motion";
 import { usePos } from "../../store/PosContext";
 import { DEMO_STAFF_HINTS_BY_TENANT } from "../../data/mock";
 import { ShoppingBag, Delete, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, tenantStore } from "../../api/client";
-import { impersonationCtx } from "../../api/ownerClient";
 import useSeo from "../../hooks/useSeo";
 import { pressableSmall } from "../../lib/motion";
 
@@ -21,9 +20,10 @@ const BRAND_COPY = {
   },
 };
 
-export default function LoginScreen() {
+export default function LoginScreen({ isDemo = false }) {
   const { login } = usePos();
   const navigate = useNavigate();
+  const { slug: routeSlug } = useParams();
   useSeo({ title: "Staff sign in", noindex: true });
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
@@ -33,13 +33,26 @@ export default function LoginScreen() {
   // still renders something sensible before the network round-trip finishes.
   const [businessType, setBusinessType] = useState("restaurant");
 
+  // /demo/login uses an in-memory-only override so visiting the public demo
+  // never overwrites a real device's pinned restaurant (see tenantStore in
+  // api/client.js). /pos/:slug/login persists the slug — that's what makes
+  // this device "belong" to that restaurant for next time.
+  useEffect(() => {
+    if (isDemo) {
+      tenantStore.setEphemeral("demo");
+    } else if (routeSlug) {
+      tenantStore.clearEphemeral();
+      tenantStore.set(routeSlug);
+    }
+  }, [isDemo, routeSlug]);
+
   useEffect(() => {
     let cancelled = false;
     api.get("/tenant/public-info")
       .then((r) => { if (!cancelled) setBusinessType(r.data.businessType || "restaurant"); })
       .catch(() => {}); // keep the restaurant default — never block sign-in on this
     return () => { cancelled = true; };
-  }, []);
+  }, [isDemo, routeSlug]);
 
   const copy = BRAND_COPY[businessType] || BRAND_COPY.restaurant;
 
@@ -50,18 +63,6 @@ export default function LoginScreen() {
   ) : (
     <img src="/icon-192.png" alt="Kanda POS" className={`${box} rounded-xl`} />
   );
-
-  // Self-heal: if a previous impersonation left a stale tenant slug in
-  // localStorage that doesn't match the host, drop it so login resolves to
-  // the right tenant. This was the root cause of "Invalid PIN" after the
-  // Owner Portal exited impersonation.
-  useEffect(() => {
-    if (impersonationCtx.get()) return;  // legit impersonation context, leave alone
-    if (new URLSearchParams(window.location.search).get("tenant")) return;  // explicit ?tenant= link, leave alone
-    const host = window.location.hostname.split(".");
-    const onSubdomain = host.length >= 3 && host[1] === "kanda";
-    if (!onSubdomain) tenantStore.clear();
-  }, []);
 
   const staffHints = DEMO_STAFF_HINTS_BY_TENANT[tenantStore.get()] || [];
 
@@ -180,6 +181,14 @@ export default function LoginScreen() {
             style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             Open Time Clock terminal →
           </button>
+
+          {!isDemo && (
+            <button data-testid="switch-restaurant-btn" onClick={() => { tenantStore.clear(); navigate("/pos/login"); }}
+              className="w-full mt-4 text-xs text-center underline-offset-2 hover:underline"
+              style={{ color: "var(--pos-muted)" }}>
+              Not your restaurant? Switch
+            </button>
+          )}
         </div>
       </div>
     </div>

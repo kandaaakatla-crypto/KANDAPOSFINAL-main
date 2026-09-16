@@ -26,7 +26,7 @@ function TokenUrlRow({ testid, url }) {
 // shared kds_token, same three kiosk screens, but for the store's own
 // owner/manager instead of requiring a Platform Owner support request.
 // Scoped to whichever tenant the dashboard is currently switched to
-// (StoreSwitcher), same as every other /biz page.
+// (StoreSwitcher), same as every other /dashboard page.
 export default function KioskDevicesPage() {
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);

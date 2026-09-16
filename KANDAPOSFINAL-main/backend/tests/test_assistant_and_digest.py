@@ -42,7 +42,7 @@ class TestAssistantChat:
         r = requests.post(f"{BASE_URL}/api/assistant/chat",
                           headers=auth_headers,
                           json={"messages": [{"role": "user", "content": "How do I refund an order?"}],
-                                "route": "/biz", "role_hint": "owner"}, timeout=90)
+                                "route": "/dashboard", "role_hint": "owner"}, timeout=90)
         assert r.status_code == 200, f"{r.status_code} {r.text[:400]}"
         j = r.json()
         assert isinstance(j.get("reply"), str) and len(j["reply"]) > 10
@@ -52,7 +52,7 @@ class TestAssistantChat:
         r = requests.post(f"{BASE_URL}/api/assistant/chat",
                           headers=auth_headers,
                           json={"messages": [{"role": "user", "content": "What's my revenue today?"}],
-                                "route": "/biz", "role_hint": "owner"}, timeout=120)
+                                "route": "/dashboard", "role_hint": "owner"}, timeout=120)
         assert r.status_code == 200, f"{r.status_code} {r.text[:400]}"
         j = r.json()
         assert isinstance(j.get("reply"), str) and len(j["reply"]) > 5

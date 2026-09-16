@@ -1,6 +1,6 @@
 """Restaurant Dashboard auth — email + password login for Owner / Manager / Area Manager.
 
-Three roles share the same `/biz/login` page; the JWT carries `dash_role` so the
+Three roles share the same `/dashboard/login` page; the JWT carries `dash_role` so the
 frontend can render the right scope of nav, and `location_ids` to scope what
 data they can see. The JWT also still carries `role: "Manager"` so the existing
 POS endpoints (which all gate on `require_role("Manager")`) accept dashboard

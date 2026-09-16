@@ -20,6 +20,7 @@ import NotFoundPage from "./components/NotFoundPage";
 const RolePicker = lazy(() => import("./components/display/RolePicker"));
 
 const LoginScreen = lazy(() => import("./components/pos/LoginScreen"));
+const RestaurantGate = lazy(() => import("./components/pos/RestaurantGate"));
 const TimeClockScreen = lazy(() => import("./components/pos/TimeClockScreen"));
 const POSLayout = lazy(() => import("./components/pos/POSLayout"));
 const HomeScreen = lazy(() => import("./components/pos/HomeScreen"));
@@ -94,7 +95,7 @@ function RouteLoading() {
 //     own to log in with.
 function RootRoute() {
   const target = process.env.REACT_APP_APP_TARGET;
-  if (target === "pos") return <Navigate to="/login" replace />;
+  if (target === "pos") return <Navigate to="/pos/login" replace />;
   if (target === "display") return <RolePicker />;
   return <LandingPage />;
 }
@@ -155,9 +156,9 @@ function App() {
                   </Route>
 
                   {/* Restaurant Owner / Area Manager / Store Manager dashboard */}
-                  <Route path="/biz/login" element={<DashLogin />} />
-                  <Route path="/biz/account/password" element={<DashChangePassword />} />
-                  <Route path="/biz" element={<DashLayout />}>
+                  <Route path="/dashboard/login" element={<DashLogin />} />
+                  <Route path="/dashboard/account/password" element={<DashChangePassword />} />
+                  <Route path="/dashboard" element={<DashLayout />}>
                     <Route index element={<DashHome />} />
                     <Route path="menu" element={<MenuScreen />} />
                     <Route path="schedules" element={<DashSchedules />} />
@@ -206,8 +207,13 @@ function App() {
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/terms" element={<TermsAndConditions />} />
 
-                  {/* Tenant POS */}
-                  <Route path="/login" element={<LoginScreen />} />
+                  {/* Tenant POS — /pos/login is the one-time Restaurant ID
+                  gate, /pos/:slug/login the actual PIN pad for that
+                  restaurant, /demo/login the public showcase (see
+                  RestaurantGate.jsx / LoginScreen.jsx). */}
+                  <Route path="/pos/login" element={<RestaurantGate />} />
+                  <Route path="/pos/:slug/login" element={<LoginScreen />} />
+                  <Route path="/demo/login" element={<LoginScreen isDemo />} />
                   <Route path="/clock" element={<TimeClockScreen />} />
                   <Route element={<Protected><POSLayout /></Protected>}>
                     <Route path="/pos" element={<HomeScreen />} />

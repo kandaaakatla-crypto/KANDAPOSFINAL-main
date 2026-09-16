@@ -11,7 +11,7 @@ import LiveCallsPanel from "./LiveCallsPanel";
 
 /**
  * Restaurant Owner Dashboard — Voice agent config + call log.
- * Route: /biz/voice (mounted from App.js)
+ * Route: /dashboard/voice (mounted from App.js)
  */
 export default function DashVoice() {
   const [cfg, setCfg] = useState(null);

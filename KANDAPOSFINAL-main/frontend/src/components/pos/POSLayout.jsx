@@ -33,7 +33,7 @@ export default function POSLayout() {
   ];
 
   // Secondary — visible in the desktop sidebar and inside the mobile "More" sheet.
-  // Customers / Inventory / Reports live in the manager Dashboard only (/biz/*).
+  // Customers / Inventory / Reports live in the manager Dashboard only (/dashboard/*).
   // Packing and Customer Display are separate no-login screens (like KDS) — see QrCodesModal.
   const SECONDARY_NAV = [
     ...(features.dispatch ? [{ to: "/dispatch", label: "Dispatch", icon: Bike }] : []),
@@ -97,7 +97,7 @@ export default function POSLayout() {
             {staffUser?.role === "Manager" && (
               <>
                 <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--pos-border)" }} />
-                <a href="/biz" data-testid="nav-dashboard-link" title="Open Restaurant Dashboard"
+                <a href="/dashboard" data-testid="nav-dashboard-link" title="Open Restaurant Dashboard"
                   className="pos-btn relative flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] font-medium"
                   style={{ background: "transparent", color: "var(--pos-muted)" }}>
                   <UserCog className="w-5 h-5" />
@@ -120,7 +120,7 @@ export default function POSLayout() {
           {/* Hard nav, not navigate("/login") — a client-side transition races
               Protected's own staffUser-triggered re-render of the outgoing
               /pos route, which can win and bounce to "/" instead. */}
-          <button data-testid="logout-btn" onClick={() => { logout(); window.location.assign("/login"); }}
+          <button data-testid="logout-btn" onClick={() => { logout(); window.location.assign("/pos/login"); }}
             className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2" style={{ color: "var(--pos-muted)" }}>
             <LogOut className="w-5 h-5" />
             Sign out
@@ -219,7 +219,7 @@ export default function POSLayout() {
               </NavLink>
             ))}
             {staffUser?.role === "Manager" && (
-              <a href="/biz" data-testid="mmore-dashboard" className="pos-btn flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium"
+              <a href="/dashboard" data-testid="mmore-dashboard" className="pos-btn flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium"
                 style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
                 <UserCog className="w-5 h-5" /> Restaurant Dashboard
               </a>
@@ -238,7 +238,7 @@ export default function POSLayout() {
               style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
               <LifeBuoy className="w-4 h-4" /> Help & Support
             </button>
-            <button data-testid="mmore-logout" onClick={() => { setMoreOpen(false); logout(); window.location.assign("/login"); }}
+            <button data-testid="mmore-logout" onClick={() => { setMoreOpen(false); logout(); window.location.assign("/pos/login"); }}
               className="pos-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
               style={{ background: "var(--pos-panel-2)", color: "#f87171" }}>
               <LogOut className="w-4 h-4" /> Sign out

@@ -60,7 +60,7 @@ export default function AIAssistant() {
 
   if (!token) return null;
   const path = location.pathname || "";
-  if (["/login", "/biz/login", "/owner/login", "/clock"].some((p) => path === p || path.startsWith(p + "/"))) {
+  if (path.endsWith("/login") || path === "/clock") {
     return null;
   }
 

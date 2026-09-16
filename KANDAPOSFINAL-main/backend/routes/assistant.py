@@ -42,7 +42,7 @@ KNOWLEDGE_BASE = """
 - **Assign a driver**: for a delivery order, go to Dispatch tab → drag the order onto a driver, or use the "Assign" button on the order card.
 - **Clock in/out**: from LOGIN screen, tap "Time Clock" → enter PIN → take webcam selfie → punch in/out. Managers see everyone's timesheet under Workforce → Timesheets.
 
-## Restaurant Dashboard (`/biz`)
+## Restaurant Dashboard (`/dashboard`)
 - **Add a menu item**: Menu → "New item" → fill name/category/price → save. Add sizes (small/medium/large) or is-pizza toggle for pizzas.
 - **Import menu via CSV**: Menu → three-dot menu → Import CSV → download template first, fill in, upload.
 - **Add staff member**: Staff → "Add staff" → set name, PIN (4 digits), role (Manager/Cashier/Cook/Delivery), hourly rate.

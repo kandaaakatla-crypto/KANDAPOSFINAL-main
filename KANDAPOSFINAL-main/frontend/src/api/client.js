@@ -10,16 +10,26 @@ export const tokenStore = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
+// In-memory only (never localStorage) — lets /demo/login use the "demo"
+// tenant for its own calls without overwriting a real device's pinned
+// restaurant. Cleared automatically on reload/tab-close, unlike everything
+// else in tenantStore.
+let ephemeralSlug = null;
+
 /**
  * Resolve the tenant slug for the current browser session.
- * 1. If the hostname looks like `<slug>.kanda.<tld>` (production) → return slug.
- * 2. Else honour a `?tenant=slug` query param (persisted so it survives once set —
+ * 1. Honour an in-memory-only ephemeral override (set by /demo/login) — never persisted.
+ * 2. If the hostname looks like `<slug>.kanda.<tld>` (production) → return slug.
+ * 3. Else honour a `?tenant=slug` query param (persisted so it survives once set —
  *    lets a single shareable link pin a tenant on hosts without subdomains, e.g. local/LAN dev).
- * 3. Else honour an explicit override in localStorage.
- * 4. Else default to "demo" (preview / local dev / single-tenant deployments).
+ * 4. Else honour an explicit override in localStorage — this is how a POS device gets
+ *    "registered" to a restaurant via the /pos/:slug/login screen.
+ * 5. Else return null — no default tenant. Callers route through /pos/login's
+ *    Restaurant ID gate instead of silently landing on someone else's data.
  */
 function detectTenantSlug() {
-  if (typeof window === "undefined") return "demo";
+  if (ephemeralSlug) return ephemeralSlug;
+  if (typeof window === "undefined") return null;
   const host = window.location.hostname;
   const parts = host.split(".");
   if (parts.length >= 3 && parts[1] === "kanda") {
@@ -31,13 +41,16 @@ function detectTenantSlug() {
     localStorage.setItem(TENANT_KEY, slug);
     return slug;
   }
-  return (localStorage.getItem(TENANT_KEY) || "demo").toLowerCase();
+  const stored = localStorage.getItem(TENANT_KEY);
+  return stored ? stored.toLowerCase() : null;
 }
 
 export const tenantStore = {
   get: detectTenantSlug,
   set: (slug) => localStorage.setItem(TENANT_KEY, slug),
-  clear: () => localStorage.removeItem(TENANT_KEY),  // fall back to host detection / "demo"
+  clear: () => localStorage.removeItem(TENANT_KEY),  // fall back to host detection / no tenant
+  setEphemeral: (slug) => { ephemeralSlug = slug; },
+  clearEphemeral: () => { ephemeralSlug = null; },
 };
 
 export const api = axios.create({ baseURL: BASE });
@@ -45,7 +58,8 @@ export const api = axios.create({ baseURL: BASE });
 api.interceptors.request.use((cfg) => {
   const t = tokenStore.get();
   if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  cfg.headers["X-Tenant-Slug"] = tenantStore.get();
+  const slug = tenantStore.get();
+  if (slug) cfg.headers["X-Tenant-Slug"] = slug;
   return cfg;
 });
 
@@ -55,8 +69,8 @@ api.interceptors.response.use(
     if (err?.response?.status === 401) {
       tokenStore.clear();
       // bounce only if not on login already to avoid redirect loops
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-        window.location.assign("/login");
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/pos/login")) {
+        window.location.assign("/pos/login");
       }
     }
     return Promise.reject(err);
@@ -85,8 +99,8 @@ dashApi.interceptors.response.use(
     if (err?.response?.status === 401) {
       localStorage.removeItem(DASH_TOKEN_KEY);
       localStorage.removeItem("kanda_dash_user_v1");
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/biz/login")) {
-        window.location.assign("/biz/login");
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/dashboard/login")) {
+        window.location.assign("/dashboard/login");
       }
     }
     return Promise.reject(err);

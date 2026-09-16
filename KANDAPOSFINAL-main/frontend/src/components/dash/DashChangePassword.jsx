@@ -22,7 +22,7 @@ export default function DashChangePassword() {
     try {
       await changePassword(forced ? null : curr, pw1);
       toast.success("Password updated");
-      navigate("/biz", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       toast.error(err?.response?.data?.detail || "Failed");
     } finally { setBusy(false); }

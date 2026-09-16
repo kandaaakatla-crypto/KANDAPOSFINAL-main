@@ -14,51 +14,51 @@ const NAV_GROUPS = [
   {
     label: "Sales Overview",
     items: [
-      { to: "/biz", end: true, label: "Overview", icon: LayoutDashboard, allow: () => true },
-      { to: "/biz/reports", label: "Reports", icon: BarChart3, allow: () => true },
-      { to: "/biz/digest", label: "Daily Digest", icon: Sparkles, allow: () => true, feature: "daily_digest" },
+      { to: "/dashboard", end: true, label: "Overview", icon: LayoutDashboard, allow: () => true },
+      { to: "/dashboard/reports", label: "Reports", icon: BarChart3, allow: () => true },
+      { to: "/dashboard/digest", label: "Daily Digest", icon: Sparkles, allow: () => true, feature: "daily_digest" },
     ],
   },
   {
     label: "Live Outlets",
     items: [
-      { to: "/biz/locations", label: "Locations", icon: MapPin, allow: () => true },
-      { to: "/biz/brand", label: "Brand", icon: Store, allow: (u) => u?.dash_role === "owner" },
-      { to: "/biz/central-supply", label: "Central Supply", icon: Warehouse, allow: (u) => u?.dash_role === "owner" && !!u?.brand_id },
+      { to: "/dashboard/locations", label: "Locations", icon: MapPin, allow: () => true },
+      { to: "/dashboard/brand", label: "Brand", icon: Store, allow: (u) => u?.dash_role === "owner" },
+      { to: "/dashboard/central-supply", label: "Central Supply", icon: Warehouse, allow: (u) => u?.dash_role === "owner" && !!u?.brand_id },
     ],
   },
   {
     label: "Menu & Catalog",
     items: [
-      { to: "/biz/menu", label: "Menu", icon: BookOpen, allow: () => true },
-      { to: "/biz/schedules", label: "Schedules", icon: Clock, allow: () => true },
-      { to: "/biz/coupons", label: "Coupons", icon: Ticket, allow: (u) => canManageCoupons(u) },
-      { to: "/biz/gift-cards", label: "Gift Cards", icon: Wallet, allow: (u) => canManageGiftCards(u) },
-      { to: "/biz/loyalty", label: "Loyalty", icon: Gift, allow: (u) => canManageLoyalty(u), feature: "loyalty" },
+      { to: "/dashboard/menu", label: "Menu", icon: BookOpen, allow: () => true },
+      { to: "/dashboard/schedules", label: "Schedules", icon: Clock, allow: () => true },
+      { to: "/dashboard/coupons", label: "Coupons", icon: Ticket, allow: (u) => canManageCoupons(u) },
+      { to: "/dashboard/gift-cards", label: "Gift Cards", icon: Wallet, allow: (u) => canManageGiftCards(u) },
+      { to: "/dashboard/loyalty", label: "Loyalty", icon: Gift, allow: (u) => canManageLoyalty(u), feature: "loyalty" },
     ],
   },
   {
     label: "Inventory",
     items: [
-      { to: "/biz/inventory", label: "Inventory", icon: Boxes, allow: () => true, badge: "lowStock" },
-      { to: "/biz/devices", label: "Kiosk Devices", icon: MonitorSmartphone, allow: () => true },
+      { to: "/dashboard/inventory", label: "Inventory", icon: Boxes, allow: () => true, badge: "lowStock" },
+      { to: "/dashboard/devices", label: "Kiosk Devices", icon: MonitorSmartphone, allow: () => true },
     ],
   },
   {
     label: "Staff / Shifts",
     items: [
-      { to: "/biz/staff", label: "Staff", icon: Users, allow: (u) => canManageStaff(u) || u?.dash_role === "manager" },
-      { to: "/biz/workforce", label: "Rota", icon: CalendarDays, allow: () => true },
-      { to: "/biz/payroll", label: "Payroll", icon: Banknote, allow: (u) => canManagePayroll(u), feature: "payroll" },
+      { to: "/dashboard/staff", label: "Staff", icon: Users, allow: (u) => canManageStaff(u) || u?.dash_role === "manager" },
+      { to: "/dashboard/workforce", label: "Rota", icon: CalendarDays, allow: () => true },
+      { to: "/dashboard/payroll", label: "Payroll", icon: Banknote, allow: (u) => canManagePayroll(u), feature: "payroll" },
     ],
   },
   {
     label: "Customer CRM",
     items: [
-      { to: "/biz/customers", label: "Customers", icon: UserCircle, allow: () => true },
-      { to: "/biz/sms", label: "Customer SMS", icon: MessageSquare, allow: () => true, feature: "customer_sms" },
-      { to: "/biz/whatsapp", label: "WhatsApp", icon: MessageCircle, allow: () => true, feature: "whatsapp" },
-      { to: "/biz/voice", label: "Voice Agent", icon: PhoneCall, allow: () => true, feature: "voice_agent" },
+      { to: "/dashboard/customers", label: "Customers", icon: UserCircle, allow: () => true },
+      { to: "/dashboard/sms", label: "Customer SMS", icon: MessageSquare, allow: () => true, feature: "customer_sms" },
+      { to: "/dashboard/whatsapp", label: "WhatsApp", icon: MessageCircle, allow: () => true, feature: "whatsapp" },
+      { to: "/dashboard/voice", label: "Voice Agent", icon: PhoneCall, allow: () => true, feature: "voice_agent" },
     ],
   },
 ];
@@ -154,11 +154,11 @@ export default function DashLayout() {
   useEffect(() => {
     if (!user) return;
     const disabled = NAV_ITEMS.find((i) => i.feature && location.pathname.startsWith(i.to) && !features[i.feature]);
-    if (disabled) navigate("/biz", { replace: true });
+    if (disabled) navigate("/dashboard", { replace: true });
   }, [location.pathname, features, user, navigate]);
 
-  if (!user) return <Navigate to="/biz/login" replace />;
-  if (user.must_change_password) return <Navigate to="/biz/account/password" replace />;
+  if (!user) return <Navigate to="/dashboard/login" replace />;
+  if (user.must_change_password) return <Navigate to="/dashboard/account/password" replace />;
   const roleLabel = { owner: "Restaurant Owner", area_manager: "Area Manager", manager: "Store Manager" }[user.dash_role] || user.dash_role;
   const initials = user.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
@@ -188,9 +188,9 @@ export default function DashLayout() {
           )}
         </div>
         <FooterLink onNavigate={onNavigate} icon={KeyRound} label="Change password" collapsed={navCollapsed}
-          onClick={() => navigate("/biz/account/password")} testid="dash-password-btn" />
+          onClick={() => navigate("/dashboard/account/password")} testid="dash-password-btn" />
         <FooterLink onNavigate={onNavigate} icon={LogOut} label="Sign out" collapsed={navCollapsed}
-          onClick={() => { logout(); navigate("/biz/login"); }} color="#f87171" testid="dash-logout-btn" />
+          onClick={() => { logout(); navigate("/dashboard/login"); }} color="#f87171" testid="dash-logout-btn" />
       </div>
     </>
   );
