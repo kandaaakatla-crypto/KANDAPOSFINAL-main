@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, useAnimation } from "framer-motion";
 import { usePos } from "../../store/PosContext";
 import { DEMO_STAFF_HINTS_BY_TENANT } from "../../data/mock";
-import { Pizza, ShoppingBag, Delete, LogIn, Loader2 } from "lucide-react";
+import { ShoppingBag, Delete, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, tenantStore } from "../../api/client";
 import { impersonationCtx } from "../../api/ownerClient";
@@ -41,8 +41,15 @@ export default function LoginScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  const BrandIcon = businessType === "retail" ? ShoppingBag : Pizza;
   const copy = BRAND_COPY[businessType] || BRAND_COPY.restaurant;
+
+  const BrandMark = ({ box, icon }) => businessType === "retail" ? (
+    <div className={`${box} rounded-xl flex items-center justify-center`} style={{ background: "var(--pos-accent)" }}>
+      <ShoppingBag className={`${icon} text-white`} />
+    </div>
+  ) : (
+    <img src="/icon-192.png" alt="Kanda POS" className={`${box} rounded-xl`} />
+  );
 
   // Self-heal: if a previous impersonation left a stale tenant slug in
   // localStorage that doesn't match the host, drop it so login resolves to
@@ -89,9 +96,7 @@ export default function LoginScreen() {
       {/* Left brand panel */}
       <div className="hidden lg:flex flex-col justify-between w-[42%] p-12" style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
-            <BrandIcon className="w-7 h-7 text-white" />
-          </div>
+          <BrandMark box="w-12 h-12" icon="w-7 h-7" />
           <div>
             <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA</div>
             <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "var(--pos-muted)" }}>Point of Sale</div>
@@ -112,9 +117,7 @@ export default function LoginScreen() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm fade-in">
           <div className="text-center mb-8">
-            <div className="lg:hidden w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
-              <BrandIcon className="w-8 h-8 text-white" />
-            </div>
+            <BrandMark box="lg:hidden w-14 h-14 mx-auto mb-4" icon="w-8 h-8" />
             <h2 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Staff Sign In</h2>
             <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>Enter your 4-digit PIN</p>
           </div>

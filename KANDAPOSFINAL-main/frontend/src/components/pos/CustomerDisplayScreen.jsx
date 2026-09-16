@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { kdsApi } from "../../api/kdsClient";
-import { ChefHat, CheckCircle2, Pizza } from "lucide-react";
+import { ChefHat, CheckCircle2 } from "lucide-react";
 
 /** Public, no-auth customer-facing screen — put it on a TV behind the counter.
  *  /display?token=<kds_token>  (same long-lived kiosk token as the KDS tablet)
@@ -46,9 +46,7 @@ export default function CustomerDisplayScreen() {
   return (
     <div className="min-h-screen p-8" style={{ background: "var(--pos-bg)" }} data-testid="customer-display-screen">
       <div className="flex items-center justify-center gap-3 mb-10">
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
-          <Pizza className="w-6 h-6 text-white" />
-        </div>
+        <img src="/icon-192.png" alt="Kanda POS" className="w-11 h-11 rounded-xl" />
         <div>
           <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>{data?.tenant?.name || "Kanda POS"}</div>
           <div className="text-xs uppercase tracking-[0.3em]" style={{ color: "var(--pos-muted)" }}>Order status</div>
