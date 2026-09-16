@@ -1,4 +1,6 @@
-"""Tests for AI Assistant chat and Daily Digest (Phase 2)."""
+"""Tests for Daily Digest (Phase 2). The AI Assistant chat this file used to
+also cover was removed; its live-data helpers moved to report_tools.py and
+are exercised indirectly via the digest tests below."""
 
 import pytest
 
@@ -34,32 +36,6 @@ def dash_token():
 @pytest.fixture(scope="module")
 def auth_headers(dash_token):
     return {"Authorization": f"Bearer {dash_token}", "X-Tenant-Slug": "demo"}
-
-
-# -------- Assistant chat --------
-class TestAssistantChat:
-    def test_static_kb_question(self, auth_headers):
-        r = requests.post(f"{BASE_URL}/api/assistant/chat",
-                          headers=auth_headers,
-                          json={"messages": [{"role": "user", "content": "How do I refund an order?"}],
-                                "route": "/dashboard", "role_hint": "owner"}, timeout=90)
-        assert r.status_code == 200, f"{r.status_code} {r.text[:400]}"
-        j = r.json()
-        assert isinstance(j.get("reply"), str) and len(j["reply"]) > 10
-        assert "Sorry" not in j["reply"] or "refund" in j["reply"].lower()
-
-    def test_live_tools_question(self, auth_headers):
-        r = requests.post(f"{BASE_URL}/api/assistant/chat",
-                          headers=auth_headers,
-                          json={"messages": [{"role": "user", "content": "What's my revenue today?"}],
-                                "route": "/dashboard", "role_hint": "owner"}, timeout=120)
-        assert r.status_code == 200, f"{r.status_code} {r.text[:400]}"
-        j = r.json()
-        assert isinstance(j.get("reply"), str) and len(j["reply"]) > 5
-        assert isinstance(j.get("tools_used"), list)
-        # ideally the model should have asked for get_todays_sales
-        # but we tolerate empty if the model chose to answer without a tool call
-        print("tools_used:", j.get("tools_used"))
 
 
 # -------- Digest config --------

@@ -439,17 +439,6 @@ export const voiceApi = {
   purchaseNumber: (payload) => api.post("/voice/numbers/purchase", payload).then((r) => r.data),
 };
 
-export const assistantApi = {
-  chat: (payload) => api.post("/assistant/chat", payload).then((r) => r.data),
-  transcribe: (blob, filename = "voice.webm") => {
-    const fd = new FormData();
-    fd.append("file", blob, filename);
-    return api.post("/assistant/transcribe", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    }).then((r) => r.data);
-  },
-};
-
 export const digestApi = {
   getConfig: () => dashApi.get("/digest/config").then((r) => r.data),
   saveConfig: (cfg) => dashApi.put("/digest/config", cfg).then((r) => r.data),

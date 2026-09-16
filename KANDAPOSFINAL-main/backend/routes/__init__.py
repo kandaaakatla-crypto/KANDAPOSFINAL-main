@@ -13,7 +13,7 @@ from fastapi import APIRouter
 from . import (
     auth, menu, tables, customers, inventory, orders, reports, reservations,
     menu_csv, staff, timeclock, shifts, waste, cashdrawer, tips, coupons,
-    locations, prep, refunds, loyalty, onboarding, dash_auth, voice, assistant,
+    locations, prep, refunds, loyalty, onboarding, dash_auth, voice,
     digest, sms, whatsapp, plans, suppliers, storefront, payroll, brands,
     store_credit, gift_cards, menu_schedules, central_supply, leads,
 )
@@ -29,7 +29,7 @@ async def root():
 for module in (
     auth, menu, tables, customers, inventory, orders, reports, reservations,
     menu_csv, staff, timeclock, shifts, waste, cashdrawer, tips, coupons,
-    locations, prep, refunds, loyalty, onboarding, dash_auth, voice, assistant,
+    locations, prep, refunds, loyalty, onboarding, dash_auth, voice,
     digest, sms, whatsapp, plans, suppliers, storefront, payroll, brands,
     store_credit, gift_cards, menu_schedules, central_supply, leads,
 ):

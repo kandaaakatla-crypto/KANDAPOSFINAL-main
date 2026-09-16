@@ -1,9 +1,10 @@
 """Daily digest — Phase 2 of "AI Everywhere".
 
 An AI-written natural-language summary of the tenant's day, delivered to
-owners/managers via SMS and/or Email on a configurable schedule. Reuses the
-same live-data helpers as the in-app assistant so the numbers stay
-consistent across surfaces.
+owners/managers via SMS and/or Email on a configurable schedule. Live-data
+helpers live in report_tools.py, shared with (nothing else currently, but
+kept separate so future surfaces can reuse them without pulling in this
+file's SMS/email scheduling logic).
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ from db import get_db
 from routes.dash_auth import get_dash_user
 from email_service import send_email
 from sms_service import send_sms
-from routes.assistant import (
+from report_tools import (
     _tool_todays_sales,
     _tool_top_items,
     _tool_low_stock,
