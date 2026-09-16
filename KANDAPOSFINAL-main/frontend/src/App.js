@@ -5,7 +5,6 @@ import { Toaster } from "./components/ui/sonner";
 import { PosProvider, usePos } from "./store/PosContext";
 import { OwnerProvider, useOwner } from "./store/OwnerContext";
 import { DashProvider, useDash } from "./store/DashContext";
-import AIAssistant from "./components/AIAssistant";
 
 // Eager: the marketing homepage and legal pages are the first thing a new
 // visitor loads, so they stay in the main bundle. Everything below is
@@ -138,7 +137,6 @@ function App() {
         <DashProvider>
           <PosProvider>
             <BrowserRouter>
-              <AIAssistant />
               <Suspense fallback={<RouteLoading />}>
                 <Routes>
                   {/* Owner portal */}
