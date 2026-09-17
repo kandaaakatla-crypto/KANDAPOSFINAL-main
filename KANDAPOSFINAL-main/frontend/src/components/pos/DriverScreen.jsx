@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
 import { ordersApi } from "../../api/client";
 import { toast } from "sonner";
@@ -95,6 +95,7 @@ const Card = ({ order, mine, busy, onClaim, onOnTheWay, onCash, onDelivered }) =
 export default function DriverScreen() {
   const { staffUser, logout } = usePos();
   const navigate = useNavigate();
+  const { slug } = useParams();
   const [orders, setOrders] = useState([]);
   const [busy, setBusy] = useState(true);
   const [rotaOpen, setRotaOpen] = useState(false);
@@ -103,8 +104,8 @@ export default function DriverScreen() {
 
   // If a non-Driver lands here, send them home.
   useEffect(() => {
-    if (staffUser && staffUser.role !== "Driver") navigate("/pos", { replace: true });
-  }, [staffUser, navigate]);
+    if (staffUser && staffUser.role !== "Driver") navigate(`/${slug}/pos`, { replace: true });
+  }, [staffUser, navigate, slug]);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -159,7 +160,7 @@ export default function DriverScreen() {
             style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <RefreshCw className={`w-4 h-4 ${busy ? "animate-spin" : ""}`} />
           </button>
-          <button data-testid="driver-logout" onClick={() => { logout(); window.location.assign("/pos/login"); }}
+          <button data-testid="driver-logout" onClick={() => { logout(); window.location.assign(`/pos/${slug}/login`); }}
             className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
             style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             <LogOut className="w-3.5 h-3.5" /> Sign out

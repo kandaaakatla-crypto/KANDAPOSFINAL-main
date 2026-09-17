@@ -79,7 +79,8 @@ export default function LoginScreen({ isDemo = false }) {
     setBusy(false);
     if (user) {
       toast.success(`Welcome back, ${user.name}`);
-      navigate(user.role === "Driver" ? "/driver" : "/pos");
+      const slug = routeSlug || (isDemo ? "demo" : tenantStore.get());
+      navigate(user.role === "Driver" ? `/${slug}/driver` : `/${slug}/pos`);
     } else {
       setError(true);
       setPin("");

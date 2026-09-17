@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, useLocation, useParams } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
 import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
@@ -11,12 +11,11 @@ import { Sheet, SheetContent } from "../ui/sheet";
 import useSeo from "../../hooks/useSeo";
 import { getTheme, toggleTheme } from "../../lib/theme";
 
-const ALL_STAFF_WORKFORCE = { to: "/workforce", label: "My Rota", icon: CalendarDays };
-
 export default function POSLayout() {
   const { staffUser, logout, orders, businessType, features, isOffline, pendingSyncCount } = usePos();
   const navigate = useNavigate();
   const location = useLocation();
+  const { slug } = useParams();
   // Resets the tab title once staff are past /login — otherwise it would
   // keep reading "Staff sign in" for the rest of the session.
   useSeo({ title: "Point of sale", noindex: true });
@@ -25,20 +24,22 @@ export default function POSLayout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [theme, setTheme] = useState(getTheme);
 
+  const ALL_STAFF_WORKFORCE = { to: `/${slug}/workforce`, label: "My Rota", icon: CalendarDays };
+
   // Primary tabs — always visible in the mobile bottom bar. Tables only
   // makes sense for dine-in businesses, so retail tenants skip it.
   const PRIMARY_NAV = [
-    { to: "/pos", label: businessType === "retail" ? "Sale" : "Order", icon: ShoppingCart, end: true },
-    { to: "/orders", label: "Orders", icon: ClipboardList },
-    ...(features.tables ? [{ to: "/tables", label: "Tables", icon: LayoutGrid }] : []),
-    { to: "/menu", label: businessType === "retail" ? "Products" : "Menu", icon: BookOpen },
+    { to: `/${slug}/pos`, label: businessType === "retail" ? "Sale" : "Order", icon: ShoppingCart, end: true },
+    { to: `/${slug}/orders`, label: "Orders", icon: ClipboardList },
+    ...(features.tables ? [{ to: `/${slug}/tables`, label: "Tables", icon: LayoutGrid }] : []),
+    { to: `/${slug}/menu`, label: businessType === "retail" ? "Products" : "Menu", icon: BookOpen },
   ];
 
   // Secondary — visible in the desktop sidebar and inside the mobile "More" sheet.
   // Customers / Inventory / Reports live in the manager Dashboard only (/dashboard/*).
   // Packing and Customer Display are separate no-login screens (like KDS) — see QrCodesModal.
   const SECONDARY_NAV = [
-    ...(features.dispatch ? [{ to: "/dispatch", label: "Dispatch", icon: Bike }] : []),
+    ...(features.dispatch ? [{ to: `/${slug}/dispatch`, label: "Dispatch", icon: Bike }] : []),
   ];
 
   useEffect(() => {
@@ -49,16 +50,16 @@ export default function POSLayout() {
   // Drivers get their own stripped-down app (deliveries + rota only) — never
   // the full POS chrome, even if they hit one of these routes directly.
   useEffect(() => {
-    if (staffUser?.role === "Driver") navigate("/driver", { replace: true });
-  }, [staffUser, navigate]);
+    if (staffUser?.role === "Driver") navigate(`/${slug}/driver`, { replace: true });
+  }, [staffUser, navigate, slug]);
 
   // A tenant with a feature turned off shouldn't be able to reach its screen
   // by direct URL either, not just have it hidden from nav.
   useEffect(() => {
     const path = location.pathname;
-    if (path === "/tables" && !features.tables) navigate("/pos", { replace: true });
-    if (path === "/dispatch" && !features.dispatch) navigate("/pos", { replace: true });
-  }, [location.pathname, features, navigate]);
+    if (path === `/${slug}/tables` && !features.tables) navigate(`/${slug}/pos`, { replace: true });
+    if (path === `/${slug}/dispatch` && !features.dispatch) navigate(`/${slug}/pos`, { replace: true });
+  }, [location.pathname, features, navigate, slug]);
 
   const activeCount = orders.filter((o) => ["new", "in-kitchen", "ready", "out-for-delivery"].includes(o.status)).length;
 
@@ -94,7 +95,7 @@ export default function POSLayout() {
           <nav className="flex flex-col gap-1.5 flex-1 min-h-0 w-full px-2 overflow-y-auto">
             {[...PRIMARY_NAV, ...SECONDARY_NAV].map((n) => (
               <RailLink key={n.to} to={n.to} label={n.label} Icon={n.icon} end={n.end}
-                badge={n.to === "/orders" ? activeCount : 0} />
+                badge={n.to === `/${slug}/orders` ? activeCount : 0} />
             ))}
             {staffUser?.role === "Manager" && (
               <>
@@ -127,7 +128,7 @@ export default function POSLayout() {
           {/* Hard nav, not navigate("/login") — a client-side transition races
               Protected's own staffUser-triggered re-render of the outgoing
               /pos route, which can win and bounce to "/" instead. */}
-          <button data-testid="logout-btn" onClick={() => { logout(); window.location.assign("/pos/login"); }}
+          <button data-testid="logout-btn" onClick={() => { logout(); window.location.assign(`/pos/${slug}/login`); }}
             className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2" style={{ color: "var(--pos-muted)" }}>
             <LogOut className="w-5 h-5" />
             Sign out
@@ -195,7 +196,7 @@ export default function POSLayout() {
             style={({ isActive }) => ({ color: isActive ? "var(--pos-accent)" : "var(--pos-muted)" })}>
             <Icon className="w-5 h-5" />
             {label}
-            {to === "/orders" && activeCount > 0 && (
+            {to === `/${slug}/orders` && activeCount > 0 && (
               <span className="absolute top-1 right-3 min-w-[16px] h-[16px] rounded-full text-[9px] font-bold flex items-center justify-center text-white" style={{ background: "#ef4444" }}>{activeCount}</span>
             )}
           </NavLink>
@@ -251,7 +252,7 @@ export default function POSLayout() {
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               {theme === "dark" ? "Light mode" : "Dark mode"}
             </button>
-            <button data-testid="mmore-logout" onClick={() => { setMoreOpen(false); logout(); window.location.assign("/pos/login"); }}
+            <button data-testid="mmore-logout" onClick={() => { setMoreOpen(false); logout(); window.location.assign(`/pos/${slug}/login`); }}
               className="pos-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
               style={{ background: "var(--pos-panel-2)", color: "#f87171" }}>
               <LogOut className="w-4 h-4" /> Sign out

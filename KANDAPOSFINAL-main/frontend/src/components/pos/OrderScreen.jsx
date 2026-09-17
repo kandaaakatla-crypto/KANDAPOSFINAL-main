@@ -16,7 +16,7 @@ import { loyaltyApi, ordersApi, storeCreditApi, giftCardsApi } from "../../api/c
 import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
 import { applyScheduleToItem } from "../../utils/scheduling";
 
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 
 const ORDER_TYPES = [
   { id: "delivery", label: "Delivery", icon: Bike },
@@ -39,6 +39,7 @@ export default function OrderScreen() {
     return menuItems.map((m) => applyScheduleToItem(m, schedules, now));
   }, [menuItems, schedules, scheduleTick]);
   const navigate = useNavigate();
+  const { slug } = useParams();
   const [orderType, setOrderType] = useState("delivery");
   const [orderSource, setOrderSource] = useState("in-store");
   const [activeCat, setActiveCat] = useState("pizzas");
@@ -311,7 +312,7 @@ export default function OrderScreen() {
       try { await updateOrderStatus(editingOrderId, "completed"); } catch { /* best-effort */ }
       toast.success(`Bill #${placed.number} settled by ${method} — ₹${total.toFixed(2)}`);
       resetAll();
-      navigate("/tables");
+      navigate(`/${slug}/tables`);
       return;
     }
     toast.success(`Order #${placed.number} paid by ${method} — ₹${total.toFixed(2)}`);
@@ -336,7 +337,7 @@ export default function OrderScreen() {
               </div>
               <div className="text-[10px] mt-1" style={{ color: "var(--pos-blue)" }}>Add more items or hit Pay to settle.</div>
             </div>
-            <button data-testid="close-reopen" onClick={() => { resetAll(); navigate("/tables"); }}
+            <button data-testid="close-reopen" onClick={() => { resetAll(); navigate(`/${slug}/tables`); }}
               className="pos-btn p-1 rounded" style={{ color: "var(--pos-blue)" }} title="Back to tables">
               <X className="w-4 h-4" />
             </button>
