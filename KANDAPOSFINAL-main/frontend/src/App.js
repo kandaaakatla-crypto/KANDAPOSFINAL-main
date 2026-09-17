@@ -118,15 +118,6 @@ function Protected({ children }) {
   return children;
 }
 
-// Forwards a legacy bare POS path (e.g. /pos) to the caller's pinned
-// restaurant slug (e.g. /demo/pos), or to the restaurant-ID gate if none is
-// pinned yet — preserves old bookmarks/desktop-app/Android-app shortcuts.
-function BareAppRedirect({ sub }) {
-  const slug = tenantStore.get();
-  if (slug) return <Navigate to={`/${slug}/${sub}`} replace />;
-  return <Navigate to="/pos/login" replace />;
-}
-
 function OwnerProtected({ children }) {
   const { owner, boot } = useOwner();
   if (boot === "loading") {
@@ -211,7 +202,6 @@ function App() {
 
                   {/* Driver stripped POS view */}
                   <Route path="/:slug/driver" element={<Protected><DriverScreen /></Protected>} />
-                  <Route path="/driver" element={<BareAppRedirect sub="driver" />} />
 
                   {/* Public marketing landing page on web; a native-app
                   identity's own starting screen on pos/display builds
@@ -238,15 +228,16 @@ function App() {
                     <Route path="dispatch" element={<DispatchScreen />} />
                     <Route path="workforce" element={<WorkforceScreen />} />
                   </Route>
-                  {/* Legacy bare paths — forward to the caller's own pinned
-                  restaurant slug (or the restaurant-ID gate) instead of 404ing
-                  old bookmarks/desktop-app/Android-app shortcuts. */}
-                  <Route path="/pos" element={<BareAppRedirect sub="pos" />} />
-                  <Route path="/orders" element={<BareAppRedirect sub="orders" />} />
-                  <Route path="/tables" element={<BareAppRedirect sub="tables" />} />
-                  <Route path="/menu" element={<BareAppRedirect sub="menu" />} />
-                  <Route path="/dispatch" element={<BareAppRedirect sub="dispatch" />} />
-                  <Route path="/workforce" element={<BareAppRedirect sub="workforce" />} />
+                  {/* Retired bare paths — a literal match here always outranks
+                  the "/:slug" wildcard above, so these plain words don't get
+                  mistaken for a restaurant slug and 404 cleanly instead. */}
+                  <Route path="/pos" element={<NotFoundPage />} />
+                  <Route path="/orders" element={<NotFoundPage />} />
+                  <Route path="/tables" element={<NotFoundPage />} />
+                  <Route path="/menu" element={<NotFoundPage />} />
+                  <Route path="/dispatch" element={<NotFoundPage />} />
+                  <Route path="/workforce" element={<NotFoundPage />} />
+                  <Route path="/driver" element={<NotFoundPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Suspense>
