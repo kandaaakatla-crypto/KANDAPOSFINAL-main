@@ -4,7 +4,7 @@ import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { toast } from "sonner";
 import {
   ShoppingCart, LayoutGrid, ChefHat, Truck, Boxes, Users, BarChart3,
-  MessageCircle, Mic, MapPin, Mail, Phone, Menu, X,
+  MessageCircle, Mic, MapPin, Mail, Menu, X, Plus,
   ShoppingBag, CheckCircle2, Instagram,
 } from "lucide-react";
 import useSeo, { useStructuredData } from "../hooks/useSeo";
@@ -118,6 +118,7 @@ export default function LandingPage() {
   const [updatesSubmitted, setUpdatesSubmitted] = useState(false);
   const [updatesBusy, setUpdatesBusy] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
 
   const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -398,9 +399,6 @@ export default function LandingPage() {
                   <a href="mailto:connect@kandapos.com" className="flex items-center gap-3 text-sm">
                     <Mail className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> connect@kandapos.com
                   </a>
-                  <a href="tel:+919000990209" className="flex items-center gap-3 text-sm">
-                    <Phone className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> +91 90009 90209
-                  </a>
                   <a href="https://wa.me/919000990209" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm">
                     <MessageCircle className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> WhatsApp: +91 90009 90209
                   </a>
@@ -521,6 +519,58 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile floating quick-contact button — WhatsApp, email, Instagram.
+          No phone/call option, matching the contact section above. */}
+      <div className="md:hidden fixed bottom-5 right-5 z-30 flex flex-col items-end gap-3">
+        <AnimatePresence>
+          {fabOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.9 }}
+              transition={{ duration: 0.15 }}
+              className="flex flex-col items-end gap-2.5"
+            >
+              <a href="https://wa.me/919000990209" target="_blank" rel="noopener noreferrer"
+                onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>WhatsApp</span>
+                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "#25D366" }}>
+                  <MessageCircle className="w-4.5 h-4.5 text-white" />
+                </span>
+              </a>
+              <a href="mailto:connect@kandapos.com"
+                onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Email</span>
+                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--pos-blue)" }}>
+                  <Mail className="w-4.5 h-4.5 text-white" />
+                </span>
+              </a>
+              <a href="https://www.instagram.com/kanda.pos" target="_blank" rel="noopener noreferrer"
+                onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Instagram</span>
+                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)" }}>
+                  <Instagram className="w-4.5 h-4.5 text-white" />
+                </span>
+              </a>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <motion.button
+          type="button"
+          onClick={() => setFabOpen((v) => !v)}
+          whileTap={{ scale: 0.94 }}
+          aria-label={fabOpen ? "Close quick contact menu" : "Open quick contact menu"}
+          aria-expanded={fabOpen}
+          className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: "var(--pos-accent)", boxShadow: "0 10px 24px -8px rgba(0,0,0,0.4)" }}
+        >
+          {fabOpen ? <X className="w-6 h-6 text-white" /> : <Plus className="w-6 h-6 text-white" />}
+        </motion.button>
+      </div>
     </div>
     </MotionConfig>
   );
