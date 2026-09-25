@@ -484,9 +484,17 @@ export default function LandingPage() {
       {/* Footer */}
       <footer style={{ background: "#121014", color: "#A39D95" }}>
         <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="grid gap-8" style={{ gridTemplateColumns: "1.4fr repeat(3, 1fr)" }}>
-            <div>
-              <img src="/kanda-logo.png" alt="Kanda POS" className="h-7 w-auto mb-3" style={{ filter: "brightness(0) invert(1)" }} />
+          <div className="grid grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-8">
+            <div className="col-span-2 md:col-span-1">
+              {/* Full lockup's wordmark is dark brown, illegible on this dark
+                  footer — crop to just the orange mark and set the name as
+                  real, theme-colored text instead of an inverted image. */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-7 w-7 overflow-hidden rounded-md shrink-0">
+                  <img src="/kanda-logo.png" alt="Kanda POS" className="h-7 w-auto max-w-none" />
+                </div>
+                <span className="font-bold text-white text-sm">KANDA POS</span>
+              </div>
               <div className="text-sm max-w-[240px]" style={{ color: "#A39D95" }}>Point of sale software for restaurants and retail, built in Hyderabad.</div>
             </div>
             <div>
