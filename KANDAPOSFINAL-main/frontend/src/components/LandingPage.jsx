@@ -4,7 +4,7 @@ import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { toast } from "sonner";
 import {
   ShoppingCart, LayoutGrid, ChefHat, Truck, Boxes, Users, BarChart3,
-  MessageCircle, Mic, MapPin, Mail, Phone, Menu, X,
+  MessageCircle, Mic, MapPin, Mail, Menu, X, Plus,
   ShoppingBag, CheckCircle2, Instagram,
 } from "lucide-react";
 import useSeo, { useStructuredData } from "../hooks/useSeo";
@@ -118,6 +118,7 @@ export default function LandingPage() {
   const [updatesSubmitted, setUpdatesSubmitted] = useState(false);
   const [updatesBusy, setUpdatesBusy] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
 
   const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -180,7 +181,7 @@ export default function LandingPage() {
     <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)" }} className="overflow-x-hidden land-page" data-testid="landing-page">
       {/* Nav */}
       <header className="sticky top-0 z-20" style={{ background: "rgba(253,250,244,0.85)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-3.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3.5">
           <img src="/kanda-logo.png" alt="Kanda POS" width={127} height={36} className="h-9 w-auto" />
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium" style={{ color: "var(--pos-muted)" }}>
             {NAV_LINKS.map((l) => (
@@ -232,7 +233,8 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-14 pb-0">
+      <section className="max-w-7xl mx-auto px-6 pt-14 pb-0">
+      <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Kicker>Coming soon to India</Kicker>
           <h1 className="land-h1 text-5xl md:text-6xl lg:text-[3.7rem] leading-[1.08] mb-6 max-w-2xl">
@@ -263,7 +265,7 @@ export default function LandingPage() {
         {/* Hero visual — a single device-framed order screen on a dark stage,
             like a real product screenshot sitting on a counter. */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
-          className="hidden sm:block relative rounded-3xl pt-10 px-[6%] overflow-hidden" style={{ background: "#121014" }} aria-hidden="true">
+          className="hidden sm:block relative rounded-3xl py-10 px-[6%] overflow-hidden" style={{ background: "#121014" }} aria-hidden="true">
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at 30% 0%, rgba(249,115,22,0.22), transparent 70%)" }} />
           <div className="relative land-device-mount max-w-3xl mx-auto">
             <div className="rounded-t-2xl p-3.5 pb-0" style={{ background: "#0B0A0C", border: "1px solid #2A2730", boxShadow: "0 40px 80px -20px rgba(0,0,0,0.6)" }}>
@@ -303,10 +305,11 @@ export default function LandingPage() {
             </div>
           </div>
         </motion.div>
+      </div>
       </section>
 
       {/* Live channels */}
-      <section id="live" className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <section id="live" className="max-w-7xl mx-auto px-6 py-16 md:py-20">
         <Kicker>From an Irani café counter to a kirana till</Kicker>
         <h2 className="land-h2 text-3xl md:text-4xl mb-10 max-w-xl">Four channels, one live view.</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
@@ -322,7 +325,7 @@ export default function LandingPage() {
       </section>
 
       {/* GST */}
-      <section id="gst" className="max-w-6xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="gst" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <div className="grid md:grid-cols-2 gap-14 items-center">
           <div>
             <Kicker>Built for India</Kicker>
@@ -375,7 +378,7 @@ export default function LandingPage() {
       </section>
 
       {/* Modules */}
-      <section id="features" className="max-w-6xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="features" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <Kicker>Ten modules</Kicker>
         <h2 className="land-h2 text-3xl md:text-4xl mb-10 max-w-xl">The rest of the till, included.</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5" style={{ gridAutoFlow: "dense" }}>
@@ -384,7 +387,7 @@ export default function LandingPage() {
       </section>
 
       {/* Contact + updates */}
-      <section id="contact" className="max-w-6xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="contact" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <div className="flex flex-col gap-5">
           <div className="w-full rounded-2xl p-6 sm:p-10" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
             <div className="grid md:grid-cols-2 gap-8 md:gap-12">
@@ -397,9 +400,6 @@ export default function LandingPage() {
                 <div className="flex flex-col gap-3">
                   <a href="mailto:connect@kandapos.com" className="flex items-center gap-3 text-sm">
                     <Mail className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> connect@kandapos.com
-                  </a>
-                  <a href="tel:+919000990209" className="flex items-center gap-3 text-sm">
-                    <Phone className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> +91 90009 90209
                   </a>
                   <a href="https://wa.me/919000990209" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm">
                     <MessageCircle className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> WhatsApp: +91 90009 90209
@@ -483,7 +483,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer style={{ background: "#121014", color: "#A39D95" }}>
-        <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-8">
             <div className="col-span-2 md:col-span-1">
               {/* Full lockup's wordmark is dark brown, illegible on this dark
@@ -521,6 +521,58 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile floating quick-contact button — WhatsApp, email, Instagram.
+          No phone/call option, matching the contact section above. */}
+      <div className="md:hidden fixed bottom-5 right-5 z-30 flex flex-col items-end gap-3">
+        <AnimatePresence>
+          {fabOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.9 }}
+              transition={{ duration: 0.15 }}
+              className="flex flex-col items-end gap-2.5"
+            >
+              <a href="https://wa.me/919000990209" target="_blank" rel="noopener noreferrer"
+                onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>WhatsApp</span>
+                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "#25D366" }}>
+                  <MessageCircle className="w-4.5 h-4.5 text-white" />
+                </span>
+              </a>
+              <a href="mailto:connect@kandapos.com"
+                onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Email</span>
+                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--pos-blue)" }}>
+                  <Mail className="w-4.5 h-4.5 text-white" />
+                </span>
+              </a>
+              <a href="https://www.instagram.com/kanda.pos" target="_blank" rel="noopener noreferrer"
+                onClick={() => setFabOpen(false)}
+                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Instagram</span>
+                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)" }}>
+                  <Instagram className="w-4.5 h-4.5 text-white" />
+                </span>
+              </a>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <motion.button
+          type="button"
+          onClick={() => setFabOpen((v) => !v)}
+          whileTap={{ scale: 0.94 }}
+          aria-label={fabOpen ? "Close quick contact menu" : "Open quick contact menu"}
+          aria-expanded={fabOpen}
+          className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
+          style={{ background: "var(--pos-accent)", boxShadow: "0 10px 24px -8px rgba(0,0,0,0.4)" }}
+        >
+          {fabOpen ? <X className="w-6 h-6 text-white" /> : <Plus className="w-6 h-6 text-white" />}
+        </motion.button>
+      </div>
     </div>
     </MotionConfig>
   );
