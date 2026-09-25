@@ -181,7 +181,7 @@ export default function LandingPage() {
     <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)" }} className="overflow-x-hidden land-page" data-testid="landing-page">
       {/* Nav */}
       <header className="sticky top-0 z-20" style={{ background: "rgba(253,250,244,0.85)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-3.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3.5">
           <img src="/kanda-logo.png" alt="Kanda POS" width={127} height={36} className="h-9 w-auto" />
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium" style={{ color: "var(--pos-muted)" }}>
             {NAV_LINKS.map((l) => (
@@ -233,7 +233,8 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-14 pb-0">
+      <section className="max-w-7xl mx-auto px-6 pt-14 pb-0">
+      <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Kicker>Coming soon to India</Kicker>
           <h1 className="land-h1 text-5xl md:text-6xl lg:text-[3.7rem] leading-[1.08] mb-6 max-w-2xl">
@@ -264,7 +265,7 @@ export default function LandingPage() {
         {/* Hero visual — a single device-framed order screen on a dark stage,
             like a real product screenshot sitting on a counter. */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
-          className="hidden sm:block relative rounded-3xl pt-10 px-[6%] overflow-hidden" style={{ background: "#121014" }} aria-hidden="true">
+          className="hidden sm:block relative rounded-3xl py-10 px-[6%] overflow-hidden" style={{ background: "#121014" }} aria-hidden="true">
           <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at 30% 0%, rgba(249,115,22,0.22), transparent 70%)" }} />
           <div className="relative land-device-mount max-w-3xl mx-auto">
             <div className="rounded-t-2xl p-3.5 pb-0" style={{ background: "#0B0A0C", border: "1px solid #2A2730", boxShadow: "0 40px 80px -20px rgba(0,0,0,0.6)" }}>
@@ -304,10 +305,11 @@ export default function LandingPage() {
             </div>
           </div>
         </motion.div>
+      </div>
       </section>
 
       {/* Live channels */}
-      <section id="live" className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <section id="live" className="max-w-7xl mx-auto px-6 py-16 md:py-20">
         <Kicker>From an Irani café counter to a kirana till</Kicker>
         <h2 className="land-h2 text-3xl md:text-4xl mb-10 max-w-xl">Four channels, one live view.</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
@@ -323,7 +325,7 @@ export default function LandingPage() {
       </section>
 
       {/* GST */}
-      <section id="gst" className="max-w-6xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="gst" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <div className="grid md:grid-cols-2 gap-14 items-center">
           <div>
             <Kicker>Built for India</Kicker>
@@ -376,7 +378,7 @@ export default function LandingPage() {
       </section>
 
       {/* Modules */}
-      <section id="features" className="max-w-6xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="features" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <Kicker>Ten modules</Kicker>
         <h2 className="land-h2 text-3xl md:text-4xl mb-10 max-w-xl">The rest of the till, included.</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5" style={{ gridAutoFlow: "dense" }}>
@@ -385,7 +387,7 @@ export default function LandingPage() {
       </section>
 
       {/* Contact + updates */}
-      <section id="contact" className="max-w-6xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <section id="contact" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <div className="flex flex-col gap-5">
           <div className="w-full rounded-2xl p-6 sm:p-10" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
             <div className="grid md:grid-cols-2 gap-8 md:gap-12">
@@ -481,7 +483,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer style={{ background: "#121014", color: "#A39D95" }}>
-        <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-8">
             <div className="col-span-2 md:col-span-1">
               {/* Full lockup's wordmark is dark brown, illegible on this dark
