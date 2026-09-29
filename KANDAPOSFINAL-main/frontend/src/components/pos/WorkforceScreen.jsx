@@ -463,7 +463,7 @@ export function MyRotaTab({ weekStart, weekEnd }) {
   return (
     <div className="max-w-3xl mx-auto" data-testid="myrota-tab">
       <div className="rounded-xl p-4 mb-4 flex items-center justify-between"
-        style={{ background: "linear-gradient(135deg, #1c2438 0%, #101a30 100%)", border: "1px solid var(--pos-border)" }}>
+        style={{ background: "linear-gradient(135deg, #262626 0%, #0a0a0a 100%)", border: "1px solid #333333" }}>
         <div>
           <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>This week</div>
           <div className="text-2xl font-bold text-white tabular-nums" data-testid="myrota-total-hours">{totalHours.toFixed(2)}h scheduled</div>

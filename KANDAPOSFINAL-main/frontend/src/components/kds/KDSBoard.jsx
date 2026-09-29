@@ -183,7 +183,14 @@ export default function KDSBoard() {
     // Also re-validates the token periodically by refreshing — if the server
     // starts returning 401 we surface a clear "token expired" banner instead
     // of going silent.
-    const wsBase = (process.env.REACT_APP_BACKEND_URL || "").replace(/^http/, "ws");
+    // REACT_APP_WS_BACKEND_URL is the dedicated realtime endpoint (Firebase
+    // Hosting's rewrite doesn't proxy WebSocket upgrades — see api/ws.js's
+    // wsUrl() for the same fallback chain). Using REACT_APP_BACKEND_URL
+    // alone here resolved to "" on the web build, so this silently opened
+    // a same-origin ws://kandapos.com/api/ws/kds connection that Firebase
+    // Hosting can't route — every KDS screen fell back to the 30s poll
+    // below for every ticket update instead of getting instant pushes.
+    const wsBase = (process.env.REACT_APP_WS_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || "").replace(/^http/, "ws");
     let ws = null;
     let pollId = null;
     let reconnectId = null;
