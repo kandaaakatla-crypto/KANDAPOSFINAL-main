@@ -106,7 +106,7 @@ export default function DashDigest() {
           <button data-testid="digest-send-now"
             onClick={sendNow} disabled={sending || !cfg}
             className="pos-btn px-3 py-2 rounded-lg text-xs text-white flex items-center gap-1.5"
-            style={{ background: "linear-gradient(135deg,#16213a,#0b1220)", border: "1px solid #243352" }}>
+            style={{ background: "linear-gradient(135deg,#262626,#0a0a0a)", border: "1px solid #333333" }}>
             <Send className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> {sending ? "Sending…" : "Send preview now"}
           </button>
         </div>

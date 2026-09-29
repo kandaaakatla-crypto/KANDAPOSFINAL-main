@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { usePos } from "../../store/PosContext";
-import { timeclockApi, shiftsApi, staffApi } from "../../api/client";
+import { useDash } from "../../store/DashContext";
+import { timeclockApi, shiftsApi, staffApi, authToken } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -20,7 +21,15 @@ function fmtTime(iso) { return new Date(iso).toLocaleTimeString("en-GB", { hour:
 
 export default function WorkforceScreen() {
   const { staffUser } = usePos();
-  const isManager = staffUser?.role === "Manager";
+  // Rendered both at /:slug/workforce (POS, staff-PIN session) and at
+  // /dashboard/workforce (Dashboard, no staff PIN — email/password login
+  // only). A dash session with no POS session gets the full manager view:
+  // every dashboard role can see workforce (canManageWorkforce in
+  // DashContext.jsx), scoped server-side by location_ids the same as
+  // everything else on the dashboard.
+  const { user: dashUser } = useDash();
+  const inDashboard = !staffUser && !!dashUser;
+  const isManager = inDashboard ? true : staffUser?.role === "Manager";
   const [tab, setTab] = useState(isManager ? "timesheet" : "myrota");
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date()));
   const weekEnd = useMemo(() => { const d = new Date(weekStart); d.setUTCDate(d.getUTCDate() + 7); return d; }, [weekStart]);
@@ -86,7 +95,7 @@ function TimesheetTab({ weekStart, weekEnd, apiBase }) {
   }, [weekStart, weekEnd]);
 
   const downloadCsv = async () => {
-    const token = localStorage.getItem("kanda_pos_token_v1");
+    const token = authToken();
     const r = await fetch(`${apiBase}/timeclock/timesheet.csv?start=${encodeURIComponent(weekStart.toISOString())}&end=${encodeURIComponent(weekEnd.toISOString())}`,
       { headers: { Authorization: `Bearer ${token}` } });
     if (!r.ok) { toast.error("Download failed"); return; }
@@ -238,7 +247,7 @@ function RotaTab({ weekStart, apiBase }) {
   };
 
   const downloadPdf = async () => {
-    const token = localStorage.getItem("kanda_pos_token_v1");
+    const token = authToken();
     if (!token) { toast.error("Sign in again to download"); return; }
     try {
       const url = `${apiBase}/shifts.pdf?start=${encodeURIComponent(weekStart.toISOString())}&end=${encodeURIComponent(weekEnd.toISOString())}`;
