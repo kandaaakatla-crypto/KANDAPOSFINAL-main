@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { usePos } from "../../store/PosContext";
+import { useDash } from "../../store/DashContext";
 import { reportsApi, labourApi } from "../../api/client";
 import { IndianRupee, ReceiptText, TrendingUp, Bike, Users, RefreshCcw, ChefHat } from "lucide-react";
 import PeakHoursHeatmap from "../dash/PeakHoursHeatmap";
@@ -9,6 +10,13 @@ const RANGE_OPTIONS = [7, 14, 30];
 
 export default function ReportsScreen() {
   const { orders, staffUser } = usePos();
+  // Rendered only at /dashboard/reports in practice, but still reads
+  // usePos() (see CustomersScreen.jsx's comment for the same situation) —
+  // a dashboard-only session never has a staffUser, so the labour-cost
+  // widget needs its own manager check that also recognises a dashboard
+  // login instead of requiring a POS PIN "Manager" role specifically.
+  const { user: dashUser } = useDash();
+  const canSeeLabour = dashUser ? true : staffUser?.role === "Manager";
   const [tab, setTab] = useState("sales");
   const [summary, setSummary] = useState(null);
   const [labour, setLabour] = useState(null);
@@ -19,7 +27,7 @@ export default function ReportsScreen() {
   useEffect(() => {
     let cancel = false;
     reportsApi.summary().then((s) => { if (!cancel) setSummary(s); }).catch(() => {});
-    if (staffUser?.role === "Manager") {
+    if (canSeeLabour) {
       labourApi.today().then((l) => { if (!cancel) setLabour(l); }).catch(() => {});
       const t = setInterval(() => {
         labourApi.today().then((l) => { if (!cancel) setLabour(l); }).catch(() => {});
@@ -27,7 +35,7 @@ export default function ReportsScreen() {
       return () => { cancel = true; clearInterval(t); };
     }
     return () => { cancel = true; };
-  }, [orders.length, staffUser?.role]);
+  }, [orders.length, canSeeLabour]);
 
   useEffect(() => {
     let cancel = false;
@@ -84,7 +92,7 @@ export default function ReportsScreen() {
       {tab === "menu" ? <MenuEngineeringTab /> : <>
 
       {/* Labour cost widget — Manager-only */}
-      {staffUser?.role === "Manager" && labour && (
+      {canSeeLabour && labour && (
         <div className="rounded-xl p-4 flex items-center gap-4" data-testid="labour-widget"
           style={{ background: "linear-gradient(135deg, var(--pos-panel) 0%, var(--pos-panel-2) 100%)", border: "1px solid var(--pos-border)" }}>
           <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#fcd34d22" }}>
