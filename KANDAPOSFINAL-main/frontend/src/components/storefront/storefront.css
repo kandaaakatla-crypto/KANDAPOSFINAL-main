@@ -17,6 +17,10 @@
   --sf-danger-bg: #fef2f2;
   --sf-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
   --sf-overlay: rgba(20,16,12,0.55);
+  /* A store's own background photo (see .sf-bg-image below) shows through
+     this instead of a flat --sf-bg fill — same color, translucent, so menu
+     cards/inputs (which are fully opaque) stay just as readable either way. */
+  --sf-bg-scrim: rgba(247,245,242,0.90);
 
   background: var(--sf-bg);
   color: var(--sf-text);
@@ -39,6 +43,20 @@
   --sf-danger-bg: rgba(248,113,113,0.12);
   --sf-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.4);
   --sf-overlay: rgba(0,0,0,0.7);
+  --sf-bg-scrim: rgba(20,17,13,0.90);
+}
+
+/* A store's uploaded background photo — layered under a translucent scrim
+   of the page's own background color (set inline per-page, see
+   TableOrderPage.jsx/PickupOrderPage.jsx) so it reads as ambience behind
+   the menu, not a legibility risk. Falls back to the flat --sf-bg color
+   when no photo is set (scrim over nothing = same as before). Fixed
+   attachment for a subtle parallax; iOS Safari treats `fixed` as `scroll`
+   on the body, which is a fine, harmless fallback. */
+.sf-bg-image {
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
 }
 
 .sf-card {

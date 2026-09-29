@@ -60,6 +60,7 @@ const DashLayout = lazy(() => import("./components/dash/DashLayout"));
 const DashHome = lazy(() => import("./components/dash/DashHome"));
 const DashChangePassword = lazy(() => import("./components/dash/DashChangePassword"));
 const DashLocations = lazy(() => import("./components/dash/DashLocations"));
+const DashBranding = lazy(() => import("./components/dash/DashBranding"));
 const DashVoice = lazy(() => import("./components/dash/DashVoice"));
 const DashDigest = lazy(() => import("./components/dash/DashDigest"));
 const DashLoyalty = lazy(() => import("./components/dash/DashLoyalty"));
@@ -183,6 +184,7 @@ function App() {
                     <Route path="sms" element={<DashSms />} />
                     <Route path="whatsapp" element={<DashWhatsApp />} />
                     <Route path="locations" element={<DashLocations />} />
+                    <Route path="branding" element={<DashBranding />} />
                   </Route>
 
                   {/* Kitchen Display — no auth, long-lived ?token= */}

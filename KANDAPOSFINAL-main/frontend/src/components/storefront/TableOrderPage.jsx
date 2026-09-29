@@ -197,11 +197,19 @@ export default function TableOrderPage() {
     );
   }
 
+  const bgImage = menu.tenant.backgroundImageUrl;
+
   return (
-    <div className={themeClass} style={{ paddingBottom: 112 }} data-testid="table-order-page">
+    <div className={`${themeClass} ${bgImage ? "sf-bg-image" : ""}`}
+      style={{ paddingBottom: 112, ...(bgImage ? { backgroundImage: `linear-gradient(var(--sf-bg-scrim), var(--sf-bg-scrim)), url(${bgImage})` } : {}) }}
+      data-testid="table-order-page">
       <header className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between sf-card" style={{ backdropFilter: "blur(10px)", borderLeft: "none", borderRight: "none", borderTop: "none" }}>
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 sf-btn-accent"><UtensilsCrossed className="w-4 h-4" /></div>
+          {menu.tenant.logoUrl ? (
+            <img src={menu.tenant.logoUrl} alt={menu.tenant.name} className="w-9 h-9 rounded-xl object-cover shrink-0" />
+          ) : (
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 sf-btn-accent"><UtensilsCrossed className="w-4 h-4" /></div>
+          )}
           <div className="min-w-0">
             <div className="text-sm font-bold truncate">{menu.tenant.name}</div>
             <div className="text-[11px]" style={{ color: "var(--sf-text-muted)" }}>Table {number}</div>
