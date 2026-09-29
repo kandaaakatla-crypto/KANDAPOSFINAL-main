@@ -26,6 +26,22 @@
   --pos-muted: #8b9bb8;
 }
 
+/* Landing page — always light, deliberately excluded from the shared
+   toggle (it has no dark-mode control of its own). The toggle's
+   data-theme="dark" attribute lives on <html> and is shared across every
+   surface via localStorage, so a visitor who tried dark mode in the POS
+   and then loads kandapos.com would otherwise see it here too. Redefining
+   the tokens on .land-page itself shadows the inherited dark values for
+   its whole subtree, regardless of what <html> is set to. */
+.land-page {
+  --pos-bg: #fdfaf4;
+  --pos-panel: #ffffff;
+  --pos-panel-2: #f7f0e3;
+  --pos-border: #ece1cd;
+  --pos-text: #251d13;
+  --pos-muted: #93805f;
+}
+
 .App {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--pos-bg);

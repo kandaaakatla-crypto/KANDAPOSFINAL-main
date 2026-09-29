@@ -30,27 +30,33 @@ export default function DashLogin() {
 
   return (
     <div className="min-h-screen flex" style={{ background: "var(--pos-bg)" }} data-testid="dash-login">
+      {/* This panel's warm gradient is fixed regardless of the app's
+          light/dark toggle (shared via localStorage across every surface),
+          so its text must be fixed too — var(--pos-text) etc. would follow
+          the toggle and render near-white text on this permanently-light
+          background whenever a visitor last chose dark mode anywhere else
+          in the app. */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12"
-        style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid var(--pos-border)" }}>
+        style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid #ece1cd" }}>
         <div className="flex items-center gap-3">
           <Building2 className="w-7 h-7" style={{ color: "var(--pos-accent)" }} />
           <div>
-            <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA</div>
-            <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "var(--pos-muted)" }}>Restaurant Dashboard</div>
+            <div className="text-2xl font-bold tracking-tight" style={{ color: "#251d13" }}>KANDA</div>
+            <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "#93805f" }}>Restaurant Dashboard</div>
           </div>
         </div>
         <div>
-          <h1 className="text-4xl font-bold leading-tight mb-3" style={{ color: "var(--pos-text)" }}>Manage every store from one screen.</h1>
-          <p className="text-base max-w-md leading-relaxed" style={{ color: "var(--pos-muted)" }}>
+          <h1 className="text-4xl font-bold leading-tight mb-3" style={{ color: "#251d13" }}>Manage every store from one screen.</h1>
+          <p className="text-base max-w-md leading-relaxed" style={{ color: "#93805f" }}>
             Menu, staff, rota, promotions, and locations, all in one place.
             Owners see every store. Area managers see the ones they cover. Store managers see theirs.
           </p>
         </div>
-        <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
+        <div className="text-xs" style={{ color: "#93805f" }}>
           Demo accounts:<br />
-          <span style={{ color: "var(--pos-text)" }}>owner@demo.com</span> / OwnerPass#2025<br />
-          <span style={{ color: "var(--pos-text)" }}>manager@demo.com</span> / DemoMgr#2025<br />
-          <span style={{ color: "var(--pos-text)" }}>area@demo.com</span> / DemoArea#2025
+          <span style={{ color: "#251d13" }}>owner@demo.com</span> / OwnerPass#2025<br />
+          <span style={{ color: "#251d13" }}>manager@demo.com</span> / DemoMgr#2025<br />
+          <span style={{ color: "#251d13" }}>area@demo.com</span> / DemoArea#2025
         </div>
       </div>
 

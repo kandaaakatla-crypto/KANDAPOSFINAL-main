@@ -61,7 +61,7 @@ export default function OwnerLogin() {
           </button>
         </form>
         <div className="mt-6 text-[11px] text-center" style={{ color: "var(--pos-muted)" }}>
-          Protected by 2-factor authentication. Set up on first login via <code>python -m owner_bootstrap</code>.
+          Protected by two-factor authentication.
         </div>
       </div>
     </div>
