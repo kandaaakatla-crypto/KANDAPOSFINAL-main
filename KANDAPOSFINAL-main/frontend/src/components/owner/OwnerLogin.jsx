@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwner } from "../../store/OwnerContext";
-import { Lock, Mail, Loader2, ShieldCheck } from "lucide-react";
+import { Lock, Mail, Loader2 } from "lucide-react";
 import { Input } from "../ui/input";
 import { toast } from "sonner";
 
@@ -28,9 +28,7 @@ export default function OwnerLogin() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--pos-bg)" }}>
       <div className="w-full max-w-md rounded-2xl p-8" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid="owner-login">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-accent)" }}>
-            <ShieldCheck className="w-5 h-5 text-white" />
-          </div>
+          <img src="/icon-192.png" alt="Kanda POS" className="w-10 h-10 rounded-lg shrink-0" />
           <div>
             <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Kanda POS</div>
             <div className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Owner Portal</div>

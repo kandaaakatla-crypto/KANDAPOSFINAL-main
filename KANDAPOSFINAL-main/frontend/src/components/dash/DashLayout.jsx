@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { Building2, LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Sun, Moon } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -205,7 +205,7 @@ export default function DashLayout() {
         {/* Mobile top bar */}
         <header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0" style={{ background: "var(--pos-panel)", borderBottom: "1px solid var(--pos-border)" }}>
           <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
+            <img src="/icon-192.png" alt="Kanda POS" className="w-7 h-7 rounded-md shrink-0" />
             <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>KANDA Dashboard</div>
           </div>
           <button data-testid="dash-mobile-menu-btn" onClick={() => setNavOpen(true)}
@@ -218,7 +218,7 @@ export default function DashLayout() {
         <aside className={`hidden md:flex shrink-0 flex-col transition-[width] duration-150 ${collapsed ? "w-[68px]" : "w-60"}`}
           style={{ background: "var(--pos-panel)", borderRight: "1px solid var(--pos-border)" }}>
           <div className={`p-4 flex items-center gap-2 ${collapsed ? "justify-center px-2" : ""}`} style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <Building2 className="w-5 h-5 shrink-0" style={{ color: "var(--pos-accent)" }} />
+            <img src="/icon-192.png" alt="Kanda POS" className="w-7 h-7 rounded-md shrink-0" />
             {!collapsed && (
               <div className="leading-tight min-w-0">
                 <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>KANDA</div>
@@ -247,7 +247,7 @@ export default function DashLayout() {
           <SheetContent side="left" className="w-72 p-0 flex flex-col border-r" data-testid="dash-mobile-nav-sheet"
             style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
             <div className="p-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-              <Building2 className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
+              <img src="/icon-192.png" alt="Kanda POS" className="w-7 h-7 rounded-md shrink-0" />
               <div className="leading-tight">
                 <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>KANDA</div>
                 <div className="text-[10px] tracking-wider uppercase" style={{ color: "var(--pos-muted)" }}>Dashboard</div>
