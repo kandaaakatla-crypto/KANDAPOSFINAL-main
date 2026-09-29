@@ -212,7 +212,7 @@ export default function CartPanel({
 
           {/* Gift card redeem */}
           <div className="flex items-center gap-2 text-[11px] flex-wrap">
-            <Gift className="w-3 h-3" style={{ color: "#7c3aed" }} />
+            <Gift className="w-3 h-3" style={{ color: "var(--pos-accent)" }} />
             <Input data-testid="gift-card-code-input" placeholder="Gift card code" value={giftCardCode || ""}
               onChange={(e) => onGiftCardCode(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onCheckGiftCard(); } }}
@@ -287,7 +287,7 @@ export default function CartPanel({
           <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Store credit</span><span className="tabular-nums" style={{ color: "#16a34a" }}>-₹{creditDiscount.toFixed(2)}</span></div>
         )}
         {giftDiscount > 0 && (
-          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Gift card ({giftCardCode})</span><span className="tabular-nums" style={{ color: "#7c3aed" }}>-₹{giftDiscount.toFixed(2)}</span></div>
+          <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Gift card ({giftCardCode})</span><span className="tabular-nums" style={{ color: "var(--pos-accent)" }}>-₹{giftDiscount.toFixed(2)}</span></div>
         )}
         {tipAmt > 0 && (
           <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Tip</span><span className="tabular-nums" style={{ color: "var(--pos-text)" }} data-testid="tip-amount">₹{tipAmt.toFixed(2)}</span></div>

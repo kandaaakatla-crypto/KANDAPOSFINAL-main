@@ -53,7 +53,7 @@ export default function SmsComposer({ open, onClose, to, name, customerId = null
         style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
-            <MessageSquare className="w-4 h-4" style={{ color: "#a78bfa" }} />
+            <MessageSquare className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
             SMS to {name || to}
           </DialogTitle>
         </DialogHeader>
@@ -87,7 +87,7 @@ export default function SmsComposer({ open, onClose, to, name, customerId = null
 
           <button data-testid="sms-send" onClick={send} disabled={sending || !body.trim() || !to}
             className="pos-btn w-full h-10 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2"
-            style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", opacity: (sending || !body.trim() || !to) ? 0.5 : 1 }}>
+            style={{ background: "var(--pos-accent)", opacity: (sending || !body.trim() || !to) ? 0.5 : 1 }}>
             {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : <><Send className="w-4 h-4" /> Send SMS</>}
           </button>
         </div>

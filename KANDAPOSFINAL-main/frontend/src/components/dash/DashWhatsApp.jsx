@@ -358,7 +358,7 @@ export default function DashWhatsApp() {
                       }}>
                       {m.media_url && (
                         <a href={m.media_url} target="_blank" rel="noreferrer"
-                          className="block text-[11px] underline mb-1" style={{ color: "#8b5cf6" }}>
+                          className="block text-[11px] underline mb-1" style={{ color: "var(--pos-accent)" }}>
                           [media attachment]
                         </a>
                       )}

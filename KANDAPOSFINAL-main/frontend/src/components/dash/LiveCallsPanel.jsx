@@ -145,30 +145,30 @@ function LiveCallCard({ call }) {
         ))}
         {(call.whispers || []).map((w, i) => (
           <div key={`w${i}`} className="flex gap-2 text-xs px-2 py-1.5 rounded"
-            style={{ background: "rgba(124,58,237,0.10)", border: "1px dashed rgba(124,58,237,0.35)" }}>
+            style={{ background: "rgba(249,115,22,0.10)", border: "1px dashed rgba(249,115,22,0.35)" }}>
             <span className="shrink-0 w-14 uppercase tracking-wider text-[9px] font-bold"
-              style={{ color: "#7c3aed" }}>
+              style={{ color: "var(--pos-accent)" }}>
               Whisper
             </span>
             <div className="flex-1" style={{ color: "var(--pos-text)" }}>
               <div>{w.text}</div>
-              <div className="text-[9px] mt-0.5" style={{ color: "#7c3aed" }}>from {w.by}</div>
+              <div className="text-[9px] mt-0.5" style={{ color: "var(--pos-accent)" }}>from {w.by}</div>
             </div>
           </div>
         ))}
       </div>
       <div className="px-3 py-2 flex items-center gap-2" style={{ borderTop: "1px solid var(--pos-border)" }}>
-        <Mic className="w-3.5 h-3.5" style={{ color: "#7c3aed" }} />
+        <Mic className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} />
         <input data-testid={`whisper-input-${call.id}`}
           value={whisper} onChange={(e) => setWhisper(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendWhisper())}
           placeholder="Whisper an instruction to the AI (caller won't hear)…"
           className="flex-1 rounded px-2 py-1.5 text-xs outline-none"
-          style={{ background: "var(--pos-panel)", border: "1px solid rgba(124,58,237,0.35)", color: "var(--pos-text)" }} />
+          style={{ background: "var(--pos-panel)", border: "1px solid rgba(249,115,22,0.35)", color: "var(--pos-text)" }} />
         <button data-testid={`whisper-send-${call.id}`}
           onClick={sendWhisper} disabled={sending || !whisper.trim()}
           className="pos-btn px-2.5 py-1.5 rounded flex items-center gap-1 text-white text-xs"
-          style={{ background: "linear-gradient(135deg,#a855f7,#7c3aed)", opacity: (sending || !whisper.trim()) ? 0.5 : 1 }}>
+          style={{ background: "var(--pos-accent)", opacity: (sending || !whisper.trim()) ? 0.5 : 1 }}>
           <Send className="w-3 h-3" /> {sending ? "…" : "Whisper"}
         </button>
       </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDash, canAddLocation } from "../../store/DashContext";
-import { MapPin, Plus, CheckCircle2, Pencil, Trash2, X, Sparkles } from "lucide-react";
+import { MapPin, Plus, CheckCircle2, Pencil, Trash2, X, Sparkles, Phone, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import {
@@ -90,7 +90,7 @@ export default function DashLocations() {
           {planInfo && (
             <div className="text-[11px] px-3 py-1.5 rounded-md flex items-center gap-1.5"
               style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-              <Sparkles className="w-3 h-3" style={{ color: "#a78bfa" }} />
+              <Sparkles className="w-3 h-3" style={{ color: "var(--pos-accent)" }} />
               <span style={{ color: "var(--pos-text)" }}>
                 {planInfo.used}/{planInfo.total_slots} locations
               </span>
@@ -106,7 +106,7 @@ export default function DashLocations() {
                 setEditing({ is_default: false, active: true });
               }}
               className="pos-btn h-10 px-4 rounded-md text-xs font-bold flex items-center gap-2 text-white"
-              style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)" }}>
+              style={{ background: "var(--pos-accent)" }}>
               <Plus className="w-4 h-4" /> Add location
             </button>
           )}
@@ -157,9 +157,9 @@ export default function DashLocations() {
               )}
             </div>
             <div className="space-y-1 text-xs" style={{ color: "var(--pos-muted)" }}>
-              <div>📍 {l.address || "—"}</div>
-              <div>📞 {l.phone || "—"}</div>
-              <div>🏷 Store #{l.store_number || "—"}</div>
+              <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3 shrink-0" /> {l.address || "—"}</div>
+              <div className="flex items-center gap-1.5"><Phone className="w-3 h-3 shrink-0" /> {l.phone || "—"}</div>
+              <div className="flex items-center gap-1.5"><Tag className="w-3 h-3 shrink-0" /> Store #{l.store_number || "—"}</div>
             </div>
             {l.active !== false && (
               <div className="mt-3 text-[10px] flex items-center gap-1" style={{ color: "#86efac" }}>
@@ -191,7 +191,7 @@ export default function DashLocations() {
                   value={editing.store_number || ""} onChange={(v) => setEditing({ ...editing, store_number: v })} />
               </div>
               <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: "var(--pos-text)" }}>
-                <input type="checkbox" data-testid="loc-is-default" className="accent-purple-500"
+                <input type="checkbox" data-testid="loc-is-default" className="accent-orange-500"
                   checked={!!editing.is_default}
                   onChange={(e) => setEditing({ ...editing, is_default: e.target.checked })} />
                 Make this the default location
@@ -212,7 +212,7 @@ export default function DashLocations() {
                 </button>
                 <button data-testid="loc-save" onClick={save}
                   className="pos-btn px-4 py-2 rounded text-xs font-bold text-white"
-                  style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)" }}>
+                  style={{ background: "var(--pos-accent)" }}>
                   {editing.id ? "Save changes" : "Add location"}
                 </button>
               </div>

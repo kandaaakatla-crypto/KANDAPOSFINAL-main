@@ -91,7 +91,7 @@ export default function DispatchScreen() {
                 style={{ background: active ? "var(--pos-panel-2)" : "transparent", border: `1px solid ${active ? "var(--pos-accent)" : "var(--pos-border)"}` }}>
                 <div className="flex items-center justify-between">
                   <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{o.number}</span>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide" style={{ background: o.status === "ready" ? "#13271a" : "#2a1a3a", color: o.status === "ready" ? "#22c55e" : "#a855f7" }}>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide" style={{ background: o.status === "ready" ? "#13271a" : "#14233f", color: o.status === "ready" ? "#22c55e" : "#3b82f6" }}>
                     {o.status === "ready" ? "Ready" : "Out"}
                   </span>
                 </div>
@@ -124,7 +124,7 @@ export default function DispatchScreen() {
                     <div className="flex items-center gap-2">
                       <Bike className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
                       <span className="text-lg font-bold" style={{ color: "var(--pos-text)" }}>Order #{current.number}</span>
-                      <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full" style={{ background: current.status === "ready" ? "#13271a" : "#2a1a3a", color: current.status === "ready" ? "#22c55e" : "#a855f7" }}>
+                      <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full" style={{ background: current.status === "ready" ? "#13271a" : "#14233f", color: current.status === "ready" ? "#22c55e" : "#3b82f6" }}>
                         {current.status}
                       </span>
                     </div>
@@ -150,7 +150,7 @@ export default function DispatchScreen() {
                   {current.status === "ready" ? (
                     <button data-testid="dispatch-btn" onClick={handleDispatch}
                       className="pos-btn h-10 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-1.5"
-                      style={{ background: "#a855f7" }}>
+                      style={{ background: "var(--pos-accent)" }}>
                       <Bike className="w-4 h-4" /> Dispatch
                     </button>
                   ) : (

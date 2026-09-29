@@ -8,7 +8,7 @@ const TONES = {
   danger: { color: "#f87171", bg: "#321519" },
   warning: { color: "#f59e0b", bg: "#2a2210" },
   info: { color: "#3b82f6", bg: "#14233f" },
-  special: { color: "#a855f7", bg: "#2a1a3a" },
+  special: { color: "#3b82f6", bg: "#14233f" },
   neutral: { color: "var(--pos-muted)", bg: "var(--pos-panel-2)" },
 };
 

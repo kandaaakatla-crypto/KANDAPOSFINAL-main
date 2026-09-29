@@ -77,7 +77,7 @@ export default function DashSms() {
     <div className="p-6 space-y-6" data-testid="dash-sms">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
-          <MessageSquare className="w-6 h-6" style={{ color: "#a78bfa" }} />
+          <MessageSquare className="w-6 h-6" style={{ color: "var(--pos-accent)" }} />
           Customer SMS
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>
@@ -113,9 +113,9 @@ export default function DashSms() {
               {filtered.map((c) => (
                 <label key={c.id} data-testid={`sms-recipient-${c.id}`}
                   className="flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer"
-                  style={{ background: selected.has(c.id) ? "rgba(124,58,237,0.15)" : "transparent" }}>
+                  style={{ background: selected.has(c.id) ? "rgba(249,115,22,0.12)" : "transparent" }}>
                   <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggle(c.id)}
-                    disabled={!c.phone} className="accent-purple-500" />
+                    disabled={!c.phone} className="accent-orange-500" />
                   <span className="flex-1 truncate" style={{ color: "var(--pos-text)" }}>{c.name}</span>
                   <span className="tabular-nums" style={{ color: "var(--pos-muted)" }}>{c.phone || "no phone"}</span>
                 </label>
@@ -157,7 +157,7 @@ export default function DashSms() {
             <button data-testid="sms-broadcast-send" onClick={send}
               disabled={sending || totalRecipients === 0 || !body.trim()}
               className="pos-btn w-full h-11 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2"
-              style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+              style={{ background: "var(--pos-accent)",
                        opacity: (sending || totalRecipients === 0 || !body.trim()) ? 0.5 : 1 }}>
               {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending {totalRecipients} SMS…</>
                        : <><Send className="w-4 h-4" /> Send to {totalRecipients} recipient(s)</>}

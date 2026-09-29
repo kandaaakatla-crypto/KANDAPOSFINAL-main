@@ -89,7 +89,7 @@ export default function DashDigest() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
-            <Sparkles className="w-6 h-6" style={{ color: "#a78bfa" }} />
+            <Sparkles className="w-6 h-6" style={{ color: "var(--pos-accent)" }} />
             Daily Digest
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>
@@ -106,8 +106,8 @@ export default function DashDigest() {
           <button data-testid="digest-send-now"
             onClick={sendNow} disabled={sending || !cfg}
             className="pos-btn px-3 py-2 rounded-lg text-xs text-white flex items-center gap-1.5"
-            style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)" }}>
-            <Send className="w-3.5 h-3.5" /> {sending ? "Sending…" : "Send preview now"}
+            style={{ background: "linear-gradient(135deg,#16213a,#0b1220)", border: "1px solid #243352" }}>
+            <Send className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} /> {sending ? "Sending…" : "Send preview now"}
           </button>
         </div>
       </div>
@@ -280,7 +280,7 @@ function Toggle({ label, checked, onChange, testid }) {
       <span className="text-xs" style={{ color: "var(--pos-text)" }}>{label}</span>
       <button data-testid={testid} type="button" onClick={() => onChange(!checked)}
         className="pos-btn w-10 h-5 rounded-full relative"
-        style={{ background: checked ? "#7c3aed" : "#374151" }}>
+        style={{ background: checked ? "var(--pos-accent)" : "#374151" }}>
         <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
           style={{ left: checked ? "calc(100% - 18px)" : "2px" }} />
       </button>

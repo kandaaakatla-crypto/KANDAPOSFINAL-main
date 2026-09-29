@@ -75,7 +75,7 @@ export default function DashHome() {
         <Kpi label="Avg order value" value={summary ? `₹${(summary.avgOrder ?? 0).toFixed(0)}` : "—"} icon={Receipt} accent="#fb923c" testid="kpi-aov" />
         <Kpi label="Active staff" value={staffCount} icon={Users} accent="#fcd34d" testid="kpi-staff" />
         <Kpi label="Low-stock items" value={lowStockCount} icon={Boxes} accent={lowStockCount > 0 ? "#fca5a5" : "#86efac"} testid="kpi-low" />
-        <Kpi label="Stores in scope" value={locations.length} icon={Store} accent="#c4b5fd" testid="kpi-outlets" />
+        <Kpi label="Stores in scope" value={locations.length} icon={Store} accent="#5eead4" testid="kpi-outlets" />
       </div>
 
       {/* Sales trend — at-a-glance companion to the interactive chart on Reports */}
@@ -119,7 +119,7 @@ export default function DashHome() {
           {canAddLocation(user) ? (
             <Link to="/dashboard/locations" data-testid="dash-add-location-btn"
               className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-2 text-white"
-              style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)" }}>
+              style={{ background: "var(--pos-accent)" }}>
               <Plus className="w-3.5 h-3.5" /> Add location
             </Link>
           ) : null}

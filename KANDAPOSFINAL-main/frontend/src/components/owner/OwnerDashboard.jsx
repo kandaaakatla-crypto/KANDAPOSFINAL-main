@@ -6,7 +6,7 @@ import { Store, ShoppingCart, IndianRupee, TrendingUp, Loader2, ChevronRight } f
 const STAT_TILES = (k) => [
   { label: "Tenants", value: k.totalTenants, sub: `${k.activeTenants} active`, icon: Store, color: "#3b82f6" },
   { label: "Active today", value: k.activeToday, sub: "stores ringing orders", icon: TrendingUp, color: "#22c55e" },
-  { label: "Orders today", value: k.ordersToday, sub: "across the platform", icon: ShoppingCart, color: "#a855f7" },
+  { label: "Orders today", value: k.ordersToday, sub: "across the platform", icon: ShoppingCart, color: "#5eead4" },
   { label: "GMV today", value: `₹${(k.gmvToday || 0).toFixed(2)}`, sub: `₹${(k.gmvMonth || 0).toFixed(2)} MTD`, icon: IndianRupee, color: "#f59e0b" },
 ];
 
