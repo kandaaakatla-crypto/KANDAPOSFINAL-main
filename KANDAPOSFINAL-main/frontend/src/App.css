@@ -13,17 +13,20 @@
 }
 
 /* Dark mode — opt-in via a "data-theme=dark" attribute on <html>, toggled
-   by lib/theme.js. Values are the app's own original dark palette (this
-   whole app ran on these before the light reskin), so nothing here is new
-   design work. --pos-accent/--pos-accent-hover/--pos-blue are unchanged in
-   both themes. Light stays the default with no attribute present. */
+   by lib/theme.js. True neutral black, not the blue-navy slate this app's
+   dark mode originally shipped with — that blue tint read as an AI-generic
+   "dark SaaS" default rather than a deliberate choice, per direct feedback.
+   Same lightness steps (bg darkest, panel/panel-2/border each a touch
+   lighter) as before, just desaturated to grayscale.
+   --pos-accent/--pos-accent-hover/--pos-blue are unchanged in both themes.
+   Light stays the default with no attribute present. */
 :root[data-theme="dark"] {
-  --pos-bg: #0b1220;
-  --pos-panel: #111a2c;
-  --pos-panel-2: #16213a;
-  --pos-border: #243352;
-  --pos-text: #e8edf7;
-  --pos-muted: #8b9bb8;
+  --pos-bg: #0a0a0a;
+  --pos-panel: #141414;
+  --pos-panel-2: #1c1c1c;
+  --pos-border: #2e2e2e;
+  --pos-text: #f2f2f2;
+  --pos-muted: #9a9a9a;
 }
 
 /* Landing page — always light, deliberately excluded from the shared
@@ -52,14 +55,14 @@
 /* Legal pages' sticky header backdrop — a translucent echo of --pos-bg that
    can't be a plain var() reference since it needs an alpha channel. */
 .legal-header-backdrop { background: rgba(253,250,244,0.85); }
-:root[data-theme="dark"] .legal-header-backdrop { background: rgba(11,18,32,0.85); }
+:root[data-theme="dark"] .legal-header-backdrop { background: rgba(10,10,10,0.85); }
 
 .pos-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .pos-scroll::-webkit-scrollbar-track { background: transparent; }
 .pos-scroll::-webkit-scrollbar-thumb { background: #ddd0b8; border-radius: 4px; }
 .pos-scroll::-webkit-scrollbar-thumb:hover { background: #c9b78f; }
-:root[data-theme="dark"] .pos-scroll::-webkit-scrollbar-thumb { background: #2c3d61; }
-:root[data-theme="dark"] .pos-scroll::-webkit-scrollbar-thumb:hover { background: #3a4f7c; }
+:root[data-theme="dark"] .pos-scroll::-webkit-scrollbar-thumb { background: #3a3a3a; }
+:root[data-theme="dark"] .pos-scroll::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
 
 /* A "back-out" easing with slight overshoot — a spring feel without JS,
    used for hover-lift/press feedback on tiles, cards and buttons. */
