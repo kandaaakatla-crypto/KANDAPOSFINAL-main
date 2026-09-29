@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDash } from "../../store/DashContext";
-import { Building2, LogIn, Eye, EyeOff } from "lucide-react";
+import { LogIn, Eye, EyeOff } from "lucide-react";
 import { Input } from "../ui/input";
 import { toast } from "sonner";
 
@@ -39,7 +39,7 @@ export default function DashLogin() {
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12"
         style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid #ece1cd" }}>
         <div className="flex items-center gap-3">
-          <Building2 className="w-7 h-7" style={{ color: "var(--pos-accent)" }} />
+          <img src="/icon-192.png" alt="Kanda POS" className="w-11 h-11 rounded-lg shrink-0" />
           <div>
             <div className="text-2xl font-bold tracking-tight" style={{ color: "#251d13" }}>KANDA</div>
             <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "#93805f" }}>Restaurant Dashboard</div>
