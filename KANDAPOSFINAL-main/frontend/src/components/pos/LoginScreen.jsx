@@ -95,22 +95,27 @@ export default function LoginScreen({ isDemo = false }) {
 
   return (
     <div className="min-h-screen flex" style={{ background: "var(--pos-bg)" }} data-testid="login-screen">
-      {/* Left brand panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[42%] p-12" style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid var(--pos-border)" }}>
+      {/* Left brand panel — this gradient is fixed regardless of the app's
+          light/dark toggle (shared via localStorage across every surface),
+          so its text must be fixed too — var(--pos-text) etc. would follow
+          the toggle and render near-white text on this permanently-light
+          background whenever a visitor last chose dark mode anywhere else
+          in the app. */}
+      <div className="hidden lg:flex flex-col justify-between w-[42%] p-12" style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid #ece1cd" }}>
         <div className="flex items-center gap-3">
           <BrandMark box="w-12 h-12" icon="w-7 h-7" />
           <div>
-            <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA</div>
-            <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "var(--pos-muted)" }}>Point of Sale</div>
+            <div className="text-2xl font-bold tracking-tight" style={{ color: "#251d13" }}>KANDA</div>
+            <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "#93805f" }}>Point of Sale</div>
           </div>
         </div>
         <div>
-          <h1 className="text-4xl font-bold leading-tight mb-4" style={{ color: "var(--pos-text)" }}>{copy.headline}</h1>
-          <p className="text-base leading-relaxed max-w-md" style={{ color: "var(--pos-muted)" }}>
+          <h1 className="text-4xl font-bold leading-tight mb-4" style={{ color: "#251d13" }}>{copy.headline}</h1>
+          <p className="text-base leading-relaxed max-w-md" style={{ color: "#93805f" }}>
             {copy.body}
           </p>
         </div>
-        <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
+        <div className="text-xs" style={{ color: "#93805f" }}>
           Store #0042 — HiTech City, Hyderabad · Terminal 1
         </div>
       </div>
