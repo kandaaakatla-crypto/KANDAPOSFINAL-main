@@ -7,7 +7,7 @@ const RANGE_OPTIONS = [7, 14, 30, 90];
 const QUADRANTS = [
   { key: "star", label: "Stars", hint: "Popular & profitable — protect these, feature them", icon: Star, color: "#fcd34d" },
   { key: "plowhorse", label: "Plowhorses", hint: "Popular but low margin — try a small price increase or cheaper recipe", icon: Rabbit, color: "#7dd3fc" },
-  { key: "puzzle", label: "Puzzles", hint: "Profitable but rarely ordered — reposition on the menu or promote", icon: Puzzle, color: "#c4b5fd" },
+  { key: "puzzle", label: "Puzzles", hint: "Profitable but rarely ordered — reposition on the menu or promote", icon: Puzzle, color: "#5eead4" },
   { key: "dog", label: "Dogs", hint: "Neither popular nor profitable — candidates to cut", icon: Dog, color: "#fca5a5" },
   { key: "unknown", label: "No recipe costed", hint: "Add a recipe (Menu → Recipe) to classify these", icon: HelpCircle, color: "var(--pos-muted)" },
 ];

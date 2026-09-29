@@ -25,7 +25,7 @@ export default function TenantDetail() {
   const { tenant, kpis, staff } = data;
 
   const tiles = [
-    { label: "Orders today",  value: kpis.ordersToday, icon: ShoppingCart, color: "#a855f7" },
+    { label: "Orders today",  value: kpis.ordersToday, icon: ShoppingCart, color: "#5eead4" },
     { label: "Orders MTD",    value: kpis.ordersMonth, icon: ShoppingCart, color: "#3b82f6" },
     { label: "GMV today",     value: `₹${kpis.gmvToday.toFixed(2)}`, icon: IndianRupee, color: "#22c55e" },
     { label: "GMV MTD",       value: `₹${kpis.gmvMonth.toFixed(2)}`, icon: IndianRupee, color: "#f59e0b" },

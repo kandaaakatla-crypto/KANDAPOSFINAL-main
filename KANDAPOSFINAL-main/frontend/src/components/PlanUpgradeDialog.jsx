@@ -48,7 +48,7 @@ export default function PlanUpgradeDialog({ open, onClose, onUpgraded }) {
         order_id: order.order_id,
         name: "Kanda POS",
         description: order.description,
-        theme: { color: "#7c3aed" },
+        theme: { color: "#f97316" },
         handler: async (resp) => {
           try {
             const v = await plansApi.verify({
@@ -88,7 +88,7 @@ export default function PlanUpgradeDialog({ open, onClose, onUpgraded }) {
         style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
-            <Store className="w-5 h-5" style={{ color: "#a78bfa" }} />
+            <Store className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
             Add another location
           </DialogTitle>
         </DialogHeader>
@@ -112,9 +112,9 @@ export default function PlanUpgradeDialog({ open, onClose, onUpgraded }) {
             </div>
 
             <div className="p-4 rounded-xl text-center"
-              style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.20), rgba(79,70,229,0.10))",
-                       border: "1px solid rgba(124,58,237,0.40)" }}>
-              <div className="text-[11px] uppercase tracking-wider" style={{ color: "#c4b5fd" }}>
+              style={{ background: "rgba(249,115,22,0.10)",
+                       border: "1px solid rgba(249,115,22,0.35)" }}>
+              <div className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-accent)" }}>
                 One-time charge
               </div>
               <div className="mt-1 text-4xl font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>
@@ -139,7 +139,7 @@ export default function PlanUpgradeDialog({ open, onClose, onUpgraded }) {
 
             <button data-testid="plan-buy-slot" onClick={buySlot} disabled={busy}
               className="pos-btn w-full h-11 rounded text-sm font-bold text-white flex items-center justify-center gap-2"
-              style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", opacity: busy ? 0.5 : 1 }}>
+              style={{ background: "var(--pos-accent)", opacity: busy ? 0.5 : 1 }}>
               {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening Razorpay…</>
                 : <><ShieldCheck className="w-4 h-4" /> Pay ₹{slots.price_per_location.toFixed(0)} & add location</>}
             </button>

@@ -11,7 +11,7 @@ const STATUS_META = {
   "new": { label: "New", color: "#3b82f6", bg: "#14233f" },
   "in-kitchen": { label: "In Kitchen", color: "#f59e0b", bg: "#33260e" },
   "ready": { label: "Ready", color: "#22c55e", bg: "#13271a" },
-  "out-for-delivery": { label: "Out for Delivery", color: "#a855f7", bg: "#2a1a3a" },
+  "out-for-delivery": { label: "Out for Delivery", color: "#3b82f6", bg: "#14233f" },
   "completed": { label: "Completed", color: "var(--pos-muted)", bg: "#1a2235" },
 };
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };

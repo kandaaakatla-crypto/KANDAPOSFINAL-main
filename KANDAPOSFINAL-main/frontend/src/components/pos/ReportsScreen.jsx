@@ -59,7 +59,7 @@ export default function ReportsScreen() {
     { label: "Today's Sales", value: `₹${todaySales.toFixed(2)}`, icon: IndianRupee, color: "#22c55e" },
     { label: "Orders Today", value: summary?.ordersToday ?? todayOrders.length, icon: ReceiptText, color: "#3b82f6" },
     { label: "Avg Order Value", value: `₹${avgOrder.toFixed(2)}`, icon: TrendingUp, color: "#f59e0b" },
-    { label: "Deliveries", value: deliveries, icon: Bike, color: "#a855f7" },
+    { label: "Deliveries", value: deliveries, icon: Bike, color: "#3b82f6" },
     { label: `Refunds (${range}d)`, value: `₹${refundedInRange.toFixed(2)}`, icon: RefreshCcw, color: "#f87171" },
   ];
 

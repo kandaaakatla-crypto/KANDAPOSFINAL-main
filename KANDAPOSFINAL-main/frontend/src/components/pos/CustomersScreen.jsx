@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { usePos } from "../../store/PosContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { Search, UserPlus, Pencil, Trash2, Phone, MapPin, Undo2, MessageSquare, Cake } from "lucide-react";
+import { Search, UserPlus, Pencil, Trash2, Phone, MapPin, Undo2, MessageSquare, Cake, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { customersApi } from "../../api/client";
 import SmsComposer from "../SmsComposer";
@@ -89,12 +89,12 @@ export default function CustomersScreen() {
                   <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><Phone className="w-3 h-3" /> {c.phone}</div>
                   <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><MapPin className="w-3 h-3" /> {c.address}{c.postcode ? `, ${c.postcode}` : ""}</div>
                   {c.birthday && <div className="text-xs mt-1 flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}><Cake className="w-3 h-3" /> {fmtBirthday(c.birthday)}</div>}
-                  {c.notes && <div className="text-xs mt-1.5 italic text-amber-400">⚠ {c.notes}</div>}
+                  {c.notes && <div className="text-xs mt-1.5 italic text-amber-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3 shrink-0" /> {c.notes}</div>}
                 </div>
                 <div className="flex gap-1 shrink-0">
                   {isManager && c.phone && (
                     <button data-testid={`sms-customer-${c.id}`} onClick={() => setSmsTarget(c)}
-                      className="pos-btn p-2 rounded-lg" style={{ background: "var(--pos-panel-2)", color: "#a78bfa" }}
+                      className="pos-btn p-2 rounded-lg" style={{ background: "var(--pos-panel-2)", color: "var(--pos-accent)" }}
                       title="Send SMS">
                       <MessageSquare className="w-3.5 h-3.5" />
                     </button>
