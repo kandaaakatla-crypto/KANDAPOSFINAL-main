@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { usePos } from "../../store/PosContext";
+import { useDash, canManageCustomers } from "../../store/DashContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Search, UserPlus, Pencil, Trash2, Phone, MapPin, Undo2, MessageSquare, Cake, AlertTriangle } from "lucide-react";
@@ -17,24 +17,44 @@ function fmtBirthday(md) {
 }
 
 export default function CustomersScreen() {
-  const { customers, upsertCustomer, deleteCustomer, refreshCustomers, staffUser } = usePos();
+  const { user } = useDash();
+  const isManager = canManageCustomers(user);
+  const [customers, setCustomers] = useState([]);
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const [trash, setTrash] = useState([]);
   const [trashLoading, setTrashLoading] = useState(false);
-  const isManager = staffUser?.role === "Manager";
   const [smsTarget, setSmsTarget] = useState(null);
+
+  const loadCustomers = () => { customersApi.list().then(setCustomers).catch(() => {}); };
+  useEffect(() => { loadCustomers(); }, []);
 
   const filtered = customers.filter((c) =>
     (c.name + c.phone + (c.address || "") + (c.postcode || "")).toLowerCase().includes(query.toLowerCase())
   );
 
-  const save = () => {
+  const save = async () => {
     if (!editing.name || !editing.phone) { toast.error("Name and phone are required"); return; }
-    upsertCustomer(editing);
-    toast.success(editing.id ? "Customer updated" : "Customer added");
-    setEditing(null);
+    try {
+      if (editing.id) await customersApi.update(editing.id, editing);
+      else await customersApi.create(editing);
+      toast.success(editing.id ? "Customer updated" : "Customer added");
+      setEditing(null);
+      loadCustomers();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Save failed");
+    }
+  };
+
+  const remove = async (id) => {
+    try {
+      await customersApi.remove(id);
+      toast.success("Customer deleted");
+      loadCustomers();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Delete failed");
+    }
   };
 
   const openTrash = async () => {
@@ -48,7 +68,7 @@ export default function CustomersScreen() {
     try {
       await customersApi.restore(id);
       setTrash((t) => t.filter((c) => c.id !== id));
-      if (refreshCustomers) await refreshCustomers();
+      loadCustomers();
       toast.success("Customer restored");
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Could not restore");
@@ -100,7 +120,7 @@ export default function CustomersScreen() {
                     </button>
                   )}
                   <button data-testid={`edit-customer-${c.id}`} onClick={() => setEditing({ ...c })} className="pos-btn p-2 rounded-lg" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}><Pencil className="w-3.5 h-3.5" /></button>
-                  <button data-testid={`delete-customer-${c.id}`} onClick={() => { deleteCustomer(c.id); toast.success("Customer deleted"); }} className="pos-btn p-2 rounded-lg" style={{ background: "var(--pos-panel-2)", color: "#f87171" }}><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button data-testid={`delete-customer-${c.id}`} onClick={() => remove(c.id)} className="pos-btn p-2 rounded-lg" style={{ background: "var(--pos-panel-2)", color: "#f87171" }}><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
               <div className="text-[11px] mt-3 px-2 py-0.5 rounded-full inline-block" style={{ background: "#1c2a1c", color: "#7cc97c" }}>{c.orders || 0} orders placed</div>

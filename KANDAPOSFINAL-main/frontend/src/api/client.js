@@ -3,6 +3,7 @@ import axios from "axios";
 const BASE = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const TOKEN_KEY = "kanda_pos_token_v1";
 const TENANT_KEY = "kanda_pos_tenant_slug";
+const DASH_TOKEN_KEY = "kanda_dash_token_v1";
 
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),
@@ -53,13 +54,36 @@ export const tenantStore = {
   clearEphemeral: () => { ephemeralSlug = null; },
 };
 
+// Some screens under components/pos/ (Rota, Reports, and formerly Customers)
+// are reused as-is for Dashboard routes that have no staff PIN session at
+// all — only a dashboard login. The backend's get_current_user already
+// accepts a dash JWT on these same endpoints (it synthesizes a Manager-role
+// staff dict from it — see auth.py), so falling back to the dash token here
+// when there's no POS token lets those shared screens work from the
+// Dashboard without needing a parallel rewrite of each one. A real POS
+// terminal always has a POS token once signed in, so this never overrides
+// genuine staff-PIN auth — it only fires in the gap a POS-only session
+// leaves empty.
+function resolveAuthToken() {
+  return tokenStore.get() || localStorage.getItem(DASH_TOKEN_KEY);
+}
+export { resolveAuthToken as authToken };
+
 export const api = axios.create({ baseURL: BASE });
 
 api.interceptors.request.use((cfg) => {
   const t = tokenStore.get();
-  if (t) cfg.headers.Authorization = `Bearer ${t}`;
-  const slug = tenantStore.get();
-  if (slug) cfg.headers["X-Tenant-Slug"] = slug;
+  if (t) {
+    cfg.headers.Authorization = `Bearer ${t}`;
+    const slug = tenantStore.get();
+    if (slug) cfg.headers["X-Tenant-Slug"] = slug;
+  } else {
+    // No POS session in this browser — fall back to a dashboard session if
+    // one exists (see resolveAuthToken above). No tenant slug header in
+    // this branch: the dash JWT already carries tenant_id.
+    const dashToken = localStorage.getItem(DASH_TOKEN_KEY);
+    if (dashToken) cfg.headers.Authorization = `Bearer ${dashToken}`;
+  }
   return cfg;
 });
 
@@ -67,10 +91,22 @@ api.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err?.response?.status === 401) {
-      tokenStore.clear();
-      // bounce only if not on login already to avoid redirect loops
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/pos/login")) {
-        window.location.assign("/pos/login");
+      const usedDashFallback = !tokenStore.get() && !!localStorage.getItem(DASH_TOKEN_KEY);
+      if (usedDashFallback) {
+        // The dash session itself is what's invalid here (POS token was
+        // already absent) — bounce to the dashboard's own login, not the
+        // POS one, and clear the dash session the same way dashApi does.
+        localStorage.removeItem(DASH_TOKEN_KEY);
+        localStorage.removeItem("kanda_dash_user_v1");
+        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/dashboard/login")) {
+          window.location.assign("/dashboard/login");
+        }
+      } else {
+        tokenStore.clear();
+        // bounce only if not on login already to avoid redirect loops
+        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/pos/login")) {
+          window.location.assign("/pos/login");
+        }
       }
     }
     return Promise.reject(err);
@@ -83,7 +119,6 @@ api.interceptors.response.use(
 // token last landed in the POS slot, which a staff PIN login in another tab
 // can silently overwrite — leaving the dashboard 403'ing with no clear way
 // to recover. Reading straight from the dash token slot avoids that.
-const DASH_TOKEN_KEY = "kanda_dash_token_v1";
 export const dashApi = axios.create({ baseURL: BASE });
 dashApi.interceptors.request.use((cfg) => {
   const t = localStorage.getItem(DASH_TOKEN_KEY);
