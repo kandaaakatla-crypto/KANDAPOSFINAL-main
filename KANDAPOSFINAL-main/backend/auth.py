@@ -104,6 +104,12 @@ async def get_current_user(request: Request) -> dict:
         # Short TTL — staff.py explicitly invalidates this key on update/deactivate,
         # so the TTL only bounds staleness from writes that bypass that path.
         await cache_set(cache_key, user, ttl=60)
+    # Deactivated staff (DELETE /staff/{id}) must lose access immediately, not
+    # when their token expires. `is False`, not falsy: legacy rows with no
+    # `active` field are active. Checked after the cache read so a cached
+    # document is held to the same rule.
+    if user.get("active") is False:
+        raise HTTPException(status_code=401, detail="User not found")
     # Anchor tenant_id from the JWT (not the DB row) — JWT is signed and immutable
     # for the token lifetime, which prevents cross-tenant escalation if a user's
     # tenant assignment changes underneath an active session.
