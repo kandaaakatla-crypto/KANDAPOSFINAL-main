@@ -414,7 +414,9 @@ def _render_royalty_invoice_pdf(invoice: dict, brand_name: str) -> bytes:
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.enums import TA_LEFT, TA_RIGHT
+    from receipts import _invoice_fonts
 
+    font, font_bold = _invoice_fonts()  # Helvetica has no ₹ / → glyphs
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
@@ -445,6 +447,7 @@ def _render_royalty_invoice_pdf(invoice: dict, brand_name: str) -> bytes:
         rows.append(["Paid on", invoice["paid_at"][:10]])
     detail = Table(rows, colWidths=[45 * mm, 130 * mm])
     detail.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), font),
         ("FONTSIZE", (0, 0), (-1, -1), 10),
         ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#666666")),
         ("LINEBELOW", (0, 0), (-1, -1), 0.25, colors.HexColor("#e6e6e6")),
@@ -457,7 +460,7 @@ def _render_royalty_invoice_pdf(invoice: dict, brand_name: str) -> bytes:
     total = Table([["AMOUNT DUE", f"₹{invoice['amount']:.2f}"]], colWidths=[130 * mm, 45 * mm])
     total.setStyle(TableStyle([
         ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
-        ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+        ("FONTNAME", (0, 0), (-1, -1), font_bold),
         ("FONTSIZE", (0, 0), (-1, -1), 14),
         ("LINEABOVE", (0, 0), (-1, 0), 1, colors.HexColor("#111111")),
         ("TOPPADDING", (0, 0), (-1, -1), 6),

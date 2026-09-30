@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
 import { Bike, ShoppingBag, UtensilsCrossed, ChevronRight, Clock, Receipt, Undo2, Ban, CreditCard } from "lucide-react";
 import { toast } from "sonner";
@@ -31,6 +31,7 @@ function minsAgo(iso) {
 export default function OrdersScreen() {
   const { orders, updateOrderStatus, staffUser, reloadOrders } = usePos();
   const navigate = useNavigate();
+  const { slug } = useParams();
   const [filter, setFilter] = useState("active");
   const [receiptOrderId, setReceiptOrderId] = useState(null);
   const [refundOrder, setRefundOrder] = useState(null);
@@ -126,7 +127,7 @@ export default function OrdersScreen() {
                     <Receipt className="w-3.5 h-3.5" /> Receipt / KOT
                   </button>
                   {o.payment === "unpaid" && !o.voided && o.status !== "completed" && (
-                    <button data-testid={`bill-${o.number}`} onClick={() => navigate(`/pos?order=${o.id}`)}
+                    <button data-testid={`bill-${o.number}`} onClick={() => navigate(`/${slug}/pos?order=${o.id}`)}
                       className="pos-btn mt-2 h-9 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5"
                       style={{ background: "var(--pos-accent)" }}>
                       <CreditCard className="w-3.5 h-3.5" /> Bill this order

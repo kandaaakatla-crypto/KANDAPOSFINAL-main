@@ -210,7 +210,9 @@ def _render_po_pdf(item: dict, supplier: Optional[dict], store_name: str, qty: f
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.enums import TA_LEFT, TA_RIGHT
+    from receipts import _invoice_fonts
 
+    font, font_bold = _invoice_fonts()  # Helvetica has no ₹ glyph
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
@@ -245,7 +247,8 @@ def _render_po_pdf(item: dict, supplier: Optional[dict], store_name: str, qty: f
     tbl.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#111111")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 0), (-1, -1), font),
+        ("FONTNAME", (0, 0), (-1, 0), font_bold),
         ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
         ("GRID", (0, 1), (-1, -1), 0.25, colors.HexColor("#e6e6e6")),

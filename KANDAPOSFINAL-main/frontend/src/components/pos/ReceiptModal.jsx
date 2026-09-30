@@ -1,10 +1,62 @@
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "../ui/dialog";
-import { Printer, Download, Loader2, FileText } from "lucide-react";
+import { Printer, Download, Loader2, FileText, UserPlus } from "lucide-react";
 import { receiptsApi } from "../../api/client";
 import { usePos } from "../../store/PosContext";
 import { sendEscposReceipt } from "../../utils/escpos";
+import { billToLines, summaryRows, signedMoney, gstinLine } from "../../utils/receiptSummary";
+import { Input } from "../ui/input";
 import { toast } from "sonner";
+
+const inr = (v) => `₹${Number(v || 0).toFixed(2)}`;
+const EMPTY_CUSTOMER = { name: "", phone: "", email: "", address: "", postcode: "", gstin: "" };
+
+/** Inline form to put the guest's details (and GSTIN, for a business) on an
+ * already-placed order, so the receipt and the PDF tax invoice carry them. */
+function CustomerDetailsForm({ order, onSave, onCancel }) {
+  const cust = order.customer || {};
+  const placeholder = /^(Table \d+|Walk-in)$/.test(cust.name || "");
+  const [form, setForm] = useState({
+    ...EMPTY_CUSTOMER,
+    ...Object.fromEntries(Object.entries(cust).filter(([, v]) => v != null)),
+    name: placeholder ? "" : (cust.name || ""),
+    email: cust.email || order.customer_email || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const field = (key, placeholderText, testid) => (
+    <Input data-testid={testid} placeholder={placeholderText} value={form[key] || ""}
+      onChange={(e) => setForm({ ...form, [key]: e.target.value })} className="h-9"
+      style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+  );
+  const save = async () => {
+    setSaving(true);
+    const ok = await onSave({ ...form, id: cust.id || null });
+    setSaving(false);
+    if (ok) onCancel();
+  };
+  return (
+    <div className="px-4 py-3 space-y-2 print-hide" data-testid="receipt-customer-form" style={{ borderTop: "1px solid var(--pos-border)" }}>
+      <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--pos-muted)" }}>Customer details for this bill</div>
+      {field("name", "Name / company", "receipt-cust-name")}
+      <div className="grid grid-cols-2 gap-2">
+        {field("phone", "Phone", "receipt-cust-phone")}
+        {field("gstin", "GSTIN (optional)", "receipt-cust-gstin")}
+      </div>
+      {field("email", "Email (optional)", "receipt-cust-email")}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="col-span-2">{field("address", "Address (optional)", "receipt-cust-address")}</div>
+        {field("postcode", "PIN code", "receipt-cust-postcode")}
+      </div>
+      <div className="flex justify-end gap-2">
+        <button onClick={onCancel} disabled={saving} className="pos-btn h-9 px-4 rounded-md text-xs" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>Cancel</button>
+        <button data-testid="receipt-cust-save" onClick={save} disabled={saving}
+          className="pos-btn h-9 px-4 rounded-md text-xs font-bold text-white disabled:opacity-40" style={{ background: "var(--pos-accent)" }}>
+          {saving ? "Saving…" : "Save to bill"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const FALLBACK_STORE = { name: "Kanda POS", address: "", phone: "", tax_id: "", footer: "Thank you for ordering!" };
 
@@ -14,10 +66,22 @@ const FALLBACK_STORE = { name: "Kanda POS", address: "", phone: "", tax_id: "", 
  * network calls — critical for a receipt right after an offline-queued
  * order, which may not even exist server-side yet. */
 export default function ReceiptModal({ orderId, open, onClose }) {
-  const { orders, tenantInfo, staffUser } = usePos();
+  const { orders, tenantInfo, staffUser, setOrderCustomer } = usePos();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(false);
+
+  useEffect(() => { if (!open) setEditingCustomer(false); }, [open]);
+
+  const saveCustomer = async (customer) => {
+    const updated = await setOrderCustomer(orderId, customer);
+    if (!updated) return false;
+    // Covers the network-fallback path too, where `data` isn't derived from `orders`.
+    setData((d) => (d ? { ...d, order: updated } : d));
+    toast.success("Customer details added to the bill");
+    return true;
+  };
 
   useEffect(() => {
     if (!open || !orderId) { setData(null); return; }
@@ -89,24 +153,25 @@ export default function ReceiptModal({ orderId, open, onClose }) {
                 <div className="font-bold text-base">{data.store.name}</div>
                 <div>{data.store.address}</div>
                 <div>Tel {data.store.phone}</div>
-                <div>VAT {data.store.vat}</div>
+                {data.store.tax_id && <div>{gstinLine(data.store.tax_id)}</div>}
               </div>
               <div className="border-t border-dashed border-black my-2" />
+              {data.order.voided && <div className="text-center font-bold" data-testid="receipt-void">*** VOID ***</div>}
               <div className="flex justify-between font-bold">
                 <span>Order #{data.order.number}</span>
                 <span className="uppercase">{data.order.type}</span>
               </div>
               <div>{(data.order.placedAt || "").slice(0, 19).replace("T", " ")}</div>
-              {data.order.customer?.name && <div>For: {data.order.customer.name}</div>}
-              {data.order.customer?.address && <div>{data.order.customer.address}</div>}
-              {data.order.customer?.postcode && <div>{data.order.customer.postcode}</div>}
+              {billToLines(data.order).map((line, i) => (
+                <div key={line} data-testid={i === 0 ? "receipt-bill-to" : undefined}>{i === 0 ? `For: ${line}` : line}</div>
+              ))}
               {data.order.table && <div>Table {data.order.table}</div>}
               <div className="border-t border-dashed border-black my-2" />
               {data.order.items.map((it, i) => (
                 <div key={`${it.name}-${i}`} className="mb-1">
                   <div className="flex justify-between">
                     <span>{it.qty}× {it.name}</span>
-                    <span className="tabular-nums">₹{(it.qty * it.price).toFixed(2)}</span>
+                    <span className="tabular-nums">{inr(it.qty * it.price)}</span>
                   </div>
                   {it.mods?.length > 0 && (
                     <div className="pl-4 text-[11px]">{it.mods.join(" · ")}</div>
@@ -114,24 +179,13 @@ export default function ReceiptModal({ orderId, open, onClose }) {
                 </div>
               ))}
               <div className="border-t border-dashed border-black my-2" />
-              <div className="flex justify-between"><span>Subtotal</span><span className="tabular-nums">₹{data.subtotal.toFixed(2)}</span></div>
-              {data.taxTotal > 0 && (
-                <>
-                  <div className="flex justify-between"><span>{data.taxInclusive ? "GST (incl.)" : "GST"}</span><span className="tabular-nums">₹{data.taxTotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between pl-3 text-[11px]"><span>CGST</span><span className="tabular-nums">₹{data.cgst.toFixed(2)}</span></div>
-                  <div className="flex justify-between pl-3 text-[11px]"><span>SGST</span><span className="tabular-nums">₹{data.sgst.toFixed(2)}</span></div>
-                </>
-              )}
-              {data.order.deliveryFee > 0 && (
-                <div className="flex justify-between"><span>Delivery</span><span className="tabular-nums">₹{data.order.deliveryFee.toFixed(2)}</span></div>
-              )}
-              {data.order.discount > 0 && (
-                <div className="flex justify-between"><span>Discount</span><span className="tabular-nums">-₹{data.order.discount.toFixed(2)}</span></div>
-              )}
-              <div className="flex justify-between font-bold text-base mt-1">
-                <span>TOTAL</span>
-                <span className="tabular-nums">₹{data.order.total.toFixed(2)}</span>
-              </div>
+              {summaryRows(data.order).map((r) => (
+                <div key={r.label} data-testid={r.kind === "refund" ? "receipt-refunded" : undefined}
+                  className={`flex justify-between ${r.kind === "sub" ? "pl-3 text-[11px]" : ""} ${r.kind === "total" ? "font-bold text-base mt-1" : ""}`}>
+                  <span>{r.label}</span>
+                  <span className="tabular-nums">{signedMoney(r.amount, inr)}</span>
+                </div>
+              ))}
               <div className="border-t border-dashed border-black my-2" />
               <div className="flex justify-between">
                 <span>Paid by</span>
@@ -144,8 +198,19 @@ export default function ReceiptModal({ orderId, open, onClose }) {
               <div className="text-center mt-3">{data.store.footer}</div>
             </div>
 
+            {editingCustomer && (
+              <CustomerDetailsForm order={data.order} onSave={saveCustomer} onCancel={() => setEditingCustomer(false)} />
+            )}
+
             {/* Actions — hidden in print */}
             <div className="px-4 py-3 grid grid-cols-2 gap-2 print-hide" style={{ borderTop: "1px solid var(--pos-border)" }}>
+              {!editingCustomer && (
+                <button data-testid="receipt-edit-customer" onClick={() => setEditingCustomer(true)}
+                  className="pos-btn col-span-2 h-10 rounded-lg flex items-center justify-center gap-2 font-bold text-xs"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
+                  <UserPlus className="w-3.5 h-3.5" /> {billToLines(data.order).length ? "Edit customer details" : "Add customer details"}
+                </button>
+              )}
               <button data-testid="print-receipt-btn" onClick={doPrint}
                 className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-sm text-white"
                 style={{ background: "var(--pos-accent)" }}>

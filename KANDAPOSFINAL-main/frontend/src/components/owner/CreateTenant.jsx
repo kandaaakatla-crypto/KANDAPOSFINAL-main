@@ -143,7 +143,7 @@ export default function CreateTenant() {
             <Input data-testid="store-phone" required value={form.store.phone} onChange={(e) => setStore("phone", e.target.value)} className={fld} style={fldStyle} />
           </label>
           <label>
-            <span className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>GSTIN / VAT</span>
+            <span className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>GSTIN</span>
             <Input data-testid="store-tax" value={form.store.tax_id} onChange={(e) => setStore("tax_id", e.target.value)} className={fld} style={fldStyle} />
           </label>
         </div>

@@ -3,6 +3,7 @@ import { usePos } from "../../store/PosContext";
 import { tablesApi } from "../../api/client";
 import { LayoutGrid, Plus, Save, Trash2, Square, Circle, RectangleHorizontal, Move, RotateCw } from "lucide-react";
 import { toast } from "sonner";
+import { withDefaultLayout } from "../../utils/tableLayout";
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
@@ -34,6 +35,9 @@ function TableShape({ t, selected, editable, onPointerDown, onResizePointerDown,
         boxShadow: selected ? "0 0 0 3px var(--pos-accent), 0 0 24px rgba(0,0,0,0.4)" : "none",
         transition: "background 80ms, box-shadow 80ms",
         color: "var(--pos-text)",
+        // Without this a touch drag on a tablet scrolls the canvas instead,
+        // and the browser cancels the pointer mid-drag.
+        touchAction: editable ? "none" : "auto",
       }}
     >
       <div className="text-base leading-none">T{t.number}</div>
@@ -77,15 +81,42 @@ function TableShape({ t, selected, editable, onPointerDown, onResizePointerDown,
 export default function TableLayoutEditor({ onExit }) {
   const { tables, staffUser, refreshTables } = usePos();
   const isManager = staffUser?.role === "Manager";
-  const [localTables, setLocalTables] = useState(tables.map((t) => ({ ...t })));
+  const [localTables, setLocalTables] = useState(() => withDefaultLayout(tables));
   const [selectedId, setSelectedId] = useState(null);
   const [floor, setFloor] = useState([]);
+  const [saving, setSaving] = useState(false);
   const dragRef = useRef({ id: null, mode: null, ox: 0, oy: 0, startW: 0, startH: 0, startX: 0, startY: 0 });
   const canvasRef = useRef(null);
+  // Ids of tables edited since the last save. `tables` refreshes under us
+  // (realtime table.updated pushes, the 30s background sync) — those
+  // refreshes must not snap a table the manager is mid-way through arranging
+  // back to its old spot, which is what made dragging feel glitchy.
+  const dirtyRef = useRef(new Set());
 
   useEffect(() => {
-    setLocalTables(tables.map((t) => ({ ...t, x: t.x ?? 0, y: t.y ?? 0, width: t.width ?? 80, height: t.height ?? 80, shape: t.shape || "square" })));
+    setLocalTables((prev) => {
+      const byId = new Map(prev.map((t) => [t.id, t]));
+      return withDefaultLayout(tables).map((t) => {
+        const mine = byId.get(t.id);
+        if (!mine || !dirtyRef.current.has(t.id)) return t;
+        // Keep the unsaved geometry/seats; take live status from the server.
+        return { ...t, x: mine.x, y: mine.y, width: mine.width, height: mine.height, shape: mine.shape, rotation: mine.rotation, seats: mine.seats };
+      });
+    });
   }, [tables]);
+
+  const updateLocal = (id, changes) => {
+    dirtyRef.current.add(id);
+    setLocalTables((ts) => ts.map((t) => (t.id === id ? { ...t, ...changes } : t)));
+  };
+
+  // Pointer position in canvas content coordinates (accounts for the
+  // canvas being scrolled, which otherwise made tables jump on drag).
+  const canvasPoint = (e) => {
+    const el = canvasRef.current;
+    const rect = el.getBoundingClientRect();
+    return { x: e.clientX - rect.left + el.scrollLeft, y: e.clientY - rect.top + el.scrollTop };
+  };
 
   useEffect(() => {
     tablesApi.listFloor().then(setFloor).catch(() => {});
@@ -95,9 +126,10 @@ export default function TableLayoutEditor({ onExit }) {
 
   const onPointerDown = (e, t) => {
     if (!isManager) return;
+    e.stopPropagation();
     setSelectedId(t.id);
-    const rect = canvasRef.current.getBoundingClientRect();
-    dragRef.current = { id: t.id, mode: "move", ox: e.clientX - rect.left - t.x, oy: e.clientY - rect.top - t.y };
+    const p = canvasPoint(e);
+    dragRef.current = { id: t.id, mode: "move", ox: p.x - t.x, oy: p.y - t.y };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
@@ -118,54 +150,73 @@ export default function TableLayoutEditor({ onExit }) {
   const onPointerMove = (e) => {
     const d = dragRef.current;
     if (!d.id) return;
-    const rect = canvasRef.current.getBoundingClientRect();
+    const p = canvasPoint(e);
 
     if (d.mode === "move") {
-      const x = snap(Math.max(0, e.clientX - rect.left - d.ox));
-      const y = snap(Math.max(0, e.clientY - rect.top - d.oy));
-      setLocalTables((ts) => ts.map((t) => (t.id === d.id ? { ...t, x, y } : t)));
+      updateLocal(d.id, { x: snap(Math.max(0, p.x - d.ox)), y: snap(Math.max(0, p.y - d.oy)) });
       return;
     }
     if (d.mode === "resize") {
       const width = snap(Math.max(MIN_SIZE, d.startW + (e.clientX - d.startX)));
       const height = snap(Math.max(MIN_SIZE, d.startH + (e.clientY - d.startY)));
-      setLocalTables((ts) => ts.map((t) => (t.id === d.id ? { ...t, width, height } : t)));
+      updateLocal(d.id, { width, height });
       return;
     }
     if (d.mode === "rotate") {
       const t = localTables.find((tt) => tt.id === d.id);
       if (!t) return;
-      const cx = rect.left + t.x + t.width / 2;
-      const cy = rect.top + t.y + t.height / 2;
-      const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI) + 90;
+      const cx = t.x + t.width / 2;
+      const cy = t.y + t.height / 2;
+      const angle = Math.atan2(p.y - cy, p.x - cx) * (180 / Math.PI) + 90;
       const rotation = Math.round((((angle % 360) + 360) % 360) / 5) * 5;
-      setLocalTables((ts) => ts.map((tt) => (tt.id === d.id ? { ...tt, rotation } : tt)));
+      updateLocal(d.id, { rotation });
     }
   };
   const onPointerUp = () => { dragRef.current = { id: null, mode: null, ox: 0, oy: 0, startW: 0, startH: 0, startX: 0, startY: 0 }; };
 
   const patch = (changes) => {
     if (!selected) return;
-    setLocalTables((ts) => ts.map((t) => (t.id === selected.id ? { ...t, ...changes } : t)));
+    updateLocal(selected.id, changes);
+  };
+
+  // Tables the default grid placed (never saved) are included so the
+  // arrangement shown is the one that gets persisted.
+  const unsaved = () => {
+    const server = new Map(tables.map((t) => [t.id, t]));
+    return localTables.filter((t) => {
+      const s0 = server.get(t.id);
+      if (!s0) return false;
+      return dirtyRef.current.has(t.id) || (s0.x ?? 0) !== t.x || (s0.y ?? 0) !== t.y;
+    });
   };
 
   const save = async () => {
-    try {
-      await Promise.all(localTables.map((t) =>
-        tablesApi.setPosition(t.id, { x: t.x, y: t.y, width: t.width, height: t.height, shape: t.shape, rotation: t.rotation || 0 })
-      ));
-      if (refreshTables) await refreshTables();
-      toast.success("Layout saved");
-    } catch (e) {
-      toast.error("Could not save layout");
-    }
+    const changed = unsaved();
+    if (changed.length === 0) { toast.info("No layout changes to save"); return; }
+    setSaving(true);
+    const results = await Promise.allSettled(changed.map((t) =>
+      tablesApi.setPosition(t.id, {
+        x: t.x, y: t.y, width: t.width, height: t.height, shape: t.shape, rotation: t.rotation || 0,
+        seats: Math.max(1, Number(t.seats) || 1),
+      }).then(() => dirtyRef.current.delete(t.id))
+    ));
+    setSaving(false);
+    if (refreshTables) await refreshTables();
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed) toast.error(`Could not save ${failed} table${failed === 1 ? "" : "s"} — try again`);
+    else toast.success("Layout saved");
   };
 
   const addTable = async () => {
     const nums = localTables.map((t) => t.number);
     const next = Math.max(0, ...nums) + 1;
+    // Drop the new table into the visible part of the canvas, clear of the
+    // top-left corner where it used to land on top of existing tables.
+    const el = canvasRef.current;
+    const x = snap((el?.scrollLeft || 0) + 30 + (localTables.length % 5) * 20);
+    const y = snap((el?.scrollTop || 0) + 30 + (localTables.length % 5) * 20);
     try {
-      const t = await tablesApi.create({ number: next, seats: 4, x: 30, y: 30, width: 80, height: 80, shape: "square" });
+      const t = await tablesApi.create({ number: next, seats: 4, x, y, width: 80, height: 80, shape: "square" });
       setLocalTables((ts) => [...ts, t]);
       setSelectedId(t.id);
       if (refreshTables) await refreshTables();
@@ -176,10 +227,22 @@ export default function TableLayoutEditor({ onExit }) {
 
   const removeTable = async () => {
     if (!selected) return;
-    await tablesApi.remove(selected.id);
+    if (selected.status === "occupied") { toast.error(`Table ${selected.number} has an open bill — settle it first`); return; }
+    try {
+      await tablesApi.remove(selected.id);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not remove table");
+      return;
+    }
+    dirtyRef.current.delete(selected.id);
     setLocalTables((ts) => ts.filter((t) => t.id !== selected.id));
     setSelectedId(null);
     if (refreshTables) await refreshTables();
+  };
+
+  const close = () => {
+    if (isManager && dirtyRef.current.size > 0 && !window.confirm("Discard unsaved layout changes?")) return;
+    onExit();
   };
 
   return (
@@ -197,13 +260,13 @@ export default function TableLayoutEditor({ onExit }) {
                 style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
                 <Plus className="w-3.5 h-3.5" /> Add table
               </button>
-              <button data-testid="layout-save" onClick={save} className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5 text-white"
+              <button data-testid="layout-save" onClick={save} disabled={saving} className="pos-btn h-9 px-3 rounded-md text-xs font-bold flex items-center gap-1.5 text-white disabled:opacity-50"
                 style={{ background: "var(--pos-accent)" }}>
-                <Save className="w-3.5 h-3.5" /> Save
+                <Save className="w-3.5 h-3.5" /> {saving ? "Saving…" : "Save"}
               </button>
             </>
           )}
-          <button data-testid="layout-close" onClick={onExit} className="pos-btn h-9 px-3 rounded-md text-xs font-bold"
+          <button data-testid="layout-close" onClick={close} className="pos-btn h-9 px-3 rounded-md text-xs font-bold"
             style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
             Close
           </button>
@@ -212,7 +275,8 @@ export default function TableLayoutEditor({ onExit }) {
 
       <div className="flex-1 flex">
         <div ref={canvasRef} className="flex-1 relative overflow-auto"
-          onPointerMove={onPointerMove} onPointerUp={onPointerUp}
+          onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
+          onPointerDown={() => setSelectedId(null)}
           style={{ background: "repeating-linear-gradient(45deg, var(--pos-bg) 0 12px, var(--pos-panel) 12px 13px)", minHeight: 480 }}>
           {floor.map((fe) => (
             <div key={fe.id} className="absolute pointer-events-none" style={{
@@ -259,7 +323,7 @@ export default function TableLayoutEditor({ onExit }) {
 
             <label className="text-[10px] uppercase tracking-wider block" style={{ color: "var(--pos-muted)" }}>
               seats
-              <input type="number" value={selected.seats || 0} onChange={(e) => patch({ seats: Number(e.target.value) })}
+              <input type="number" min={1} max={50} value={selected.seats || ""} onChange={(e) => patch({ seats: Number(e.target.value) })}
                 className="mt-1 w-full h-9 px-2 rounded-md text-sm"
                 style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
             </label>

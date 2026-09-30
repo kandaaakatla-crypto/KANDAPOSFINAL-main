@@ -13,7 +13,7 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
 import { loyaltyApi, ordersApi, storeCreditApi, giftCardsApi } from "../../api/client";
-import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
+import { effectiveTaxRate, computeLineTax, computeOrderTax, computeServiceCharge } from "../../utils/tax";
 import { applyScheduleToItem } from "../../utils/scheduling";
 
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
@@ -25,7 +25,7 @@ const ORDER_TYPES = [
 ];
 
 export default function OrderScreen() {
-  const { menuItems, categories, schedules, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser, loyaltyConfig } = usePos();
+  const { menuItems, categories, schedules, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser, loyaltyConfig, setOrderCustomer, setOrderServiceCharge } = usePos();
   const redeemValue = loyaltyConfig?.redeem_value || 1;
   // Re-evaluate day-part schedules every minute so a happy-hour window
   // starting/ending mid-shift updates prices without a page reload.
@@ -70,7 +70,13 @@ export default function OrderScreen() {
   const [newCust, setNewCust] = useState(null); // {name, address, postcode}
   const [collectionName, setCollectionName] = useState("");
   const [tableNo, setTableNo] = useState("");
+  // Optional guest details on a dine-in bill (printed on the receipt / GST invoice).
+  const [dineCust, setDineCust] = useState({ name: "", phone: "", gstin: "" });
+  const [dineCustOpen, setDineCustOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  // Optional service charge — never on by default; only when the customer asks for it.
+  const [serviceChargeOn, setServiceChargeOn] = useState(false);
+  const [serviceChargePct, setServiceChargePct] = useState(10);
 
   useEffect(() => { setSuggestOpen(false); }, [orderType]);
 
@@ -83,6 +89,7 @@ export default function OrderScreen() {
   };
   const deliveryMatches = suggestOpen ? matchCustomers(phoneQuery) : [];
   const collectionMatches = suggestOpen ? matchCustomers(collectionName) : [];
+  const dineMatches = suggestOpen && dineCustOpen && !dineCust.id ? matchCustomers(dineCust.name || dineCust.phone || "") : [];
 
   const pickCustomer = (found) => {
     setCustomer(found); setNewCust(null); setSuggestOpen(false);
@@ -128,7 +135,13 @@ export default function OrderScreen() {
       if (existing && existing.payment === "unpaid" && !existing.voided && existing.status !== "completed") {
         setEditingOrderId(existing.id);
         setOrderType(existing.type);
-        if (existing.type === "dine-in" && existing.table != null) setTableNo(String(existing.table));
+        if (existing.type === "dine-in" && existing.table != null) {
+          setTableNo(String(existing.table));
+          const c = existing.customer || {};
+          const hasGuest = (c.name && !/^Table \d+$/.test(c.name)) || c.phone || c.gstin;
+          setDineCust(hasGuest ? { ...c, name: /^Table \d+$/.test(c.name || "") ? "" : c.name } : { name: "", phone: "", gstin: "" });
+          setDineCustOpen(!!hasGuest);
+        }
         if (existing.type === "delivery" && existing.customer) {
           setCustomer(existing.customer);
         } else if (existing.type === "collection" && existing.customer) {
@@ -205,13 +218,43 @@ export default function OrderScreen() {
   const loyaltyDisc = Math.min((redeemPoints || 0) * redeemValue, subtotal);
   const creditDisc = Math.min(redeemCredit || 0, subtotal);
   const giftDisc = Math.min(redeemGiftCard || 0, subtotal);
-  const newRoundTotal = Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDisc - loyaltyDisc - creditDisc - giftDisc + deliveryFee + tipAmt);
+  // A reopened bill keeps whatever service charge it already has (changed via
+  // the toggle, server-side); a new order uses the cashier's toggle.
+  const effectiveScPct = editingOrder ? (editingOrder.serviceChargePct || 0) : (serviceChargeOn ? serviceChargePct : 0);
+  const [scAmt, scTax] = computeServiceCharge(gst.subtotal, gst.taxTotal, effectiveScPct);
+  const newRoundTotal = Math.max(0, subtotal + scAmt + gst.taxTotal + scTax - discountAmt - couponDisc - loyaltyDisc - creditDisc - giftDisc + deliveryFee + tipAmt);
   const total = editingOrder ? +(newRoundTotal + editingOrder.total).toFixed(2) : newRoundTotal;
 
   const orderCustomer = () => {
     if (orderType === "delivery") return customer;
     if (orderType === "collection") return { name: collectionName ? `Walk-in — ${collectionName}` : "Walk-in", phone: phoneQuery || "" };
-    return { name: `Table ${tableNo}` };
+    const name = (dineCust.name || "").trim();
+    return {
+      ...(dineCust.id ? { id: dineCust.id, address: dineCust.address, postcode: dineCust.postcode, email: dineCust.email } : {}),
+      name: name || `Table ${tableNo}`,
+      phone: (dineCust.phone || "").trim() || null,
+      gstin: (dineCust.gstin || "").trim().toUpperCase() || null,
+    };
+  };
+
+  const onServiceCharge = async (on, pct) => {
+    if (editingOrderId) {
+      const updated = await setOrderServiceCharge(editingOrderId, on ? pct : 0);
+      if (updated) toast.success(on ? `${pct}% service charge added to bill #${updated.number}` : "Service charge removed");
+      if (on) setServiceChargePct(pct);
+      return;
+    }
+    setServiceChargeOn(on);
+    setServiceChargePct(pct);
+  };
+
+  // Reopened dine-in bill: push any guest details the cashier added/changed.
+  const syncEditedCustomer = async (existing) => {
+    if (!existing || existing.type !== "dine-in") return;
+    const next = orderCustomer();
+    const cur = existing.customer || {};
+    if ((next.name || "") === (cur.name || "") && (next.phone || "") === (cur.phone || "") && (next.gstin || "") === (cur.gstin || "")) return;
+    await setOrderCustomer(existing.id, { ...cur, ...next });
   };
 
   const validateOrder = () => {
@@ -225,6 +268,8 @@ export default function OrderScreen() {
   const resetAll = () => {
     setCart([]); setDiscount(0); setCustomer(null); setNewCust(null);
     setPhoneQuery(""); setCollectionName(""); setTableNo("");
+    setDineCust({ name: "", phone: "", gstin: "" }); setDineCustOpen(false);
+    setServiceChargeOn(false); setServiceChargePct(10);
     setTipPct(0); setCoupon(null); setCustomerEmail(""); setSendReceipt(false);
     setLoyaltyBalance(0); setRedeemPoints(0);
     setStoreCreditBalance(0); setRedeemCredit(0);
@@ -234,6 +279,7 @@ export default function OrderScreen() {
 
   const sendToKitchen = async () => {
     if (editingOrderId) {
+      await syncEditedCustomer(editingOrder);
       if (cart.length === 0) { toast.info("No new items to add"); return; }
       try {
         const items = cart.map((l) => ({ name: l.name, qty: l.qty, price: l.price, mods: l.mods || [], size: l.size || null }));
@@ -266,6 +312,7 @@ export default function OrderScreen() {
     redeem_store_credit: redeemCredit || 0,
     gift_card_code: redeemGiftCard > 0 ? giftCardCode.trim().toUpperCase() : null,
     gift_card_amount: redeemGiftCard || 0,
+    service_charge_pct: serviceChargeOn ? serviceChargePct : 0,
     splits,
   });
 
@@ -275,6 +322,7 @@ export default function OrderScreen() {
       const existing = orders.find((o) => o.id === editingOrderId);
       if (!existing) { toast.error("Order no longer available"); return null; }
       try {
+        await syncEditedCustomer(existing);
         let current = existing;
         // Append any new items first (they'll go to the KDS immediately).
         if (cart.length > 0) {
@@ -493,6 +541,47 @@ export default function OrderScreen() {
               </SelectContent>
             </Select>
             {tableNo && <div className="text-xs" style={{ color: "#16a34a" }}>Table {tableNo} selected</div>}
+            {!dineCustOpen ? (
+              <button data-testid="dine-add-customer" type="button" onClick={() => setDineCustOpen(true)}
+                className="pos-btn w-full h-8 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5"
+                style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px dashed var(--pos-border)" }}>
+                <UserPlus className="w-3.5 h-3.5" /> Add customer details (optional)
+              </button>
+            ) : (
+              <div className="space-y-2 pt-1 fade-in" data-testid="dine-customer-form">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: "var(--pos-muted)" }}>Customer (for the bill / GST invoice)</div>
+                  <button type="button" data-testid="dine-clear-customer" onClick={() => { setDineCust({ name: "", phone: "", gstin: "" }); setDineCustOpen(false); }}
+                    className="pos-btn p-0.5 rounded" style={{ color: "var(--pos-muted)" }}><X className="w-3.5 h-3.5" /></button>
+                </div>
+                <div className="relative">
+                  <Input data-testid="dine-cust-name" placeholder="Name / company" value={dineCust.name || ""}
+                    onChange={(e) => { setDineCust({ ...dineCust, id: undefined, name: e.target.value }); setSuggestOpen(true); }}
+                    onFocus={() => setSuggestOpen(true)}
+                    className="h-9" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+                  {dineMatches.length > 0 && (
+                    <div className="absolute left-0 right-0 mt-1 z-10 rounded-lg overflow-hidden fade-in" data-testid="dine-suggestions"
+                      style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                      {dineMatches.map((c) => (
+                        <button key={c.id} type="button" data-testid={`dine-suggestion-${c.id}`}
+                          onClick={() => { setDineCust({ ...c, gstin: c.gstin || dineCust.gstin || "" }); setSuggestOpen(false); }}
+                          className="pos-btn w-full text-left px-3 py-2.5 text-sm flex items-center justify-between gap-2"
+                          style={{ color: "var(--pos-text)", borderBottom: "1px solid var(--pos-border)" }}>
+                          <span className="truncate">{c.name}</span>
+                          <span className="text-xs shrink-0" style={{ color: "var(--pos-muted)" }}>{c.phone}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Input data-testid="dine-cust-phone" placeholder="Phone" value={dineCust.phone || ""}
+                  onChange={(e) => setDineCust({ ...dineCust, phone: e.target.value })}
+                  className="h-9" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+                <Input data-testid="dine-cust-gstin" placeholder="GSTIN (optional, for business bills)" value={dineCust.gstin || ""}
+                  onChange={(e) => setDineCust({ ...dineCust, gstin: e.target.value.toUpperCase() })} maxLength={15}
+                  className="h-9 tracking-wider" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+              </div>
+            )}
           </div>
         )}
 
@@ -577,6 +666,12 @@ export default function OrderScreen() {
         giftCardChecking={giftCardChecking} onCheckGiftCard={checkGiftCard}
         redeemGiftCard={redeemGiftCard} onRedeemGiftCard={setRedeemGiftCard}
         runningBill={editingOrder}
+        serviceCharge={{
+          on: editingOrder ? (editingOrder.serviceChargePct || 0) > 0 : serviceChargeOn,
+          pct: editingOrder && editingOrder.serviceChargePct > 0 ? editingOrder.serviceChargePct : serviceChargePct,
+          amount: scAmt, tax: scTax,
+        }}
+        onServiceCharge={onServiceCharge}
       />
 
       <ItemModal item={modalItem} menuItems={effectiveMenuItems} onClose={() => setModalItem(null)} onAdd={addLine} />

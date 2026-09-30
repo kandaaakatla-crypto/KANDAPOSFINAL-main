@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, Trash2, Percent, Send, CreditCard, Bike, ShoppingBag, UtensilsCrossed, Tag, Gift, Mail, Coins, X, Wallet, Loader2 } from "lucide-react";
+import { Minus, Plus, Trash2, Percent, Send, CreditCard, Bike, ShoppingBag, UtensilsCrossed, Tag, Gift, Mail, Coins, X, Wallet, Loader2, HandPlatter } from "lucide-react";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { couponsApi, loyaltyApi } from "../../api/client";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
 
 const TIP_PRESETS = [0, 5, 10, 15];
+const SERVICE_CHARGE_PRESETS = [5, 10];
 
 export default function CartPanel({
   cart, orderType, customer, subtotal, deliveryFee, discount, discountAmt, total: providedTotal,
@@ -22,6 +23,9 @@ export default function CartPanel({
   giftCardCode, onGiftCardCode, giftCardBalance, giftCardChecking, onCheckGiftCard, redeemGiftCard, onRedeemGiftCard,
   // editing an existing (unpaid) order — occupied table / running tab
   runningBill = null,
+  // optional service charge — off unless the customer asks for it.
+  // { on, pct, amount, tax } for this round's items; onServiceCharge(on, pct).
+  serviceCharge = { on: false, pct: 10, amount: 0, tax: 0 }, onServiceCharge,
   // mobile: cart renders as a full-screen sheet, gated by open/onClose.
   // Desktop (md+) ignores these and stays a permanent sidebar.
   open = false, onClose,
@@ -34,8 +38,11 @@ export default function CartPanel({
   const maxRedeemable = Math.max(0, Math.floor(subtotal / redeemValue));
   const creditDiscount = Math.min(redeemCredit || 0, subtotal);
   const giftDiscount = Math.min(redeemGiftCard || 0, subtotal);
-  // Total: subtotal + GST − %-discount − coupon − loyalty − credit − gift card + delivery + tip (+ running bill from earlier rounds)
-  const newRoundTotal = +Math.max(0, subtotal + gst.taxTotal - discountAmt - couponDiscount - loyaltyDiscount - creditDiscount - giftDiscount + deliveryFee + tipAmt).toFixed(2);
+  // Total: subtotal + service charge + GST − %-discount − coupon − loyalty − credit − gift card + delivery + tip (+ running bill from earlier rounds)
+  const scAmt = serviceCharge.amount || 0;
+  const scTax = serviceCharge.tax || 0;
+  const gstTotal = +(gst.taxTotal + scTax).toFixed(2);
+  const newRoundTotal = +Math.max(0, subtotal + scAmt + gstTotal - discountAmt - couponDiscount - loyaltyDiscount - creditDiscount - giftDiscount + deliveryFee + tipAmt).toFixed(2);
   const total = +(newRoundTotal + (runningBill?.total || 0)).toFixed(2);
 
   const applyCoupon = async (code) => {
@@ -254,11 +261,35 @@ export default function CartPanel({
             <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>₹{runningBill.total.toFixed(2)}</span>
           </div>
         )}
+        {runningBill?.serviceCharge > 0 && (
+          <div className="text-[10px] -mt-1 text-right" style={{ color: "var(--pos-muted)" }}>incl. ₹{runningBill.serviceCharge.toFixed(2)} service charge</div>
+        )}
         <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>{runningBill ? "New subtotal" : "Subtotal"}</span><span className="tabular-nums" style={{ color: "var(--pos-text)" }} data-testid="cart-subtotal">₹{subtotal.toFixed(2)}</span></div>
-        {gst.taxTotal > 0 && (
+        {onServiceCharge && (cart.length > 0 || runningBill) && (
+          <div className="flex justify-between items-center text-sm" data-testid="service-charge-row">
+            <span className="flex items-center gap-1.5" style={{ color: "var(--pos-muted)" }}>
+              <Switch data-testid="service-charge-toggle" checked={!!serviceCharge.on}
+                onCheckedChange={(on) => onServiceCharge(on, serviceCharge.pct || 10)} />
+              <HandPlatter className="w-3.5 h-3.5" /> Service charge
+              {serviceCharge.on && (
+                <span className="flex gap-1 ml-1">
+                  {SERVICE_CHARGE_PRESETS.map((p) => (
+                    <button key={p} data-testid={`service-charge-${p}`} onClick={() => onServiceCharge(true, p)}
+                      className="pos-btn text-[11px] px-1.5 py-0.5 rounded font-semibold"
+                      style={{ background: serviceCharge.pct === p ? "var(--pos-blue)" : "var(--pos-panel-2)", color: serviceCharge.pct === p ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+                      {p}%
+                    </button>
+                  ))}
+                </span>
+              )}
+            </span>
+            <span className="tabular-nums" style={{ color: serviceCharge.on ? "var(--pos-text)" : "var(--pos-muted)" }} data-testid="service-charge-amount">₹{scAmt.toFixed(2)}</span>
+          </div>
+        )}
+        {gstTotal > 0 && (
           <div className="flex justify-between text-sm" data-testid="cart-gst">
-            <span style={{ color: "var(--pos-muted)" }}>GST (CGST ₹{gst.cgst.toFixed(2)} + SGST ₹{gst.sgst.toFixed(2)})</span>
-            <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>₹{gst.taxTotal.toFixed(2)}</span>
+            <span style={{ color: "var(--pos-muted)" }}>GST (CGST ₹{(Math.round(gstTotal * 50) / 100).toFixed(2)} + SGST ₹{(gstTotal - Math.round(gstTotal * 50) / 100).toFixed(2)})</span>
+            <span className="tabular-nums" style={{ color: "var(--pos-text)" }}>₹{gstTotal.toFixed(2)}</span>
           </div>
         )}
         {deliveryFee > 0 && <div className="flex justify-between text-sm"><span style={{ color: "var(--pos-muted)" }}>Delivery fee</span><span className="tabular-nums" style={{ color: "var(--pos-text)" }}>₹{deliveryFee.toFixed(2)}</span></div>}

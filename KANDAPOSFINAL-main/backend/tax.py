@@ -126,3 +126,22 @@ def compute_order_tax(line_amounts: List[Tuple[float, float]]) -> OrderTaxBreakd
         "cgst": round(tax_total / 2, 2),
         "sgst": round(tax_total - round(tax_total / 2, 2), 2),
     }
+
+
+def split_cgst_sgst(tax_total: float) -> Tuple[float, float]:
+    """Intra-state 50/50 split, with any odd paisa going to SGST."""
+    cgst = round(tax_total / 2, 2)
+    return cgst, round(tax_total - cgst, 2)
+
+
+def compute_service_charge(subtotal: float, tax_total: float, pct: float) -> Tuple[float, float]:
+    """Optional restaurant service charge → (charge, gst_on_charge).
+
+    The charge is `pct` of the taxable item subtotal. A service charge is
+    part of the value of the supply for GST, so it is taxed at the bill's own
+    effective rate (tax_total / subtotal — the flat 5% for a typical
+    restaurant bill)."""
+    if not pct or pct <= 0 or subtotal <= 0:
+        return 0.0, 0.0
+    charge = round(subtotal * pct / 100, 2)
+    return charge, round(charge * tax_total / subtotal, 2)

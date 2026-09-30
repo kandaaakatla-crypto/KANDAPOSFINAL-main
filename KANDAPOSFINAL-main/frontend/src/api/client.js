@@ -309,6 +309,8 @@ export const ordersApi = {
   setPayment: (id, payment) => api.patch(`/orders/${id}/payment`, { payment }).then((r) => r.data),
   claim: (id) => api.post(`/orders/${id}/claim`).then((r) => r.data),
   setPacked: (id, packed) => api.patch(`/orders/${id}/pack`, { packed }).then((r) => r.data),
+  setCustomer: (id, customer) => api.patch(`/orders/${id}/customer`, customer).then((r) => r.data),
+  setServiceCharge: (id, pct) => api.patch(`/orders/${id}/service-charge`, { pct }).then((r) => r.data),
 };
 
 export const usersApi = {

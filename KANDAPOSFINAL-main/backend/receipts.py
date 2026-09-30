@@ -12,6 +12,8 @@ Three formats:
 Store info is sourced from the tenant document (per-tenant branding).
 """
 import io
+import os
+import re
 from fastapi import APIRouter, HTTPException, Depends, Response
 from fastapi.responses import StreamingResponse
 from typing import Literal
@@ -58,6 +60,73 @@ def _money(v: float) -> str:
     return f"Rs.{v:.2f}"
 
 
+def _gstin_line(tax_id: str | None) -> str:
+    """Store's GST registration line — tenants often enter just the bare
+    number, so label it (India uses GST, not VAT)."""
+    v = (tax_id or "").strip()
+    if not v:
+        return ""
+    return v if v.upper().startswith("GST") else f"GSTIN {v}"
+
+
+def _bill_to_lines(order: dict) -> list[str]:
+    """Customer details worth printing on a receipt/invoice, one per line.
+
+    Dine-in orders carry a placeholder customer named after the table
+    ("Table 2") when staff didn't take the guest's details — that's not a
+    customer, so it's left off rather than printed as "Bill To: Table 2"
+    (the table number is shown separately)."""
+    cust = order.get("customer") or {}
+    lines: list[str] = []
+    name = (cust.get("name") or "").strip()
+    placeholder = re.fullmatch(r"(Table \d+|Walk-in)", name)
+    if name and not placeholder:
+        lines.append(name)
+    addr = " ".join(p for p in ((cust.get("address") or "").strip(), (cust.get("postcode") or "").strip()) if p)
+    if addr:
+        lines.append(addr)
+    if (cust.get("phone") or "").strip():
+        lines.append(f"Ph: {cust['phone'].strip()}")
+    email = (cust.get("email") or order.get("customer_email") or "").strip()
+    if email:
+        lines.append(email)
+    if (cust.get("gstin") or "").strip():
+        lines.append(f"GSTIN: {cust['gstin'].strip().upper()}")
+    return lines
+
+
+def _summary_rows(order: dict) -> list[tuple[str, float]]:
+    """The totals block shared by every receipt format, as (label, amount)
+    pairs. Negative amounts are deductions. Refund rows only appear once a
+    refund has actually been issued, so an untouched bill prints exactly as
+    before."""
+    subtotal = order.get("subtotal")
+    if subtotal is None:
+        subtotal = sum(float(it.get("qty", 0)) * float(it.get("price", 0)) for it in order.get("items", []))
+    rows: list[tuple[str, float]] = [("Subtotal", float(subtotal))]
+    if order.get("serviceCharge"):
+        rows.append((f"Service charge ({float(order.get('serviceChargePct') or 0):g}%)", float(order["serviceCharge"])))
+    if order.get("taxTotal"):
+        rows.append(("GST (incl.)" if order.get("taxInclusive") else "GST", float(order["taxTotal"])))
+        rows.append(("  CGST", float(order.get("cgst", 0))))
+        rows.append(("  SGST", float(order.get("sgst", 0))))
+    if order.get("deliveryFee"):
+        rows.append(("Delivery", float(order["deliveryFee"])))
+    if order.get("discount"):
+        rows.append(("Discount", -float(order["discount"])))
+    total = float(order.get("total", 0) or 0)
+    rows.append(("TOTAL", total))
+    refunded = float(order.get("refunded_amount") or 0)
+    if refunded > 0:
+        rows.append(("Refunded", -refunded))
+        rows.append(("NET PAID", round(total - refunded, 2)))
+    return rows
+
+
+def _signed(v: float, fmt) -> str:
+    return ("-" + fmt(-v)) if v < 0 else fmt(v)
+
+
 def _build_escpos(order: dict, store: dict, kind: str) -> bytes:
     out = bytearray()
     out += INIT
@@ -68,19 +137,19 @@ def _build_escpos(order: dict, store: dict, kind: str) -> bytes:
     else:
         out += _line(store["address"])
         out += _line("Tel " + store["phone"])
-        out += _line(store.get("tax_id") or store.get("vat") or "")
+        out += _line(_gstin_line(store.get("tax_id")))
     out += _line("-" * 32)
 
     out += ALIGN_LEFT
     out += _row("Order #" + str(order.get("number", "")), order.get("type", "").upper())
     out += _line("Time " + order.get("placedAt", "")[:19].replace("T", " "))
-    cust = order.get("customer") or {}
-    if cust.get("name"):
-        out += _line("For  " + cust["name"])
-    if cust.get("address"):
-        out += _line(cust["address"][:32])
-    if cust.get("postcode"):
-        out += _line(cust["postcode"])
+    if order.get("voided"):
+        out += BOLD_ON + _line("*** VOID ***") + BOLD_OFF
+    bill_to = _bill_to_lines(order)
+    if bill_to:
+        out += _line("For  " + bill_to[0][:27])
+        for extra in bill_to[1:]:
+            out += _line(extra[:32])
     if order.get("table"):
         out += _line("Table " + str(order["table"]))
     out += _line("-" * 32)
@@ -98,20 +167,9 @@ def _build_escpos(order: dict, store: dict, kind: str) -> bytes:
 
     if kind != "kitchen":
         out += _line("-" * 32)
-        subtotal = order.get("subtotal")
-        if subtotal is None:
-            subtotal = sum(it["qty"] * it["price"] for it in order.get("items", []))
-        out += _row("Subtotal", _money(subtotal))
-        if order.get("taxTotal"):
-            tax_label = "GST (incl.)" if order.get("taxInclusive") else "GST"
-            out += _row(tax_label, _money(order["taxTotal"]))
-            out += _row("  CGST", _money(order.get("cgst", 0)))
-            out += _row("  SGST", _money(order.get("sgst", 0)))
-        if order.get("deliveryFee"):
-            out += _row("Delivery", _money(order["deliveryFee"]))
-        if order.get("discount"):
-            out += _row("Discount", "-" + _money(order["discount"]))
-        out += _row("TOTAL", _money(order.get("total", 0)))
+        for label, amount in _summary_rows(order):
+            text = "Net paid" if label == "NET PAID" else label
+            out += _row(text, _signed(amount, _money))
         out += _line("-" * 32)
         out += _row("Paid by", str(order.get("payment", "?")).upper())
         if order.get("razorpayPaymentId"):
@@ -150,6 +208,10 @@ async def receipt_json(order_id: str, user: dict = Depends(get_current_user)):
         "cgst": order.get("cgst", 0),
         "sgst": order.get("sgst", 0),
         "taxInclusive": order.get("taxInclusive", False),
+        "serviceCharge": order.get("serviceCharge", 0),
+        "serviceChargePct": order.get("serviceChargePct", 0),
+        "refundedAmount": float(order.get("refunded_amount") or 0),
+        "netTotal": round(float(order.get("total", 0) or 0) - float(order.get("refunded_amount") or 0), 2),
         "issuedAt": order.get("placedAt"),
         "cashier": user.get("name"),
     }
@@ -168,6 +230,32 @@ async def receipt_escpos(
     })
 
 
+_FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+_INVOICE_FONT = "DejaVuSans"
+_INVOICE_FONT_BOLD = "DejaVuSans-Bold"
+
+
+def _invoice_fonts() -> tuple[str, str]:
+    """Register (once) and return the (regular, bold) font names for the PDF
+    invoice. reportlab's built-in Helvetica has no ₹ glyph and renders it as a
+    filled black square, so the invoice uses the bundled DejaVu Sans instead."""
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.lib.fonts import addMapping
+
+    registered = pdfmetrics.getRegisteredFontNames()
+    if _INVOICE_FONT not in registered:
+        pdfmetrics.registerFont(TTFont(_INVOICE_FONT, os.path.join(_FONT_DIR, "DejaVuSans.ttf")))
+    if _INVOICE_FONT_BOLD not in registered:
+        pdfmetrics.registerFont(TTFont(_INVOICE_FONT_BOLD, os.path.join(_FONT_DIR, "DejaVuSans-Bold.ttf")))
+    # Lets Paragraph markup like <b>…</b> resolve to the bold face.
+    addMapping(_INVOICE_FONT, 0, 0, _INVOICE_FONT)
+    addMapping(_INVOICE_FONT, 1, 0, _INVOICE_FONT_BOLD)
+    addMapping(_INVOICE_FONT, 0, 1, _INVOICE_FONT)
+    addMapping(_INVOICE_FONT, 1, 1, _INVOICE_FONT_BOLD)
+    return _INVOICE_FONT, _INVOICE_FONT_BOLD
+
+
 def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
     """One-page portrait tax invoice for a single order — same colours/table
     style as the rota PDF (routes/shifts.py`_render_rota_pdf`) so downloadable
@@ -178,7 +266,9 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.enums import TA_LEFT, TA_RIGHT
+    from xml.sax.saxutils import escape
 
+    font, font_bold = _invoice_fonts()
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
         buf, pagesize=A4,
@@ -187,31 +277,32 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
         title=f"Tax Invoice — Order #{order.get('number')}",
     )
     styles = getSampleStyleSheet()
-    title_st = ParagraphStyle("title", parent=styles["Title"], fontSize=16, leading=20, alignment=TA_LEFT, textColor=colors.HexColor("#111111"))
-    sub_st = ParagraphStyle("sub", parent=styles["Normal"], fontSize=9, leading=13, textColor=colors.HexColor("#666666"))
-    right_st = ParagraphStyle("right", parent=styles["Normal"], fontSize=10, leading=14, alignment=TA_RIGHT, textColor=colors.HexColor("#111111"))
-    label_st = ParagraphStyle("label", parent=styles["Normal"], fontSize=9, leading=13, textColor=colors.HexColor("#666666"))
+    sub_st = ParagraphStyle("sub", parent=styles["Normal"], fontName=font, fontSize=9, leading=13, textColor=colors.HexColor("#666666"))
+    right_st = ParagraphStyle("right", parent=styles["Normal"], fontName=font, fontSize=10, leading=14, alignment=TA_RIGHT, textColor=colors.HexColor("#111111"))
+    label_st = ParagraphStyle("label", parent=styles["Normal"], fontName=font, fontSize=9, leading=13, textColor=colors.HexColor("#666666"))
 
     invoice_no = f"INV-{order.get('number', '')}"
     placed = (order.get("placedAt") or "")[:19].replace("T", " ")
-    cust = order.get("customer") or {}
+    e = lambda v: escape(str(v or ""))  # noqa: E731 — store/customer text is user-entered
 
     story = []
+    right_lines = [
+        "<b>TAX INVOICE</b>" + ("  <font color='#dc2626'><b>VOID</b></font>" if order.get("voided") else ""),
+        f"Invoice No: {invoice_no}", f"Order #{e(order.get('number'))}", f"Date: {placed}",
+    ]
+    if order.get("type") == "dine-in" and order.get("table") is not None:
+        right_lines.append(f"Table {e(order.get('table'))}")
     header = Table([[
-        Paragraph(f"<b>{store.get('name', 'Kanda POS')}</b><br/>{store.get('address', '')}<br/>Tel {store.get('phone', '')}<br/>{store.get('tax_id', '')}", sub_st),
-        Paragraph(f"<b>TAX INVOICE</b><br/>Invoice No: {invoice_no}<br/>Order #{order.get('number')}<br/>Date: {placed}", right_st),
+        Paragraph(f"<b>{e(store.get('name', 'Kanda POS'))}</b><br/>{e(store.get('address', ''))}<br/>Tel {e(store.get('phone', ''))}<br/>{e(_gstin_line(store.get('tax_id')))}", sub_st),
+        Paragraph("<br/>".join(right_lines), right_st),
     ]], colWidths=[100 * mm, 75 * mm])
     header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
     story.append(header)
     story.append(Spacer(1, 6 * mm))
 
-    if cust.get("name"):
-        bill_to = f"<b>Bill To</b><br/>{cust['name']}"
-        if cust.get("address"):
-            bill_to += f"<br/>{cust['address']}"
-        if cust.get("postcode"):
-            bill_to += f" {cust['postcode']}"
-        story.append(Paragraph(bill_to, label_st))
+    bill_to = _bill_to_lines(order)
+    if bill_to:
+        story.append(Paragraph("<b>Bill To</b><br/>" + "<br/>".join(e(line) for line in bill_to), label_st))
         story.append(Spacer(1, 5 * mm))
 
     rows = [["Item", "Qty", "Rate", "Tax %", "Tax Amt", "Amount"]]
@@ -227,7 +318,8 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
     tbl.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#111111")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 0), (-1, -1), font),
+        ("FONTNAME", (0, 0), (-1, 0), font_bold),
         ("FONTSIZE", (0, 0), (-1, 0), 9),
         ("FONTSIZE", (0, 1), (-1, -1), 9),
         ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
@@ -243,38 +335,36 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
     story.append(tbl)
     story.append(Spacer(1, 6 * mm))
 
-    subtotal = order.get("subtotal")
-    if subtotal is None:
-        subtotal = sum(float(it.get("qty", 0)) * float(it.get("price", 0)) for it in order.get("items", []))
-    summary_rows = [["Subtotal", f"₹{subtotal:.2f}"]]
-    if order.get("taxTotal"):
-        tax_label = "GST (incl.)" if order.get("taxInclusive") else "GST"
-        summary_rows.append([tax_label, f"₹{order['taxTotal']:.2f}"])
-        summary_rows.append(["  CGST", f"₹{order.get('cgst', 0):.2f}"])
-        summary_rows.append(["  SGST", f"₹{order.get('sgst', 0):.2f}"])
-    if order.get("deliveryFee"):
-        summary_rows.append(["Delivery", f"₹{order['deliveryFee']:.2f}"])
-    if order.get("discount"):
-        summary_rows.append(["Discount", f"-₹{order['discount']:.2f}"])
-    summary_rows.append(["TOTAL", f"₹{order.get('total', 0):.2f}"])
-    summary = Table(summary_rows, colWidths=[130 * mm, 40 * mm])
-    summary.setStyle(TableStyle([
+    rupee = lambda v: f"₹{v:.2f}"  # noqa: E731
+    rows = _summary_rows(order)
+    summary_rows = [[label, _signed(amount, rupee)] for label, amount in rows]
+    total_idx = next(i for i, (label, _) in enumerate(rows) if label == "TOTAL")
+    summary_style = [
         ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+        ("FONTNAME", (0, 0), (-1, -1), font),
         ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, -1), (-1, -1), 12),
-        ("LINEABOVE", (0, -1), (-1, -1), 1, colors.HexColor("#111111")),
+        ("FONTNAME", (0, total_idx), (-1, total_idx), font_bold),
+        ("FONTSIZE", (0, total_idx), (-1, total_idx), 12),
+        ("LINEABOVE", (0, total_idx), (-1, total_idx), 1, colors.HexColor("#111111")),
         ("TOPPADDING", (0, 0), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
+    ]
+    if total_idx != len(rows) - 1:  # refund rows follow TOTAL — net paid is the figure that matters now
+        summary_style += [
+            ("TEXTCOLOR", (0, total_idx + 1), (-1, total_idx + 1), colors.HexColor("#dc2626")),
+            ("FONTNAME", (0, -1), (-1, -1), font_bold),
+            ("FONTSIZE", (0, -1), (-1, -1), 12),
+        ]
+    summary = Table(summary_rows, colWidths=[130 * mm, 40 * mm])
+    summary.setStyle(TableStyle(summary_style))
     story.append(summary)
     story.append(Spacer(1, 8 * mm))
 
-    story.append(Paragraph(f"Paid by: <b>{str(order.get('payment', '?')).upper()}</b>" + (f" · Ref: {order['razorpayPaymentId']}" if order.get("razorpayPaymentId") else ""), label_st))
+    story.append(Paragraph(f"Paid by: <b>{e(str(order.get('payment', '?')).upper())}</b>" + (f" · Ref: {e(order['razorpayPaymentId'])}" if order.get("razorpayPaymentId") else ""), label_st))
     if cashier:
-        story.append(Paragraph(f"Served by: {cashier}", label_st))
+        story.append(Paragraph(f"Served by: {e(cashier)}", label_st))
     story.append(Spacer(1, 6 * mm))
-    story.append(Paragraph(store.get("footer") or "Thank you for your business.", sub_st))
+    story.append(Paragraph(e(store.get("footer") or "Thank you for your business."), sub_st))
     story.append(Paragraph("This is a computer-generated tax invoice.", sub_st))
 
     doc.build(story)

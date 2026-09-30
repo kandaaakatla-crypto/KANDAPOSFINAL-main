@@ -104,7 +104,7 @@ async def delete_table(table_id: str, user: dict = Depends(require_role("Manager
 async def update_position(table_id: str, payload: TablePosition, user: dict = Depends(require_role("Manager"))):
     """Save a table's layout-editor coordinates + shape."""
     db = get_db()
-    update = payload.model_dump()
+    update = payload.model_dump(exclude_none=True)
     update["updated_at"] = now_ist().isoformat()
     res = await db.tables.find_one_and_update(
         tenant_filter(user, {"id": table_id}),

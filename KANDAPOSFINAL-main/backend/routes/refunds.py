@@ -23,6 +23,7 @@ from tenants import tenant_filter
 from models import RefundRequest, VoidRequest, RefundLog
 from ws import schedule_broadcast
 from . import store_credit as credit_mod
+from ._shared import clean
 
 router = APIRouter()
 
@@ -78,14 +79,18 @@ async def refund_order(order_id: str, payload: RefundRequest,
         )
 
     new_total = round(already + payload.amount, 2)
-    await db.orders.update_one(
+    updated = await db.orders.find_one_and_update(
         tenant_filter(user, {"id": order_id}),
         {"$set": {
             "refunded_amount": new_total,
             "refunded_at": _now(),
             "refunded_by": user["name"],
         }},
+        return_document=True,
     )
+    # Push the refunded order to every terminal so cached copies (receipt
+    # reprints, the Orders board) show the refund without a manual reload.
+    schedule_broadcast("order.upserted", clean(updated), user["tenant_id"])
     reason = payload.reason.strip()
     if payload.refund_method == "store_credit":
         reason += " (refunded to store credit)"
@@ -129,7 +134,7 @@ async def void_order(order_id: str, payload: VoidRequest,
         # Best-effort — voiding still records even if inventory restore hiccups.
         pass
 
-    await db.orders.update_one(
+    updated = await db.orders.find_one_and_update(
         tenant_filter(user, {"id": order_id}),
         {"$set": {
             "voided": True,
@@ -137,7 +142,9 @@ async def void_order(order_id: str, payload: VoidRequest,
             "voided_by": user["name"],
             "status": "completed",  # remove from active boards
         }},
+        return_document=True,
     )
+    schedule_broadcast("order.upserted", clean(updated), user["tenant_id"])
     log = await _log(db, user, order, "void", float(order["total"]), payload.reason.strip(), payload.notes)
     schedule_broadcast("orders.changed", {"orderId": order_id, "voided": True}, user["tenant_id"])
     return {"ok": True, "log": log}
