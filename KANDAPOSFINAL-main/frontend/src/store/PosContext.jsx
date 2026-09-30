@@ -376,6 +376,36 @@ export function PosProvider({ children }) {
     }
   }, []);
 
+  // Bill edits that change the order's customer or totals after it was
+  // placed — direct network calls (like assignDriver), since the server is
+  // the one that recomputes the GST/total. An order still queued offline
+  // has no server copy to edit yet.
+  const editPlacedOrder = useCallback(async (orderId, call, failMsg) => {
+    if (orderId.startsWith("lo_")) {
+      toast.error("This order hasn't synced yet — try again once it has");
+      return null;
+    }
+    try {
+      const updated = await call();
+      await repo.upsertLocalOrder(updated, tenantIdRef.current);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+      return updated;
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || failMsg);
+      return null;
+    }
+  }, []);
+
+  const setOrderCustomer = useCallback(
+    (orderId, customer) => editPlacedOrder(orderId, () => ordersApi.setCustomer(orderId, customer), "Could not save customer details"),
+    [editPlacedOrder],
+  );
+
+  const setOrderServiceCharge = useCallback(
+    (orderId, pct) => editPlacedOrder(orderId, () => ordersApi.setServiceCharge(orderId, pct), "Could not update service charge"),
+    [editPlacedOrder],
+  );
+
   // ----- Customers -----
   const upsertCustomer = useCallback(async (cust) => {
     try {
@@ -536,6 +566,7 @@ export function PosProvider({ children }) {
     categories,
     menuItems, upsertMenuItem, toggleItemAvailability, schedules,
     orders, placeOrder, appendToOrder, updateOrderStatus, setOrderPacked, assignDriver, reloadOrders,
+    setOrderCustomer, setOrderServiceCharge,
     customers, upsertCustomer, deleteCustomer, refreshCustomers, refreshTables, refreshMenu,
     tables, setTableStatus,
     inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem, refreshInventory,

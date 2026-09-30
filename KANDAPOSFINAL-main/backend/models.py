@@ -480,6 +480,7 @@ class TablePosition(BaseModel):
     height: float = 80
     shape: TableShape = "square"
     rotation: float = 0
+    seats: Optional[int] = Field(None, ge=1, le=50)  # edited in the layout editor's side panel
 
 
 class FloorElement(BaseModel):
@@ -677,6 +678,8 @@ class OrderCustomer(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     postcode: Optional[str] = None
+    email: Optional[str] = None
+    gstin: Optional[str] = None  # buyer's GSTIN, printed on the tax invoice for B2B customers
 
 
 class OrderItem(BaseModel):
@@ -706,6 +709,7 @@ class OrderCreate(BaseModel):
     location_id: Optional[str] = None
     customer_email: Optional[str] = None
     send_email_receipt: bool = False
+    service_charge_pct: float = Field(0, ge=0, le=100)  # optional, off unless the customer agrees to it
     redeem_loyalty_points: int = 0  # cashier elects to burn X points → ₹X off
     redeem_store_credit: float = 0  # ₹ amount to burn from the customer's own wallet balance
     gift_card_code: Optional[str] = None
@@ -763,6 +767,11 @@ class Order(BaseModel):
     cgst: float = 0
     sgst: float = 0
     taxInclusive: bool = False  # True when item prices already included tax (retail MRP) and it was extracted, not added on top
+    # Optional service charge — 0 unless staff add it at the customer's request.
+    # serviceChargeTax (GST on the charge) is already included in taxTotal/cgst/sgst.
+    serviceChargePct: float = 0
+    serviceCharge: float = 0
+    serviceChargeTax: float = 0
     client_ref: Optional[str] = None  # idempotency key, set when this order was created offline and later synced
     sync_warnings: List[str] = []  # non-fatal issues found when replaying an offline-queued order (e.g. item since deleted)
 
@@ -773,6 +782,10 @@ class OrderStatusPayload(BaseModel):
 
 class OrderPackedPayload(BaseModel):
     packed: bool
+
+
+class ServiceChargePayload(BaseModel):
+    pct: float = Field(ge=0, le=100)
 
 
 class OrderAppendPayload(BaseModel):

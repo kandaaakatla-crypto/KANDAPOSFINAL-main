@@ -6,6 +6,8 @@
 // /orders/{id}/receipt/escpos) stays in place for on-demand server-side
 // reprint/audit, not as the primary print path anymore.
 
+import { billToLines, summaryRows, signedMoney, gstinLine } from "./receiptSummary";
+
 const ESC = 0x1b;
 const GS = 0x1d;
 const INIT = [ESC, 0x40];
@@ -58,17 +60,19 @@ export function buildEscposReceipt(order, store, kind = "customer") {
   } else {
     b.line(store.address || "");
     b.line("Tel " + (store.phone || ""));
-    b.line(store.tax_id || store.vat || "");
+    b.line(gstinLine(store.tax_id));
   }
   b.line("-".repeat(32));
 
   b.push(ALIGN_LEFT);
   b.row("Order #" + (order.number ?? ""), String(order.type || "").toUpperCase());
   b.line("Time " + String(order.placedAt || "").slice(0, 19).replace("T", " "));
-  const cust = order.customer || {};
-  if (cust.name) b.line("For  " + cust.name);
-  if (cust.address) b.line(String(cust.address).slice(0, 32));
-  if (cust.postcode) b.line(cust.postcode);
+  if (order.voided) b.push(BOLD_ON).line("*** VOID ***").push(BOLD_OFF);
+  const billTo = billToLines(order);
+  if (billTo.length) {
+    b.line("For  " + billTo[0].slice(0, 27));
+    for (const extra of billTo.slice(1)) b.line(extra.slice(0, 32));
+  }
   if (order.table) b.line("Table " + order.table);
   b.line("-".repeat(32));
 
@@ -88,17 +92,10 @@ export function buildEscposReceipt(order, store, kind = "customer") {
 
   if (kind !== "kitchen") {
     b.line("-".repeat(32));
-    const subtotal = order.subtotal ?? (order.items || []).reduce((s, it) => s + it.qty * it.price, 0);
-    b.row("Subtotal", money(subtotal));
-    if (order.taxTotal) {
-      const taxLabel = order.taxInclusive ? "GST (incl.)" : "GST";
-      b.row(taxLabel, money(order.taxTotal));
-      b.row("  CGST", money(order.cgst || 0));
-      b.row("  SGST", money(order.sgst || 0));
+    for (const r of summaryRows(order)) {
+      const label = r.label === "NET PAID" ? "Net paid" : r.kind === "sub" ? `  ${r.label}` : r.label;
+      b.row(label, signedMoney(r.amount, money));
     }
-    if (order.deliveryFee) b.row("Delivery", money(order.deliveryFee));
-    if (order.discount) b.row("Discount", "-" + money(order.discount));
-    b.row("TOTAL", money(order.total || 0));
     b.line("-".repeat(32));
     b.row("Paid by", String(order.payment || "?").toUpperCase());
     if (order.razorpayPaymentId) b.line("Ref " + order.razorpayPaymentId);

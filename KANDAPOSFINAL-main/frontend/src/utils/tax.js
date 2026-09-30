@@ -30,3 +30,12 @@ export function computeOrderTax(lineAmounts) {
   const cgst = Math.round((taxTotal / 2) * 100) / 100;
   return { itemsTotal, subtotal, taxTotal, cgst, sgst: Math.round((taxTotal - cgst) * 100) / 100 };
 }
+
+/** Optional service charge → [charge, gstOnCharge] — mirrors
+ * tax.compute_service_charge: pct of the taxable subtotal, taxed at the
+ * bill's own effective GST rate. */
+export function computeServiceCharge(subtotal, taxTotal, pct) {
+  if (!pct || pct <= 0 || !(subtotal > 0)) return [0, 0];
+  const charge = Math.round(subtotal * pct) / 100;
+  return [charge, Math.round((charge * taxTotal / subtotal) * 100) / 100];
+}

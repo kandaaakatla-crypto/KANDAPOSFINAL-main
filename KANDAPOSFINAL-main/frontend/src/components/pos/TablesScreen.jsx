@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { usePos } from "../../store/PosContext";
 import { tablesApi } from "../../api/client";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import TableLayoutEditor from "./TableLayoutEditor";
 import ReservationModal from "./ReservationModal";
 import QrCodesModal from "./QrCodesModal";
+import { withDefaultLayout } from "../../utils/tableLayout";
 
 const STATUS_STYLE = {
   available: { color: "#22c55e", bg: "#13271a", border: "#2e7d4f", label: "Available" },
@@ -25,6 +26,7 @@ const STATUS_STYLE = {
 export default function TablesScreen() {
   const { tables, orders, setTableStatus, staffUser, features } = usePos();
   const navigate = useNavigate();
+  const { slug } = useParams();
   const [layoutMode, setLayoutMode] = useState(false);
   const [resModalOpen, setResModalOpen] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -38,12 +40,12 @@ export default function TablesScreen() {
   const handleClick = (t) => {
     if (t.status === "available") {
       toast.success(`Starting order for T${t.number}`);
-      navigate(`/pos?table=${t.number}`);
+      navigate(`/${slug}/pos?table=${t.number}`);
     } else if (t.status === "occupied") {
       const order = orderFor(t);
       if (order) {
         toast.info(`Opening open bill for T${t.number}`);
-        navigate(`/pos?table=${t.number}&order=${order.id}`);
+        navigate(`/${slug}/pos?table=${t.number}&order=${order.id}`);
       }
     } else if (t.status === "reserved") {
       setTableStatus(t.id, "available");
@@ -109,18 +111,18 @@ export default function TablesScreen() {
         ))}
 
         {/* Tables at their saved coordinates. */}
-        {tables.map((t) => {
+        {withDefaultLayout(tables).map((t) => {
           const s = STATUS_STYLE[t.status];
           const order = orderFor(t);
           const radius = t.shape === "round" ? "50%" : t.shape === "rect" ? "12px" : "10px";
-          const w = t.width || 90, h = t.height || 90;
+          const w = t.width, h = t.height;
           return (
             <motion.button key={t.id} data-testid={`table-${t.number}`} onClick={() => handleClick(t)}
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 400, damping: 22 }}
               className="pos-btn absolute flex flex-col items-center justify-center text-white cursor-pointer"
               style={{
-                left: t.x ?? 0, top: t.y ?? 0, width: w, height: h,
+                left: t.x, top: t.y, width: w, height: h,
                 background: s.color + "26",
                 border: `2px solid ${s.color}`,
                 borderRadius: radius,

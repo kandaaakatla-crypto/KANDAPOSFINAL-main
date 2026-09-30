@@ -15,8 +15,11 @@ from tenants import tenant_filter, get_tenant
 from ws import schedule_broadcast
 from kds import annotate_order_items_for_kds
 from email_service import send_email, order_receipt_email
-from models import Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload
-from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
+from models import (
+    Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload,
+    OrderCustomer, ServiceChargePayload,
+)
+from tax import resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst
 from . import loyalty as loyalty_mod
 from . import store_credit as credit_mod
 from . import gift_cards as gift_card_mod
@@ -135,6 +138,27 @@ async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[di
     return line_amounts, warnings
 
 
+def _with_service_charge(order: dict, items_subtotal: float, items_tax: float, items_gross_delta: float, pct: float) -> dict:
+    """Recompute an order's service charge (and the totals it feeds) after its
+    items or its service-charge rate change. `items_subtotal`/`items_tax` are
+    the item-only figures (service charge excluded); `items_gross_delta` is
+    how much the items' own contribution to the total just changed by.
+    Returns the fields to $set."""
+    old_charge = float(order.get("serviceCharge") or 0)
+    old_charge_tax = float(order.get("serviceChargeTax") or 0)
+    charge, charge_tax = compute_service_charge(items_subtotal, items_tax, pct)
+    tax_total = round(items_tax + charge_tax, 2)
+    cgst, sgst = split_cgst_sgst(tax_total)
+    total = round(
+        float(order.get("total", 0) or 0) - old_charge - old_charge_tax + items_gross_delta + charge + charge_tax, 2,
+    )
+    return {
+        "subtotal": round(items_subtotal, 2), "taxTotal": tax_total, "cgst": cgst, "sgst": sgst,
+        "serviceChargePct": pct if charge else 0, "serviceCharge": charge, "serviceChargeTax": charge_tax,
+        "total": total,
+    }
+
+
 @router.get("/orders", response_model=List[Order])
 async def list_orders(user: dict = Depends(get_current_user)):
     db = get_db()
@@ -170,7 +194,12 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     # these numbers are computed here, not merely trusted from the client.
     line_amounts, sync_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
     tax = compute_order_tax(line_amounts)
-    grand_total = round(tax["items_total"] - float(payload.discount or 0) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
+    # Service charge is opt-in only (0 unless the customer asked for it).
+    sc_pct = float(payload.service_charge_pct or 0)
+    sc, sc_tax = compute_service_charge(tax["subtotal"], tax["tax_total"], sc_pct)
+    tax_total = round(tax["tax_total"] + sc_tax, 2)
+    cgst, sgst = split_cgst_sgst(tax_total)
+    grand_total = round(tax["items_total"] + sc + sc_tax - float(payload.discount or 0) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
 
     # Validate splits if provided — must sum (±1¢) to the server-computed total.
     splits_payload = None
@@ -196,10 +225,13 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         "discount": payload.discount,
         "total": grand_total,
         "subtotal": tax["subtotal"],
-        "taxTotal": tax["tax_total"],
-        "cgst": tax["cgst"],
-        "sgst": tax["sgst"],
+        "taxTotal": tax_total,
+        "cgst": cgst,
+        "sgst": sgst,
         "taxInclusive": business_type == "retail",
+        "serviceChargePct": sc_pct if sc else 0,
+        "serviceCharge": sc,
+        "serviceChargeTax": sc_tax,
         "payment": payload.payment,
         "placedAt": placed_at,
         "driver": payload.driver,
@@ -347,11 +379,14 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
     line_amounts, append_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
     add_tax = compute_order_tax(line_amounts)
     annotated = await annotate_order_items_for_kds(db, user["tenant_id"], raw_items)
-    new_total = round(float(existing.get("total", 0) or 0) + add_tax["items_total"], 2)
-    new_subtotal = round(float(existing.get("subtotal", 0) or 0) + add_tax["subtotal"], 2)
-    new_tax_total = round(float(existing.get("taxTotal", 0) or 0) + add_tax["tax_total"], 2)
-    new_cgst = round(float(existing.get("cgst", 0) or 0) + add_tax["cgst"], 2)
-    new_sgst = round(float(existing.get("sgst", 0) or 0) + add_tax["sgst"], 2)
+    items_tax = float(existing.get("taxTotal", 0) or 0) - float(existing.get("serviceChargeTax") or 0)
+    totals = _with_service_charge(
+        existing,
+        float(existing.get("subtotal", 0) or 0) + add_tax["subtotal"],
+        items_tax + add_tax["tax_total"],
+        add_tax["items_total"],
+        float(existing.get("serviceChargePct") or 0),
+    )
     new_warnings = list(dict.fromkeys((existing.get("sync_warnings") or []) + append_warnings))
 
     # Drop status back to 'new' so KDS re-alerts staff to the freshly-added items.
@@ -360,9 +395,7 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
         {
             "$push": {"items": {"$each": annotated}},
             "$set": {
-                "total": new_total, "status": "new",
-                "subtotal": new_subtotal, "taxTotal": new_tax_total,
-                "cgst": new_cgst, "sgst": new_sgst,
+                **totals, "status": "new",
                 "sync_warnings": new_warnings,
             },
         },
@@ -370,6 +403,54 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
     )
     await _apply_recipes(db, user["tenant_id"], raw_items)
     schedule_broadcast("kds.ticket", {"orderId": order_id, "number": res["number"]}, user["tenant_id"])
+    cleaned = clean(res)
+    schedule_broadcast("order.upserted", cleaned, user["tenant_id"])
+    return cleaned
+
+
+@router.patch("/orders/{order_id}/service-charge", response_model=Order)
+async def set_service_charge(order_id: str, payload: ServiceChargePayload, user: dict = Depends(get_current_user)):
+    """Add, change or remove the optional service charge on an open bill —
+    it's never applied by default, only when the customer agrees to it.
+    pct=0 removes it. Only unpaid bills: a settled total can't silently grow."""
+    db = get_db()
+    existing = await db.orders.find_one(tenant_filter(user, {"id": order_id}), PROJECTION)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if existing.get("voided"):
+        raise HTTPException(status_code=400, detail="Cannot change a voided order")
+    if existing.get("payment") != "unpaid" or float(existing.get("refunded_amount") or 0) > 0:
+        raise HTTPException(status_code=400, detail="Order already paid — service charge can only be changed on an open bill")
+
+    items_tax = float(existing.get("taxTotal", 0) or 0) - float(existing.get("serviceChargeTax") or 0)
+    totals = _with_service_charge(existing, float(existing.get("subtotal", 0) or 0), items_tax, 0.0, float(payload.pct))
+    res = await db.orders.find_one_and_update(
+        tenant_filter(user, {"id": order_id}), {"$set": totals}, return_document=True,
+    )
+    cleaned = clean(res)
+    schedule_broadcast("order.upserted", cleaned, user["tenant_id"])
+    return cleaned
+
+
+@router.patch("/orders/{order_id}/customer", response_model=Order)
+async def set_order_customer(order_id: str, payload: OrderCustomer, user: dict = Depends(get_current_user)):
+    """Attach/replace the customer details on an order (any type, paid or
+    not) — e.g. a dine-in guest asking for a GST invoice in their company's
+    name after the meal."""
+    db = get_db()
+    existing = await db.orders.find_one(tenant_filter(user, {"id": order_id}), PROJECTION)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Order not found")
+    customer = {k: (v.strip() if isinstance(v, str) else v) for k, v in payload.model_dump(exclude_none=False).items()}
+    if customer.get("gstin"):
+        customer["gstin"] = customer["gstin"].upper()
+    if not customer.get("name"):
+        # Keep the table placeholder rather than an empty name on a dine-in bill.
+        customer["name"] = (existing.get("customer") or {}).get("name") or "Walk-in"
+    customer["id"] = customer.get("id") or (existing.get("customer") or {}).get("id")
+    res = await db.orders.find_one_and_update(
+        tenant_filter(user, {"id": order_id}), {"$set": {"customer": customer}}, return_document=True,
+    )
     cleaned = clean(res)
     schedule_broadcast("order.upserted", cleaned, user["tenant_id"])
     return cleaned
