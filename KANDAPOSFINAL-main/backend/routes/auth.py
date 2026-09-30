@@ -1,7 +1,10 @@
 """Tenant staff auth + drivers list + per-tenant billing-status helper."""
-from typing import List
+import base64
+import io
+from typing import List, Literal
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form
+from PIL import Image, UnidentifiedImageError
 
 from db import get_db
 from auth import verify_pin, create_access_token, get_current_user, require_role
@@ -116,6 +119,77 @@ async def update_tenant_features(payload: TenantFeaturesUpdate, user: dict = Dep
     await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"features": merged}})
     return TenantInfo(id=tenant["id"], slug=tenant.get("slug", tenant["id"]), name=tenant.get("name", ""),
                        businessType=business_type, features=merged)
+
+
+# QR ordering branding — a store's own logo + background photo on its
+# customer-facing table/pickup ordering pages (frontend/src/components/
+# storefront/). Stored as a data: URI directly on tenant.store, the same
+# free-form dict store_footer/logo_url already live on — there's no file
+# storage bucket wired up for this app, so re-encoding a resized copy
+# in-place keeps this self-contained rather than needing new cloud
+# infrastructure. Max dimensions differ (a logo only needs to be legible
+# at header-icon size; a background fills the whole screen) but both go
+# through the same WEBP re-encode to keep the resulting document small.
+MAX_UPLOAD_BYTES = 8 * 1024 * 1024  # raw upload cap, before re-encoding
+_BRANDING_LIMITS = {"logo": 512, "background": 1600}
+
+
+@router.post("/tenant/store/branding")
+async def upload_store_branding(
+    field: Literal["logo", "background"] = Form(...),
+    file: UploadFile = File(...),
+    user: dict = Depends(require_role("Manager")),
+):
+    """Resizes + re-encodes the upload, saves it as a data: URI on this
+    tenant's own store record, and returns the updated store dict. Scoped to
+    the caller's tenant_id — one store's upload never touches another's."""
+    raw = await file.read()
+    if len(raw) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Image is too large — please use one under 8MB.")
+    try:
+        img = Image.open(io.BytesIO(raw))
+        img.load()
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError):
+        # Truncated/corrupt files raise OSError from img.load(), and huge
+        # pixel dimensions raise DecompressionBombError — both are bad input,
+        # not a server fault.
+        raise HTTPException(status_code=400, detail="That file doesn't look like an image.")
+
+    if img.mode not in ("RGB", "RGBA"):
+        img = img.convert("RGBA" if "A" in img.getbands() else "RGB")
+
+    max_side = _BRANDING_LIMITS[field]
+    if max(img.size) > max_side:
+        img.thumbnail((max_side, max_side), Image.LANCZOS)
+
+    buf = io.BytesIO()
+    img.save(buf, format="WEBP", quality=82, method=6)
+    data_url = f"data:image/webp;base64,{base64.b64encode(buf.getvalue()).decode('ascii')}"
+
+    db = get_db()
+    key = "logo_url" if field == "logo" else "background_image_url"
+    tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    store = {**(tenant.get("store") or {}), key: data_url}
+    await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"store": store}})
+    return store
+
+
+@router.delete("/tenant/store/branding")
+async def clear_store_branding(
+    field: Literal["logo", "background"],
+    user: dict = Depends(require_role("Manager")),
+):
+    db = get_db()
+    key = "logo_url" if field == "logo" else "background_image_url"
+    tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    store = {**(tenant.get("store") or {})}
+    store.pop(key, None)
+    await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"store": store}})
+    return store
 
 
 @router.get("/billing/status")

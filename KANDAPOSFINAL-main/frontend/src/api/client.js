@@ -474,6 +474,19 @@ export const voiceApi = {
   purchaseNumber: (payload) => api.post("/voice/numbers/purchase", payload).then((r) => r.data),
 };
 
+// QR ordering branding (logo + background photo on the storefront) — a
+// dashboard-only settings screen, so this goes through dashApi like
+// digestApi below rather than the POS-only `api` client.
+export const brandingApi = {
+  upload: (field, file) => {
+    const form = new FormData();
+    form.append("field", field);
+    form.append("file", file);
+    return dashApi.post("/tenant/store/branding", form).then((r) => r.data);
+  },
+  clear: (field) => dashApi.delete("/tenant/store/branding", { params: { field } }).then((r) => r.data),
+};
+
 export const digestApi = {
   getConfig: () => dashApi.get("/digest/config").then((r) => r.data),
   saveConfig: (cfg) => dashApi.put("/digest/config", cfg).then((r) => r.data),
