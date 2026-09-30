@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDash } from "../../store/DashContext";
 import { brandingApi } from "../../api/client";
 import { Image as ImageIcon, UploadCloud, Trash2, Loader2, QrCode } from "lucide-react";
@@ -82,6 +82,12 @@ function BrandingSlot({ title, hint, field, value, aspect, onChange }) {
 export default function DashBranding() {
   const { tenantInfo } = useDash();
   const [store, setStore] = useState(() => tenantInfo?.store || {});
+  // tenantInfo loads asynchronously after boot, so on a direct visit/refresh
+  // it's still null at first render — pick up the saved logo/background once
+  // it arrives instead of showing empty slots.
+  useEffect(() => {
+    if (tenantInfo?.store) setStore(tenantInfo.store);
+  }, [tenantInfo]);
 
   return (
     <div className="p-6 space-y-6" data-testid="dash-branding">

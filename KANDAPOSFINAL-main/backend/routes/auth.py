@@ -149,7 +149,10 @@ async def upload_store_branding(
     try:
         img = Image.open(io.BytesIO(raw))
         img.load()
-    except UnidentifiedImageError:
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError):
+        # Truncated/corrupt files raise OSError from img.load(), and huge
+        # pixel dimensions raise DecompressionBombError — both are bad input,
+        # not a server fault.
         raise HTTPException(status_code=400, detail="That file doesn't look like an image.")
 
     if img.mode not in ("RGB", "RGBA"):
