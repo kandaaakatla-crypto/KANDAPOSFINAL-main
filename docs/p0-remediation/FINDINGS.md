@@ -309,6 +309,19 @@ does mean a developer running bare `pytest` from `backend/` or
 Fix belongs with whichever PR actually triages the legacy suite (out of scope
 here per CLAUDE.md's working rules — not fixed in PR 1).
 
+## Found during PR 2 (staff active check)
+
+### P4-4. `/auth/login` still issues tokens to deactivated staff
+
+`routes/auth.py` `login` matches the PIN against every row in `db.users` for
+the tenant with no `active` filter, so a deactivated employee's PIN still
+returns 200 and a fresh token. After PR 2 that token is rejected by
+`get_current_user` on first use, so there is no access, but the sign-in screen
+reports success and the terminal then fails on its next request. Skipping
+`active is False` rows in the login loop (and returning the normal "Invalid
+PIN") would make it fail cleanly. Not fixed in PR 2 per CLAUDE.md's working
+rules.
+
 ---
 
 ## P4 — dead or stale
