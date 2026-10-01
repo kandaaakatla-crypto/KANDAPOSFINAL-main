@@ -72,15 +72,21 @@ export { resolveAuthToken as authToken };
 export const api = axios.create({ baseURL: BASE });
 
 api.interceptors.request.use((cfg) => {
+  // Always send the tenant slug when this browser knows one, signed in or
+  // not. The unauthenticated calls need it most: /auth/login,
+  // /tenant/public-info and the time clock resolve the restaurant from this
+  // header alone, and the backend falls back to the "demo" tenant when it is
+  // missing — so dropping it before sign-in silently logged every
+  // /pos/:slug/login PIN pad into the demo restaurant. Authenticated
+  // endpoints ignore it (the JWT carries tenant_id).
+  const slug = tenantStore.get();
+  if (slug) cfg.headers["X-Tenant-Slug"] = slug;
   const t = tokenStore.get();
   if (t) {
     cfg.headers.Authorization = `Bearer ${t}`;
-    const slug = tenantStore.get();
-    if (slug) cfg.headers["X-Tenant-Slug"] = slug;
   } else {
     // No POS session in this browser — fall back to a dashboard session if
-    // one exists (see resolveAuthToken above). No tenant slug header in
-    // this branch: the dash JWT already carries tenant_id.
+    // one exists (see resolveAuthToken above).
     const dashToken = localStorage.getItem(DASH_TOKEN_KEY);
     if (dashToken) cfg.headers.Authorization = `Bearer ${dashToken}`;
   }
