@@ -409,6 +409,8 @@ export const posDevicesApi = {
   register: (payload) => api.post("/pos-devices/register", payload).then((r) => r.data),
   list: () => api.get("/pos-devices").then((r) => r.data),
   remove: (id) => api.delete(`/pos-devices/${id}`).then((r) => r.data),
+  // Manager-only: lock the till this browser is (its own device token).
+  lockCurrent: () => api.post("/pos-devices/current/lock").then((r) => r.data),
 };
 
 export const timeclockApi = {

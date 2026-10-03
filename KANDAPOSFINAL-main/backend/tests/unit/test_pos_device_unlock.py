@@ -20,6 +20,7 @@ from auth import hash_pin
 SLUG = f"devtest{uuid.uuid4().hex[:6]}"
 OTHER_SLUG = f"devother{uuid.uuid4().hex[:6]}"
 STAFF_PIN = "4321"
+MANAGER_PIN = "8765"
 MANAGER_EMAIL = f"mgr-{SLUG}@example.com"
 MANAGER_PW = "correct-horse-battery"
 OTHER_MANAGER_EMAIL = f"mgr-{OTHER_SLUG}@example.com"
@@ -41,6 +42,8 @@ def tenant(client, db_name):
                                "plan": "none", "business_type": "restaurant"})
         db.users.insert_one({"id": f"u_{slug}", "tenant_id": tid, "name": "Cashier", "role": "Cashier",
                              "initials": "CA", "pin_hash": hash_pin(STAFF_PIN), "active": True})
+        db.users.insert_one({"id": f"m_{slug}", "tenant_id": tid, "name": "Shift Manager", "role": "Manager",
+                             "initials": "SM", "pin_hash": hash_pin(MANAGER_PIN), "active": True})
         db.dashboard_users.insert_one({"id": f"d_{slug}", "tenant_id": tid, "email": email,
                                        "name": "Manager", "dash_role": "manager",
                                        "password_hash": pw_hash, "active": True})
@@ -166,3 +169,19 @@ def test_websocket_needs_the_till_token_for_a_bound_session(client, tenant):
     with pytest.raises(WebSocketDisconnect):
         with client.websocket_connect(f"/api/ws?token={staff}") as ws:
             ws.receive_text()
+
+
+def test_manager_can_lock_the_till_they_are_on(client, tenant):
+    token = _register(client, ip=67).json()["device_token"]
+    on_till = {"X-Tenant-Slug": SLUG, "X-Device-Token": token}
+
+    cashier = client.post("/api/auth/login", json={"pin": STAFF_PIN}, headers={**on_till, **_ip(11)}).json()["token"]
+    r = client.post("/api/pos-devices/current/lock", headers={**on_till, "Authorization": f"Bearer {cashier}"})
+    assert r.status_code == 403, r.text  # only a Manager can
+
+    manager = client.post("/api/auth/login", json={"pin": MANAGER_PIN}, headers={**on_till, **_ip(12)}).json()["token"]
+    r = client.post("/api/pos-devices/current/lock", headers={**on_till, "Authorization": f"Bearer {manager}"})
+    assert r.status_code == 200, r.text
+
+    r = client.post("/api/auth/login", json={"pin": STAFF_PIN}, headers={**on_till, **_ip(13)})
+    assert r.status_code == 403, r.text

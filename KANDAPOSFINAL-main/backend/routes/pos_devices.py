@@ -180,6 +180,23 @@ async def list_pos_devices(user: dict = Depends(require_role("Manager"))):
     return [_public(r) for r in rows]
 
 
+@router.post("/pos-devices/current/lock")
+async def lock_current_till(request: Request, user: dict = Depends(require_role("Manager"))):
+    """A manager signing the till itself out: locks the till this request
+    comes from (by its own X-Device-Token), the same as removing it from the
+    dashboard. Staff PINs stop working there until a manager unlocks it again."""
+    db = get_db()
+    token = (request.headers.get(DEVICE_HEADER) or "").strip()
+    dev = await db.pos_devices.find_one(
+        {"tenant_id": user["tenant_id"], "token_hash": _hash(token), "revoked_at": None}, {"_id": 0, "id": 1},
+    ) if token else None
+    if not dev:
+        raise HTTPException(status_code=404, detail="This browser isn't an unlocked till")
+    await db.pos_devices.update_one({"id": dev["id"]}, {"$set": {"revoked_at": now_ist().isoformat()}})
+    await cache_delete(_device_cache_key(dev["id"]))
+    return {"ok": True}
+
+
 @router.delete("/pos-devices/{device_id}")
 async def remove_pos_device(device_id: str, user: dict = Depends(require_role("Manager"))):
     db = get_db()
