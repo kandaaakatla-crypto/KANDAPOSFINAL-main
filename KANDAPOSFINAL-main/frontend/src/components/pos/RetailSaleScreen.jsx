@@ -106,6 +106,8 @@ export default function RetailSaleScreen() {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (isEditableTarget(e.target)) return;
       if (e.key === "Enter") {
+        // Stale leftovers aren't a scan — let Enter press a focused button.
+        if (Date.now() - scanAt.current > 1000) scanBuf.current = "";
         if (!scanBuf.current) return;
         e.preventDefault();
         addByCode(scanBuf.current);
