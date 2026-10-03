@@ -60,6 +60,7 @@ def test_surge_rule_crud_separate_and_combined(client, token):
     {"name": "x", "channels": [], "pct": 10},  # no aggregator
     {"name": "x", "channels": ["in-store"], "pct": 10},  # not an aggregator
     {"name": "x", "channels": ["swiggy"], "pct": 0},  # no markup
+    {"name": "x", "channels": ["swiggy"], "pct": 0.001},  # would round to 0%
     {"name": "x", "channels": ["swiggy"], "pct": 150},  # over the cap
     {"name": "x", "channels": ["swiggy"], "pct": 10, "start_time": "19:00"},  # half a window
     {"name": "x", "channels": ["swiggy"], "pct": 10, "start_time": "25:00", "end_time": "23:00"},

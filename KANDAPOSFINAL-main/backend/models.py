@@ -407,7 +407,7 @@ class SurgeRule(BaseModel):
 class SurgeRuleCreate(BaseModel):
     name: str = Field(min_length=1, max_length=60)
     channels: List[AggregatorChannel] = Field(min_length=1)
-    pct: float = Field(gt=0, le=100)
+    pct: float = Field(ge=0.01, le=100)
     days: List[int] = []
     start_time: Optional[str] = Field(None, pattern=_HHMM)
     end_time: Optional[str] = Field(None, pattern=_HHMM)
@@ -417,7 +417,7 @@ class SurgeRuleCreate(BaseModel):
 class SurgeRuleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=60)
     channels: Optional[List[AggregatorChannel]] = Field(None, min_length=1)
-    pct: Optional[float] = Field(None, gt=0, le=100)
+    pct: Optional[float] = Field(None, ge=0.01, le=100)
     days: Optional[List[int]] = None
     start_time: Optional[str] = Field(None, pattern=_HHMM)
     end_time: Optional[str] = Field(None, pattern=_HHMM)

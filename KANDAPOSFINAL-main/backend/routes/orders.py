@@ -411,8 +411,9 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
             "$set": {
                 **totals, "status": "new",
                 "sync_warnings": new_warnings,
-                "surgeAmount": round(float(existing.get("surgeAmount") or 0) + _surge_amount(raw_items), 2),
             },
+            # $inc, not a read-modify-write $set, so two concurrent appends can't drop each other's surge.
+            "$inc": {"surgeAmount": _surge_amount(raw_items)},
         },
         return_document=True,
     )
