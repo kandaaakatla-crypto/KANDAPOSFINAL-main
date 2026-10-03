@@ -8,6 +8,7 @@ import PaymentModal from "./PaymentModal";
 import { ScanLine, Minus, Plus, X, ShoppingCart, Package } from "lucide-react";
 import { toast } from "sonner";
 import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
+import { findByCode, isEditableTarget } from "../../utils/barcode";
 
 /** Retail checkout — basket + barcode/SKU lookup. No order type, no tables,
  *  no kitchen routing. Products with variants (e.g. size/colour) get a quick
@@ -64,19 +65,67 @@ export default function RetailSaleScreen() {
     setVariantItem(null);
   };
 
+  const addByCode = (raw) => {
+    const code = String(raw || "").trim();
+    if (!code) return;
+    const match = findByCode(menuItems, code);
+    if (!match) {
+      toast.error(`No product found for barcode "${code}"`);
+    } else if (match.variant) {
+      if (match.variant.available === false || !match.item.available) {
+        toast.error(`${match.item.name} — ${match.variant.label} is unavailable`);
+      } else {
+        addVariant(match.item, match.variant);
+        toast.success(`${match.item.name} — ${match.variant.label} added`);
+      }
+    } else if (!match.item.available) {
+      toast.error(`${match.item.name} is unavailable`);
+    } else {
+      handleItemClick(match.item);
+      if (!(match.item.variants || []).length) toast.success(`${match.item.name} added`);
+    }
+  };
+
   const handleBarcodeSubmit = (e) => {
     e.preventDefault();
-    const code = barcode.trim();
-    if (!code) return;
-    const match = menuItems.find((m) => m.barcode && m.barcode === code);
-    if (match) {
-      handleItemClick(match);
-      toast.success(`${match.name} added`);
-    } else {
-      toast.error(`No product found for barcode "${code}"`);
-    }
+    addByCode(barcode);
     setBarcode("");
   };
+
+  // A USB/Bluetooth scanner is just a fast keyboard: it types the code and
+  // presses Enter into whatever has focus. The scan box only had focus when
+  // the screen first opened, so after any tap on a product, the basket or a
+  // button, scans went nowhere. Catch keystrokes aimed at nothing editable
+  // and feed them to the scan box instead (skipped while a dialog is open,
+  // so the variant picker and payment screens keep their own keys).
+  const scanBuf = useRef("");
+  const scanAt = useRef(0);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (variantItem || payOpen) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isEditableTarget(e.target)) return;
+      if (e.key === "Enter") {
+        if (!scanBuf.current) return;
+        e.preventDefault();
+        addByCode(scanBuf.current);
+        scanBuf.current = "";
+        setBarcode("");
+        return;
+      }
+      if (e.key.length !== 1) return;
+      if (e.key === " " && !scanBuf.current) return; // let Space press a focused button
+      // A stray key long before a scan shouldn't get glued onto the code.
+      const now = Date.now();
+      if (now - scanAt.current > 1000) scanBuf.current = "";
+      scanAt.current = now;
+      e.preventDefault();
+      scanBuf.current += e.key;
+      setBarcode(scanBuf.current);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const updateQty = (lineId, delta) => setCart((prev) => prev.map((l) => (l.lineId === lineId ? { ...l, qty: Math.max(1, l.qty + delta) } : l)));
   const removeLine = (lineId) => setCart((prev) => prev.filter((l) => l.lineId !== lineId));
@@ -118,7 +167,7 @@ export default function RetailSaleScreen() {
         <form onSubmit={handleBarcodeSubmit} className="flex gap-2">
           <div className="relative flex-1">
             <ScanLine className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
-            <Input ref={barcodeRef} data-testid="retail-barcode-input" value={barcode} onChange={(e) => setBarcode(e.target.value)}
+            <Input ref={barcodeRef} data-testid="retail-barcode-input" value={barcode} onChange={(e) => { scanBuf.current = ""; setBarcode(e.target.value); }}
               placeholder="Scan or type a barcode / SKU, then Enter"
               className="h-11 pl-9" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
