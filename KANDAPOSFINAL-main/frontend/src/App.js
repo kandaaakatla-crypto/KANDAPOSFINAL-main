@@ -73,6 +73,7 @@ const PayrollScreen = lazy(() => import("./components/dash/PayrollScreen"));
 const BrandScreen = lazy(() => import("./components/dash/BrandScreen"));
 const DashCentralSupply = lazy(() => import("./components/dash/DashCentralSupply"));
 const KioskDevicesPage = lazy(() => import("./components/dash/KioskDevicesPage"));
+const DashTeam = lazy(() => import("./components/dash/DashTeam"));
 
 function RouteLoading() {
   return (
@@ -185,6 +186,7 @@ function App() {
                     <Route path="whatsapp" element={<DashWhatsApp />} />
                     <Route path="locations" element={<DashLocations />} />
                     <Route path="branding" element={<DashBranding />} />
+                    <Route path="team" element={<DashTeam />} />
                   </Route>
 
                   {/* Kitchen Display — no auth, long-lived ?token= */}

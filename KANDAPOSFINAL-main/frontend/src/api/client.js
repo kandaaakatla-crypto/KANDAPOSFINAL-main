@@ -144,6 +144,16 @@ dashApi.interceptors.response.use(
 
 // Brand — franchise/multi-store management, owner-only. Uses dashApi since
 // every /brand/* route requires the strict dash JWT (get_dash_user).
+// Owner-only: who has a dashboard login, which stores and sections each
+// manager / area manager can use. Enforced by the API (backend/dash_access.py).
+export const teamApi = {
+  list: () => dashApi.get("/dash/team").then((r) => r.data),
+  create: (payload) => dashApi.post("/dash/team", payload).then((r) => r.data),
+  update: (id, payload) => dashApi.patch(`/dash/team/${id}`, payload).then((r) => r.data),
+  resetPassword: (id) => dashApi.post(`/dash/team/${id}/reset-password`).then((r) => r.data),
+  myStores: () => dashApi.get("/dash/stores").then((r) => r.data),
+};
+
 export const brandApi = {
   create: (payload) => dashApi.post("/brand", payload).then((r) => r.data),
   get: (id) => dashApi.get(`/brand/${id}`).then((r) => r.data),
