@@ -123,7 +123,7 @@ function BrandDashboard({ brand, onBrandChanged }) {
   const [tab, setTab] = useState("overview");
   const tabs = [
     ["overview", "Overview"], ["stores", "Stores"], ["menu", "Menu & defaults"],
-    ["royalties", "Royalties"], ["marketing", "Marketing"],
+    ["customers", "Customers"], ["royalties", "Royalties"], ["marketing", "Marketing"],
   ];
 
   return (
@@ -145,6 +145,7 @@ function BrandDashboard({ brand, onBrandChanged }) {
       {tab === "overview" && <OverviewTab brand={brand} />}
       {tab === "stores" && <StoresTab brand={brand} />}
       {tab === "menu" && <MenuDefaultsTab brand={brand} onBrandChanged={onBrandChanged} />}
+      {tab === "customers" && <CustomersTab brand={brand} />}
       {tab === "royalties" && <RoyaltiesTab brand={brand} />}
       {tab === "marketing" && <MarketingTab brand={brand} />}
     </div>
@@ -205,6 +206,114 @@ function OverviewTab({ brand }) {
           </tbody>
         </table>
       </Card>
+    </div>
+  );
+}
+
+// ===================================================================
+// Customers — one profile per person across every store, matched by phone
+// ===================================================================
+function CustomersTab({ brand }) {
+  const [q, setQ] = useState("");
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    const t = setTimeout(() => {
+      brandApi.customers(brand.id, q.trim() ? { q: q.trim() } : {})
+        .then((d) => { setRows(d.customers); setTotal(d.total); })
+        .catch(() => toast.error("Could not load customers"))
+        .finally(() => setLoading(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [brand.id, q]);
+
+  const open = (phone) => {
+    brandApi.customerProfile(brand.id, phone).then(setProfile).catch(() => toast.error("Could not load profile"));
+  };
+
+  const th = "py-2 text-xs uppercase tracking-wider";
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 flex-wrap">
+        <Input data-testid="brand-customers-search" value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by phone or name" className="max-w-xs" />
+        <span className="text-xs" style={{ color: "var(--pos-muted)" }}>{total} customers across all stores</span>
+      </div>
+      <Card testid="brand-customers-table">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: "1px solid var(--pos-border)" }}>
+                <th className={`text-left ${th}`} style={{ color: "var(--pos-muted)" }}>Customer</th>
+                <th className={`text-left ${th}`} style={{ color: "var(--pos-muted)" }}>Phone</th>
+                <th className={`text-right ${th}`} style={{ color: "var(--pos-muted)" }}>Stores</th>
+                <th className={`text-right ${th}`} style={{ color: "var(--pos-muted)" }}>Orders</th>
+                <th className={`text-right ${th}`} style={{ color: "var(--pos-muted)" }}>Spend</th>
+                <th className={`text-right ${th}`} style={{ color: "var(--pos-muted)" }}>Points</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan={6} className="text-center py-6" style={{ color: "var(--pos-muted)" }}>Loading…</td></tr>}
+              {!loading && rows.length === 0 && <tr><td colSpan={6} className="text-center py-6" style={{ color: "var(--pos-muted)" }}>No customers found.</td></tr>}
+              {!loading && rows.map((c) => (
+                <tr key={c.phone} data-testid={`brand-customer-${c.phone}`} onClick={() => open(c.phone)}
+                  className="cursor-pointer" style={{ borderTop: "1px solid var(--pos-border)" }}>
+                  <td className="py-2 font-semibold" style={{ color: "var(--pos-text)" }}>{c.name || "—"}</td>
+                  <td className="py-2 tabular-nums" style={{ color: "var(--pos-text)" }}>{c.phone}</td>
+                  <td className="py-2 text-right tabular-nums" style={{ color: "var(--pos-text)" }}>{c.stores.length}</td>
+                  <td className="py-2 text-right tabular-nums" style={{ color: "var(--pos-text)" }}>{c.orders}</td>
+                  <td className="py-2 text-right tabular-nums font-bold" style={{ color: "var(--pos-accent)" }}>₹{c.lifetime_spend.toFixed(0)}</td>
+                  <td className="py-2 text-right tabular-nums" style={{ color: "var(--pos-text)" }}>{c.loyalty_points}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Dialog open={!!profile} onOpenChange={(o) => { if (!o) setProfile(null); }}>
+        <DialogContent className="max-w-lg">
+          {profile && (
+            <>
+              <DialogHeader><DialogTitle>{profile.name || profile.phone}</DialogTitle></DialogHeader>
+              <div className="space-y-3 text-sm" data-testid="brand-customer-profile">
+                <div style={{ color: "var(--pos-muted)" }}>
+                  {profile.phone}{profile.email ? ` · ${profile.email}` : ""}{profile.birthday ? ` · Birthday ${profile.birthday}` : ""}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Card><div className="text-[10px] uppercase" style={{ color: "var(--pos-muted)" }}>Orders</div><div className="font-bold tabular-nums">{profile.order_count}</div></Card>
+                  <Card><div className="text-[10px] uppercase" style={{ color: "var(--pos-muted)" }}>Spend</div><div className="font-bold tabular-nums">₹{profile.order_spend.toFixed(0)}</div></Card>
+                  <Card><div className="text-[10px] uppercase" style={{ color: "var(--pos-muted)" }}>Points</div><div className="font-bold tabular-nums">{profile.loyalty_points}</div></Card>
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--pos-muted)" }}>Stores visited</div>
+                  {profile.stores.map((s) => (
+                    <div key={s.customer_id} className="flex justify-between py-1">
+                      <span>{s.store_name}</span><span className="tabular-nums" style={{ color: "var(--pos-muted)" }}>{s.orders} orders · {s.loyalty_points} pts</span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--pos-muted)" }}>Recent orders</div>
+                  <div className="max-h-60 overflow-y-auto">
+                    {profile.recent_orders.length === 0 && <div style={{ color: "var(--pos-muted)" }}>No orders yet.</div>}
+                    {profile.recent_orders.map((o) => (
+                      <div key={`${o.tenant_id}-${o.id}`} className="flex justify-between py-1" style={{ borderTop: "1px solid var(--pos-border)" }}>
+                        <span>#{o.number} · {o.store_name}</span>
+                        <span className="tabular-nums">{(o.placedAt || "").slice(0, 10)} · ₹{Number(o.total || 0).toFixed(0)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
