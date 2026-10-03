@@ -11,6 +11,7 @@ from auth import verify_pin, create_access_token, get_current_user, require_role
 from tenants import resolve_tenant_from_request, tenant_filter
 from subscriptions import grace_state
 from ratelimit import peek as rate_limit_peek, hit as rate_limit_hit
+from routes.pos_devices import require_pos_device
 from models import LoginRequest, LoginResponse, UserPublic, TenantInfo, TenantFeaturesUpdate, default_features
 
 router = APIRouter()
@@ -39,6 +40,7 @@ async def login(payload: LoginRequest, request: Request):
     if not pin:
         raise HTTPException(status_code=400, detail="PIN is required")
     tenant = await resolve_tenant_from_request(request, db)
+    await require_pos_device(request, tenant, db)
 
     rl_key = f"loginrl:{tenant['id']}:{_client_ip(request)}"
     if await rate_limit_peek(rl_key) >= LOGIN_MAX_FAILURES:

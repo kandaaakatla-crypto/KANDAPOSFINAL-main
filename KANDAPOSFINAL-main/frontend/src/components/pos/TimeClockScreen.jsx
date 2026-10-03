@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion, useAnimation } from "framer-motion";
 import { Camera, Delete, LogIn, LogOut, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { api, timeclockApi, tenantStore } from "../../api/client";
+import { api, timeclockApi, tenantStore, deviceStore, isDeviceLocked } from "../../api/client";
 import { pressableSmall } from "../../lib/motion";
 
 /**
@@ -24,6 +24,10 @@ export default function TimeClockScreen() {
   const slug = (rawSlug || "").toLowerCase();
   // null = still checking, false = no such restaurant, string = its name.
   const [tenantName, setTenantName] = useState(null);
+  // Punches need this till to have been unlocked by a manager (see
+  // DeviceUnlock on the PIN pad); the public demo is exempt.
+  const [deviceLocked, setDeviceLocked] = useState(() => slug !== "demo" && !deviceStore.get(slug));
+  useEffect(() => { setDeviceLocked(slug !== "demo" && !deviceStore.get(slug)); }, [slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,7 +55,7 @@ export default function TimeClockScreen() {
 
   // Only open the camera once the restaurant is confirmed real, so a mistyped
   // /pos/<id>/clock never asks for camera access or leaves the light on.
-  const tenantOk = typeof tenantName === "string";
+  const tenantOk = typeof tenantName === "string" && !deviceLocked;
   useEffect(() => {
     if (!tenantOk) return undefined;
     let stream;
@@ -98,7 +102,14 @@ export default function TimeClockScreen() {
       setPin("");
       setTimeout(() => setLastPunch(null), 6000);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Punch failed");
+      if (isDeviceLocked(e)) {
+        deviceStore.clear(slug);
+        setDeviceLocked(true);
+        setPin("");
+        return;
+      }
+      const detail = e?.response?.data?.detail;
+      toast.error(typeof detail === "string" ? detail : "Punch failed");
       setPin("");
       dotsShake.start({ x: [0, -10, 10, -6, 6, -3, 3, 0], transition: { duration: 0.4, ease: "easeInOut" } });
     } finally {
@@ -113,6 +124,23 @@ export default function TimeClockScreen() {
     if (next.length === 4) submit(next);
   };
   const clear = () => setPin("");
+
+  if (deviceLocked && tenantName !== false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--pos-bg)" }} data-testid="timeclock-device-locked">
+        <div className="w-full max-w-sm text-center">
+          <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--pos-text)" }}>This till isn't unlocked</h2>
+          <p className="text-sm mb-6" style={{ color: "var(--pos-muted)" }}>
+            A manager needs to unlock this device once on the staff sign-in screen before the clock can be used.
+          </p>
+          <button onClick={() => navigate(`/pos/${slug}/login`)} className="pos-btn w-full h-11 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "var(--pos-accent)" }}>
+            Go to staff sign-in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (tenantName === false) {
     return (

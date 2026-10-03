@@ -5,7 +5,8 @@ import { usePos } from "../../store/PosContext";
 import { DEMO_STAFF_HINTS_BY_TENANT } from "../../data/mock";
 import { ShoppingBag, Delete, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { api, tenantStore } from "../../api/client";
+import { api, tenantStore, deviceStore, isDeviceLocked } from "../../api/client";
+import DeviceUnlock from "./DeviceUnlock";
 import useSeo from "../../hooks/useSeo";
 import { pressableSmall } from "../../lib/motion";
 
@@ -37,6 +38,11 @@ export default function LoginScreen({ isDemo = false }) {
   // restaurant (e.g. a mistyped /pos/login/login) — shows a "not found"
   // screen instead of a PIN pad, rather than quietly signing in elsewhere.
   const [notFound, setNotFound] = useState(false);
+  // True until this browser has been unlocked for this restaurant by a
+  // manager (DeviceUnlock). The public demo never needs unlocking.
+  const needsUnlock = () => !isDemo && !!routeSlug && !deviceStore.get(routeSlug);
+  const [locked, setLocked] = useState(needsUnlock);
+  const [tenantName, setTenantName] = useState("");
 
   // /demo/login uses an in-memory-only override so visiting the public demo
   // never overwrites a real device's pinned restaurant (see tenantStore in
@@ -47,6 +53,7 @@ export default function LoginScreen({ isDemo = false }) {
   useEffect(() => {
     let cancelled = false;
     setNotFound(false);
+    setLocked(!isDemo && !!routeSlug && !deviceStore.get(routeSlug));
     if (isDemo) {
       tenantStore.setEphemeral("demo");
     } else if (routeSlug) {
@@ -60,6 +67,7 @@ export default function LoginScreen({ isDemo = false }) {
           tenantStore.set(routeSlug.toLowerCase());
         }
         setBusinessType(r.data.businessType || "restaurant");
+        setTenantName(r.data.name || "");
       })
       .catch((err) => {
         if (cancelled) return;
@@ -93,7 +101,20 @@ export default function LoginScreen({ isDemo = false }) {
   const submit = async (value) => {
     if (busy) return;
     setBusy(true);
-    const user = await login(value);
+    let user;
+    try {
+      user = await login(value);
+    } catch (err) {
+      setBusy(false);
+      setPin("");
+      if (isDeviceLocked(err)) {
+        // The till was removed from the dashboard — ask for a manager again.
+        deviceStore.clear(routeSlug);
+        setLocked(true);
+        toast.error("This till needs to be unlocked again by a manager.");
+      }
+      return;
+    }
     setBusy(false);
     if (user) {
       toast.success(`Welcome back, ${user.name}`);
@@ -127,6 +148,14 @@ export default function LoginScreen({ isDemo = false }) {
           </button>
         </div>
       </div>
+    );
+  }
+
+  if (locked) {
+    return (
+      <DeviceUnlock slug={routeSlug.toLowerCase()} restaurantName={tenantName}
+        onUnlocked={() => setLocked(false)}
+        onSwitch={() => { tenantStore.clearEphemeral(); tenantStore.clear(); navigate("/pos/login"); }} />
     );
   }
 

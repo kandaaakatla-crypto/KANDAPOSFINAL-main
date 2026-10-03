@@ -54,6 +54,22 @@ export const tenantStore = {
   clearEphemeral: () => { ephemeralSlug = null; },
 };
 
+// Per-restaurant "this till is unlocked" token, issued once when a manager
+// signs in on the till (POST /pos-devices/register) and kept until the till
+// is removed from the dashboard. Keyed by restaurant slug so one browser can
+// be unlocked for more than one restaurant without them overwriting each
+// other. Sent as X-Device-Token; staff PIN sign-in and the time clock need it.
+const DEVICE_KEY_PREFIX = "kanda_pos_device_v1:";
+export const deviceStore = {
+  get: (slug) => (slug ? localStorage.getItem(DEVICE_KEY_PREFIX + slug.toLowerCase()) : null),
+  set: (slug, t) => localStorage.setItem(DEVICE_KEY_PREFIX + slug.toLowerCase(), t),
+  clear: (slug) => slug && localStorage.removeItem(DEVICE_KEY_PREFIX + slug.toLowerCase()),
+};
+
+// True for the server's "this till isn't unlocked" refusal.
+export const isDeviceLocked = (err) =>
+  err?.response?.status === 403 && err?.response?.data?.detail?.code === "device_not_registered";
+
 // Some screens under components/pos/ (Rota, Reports, and formerly Customers)
 // are reused as-is for Dashboard routes that have no staff PIN session at
 // all — only a dashboard login. The backend's get_current_user already
@@ -80,7 +96,11 @@ api.interceptors.request.use((cfg) => {
   // /pos/:slug/login PIN pad into the demo restaurant. Authenticated
   // endpoints ignore it (the JWT carries tenant_id).
   const slug = tenantStore.get();
-  if (slug) cfg.headers["X-Tenant-Slug"] = slug;
+  if (slug) {
+    cfg.headers["X-Tenant-Slug"] = slug;
+    const device = deviceStore.get(slug);
+    if (device) cfg.headers["X-Device-Token"] = device;
+  }
   const t = tokenStore.get();
   if (t) {
     cfg.headers.Authorization = `Bearer ${t}`;
@@ -365,6 +385,14 @@ export const staffApi = {
   create: (payload) => api.post("/staff", payload).then((r) => r.data),
   update: (id, payload) => api.put(`/staff/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/staff/${id}`).then((r) => r.data),
+};
+
+export const posDevicesApi = {
+  // Public — authorised by the manager's email + password in the body, for
+  // the restaurant named by X-Tenant-Slug.
+  register: (payload) => api.post("/pos-devices/register", payload).then((r) => r.data),
+  list: () => api.get("/pos-devices").then((r) => r.data),
+  remove: (id) => api.delete(`/pos-devices/${id}`).then((r) => r.data),
 };
 
 export const timeclockApi = {
