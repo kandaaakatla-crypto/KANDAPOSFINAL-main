@@ -93,3 +93,74 @@ def test_rate_limit_is_scoped_per_source(client):
     headers_b = {"X-Forwarded-For": "203.0.113.61"}
     r = client.post("/api/leads", json={"type": "updates", "email": "b@example.com"}, headers=headers_b)
     assert r.status_code == 200, r.text
+
+
+# ── Alpha waitlist (the landing page's "updates" form) ──────────────────────
+# Each test sends its own X-Forwarded-For so the per-IP rate limit above
+# never bleeds across tests that share TestClient's default client address.
+
+def _join(client, ip, **fields):
+    body = {"type": "updates", **fields}
+    return client.post("/api/leads", json=body, headers={"X-Forwarded-For": ip})
+
+
+def test_waitlist_signup_returns_position_and_referral_code(client):
+    r1 = _join(client, "198.51.100.1", name="First", email="wl-first@example.com")
+    r2 = _join(client, "198.51.100.1", name="Second", email="wl-second@example.com")
+    assert r1.status_code == 200, r1.text
+    assert r2.status_code == 200, r2.text
+    a, b = r1.json(), r2.json()
+    assert a["ok"] is True and a["already"] is False
+    assert isinstance(a["position"], int) and a["position"] >= 1
+    assert b["position"] == a["position"] + 1
+    assert a["ref_code"] and a["ref_code"] != b["ref_code"]
+
+
+async def test_waitlist_is_deduplicated_by_email(client, db_name):
+    first = _join(client, "198.51.100.2", name="Dup", email="wl-dup@example.com").json()
+    again = _join(client, "198.51.100.2", name="Dup", email="  WL-Dup@Example.com ").json()
+    assert again["already"] is True
+    assert again["ref_code"] == first["ref_code"]
+    assert again["position"] == first["position"]
+
+    m = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    try:
+        n = await m[db_name].landing_leads.count_documents({"type": "updates", "email_lc": "wl-dup@example.com"})
+    finally:
+        m.close()
+    assert n == 1
+
+
+async def test_waitlist_stores_business_details(client, db_name):
+    r = _join(client, "198.51.100.3", name="Biz", email="wl-biz@example.com",
+              business_type="cloud_kitchen", outlets="2-5", city="Hyderabad")
+    assert r.status_code == 200, r.text
+    doc = await _find_lead(db_name, "wl-biz@example.com")
+    assert doc["business_type"] == "cloud_kitchen"
+    assert doc["outlets"] == "2-5"
+    assert doc["city"] == "Hyderabad"
+
+
+def test_waitlist_rejects_unknown_business_type(client):
+    r = _join(client, "198.51.100.4", email="wl-bad@example.com", business_type="spaceship")
+    assert r.status_code == 422
+
+
+async def test_referral_is_credited_and_moves_referrer_up(client, db_name):
+    referrer = _join(client, "198.51.100.5", name="Ref", email="wl-referrer@example.com").json()
+    joined = _join(client, "198.51.100.5", name="Friend", email="wl-friend@example.com",
+                   ref=referrer["ref_code"]).json()
+    assert joined["ok"] is True
+
+    friend = await _find_lead(db_name, "wl-friend@example.com")
+    assert friend["referred_by"] == referrer["ref_code"]
+
+    after = _join(client, "198.51.100.5", email="wl-referrer@example.com").json()
+    assert after["referrals"] == 1
+    assert after["position"] == max(1, referrer["position"] - 5)
+
+
+async def test_unknown_referral_code_is_ignored(client, db_name):
+    _join(client, "198.51.100.6", email="wl-noref@example.com", ref="ZZZZZZ")
+    doc = await _find_lead(db_name, "wl-noref@example.com")
+    assert doc.get("referred_by") is None

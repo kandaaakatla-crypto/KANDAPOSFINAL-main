@@ -8,6 +8,7 @@ import {
   ShoppingBag, CheckCircle2, Instagram,
 } from "lucide-react";
 import useSeo, { useStructuredData } from "../hooks/useSeo";
+import AlphaWaitlist from "./landing/AlphaWaitlist";
 
 const FEATURES = [
   { icon: ShoppingCart, title: "Order Management", desc: "Delivery, collection and dine in orders on one fast screen, built for busy shifts.", big: true, from: "#EA580C", to: "#2A0D02", note: "Order #142 ready for table 4", noteColor: "#F97316" },
@@ -32,6 +33,7 @@ const LIVE_CHANNELS = [
 const NAV_LINKS = [
   { href: "#live", label: "Live view" },
   { href: "#features", label: "Features" },
+  { href: "#waitlist", label: "Alpha waitlist" },
   { href: "#contact", label: "Contact" },
 ];
 
@@ -105,7 +107,7 @@ const STRUCTURED_DATA = {
 export default function LandingPage() {
   useSeo({
     title: "Point of sale for restaurants & retail — coming soon",
-    description: "Kanda POS is a GST-ready point of sale for Indian restaurants and retail stores: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one connected system. Launching soon — book a demo or sign up for updates.",
+    description: "Kanda POS is a GST-ready point of sale for Indian restaurants and retail stores: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one connected system. Launching soon — book a demo or join the alpha waitlist.",
     path: "/",
   });
   useStructuredData("ld-landing", STRUCTURED_DATA);
@@ -113,10 +115,6 @@ export default function LandingPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", city: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
-  const [updatesName, setUpdatesName] = useState("");
-  const [updatesEmail, setUpdatesEmail] = useState("");
-  const [updatesSubmitted, setUpdatesSubmitted] = useState(false);
-  const [updatesBusy, setUpdatesBusy] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
 
@@ -134,8 +132,11 @@ export default function LandingPage() {
     });
     if (!res.ok) {
       const detail = await res.json().catch(() => null);
-      throw new Error(detail?.detail || "Something went wrong. Please try again.");
+      // FastAPI 422s carry a list of field errors, not a string.
+      const msg = typeof detail?.detail === "string" ? detail.detail : null;
+      throw new Error(msg || "Something went wrong. Please try again.");
     }
+    return res.json().catch(() => ({}));
   };
 
   const submitDemo = async (e) => {
@@ -154,25 +155,6 @@ export default function LandingPage() {
       toast.error(err.message);
     } finally {
       setDemoBusy(false);
-    }
-  };
-
-  const submitUpdates = async (e) => {
-    e.preventDefault();
-    if (updatesBusy) return;
-    if (!updatesName.trim() || !updatesEmail.trim()) {
-      toast.error("Please enter your name and email.");
-      return;
-    }
-    setUpdatesBusy(true);
-    try {
-      await submitLead({ type: "updates", name: updatesName, email: updatesEmail });
-      setUpdatesSubmitted(true);
-      toast.success("You're on the list — we'll email you at launch.");
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setUpdatesBusy(false);
     }
   };
 
@@ -256,8 +238,8 @@ export default function LandingPage() {
             <a href="#contact" className="pos-btn land-pos-btn rounded-full px-6 py-3 font-bold text-white" style={{ background: "var(--pos-accent)" }}>
               Book a demo
             </a>
-            <a href="#updates" className="pos-btn land-pos-btn rounded-full px-6 py-3 font-bold" style={{ background: "transparent", border: "1.5px solid var(--pos-text)", color: "var(--pos-text)" }}>
-              Sign up for updates
+            <a href="#waitlist" className="pos-btn land-pos-btn rounded-full px-6 py-3 font-bold" style={{ background: "transparent", border: "1.5px solid var(--pos-text)", color: "var(--pos-text)" }}>
+              Join the alpha waitlist
             </a>
           </div>
         </motion.div>
@@ -386,7 +368,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Contact + updates */}
+      <AlphaWaitlist submitLead={submitLead} />
+
+      {/* Contact */}
       <section id="contact" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <div className="flex flex-col gap-5">
           <div className="w-full rounded-2xl p-6 sm:p-10" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
@@ -445,39 +429,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div id="updates" className="rounded-2xl p-6 sm:p-8" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-            <div className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10">
-              <div className="md:flex-1">
-                <h2 className="land-h3 text-lg mb-1">Get product updates</h2>
-                <p style={{ color: "var(--pos-muted)" }} className="text-sm leading-relaxed">
-                  New features and launch news, straight to your inbox, no spam.
-                </p>
-              </div>
-              {updatesSubmitted ? (
-                <div className="flex items-center gap-2 text-sm shrink-0" style={{ color: "var(--pos-accent)" }}>
-                  <CheckCircle2 className="w-4 h-4" /> You're on the list — we'll email you at launch.
-                </div>
-              ) : (
-                <form onSubmit={submitUpdates} className="flex flex-col gap-3 md:w-80 md:shrink-0">
-                  <input
-                    required placeholder="Your name"
-                    value={updatesName} onChange={(e) => setUpdatesName(e.target.value)}
-                    className="rounded-lg px-4 py-2.5 text-sm min-w-0"
-                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}
-                  />
-                  <input
-                    type="email" required placeholder="you@yourbusiness.com"
-                    value={updatesEmail} onChange={(e) => setUpdatesEmail(e.target.value)}
-                    className="rounded-lg px-4 py-2.5 text-sm min-w-0"
-                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}
-                  />
-                  <button type="submit" disabled={updatesBusy} className="pos-btn land-pos-btn rounded-full px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
-                    {updatesBusy ? "Signing up…" : "Sign up for updates"}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
         </div>
       </section>
 
