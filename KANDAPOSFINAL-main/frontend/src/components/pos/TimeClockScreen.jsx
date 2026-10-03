@@ -49,24 +49,30 @@ export default function TimeClockScreen() {
     return () => clearInterval(t);
   }, []);
 
+  // Only open the camera once the restaurant is confirmed real, so a mistyped
+  // /pos/<id>/clock never asks for camera access or leaves the light on.
+  const tenantOk = typeof tenantName === "string";
   useEffect(() => {
+    if (!tenantOk) return undefined;
     let stream;
+    let cancelled = false;
     (async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 320, height: 240, facingMode: "user" }, audio: false,
         });
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
           setCameraReady(true);
         }
       } catch (e) {
-        setCameraError(e?.message || "Camera unavailable");
+        if (!cancelled) setCameraError(e?.message || "Camera unavailable");
       }
     })();
-    return () => { if (stream) stream.getTracks().forEach((t) => t.stop()); };
-  }, []);
+    return () => { cancelled = true; if (stream) stream.getTracks().forEach((t) => t.stop()); };
+  }, [tenantOk]);
 
   const captureSelfie = () => {
     if (!cameraReady || !videoRef.current || !canvasRef.current) return null;

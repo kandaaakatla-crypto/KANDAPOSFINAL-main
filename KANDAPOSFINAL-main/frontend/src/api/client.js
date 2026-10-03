@@ -96,7 +96,12 @@ api.interceptors.request.use((cfg) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err?.response?.status === 401) {
+    // A 401 from a PIN check (staff sign-in, time clock punch) means "wrong
+    // PIN", not "session expired" — it must not sign the till or dashboard
+    // out or reload the page away from the keypad.
+    const url = err?.config?.url || "";
+    const isPinCheck = url.endsWith("/auth/login") || url.endsWith("/timeclock/punch");
+    if (err?.response?.status === 401 && !isPinCheck) {
       const usedDashFallback = !tokenStore.get() && !!localStorage.getItem(DASH_TOKEN_KEY);
       if (usedDashFallback) {
         // The dash session itself is what's invalid here (POS token was
