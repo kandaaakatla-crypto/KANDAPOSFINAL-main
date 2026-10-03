@@ -102,17 +102,20 @@ async def require_pos_device(request: Request, tenant: dict, db) -> Optional[str
     )
 
 
-async def check_bound_device(request: Request, device_id: str, db) -> None:
+async def check_bound_device(device_id: str, device_token: str, db) -> None:
     """For staff JWTs minted on an unlocked till (the `dev` claim): the till
     must still be unlocked, and the request must carry that till's own device
-    token — so removing a till ends sessions already open on it, and a staff
-    token copied off a till can't be replayed from another machine."""
+    token. Removing a till therefore ends sessions already open on it (within
+    DEVICE_CACHE_TTL at worst, immediately with the cache cleared), and a
+    leaked staff JWT on its own (e.g. in a log line) is useless. It
+    does not stop someone who can read the till's whole browser storage —
+    the device token lives there too."""
     key = _device_cache_key(device_id)
     dev = await cache_get(key)
     if dev is None:
         dev = await db.pos_devices.find_one({"id": device_id}, {"_id": 0, "token_hash": 1, "revoked_at": 1}) or {}
         await cache_set(key, dev, ttl=DEVICE_CACHE_TTL)
-    token = (request.headers.get(DEVICE_HEADER) or "").strip()
+    token = (device_token or "").strip()
     if not dev or dev.get("revoked_at") or not token or _hash(token) != dev.get("token_hash"):
         raise HTTPException(status_code=401, detail="This till was removed or isn't unlocked")
 
@@ -173,7 +176,7 @@ async def list_pos_devices(user: dict = Depends(require_role("Manager"))):
     db = get_db()
     rows = await db.pos_devices.find(
         {"tenant_id": user["tenant_id"], "revoked_at": None}, {"_id": 0, "token_hash": 0},
-    ).sort("created_at", -1).to_list(200)
+    ).sort("created_at", -1).to_list(1000)
     return [_public(r) for r in rows]
 
 

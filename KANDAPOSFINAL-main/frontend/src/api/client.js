@@ -64,6 +64,9 @@ export const deviceStore = {
   get: (slug) => (slug ? localStorage.getItem(DEVICE_KEY_PREFIX + slug.toLowerCase()) : null),
   set: (slug, t) => localStorage.setItem(DEVICE_KEY_PREFIX + slug.toLowerCase(), t),
   clear: (slug) => slug && localStorage.removeItem(DEVICE_KEY_PREFIX + slug.toLowerCase()),
+  // True when this browser must be unlocked by a manager before staff PINs
+  // or the clock work for `slug`. The demo tenant is exempt (server too).
+  needsUnlock: (slug) => !!slug && slug.toLowerCase() !== "demo" && !localStorage.getItem(DEVICE_KEY_PREFIX + slug.toLowerCase()),
 };
 
 // True for the server's "this till isn't unlocked" refusal.

@@ -27,7 +27,10 @@ function TokenUrlRow({ testid, url }) {
 // it anew.
 function UnlockedTillsCard() {
   const [tills, setTills] = useState(null);
-  const load = () => posDevicesApi.list().then(setTills).catch(() => setTills([]));
+  const [loadError, setLoadError] = useState(false);
+  const load = () => posDevicesApi.list()
+    .then((t) => { setTills(t); setLoadError(false); })
+    .catch(() => setLoadError(true));
   useEffect(() => { load(); }, []);
 
   const remove = async (id) => {
@@ -50,7 +53,12 @@ function UnlockedTillsCard() {
         <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Unlocked POS tills</span>
       </div>
       <div className="p-4">
-        {tills === null ? (
+        {loadError ? (
+          <div className="text-xs flex items-center gap-2" style={{ color: "#f87171" }}>
+            Couldn't load the list of tills.
+            <button onClick={load} className="underline" style={{ color: "var(--pos-text)" }}>Try again</button>
+          </div>
+        ) : tills === null ? (
           <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--pos-muted)" }} />
         ) : tills.length === 0 ? (
           <p className="text-xs" style={{ color: "var(--pos-muted)" }}>

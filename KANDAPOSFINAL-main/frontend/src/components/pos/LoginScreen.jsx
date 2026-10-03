@@ -40,9 +40,7 @@ export default function LoginScreen({ isDemo = false }) {
   const [notFound, setNotFound] = useState(false);
   // True until this browser has been unlocked for this restaurant by a
   // manager (DeviceUnlock). The public demo never needs unlocking.
-  // The demo tenant is exempt server-side too, whichever URL it's opened at.
-  const needsUnlock = () => !isDemo && !!routeSlug && routeSlug.toLowerCase() !== "demo" && !deviceStore.get(routeSlug);
-  const [locked, setLocked] = useState(needsUnlock);
+  const [locked, setLocked] = useState(() => !isDemo && deviceStore.needsUnlock(routeSlug));
   const [tenantName, setTenantName] = useState("");
 
   // /demo/login uses an in-memory-only override so visiting the public demo
@@ -54,7 +52,7 @@ export default function LoginScreen({ isDemo = false }) {
   useEffect(() => {
     let cancelled = false;
     setNotFound(false);
-    setLocked(!isDemo && !!routeSlug && routeSlug.toLowerCase() !== "demo" && !deviceStore.get(routeSlug));
+    setLocked(!isDemo && deviceStore.needsUnlock(routeSlug));
     if (isDemo) {
       tenantStore.setEphemeral("demo");
     } else if (routeSlug) {

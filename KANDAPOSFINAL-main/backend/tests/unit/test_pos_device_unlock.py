@@ -153,3 +153,16 @@ def test_demo_tenant_needs_no_device(client):
     r = client.post("/api/auth/login", json={"pin": "1234"},
                     headers={"X-Tenant-Slug": "demo", **_ip(8)})
     assert r.status_code == 200, r.text
+
+
+def test_websocket_needs_the_till_token_for_a_bound_session(client, tenant):
+    from starlette.websockets import WebSocketDisconnect
+
+    token = _register(client, ip=66).json()["device_token"]
+    staff = client.post("/api/auth/login", json={"pin": STAFF_PIN},
+                        headers={"X-Tenant-Slug": SLUG, "X-Device-Token": token, **_ip(10)}).json()["token"]
+    with client.websocket_connect(f"/api/ws?token={staff}&device={token}"):
+        pass
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect(f"/api/ws?token={staff}") as ws:
+            ws.receive_text()

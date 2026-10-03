@@ -26,8 +26,8 @@ export default function TimeClockScreen() {
   const [tenantName, setTenantName] = useState(null);
   // Punches need this till to have been unlocked by a manager (see
   // DeviceUnlock on the PIN pad); the public demo is exempt.
-  const [deviceLocked, setDeviceLocked] = useState(() => slug !== "demo" && !deviceStore.get(slug));
-  useEffect(() => { setDeviceLocked(slug !== "demo" && !deviceStore.get(slug)); }, [slug]);
+  const [deviceLocked, setDeviceLocked] = useState(() => deviceStore.needsUnlock(slug));
+  useEffect(() => { setDeviceLocked(deviceStore.needsUnlock(slug)); }, [slug]);
 
   useEffect(() => {
     let cancelled = false;

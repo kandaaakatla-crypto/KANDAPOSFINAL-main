@@ -118,7 +118,7 @@ async def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="User not found")
     if payload.get("dev"):
         from routes.pos_devices import check_bound_device
-        await check_bound_device(request, payload["dev"], db)
+        await check_bound_device(payload["dev"], request.headers.get("X-Device-Token"), db)
     # Anchor tenant_id from the JWT (not the DB row) — JWT is signed and immutable
     # for the token lifetime, which prevents cross-tenant escalation if a user's
     # tenant assignment changes underneath an active session.
