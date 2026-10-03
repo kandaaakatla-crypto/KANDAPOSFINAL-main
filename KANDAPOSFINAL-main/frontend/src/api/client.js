@@ -231,6 +231,13 @@ export const menuApi = {
   saveRecipes: (itemId, recipes) => api.put(`/menu/items/${itemId}/recipes`, { recipes }).then((r) => r.data),
 };
 
+export const surgeRulesApi = {
+  list: () => api.get("/pricing/surge-rules").then((r) => r.data),
+  create: (payload) => api.post("/pricing/surge-rules", payload).then((r) => r.data),
+  update: (id, payload) => api.put(`/pricing/surge-rules/${id}`, payload).then((r) => r.data),
+  remove: (id) => api.delete(`/pricing/surge-rules/${id}`).then((r) => r.data),
+};
+
 export const menuSchedulesApi = {
   list: (since) => api.get("/menu/schedules", { params: since ? { since } : undefined }).then((r) => r.data),
   create: (payload) => api.post("/menu/schedules", payload).then((r) => r.data),

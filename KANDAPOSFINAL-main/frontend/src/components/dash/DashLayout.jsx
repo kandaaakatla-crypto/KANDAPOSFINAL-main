@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Sun, Moon, QrCode } from "lucide-react";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Sun, Moon, QrCode, TrendingUp } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -34,6 +34,7 @@ const NAV_GROUPS = [
     items: [
       { to: "/dashboard/menu", label: "Menu", icon: BookOpen, allow: () => true },
       { to: "/dashboard/schedules", label: "Schedules", icon: Clock, allow: () => true },
+      { to: "/dashboard/surge", label: "Surge Pricing", icon: TrendingUp, allow: () => true },
       { to: "/dashboard/coupons", label: "Coupons", icon: Ticket, allow: (u) => canManageCoupons(u) },
       { to: "/dashboard/gift-cards", label: "Gift Cards", icon: Wallet, allow: (u) => canManageGiftCards(u) },
       { to: "/dashboard/loyalty", label: "Loyalty", icon: Gift, allow: (u) => canManageLoyalty(u), feature: "loyalty" },

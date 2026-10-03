@@ -131,6 +131,11 @@ export default function CartPanel({
                     {l.mods?.length > 0 && (
                       <div className="text-[11px] mt-0.5 leading-snug" style={{ color: "var(--pos-muted)" }}>{l.mods.join(" · ")}</div>
                     )}
+                    {l.surge_pct > 0 && (
+                      <div className="text-[10px] mt-0.5 font-semibold" style={{ color: "#f59e0b" }} data-testid="cart-line-surge">
+                        Surge +{l.surge_pct}% (₹{l.base_price} → ₹{l.price})
+                      </div>
+                    )}
                   </div>
                   <div className="text-sm font-bold shrink-0" style={{ color: "var(--pos-text)" }}>₹{(l.price * l.qty).toFixed(2)}</div>
                 </div>
