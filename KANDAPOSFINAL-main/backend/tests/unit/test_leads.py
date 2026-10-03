@@ -186,3 +186,21 @@ async def test_pre_waitlist_signup_is_recognised_and_given_a_code(client, db_nam
     finally:
         m.close()
     assert n == 1
+
+
+async def test_waitlist_email_is_unique_at_the_database_level(client, db_name):
+    # Guards the check-then-insert race in create_lead: a second row for the
+    # same email must be refused by Mongo itself, not just by the pre-check.
+    import pytest
+    from pymongo.errors import DuplicateKeyError
+
+    _join(client, "198.51.100.8", email="wl-race@example.com")
+    m = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    try:
+        with pytest.raises(DuplicateKeyError):
+            await m[db_name].landing_leads.insert_one({
+                "id": "lead_race02", "type": "updates", "email": "wl-race@example.com",
+                "email_lc": "wl-race@example.com", "at": "2026-10-03T10:00:00+05:30",
+            })
+    finally:
+        m.close()

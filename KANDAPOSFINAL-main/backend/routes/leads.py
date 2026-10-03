@@ -16,6 +16,7 @@ from typing import Optional, Literal
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
+from pymongo.errors import DuplicateKeyError
 
 from db import get_db
 from tz import now_ist
@@ -140,13 +141,15 @@ async def create_lead(payload: LeadCreate, request: Request):
     # and a second notification email.
     if payload.type == "updates":
         # Rows from before email_lc existed only match on the exact email.
-        existing = await db.landing_leads.find_one(
-            {"type": "updates", "$or": [{"email_lc": email_lc}, {"email": email}]}, {"_id": 0})
+        existing = (
+            await db.landing_leads.find_one({"type": "updates", "email_lc": email_lc}, {"_id": 0})
+            or await db.landing_leads.find_one({"type": "updates", "email": email}, {"_id": 0})
+        )
         if existing:
             if not existing.get("ref_code"):
                 existing["ref_code"] = _new_ref_code()
                 await db.landing_leads.update_one(
-                    {"id": existing["id"]}, {"$set": {"ref_code": existing["ref_code"], "email_lc": email_lc}})
+                    {"id": existing["id"]}, {"$set": {"ref_code": existing["ref_code"]}})
             return {"ok": True, "already": True, **(await _waitlist_status(db, existing))}
 
     lead = {
@@ -169,7 +172,12 @@ async def create_lead(payload: LeadCreate, request: Request):
         ref = (payload.ref or "").strip().upper()
         if ref and await db.landing_leads.find_one({"type": "updates", "ref_code": ref}, {"_id": 1}):
             lead["referred_by"] = ref
-    await db.landing_leads.insert_one(lead)
+    try:
+        await db.landing_leads.insert_one(lead)
+    except DuplicateKeyError:
+        # Lost a race with a simultaneous sign-up for the same email.
+        existing = await db.landing_leads.find_one({"type": "updates", "email_lc": email_lc}, {"_id": 0})
+        return {"ok": True, "already": True, **(await _waitlist_status(db, existing))}
     lead.pop("_id", None)
 
     # Fire-and-forget notification email — never block the visitor's

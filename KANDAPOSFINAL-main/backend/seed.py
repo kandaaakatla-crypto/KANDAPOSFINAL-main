@@ -337,6 +337,13 @@ async def seed_all(db):
     await db.shifts.create_index([("tenant_id", 1), ("user_id", 1), ("start", 1)])
     await db.waste_entries.create_index([("tenant_id", 1), ("at", -1)])
     await db.cash_drawers.create_index([("tenant_id", 1), ("status", 1)])
+    # Alpha waitlist: one row per email, so two simultaneous sign-ups can't
+    # both insert (routes/leads.py). Partial, so pre-waitlist rows without
+    # email_lc are left alone.
+    await db.landing_leads.create_index(
+        "email_lc", unique=True,
+        partialFilterExpression={"type": "updates", "email_lc": {"$type": "string"}},
+    )
     await db.cash_drawers.create_index([("tenant_id", 1), ("opened_at", -1)])
     await db.tip_pools.create_index([("tenant_id", 1), ("shift_date", -1)])
     await db.coupons.create_index([("tenant_id", 1), ("code", 1)], unique=True)
