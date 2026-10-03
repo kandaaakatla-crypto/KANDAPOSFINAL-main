@@ -219,7 +219,7 @@ export default function LoginScreen({ isDemo = false }) {
             </div>
           )}
 
-          <button data-testid="open-timeclock-btn" onClick={() => navigate("/clock")}
+          <button data-testid="open-timeclock-btn" onClick={() => navigate(`/pos/${isDemo ? "demo" : (routeSlug || tenantStore.get())}/clock`)}
             className="pos-btn w-full mt-4 h-10 rounded-lg text-xs font-bold flex items-center justify-center gap-2"
             style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             Open Time Clock terminal →
