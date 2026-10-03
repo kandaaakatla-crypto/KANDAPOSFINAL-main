@@ -60,8 +60,18 @@ export default function DashLogin() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8"
+        style={{ paddingTop: "calc(2rem + var(--safe-top))", paddingBottom: "calc(2rem + var(--safe-bottom))" }}>
         <form onSubmit={submit} className="w-full max-w-sm space-y-4" data-testid="dash-login-form">
+          {/* The brand panel above is desktop-only, so phones (and the
+              Kanda Dashboard app) get a compact mark instead. */}
+          <div className="lg:hidden flex items-center gap-3 pb-4">
+            <img src="/icon-192.png" alt="Kanda POS" className="w-11 h-11 rounded-lg shrink-0" />
+            <div>
+              <div className="text-xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA</div>
+              <div className="text-[10px] tracking-[0.3em] uppercase" style={{ color: "var(--pos-muted)" }}>Restaurant Dashboard</div>
+            </div>
+          </div>
           <div>
             <h2 className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Sign in</h2>
             <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>Owner, area manager, or store manager.</p>
@@ -88,9 +98,14 @@ export default function DashLogin() {
             style={{ background: "var(--pos-accent)" }}>
             <LogIn className="w-4 h-4" /> {busy ? "Signing in..." : "Sign in"}
           </button>
-          <p className="text-[11px] text-center pt-2" style={{ color: "var(--pos-muted)" }}>
-            POS staff with a 4-digit PIN — use the <a href="/pos/login" className="underline" style={{ color: "var(--pos-text)" }}>terminal login</a> instead.
-          </p>
+          {/* Not in the Kanda Dashboard phone app — till staff use the
+              separate Kanda POS app, so this link would strand them in a
+              PIN screen with no way back. */}
+          {process.env.REACT_APP_APP_TARGET !== "dashboard" && (
+            <p className="text-[11px] text-center pt-2" style={{ color: "var(--pos-muted)" }}>
+              POS staff with a 4-digit PIN — use the <a href="/pos/login" className="underline" style={{ color: "var(--pos-text)" }}>terminal login</a> instead.
+            </p>
+          )}
         </form>
       </div>
     </div>

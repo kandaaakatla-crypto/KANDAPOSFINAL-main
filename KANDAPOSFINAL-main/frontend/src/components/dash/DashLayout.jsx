@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Sun, Moon, QrCode } from "lucide-react";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Sun, Moon, QrCode } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -67,6 +67,12 @@ const NAV_GROUPS = [
 // Flat view of every item — used for the feature-gate redirect effect and
 // kept so that logic doesn't need to know about groups at all.
 const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+
+// The four screens an owner checks most from a phone get a bottom tab each
+// on small screens; everything else stays one tap away under "More" (the
+// same nav sheet the header's menu button opens).
+const MOBILE_TABS = ["/dashboard", "/dashboard/reports", "/dashboard/locations", "/dashboard/menu"];
+const MOBILE_TAB_LABELS = { "/dashboard": "Home" };
 
 const SIDEBAR_COLLAPSED_KEY = "kanda_dash_sidebar_collapsed_v1";
 
@@ -162,6 +168,7 @@ export default function DashLayout() {
 
   if (!user) return <Navigate to="/dashboard/login" replace />;
   if (user.must_change_password) return <Navigate to="/dashboard/account/password" replace />;
+  const mobileTabs = MOBILE_TABS.map((to) => visibleGroups.flatMap((g) => g.items).find((i) => i.to === to)).filter(Boolean);
   const roleLabel = { owner: "Restaurant Owner", area_manager: "Area Manager", manager: "Store Manager" }[user.dash_role] || user.dash_role;
   const initials = user.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
@@ -204,7 +211,8 @@ export default function DashLayout() {
     <TooltipProvider>
       <div className="h-screen flex flex-col md:flex-row" style={{ background: "var(--pos-bg)" }} data-testid="dash-layout">
         {/* Mobile top bar */}
-        <header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0" style={{ background: "var(--pos-panel)", borderBottom: "1px solid var(--pos-border)" }}>
+        <header className="md:hidden flex items-center justify-between px-4 shrink-0"
+          style={{ background: "var(--pos-panel)", borderBottom: "1px solid var(--pos-border)", paddingTop: "var(--safe-top)", height: "calc(3.5rem + var(--safe-top))" }}>
           <div className="flex items-center gap-2">
             <img src="/icon-192.png" alt="Kanda POS" className="w-7 h-7 rounded-md shrink-0" />
             <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>KANDA Dashboard</div>
@@ -246,7 +254,7 @@ export default function DashLayout() {
         {/* Mobile nav sheet — always renders expanded, independent of the desktop collapse state */}
         <Sheet open={navOpen} onOpenChange={setNavOpen}>
           <SheetContent side="left" className="w-72 p-0 flex flex-col border-r" data-testid="dash-mobile-nav-sheet"
-            style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)" }}>
+            style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", paddingTop: "var(--safe-top)", paddingBottom: "var(--safe-bottom)" }}>
             <div className="p-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--pos-border)" }}>
               <img src="/icon-192.png" alt="Kanda POS" className="w-7 h-7 rounded-md shrink-0" />
               <div className="leading-tight">
@@ -259,9 +267,27 @@ export default function DashLayout() {
           </SheetContent>
         </Sheet>
 
-        <main className="flex-1 min-h-0 overflow-auto">
+        <main className="flex-1 min-h-0 overflow-auto pb-[calc(4rem+var(--safe-bottom))] md:pb-0">
           <Outlet />
         </main>
+
+        {/* Mobile bottom tab bar — mirrors the POS app's (POSLayout.jsx) */}
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 grid" data-testid="dash-mobile-tabs"
+          style={{ background: "var(--pos-panel)", borderTop: "1px solid var(--pos-border)", height: "calc(4rem + var(--safe-bottom))", paddingBottom: "var(--safe-bottom)", gridTemplateColumns: `repeat(${mobileTabs.length + 1}, minmax(0, 1fr))` }}>
+          {mobileTabs.map(({ to, end, label, icon: Icon }) => (
+            <NavLink key={to} to={to} end={end} data-testid={`dash-tab-${label.toLowerCase()}`}
+              className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium"
+              style={({ isActive }) => ({ color: isActive ? "var(--pos-accent)" : "var(--pos-muted)" })}>
+              <Icon className="w-5 h-5" />
+              {MOBILE_TAB_LABELS[to] || label}
+            </NavLink>
+          ))}
+          <button type="button" data-testid="dash-tab-more" onClick={() => setNavOpen(true)}
+            className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium" style={{ color: "var(--pos-muted)" }}>
+            <MoreHorizontal className="w-5 h-5" />
+            More
+          </button>
+        </nav>
       </div>
     </TooltipProvider>
   );

@@ -21,6 +21,15 @@ import { getTheme, applyTheme } from "@/lib/theme";
 // light-then-dark on load.
 applyTheme(getTheme());
 
+// The Kanda Dashboard phone app draws its own chrome under the iOS notch and
+// home indicator (see the --safe-top/--safe-bottom tokens in App.css), which
+// needs viewport-fit=cover for env(safe-area-inset-*) to report real values.
+// Scoped to that build so the web pages' layout is unchanged.
+if (process.env.REACT_APP_APP_TARGET === "dashboard") {
+  document.querySelector('meta[name="viewport"]')
+    ?.setAttribute("content", "width=device-width, initial-scale=1, viewport-fit=cover");
+}
+
 // Optional — unset REACT_APP_SENTRY_DSN (e.g. local dev) leaves this a no-op.
 if (process.env.REACT_APP_SENTRY_DSN) {
   Sentry.init({

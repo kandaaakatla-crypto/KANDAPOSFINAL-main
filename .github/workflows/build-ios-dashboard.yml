@@ -1,0 +1,60 @@
+name: Build iOS app (Kanda Dashboard)
+
+# iOS sibling of build-android-dashboard.yml: same REACT_APP_APP_TARGET=
+# dashboard web bundle, wrapped in the Capacitor Xcode project at
+# ios-dashboard/. Builds unsigned for the iOS Simulator, which proves the
+# native project compiles; App Store / TestFlight builds additionally need
+# an Apple Developer account's signing certificate and provisioning
+# profile, which this repo doesn't have as secrets yet.
+on:
+  push:
+    tags:
+      - "ios-dashboard-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install frontend dependencies
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web bundle
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          REACT_APP_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
+          REACT_APP_SENTRY_ENVIRONMENT: "production-ios-dashboard"
+          REACT_APP_APP_TARGET: dashboard
+          CI: false
+          GENERATE_SOURCEMAP: false
+        run: npm run build
+
+      - name: Use Kanda Dashboard Capacitor config
+        # See build-android-display.yml: the CLI only reads the root config.
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: cp capacitor.config.dashboard.json capacitor.config.json
+
+      - name: Sync Capacitor iOS project
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npx cap sync ios
+
+      - name: Build for iOS Simulator (unsigned)
+        working-directory: KANDAPOSFINAL-main/frontend/ios-dashboard/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -sdk iphonesimulator -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-dashboard-ios-simulator-app
+          path: KANDAPOSFINAL-main/frontend/ios-dashboard/App/build/Build/Products/Release-iphonesimulator/App.app
+          retention-days: 30

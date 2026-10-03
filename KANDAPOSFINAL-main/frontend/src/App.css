@@ -29,6 +29,16 @@
   --pos-muted: #9a9a9a;
 }
 
+/* Safe-area insets for the notch / status bar / home indicator, used by the
+   dashboard's mobile chrome (and the Kanda Dashboard phone app). Capacitor
+   8's SystemBars plugin injects --safe-area-inset-* on Android, where the
+   WebView's own env() values are unreliable; iOS and mobile browsers fill
+   env() instead. Both resolve to 0 on a desktop browser. */
+:root {
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
 /* Landing page — always light, deliberately excluded from the shared
    toggle (it has no dark-mode control of its own). The toggle's
    data-theme="dark" attribute lives on <html> and is shared across every

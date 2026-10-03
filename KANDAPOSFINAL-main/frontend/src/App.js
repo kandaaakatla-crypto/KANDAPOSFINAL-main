@@ -84,8 +84,8 @@ function RouteLoading() {
 
 // Decides what "/" opens to. Set at build time via REACT_APP_APP_TARGET
 // (see .github/workflows/build-android.yml / build-windows.yml / the new
-// -display variants) — the same web bundle powers three different device
-// identities:
+// -display / -dashboard variants) — the same web bundle powers four
+// different device identities:
 //   web (default, unset) — the marketing homepage. Used by the plain web
 //     deploy; the staff/KDS routes below still work here too (an
 //     unadvertised fallback), this only changes what "/" shows.
@@ -94,10 +94,14 @@ function RouteLoading() {
 //   display — the "Kanda Display" native app (KDS/packing/customer
 //     display): a role picker, since this device has no staff PIN of its
 //     own to log in with.
+//   dashboard — the "Kanda Dashboard" phone app (Android + iOS) for owners
+//     and managers: straight into the dashboard, which bounces to its own
+//     email sign-in when there's no saved session.
 function RootRoute() {
   const target = process.env.REACT_APP_APP_TARGET;
   if (target === "pos") return <Navigate to="/pos/login" replace />;
   if (target === "display") return <RolePicker />;
+  if (target === "dashboard") return <Navigate to="/dashboard" replace />;
   return <LandingPage />;
 }
 
