@@ -23,6 +23,7 @@ STAFF_PIN = "4321"
 MANAGER_EMAIL = f"mgr-{SLUG}@example.com"
 MANAGER_PW = "correct-horse-battery"
 OTHER_MANAGER_EMAIL = f"mgr-{OTHER_SLUG}@example.com"
+TEMP_EMAIL = f"temp-{SLUG}@example.com"
 
 
 def _ip(n: int) -> dict:
@@ -43,6 +44,9 @@ def tenant(client, db_name):
         db.dashboard_users.insert_one({"id": f"d_{slug}", "tenant_id": tid, "email": email,
                                        "name": "Manager", "dash_role": "manager",
                                        "password_hash": pw_hash, "active": True})
+    db.dashboard_users.insert_one({"id": f"d_temp_{SLUG}", "tenant_id": f"t_{SLUG}", "email": TEMP_EMAIL,
+                                   "name": "New manager", "dash_role": "manager", "password_hash": pw_hash,
+                                   "active": True, "must_change_password": True})
     yield {"id": f"t_{SLUG}"}
     m.close()
 
@@ -101,8 +105,14 @@ def test_removed_till_is_locked_again(client, tenant):
     staff = client.post("/api/auth/login", json={"pin": STAFF_PIN},
                         headers={"X-Tenant-Slug": SLUG, "X-Device-Token": token, **_ip(6)})
     staff_auth = {"Authorization": f"Bearer {staff.json()['token']}"}
+    staff_on_till = {**staff_auth, "X-Device-Token": token}
     # A Cashier can't remove tills; it needs Manager or above.
-    assert client.delete(f"/api/pos-devices/{device_id}", headers=staff_auth).status_code == 403
+    assert client.delete(f"/api/pos-devices/{device_id}", headers=staff_on_till).status_code == 403
+
+    # The cashier's session opened on that till works with the till's token...
+    assert client.get("/api/auth/me", headers=staff_on_till).status_code == 200
+    # ...but not when replayed without it (e.g. copied to another machine).
+    assert client.get("/api/auth/me", headers=staff_auth).status_code == 401
 
     login = client.post("/api/dash/auth/login", json={"email": MANAGER_EMAIL, "password": MANAGER_PW})
     dash_auth = {"Authorization": f"Bearer {login.json()['token']}"}
@@ -114,6 +124,29 @@ def test_removed_till_is_locked_again(client, tenant):
     r = client.post("/api/auth/login", json={"pin": STAFF_PIN},
                     headers={"X-Tenant-Slug": SLUG, "X-Device-Token": token, **_ip(7)})
     assert r.status_code == 403, r.text
+    # Removing the till also ends the session already open on it.
+    assert client.get("/api/auth/me", headers=staff_on_till).status_code == 401
+
+
+def test_temporary_password_cannot_unlock(client, tenant):
+    r = _register(client, email=TEMP_EMAIL, ip=65)
+    assert r.status_code == 403, r.text
+
+
+def test_password_guessing_is_capped_per_account_across_ips(client, tenant):
+    victim = f"victim-{SLUG}@example.com"
+    for i in range(10):
+        r = _register(client, email=victim, password="guess", ip=100 + i)
+        assert r.status_code == 401, r.text
+    r = _register(client, email=victim, password="guess", ip=120)
+    assert r.status_code == 429, r.text
+
+
+def test_lock_can_be_switched_off_for_rollout(client, tenant, monkeypatch):
+    monkeypatch.setenv("POS_DEVICE_LOCK", "off")
+    r = client.post("/api/auth/login", json={"pin": STAFF_PIN},
+                    headers={"X-Tenant-Slug": SLUG, **_ip(9)})
+    assert r.status_code == 200, r.text
 
 
 def test_demo_tenant_needs_no_device(client):

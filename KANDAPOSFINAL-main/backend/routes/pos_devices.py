@@ -11,8 +11,10 @@ dashboard (Devices page). The public demo tenant is exempt so /demo/login
 keeps working for anyone.
 """
 import hashlib
+import os
 import secrets
 import uuid
+from datetime import timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -21,7 +23,8 @@ from pydantic import BaseModel
 from db import get_db
 from auth import require_role
 from tenants import resolve_tenant_from_request, DEFAULT_TENANT_SLUG
-from ratelimit import peek as rate_limit_peek, hit as rate_limit_hit
+from ratelimit import peek as rate_limit_peek, hit as rate_limit_hit, client_ip
+from cache import cache_get, cache_set, cache_delete
 from routes.dash_auth import _verify_pw
 from tz import now_ist
 
@@ -29,7 +32,20 @@ router = APIRouter()
 
 DEVICE_HEADER = "X-Device-Token"
 UNLOCK_MAX_FAILURES = 6
+# Per-account cap on top of the per-source one: the source IP comes from the
+# caller-controlled first X-Forwarded-For value, so it alone can't stop
+# password guessing against one dashboard account.
+UNLOCK_MAX_FAILURES_PER_ACCOUNT = 10
 UNLOCK_WINDOW_SECONDS = 15 * 60
+LAST_SEEN_RESOLUTION = timedelta(minutes=5)
+DEVICE_CACHE_TTL = 60
+
+
+def _lock_enforced() -> bool:
+    """Kill switch for rollout: POS_DEVICE_LOCK=off lets staff PINs work on
+    tills that aren't unlocked (e.g. while installed Windows/Android apps
+    that predate the unlock screen are being updated). Default: enforced."""
+    return os.environ.get("POS_DEVICE_LOCK", "on").strip().lower() not in ("off", "0", "false")
 
 
 class DeviceRegisterRequest(BaseModel):
@@ -50,37 +66,55 @@ def _hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def _client_ip(request: Request) -> str:
-    xff = request.headers.get("x-forwarded-for", "")
-    if xff:
-        return xff.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
-
-
 def _public(d: dict) -> dict:
     return {k: d.get(k) for k in ("id", "name", "created_at", "created_by", "last_seen_at")}
 
 
-async def require_pos_device(request: Request, tenant: dict, db) -> None:
-    """Raise 403 {code: device_not_registered} unless the request carries a
-    live device token for `tenant`. 403 rather than 401 on purpose: the POS
-    client treats 401 as "staff session expired" and signs the till out."""
+def _device_cache_key(device_id: str) -> str:
+    return f"posdev:{device_id}"
+
+
+async def require_pos_device(request: Request, tenant: dict, db) -> Optional[str]:
+    """Return the id of the unlocked till this request comes from, or raise
+    403 {code: device_not_registered}. 403 rather than 401 on purpose: the
+    POS client treats 401 as "staff session expired" and signs the till out.
+    Returns None for the demo tenant and when the lock is switched off."""
     if tenant.get("slug") == DEFAULT_TENANT_SLUG:
-        return
+        return None
     token = (request.headers.get(DEVICE_HEADER) or "").strip()
     if token:
         dev = await db.pos_devices.find_one(
             {"tenant_id": tenant["id"], "token_hash": _hash(token), "revoked_at": None},
-            {"_id": 0, "id": 1},
+            {"_id": 0, "id": 1, "last_seen_at": 1},
         )
         if dev:
-            await db.pos_devices.update_one({"id": dev["id"]}, {"$set": {"last_seen_at": now_ist().isoformat()}})
-            return
+            now = now_ist()
+            last = dev.get("last_seen_at")
+            if not last or last < (now - LAST_SEEN_RESOLUTION).isoformat():
+                await db.pos_devices.update_one({"id": dev["id"]}, {"$set": {"last_seen_at": now.isoformat()}})
+            return dev["id"]
+    if not _lock_enforced():
+        return None
     raise HTTPException(
         status_code=403,
         detail={"code": "device_not_registered",
                 "message": "This till isn't unlocked. A manager needs to sign in on it once."},
     )
+
+
+async def check_bound_device(request: Request, device_id: str, db) -> None:
+    """For staff JWTs minted on an unlocked till (the `dev` claim): the till
+    must still be unlocked, and the request must carry that till's own device
+    token — so removing a till ends sessions already open on it, and a staff
+    token copied off a till can't be replayed from another machine."""
+    key = _device_cache_key(device_id)
+    dev = await cache_get(key)
+    if dev is None:
+        dev = await db.pos_devices.find_one({"id": device_id}, {"_id": 0, "token_hash": 1, "revoked_at": 1}) or {}
+        await cache_set(key, dev, ttl=DEVICE_CACHE_TTL)
+    token = (request.headers.get(DEVICE_HEADER) or "").strip()
+    if not dev or dev.get("revoked_at") or not token or _hash(token) != dev.get("token_hash"):
+        raise HTTPException(status_code=401, detail="This till was removed or isn't unlocked")
 
 
 def _can_unlock(u: dict, tenant: dict) -> bool:
@@ -96,17 +130,25 @@ def _can_unlock(u: dict, tenant: dict) -> bool:
 async def register_pos_device(payload: DeviceRegisterRequest, request: Request):
     db = get_db()
     tenant = await resolve_tenant_from_request(request, db)
-    rl_key = f"devunlockrl:{tenant['id']}:{_client_ip(request)}"
-    if await rate_limit_peek(rl_key) >= UNLOCK_MAX_FAILURES:
+    email = (payload.email or "").strip().lower()
+    rl_key = f"devunlockrl:{tenant['id']}:{client_ip(request)}"
+    acct_key = f"devunlockrl:acct:{email}"
+    if (await rate_limit_peek(rl_key) >= UNLOCK_MAX_FAILURES
+            or await rate_limit_peek(acct_key) >= UNLOCK_MAX_FAILURES_PER_ACCOUNT):
         raise HTTPException(status_code=429, detail="Too many failed attempts. Please wait a few minutes and try again.")
 
-    email = (payload.email or "").strip().lower()
     u = await db.dashboard_users.find_one({"email": email}, {"_id": 0}) if email else None
     if not u or not payload.password or not _verify_pw(payload.password, u.get("password_hash", "")):
         await rate_limit_hit(rl_key, UNLOCK_WINDOW_SECONDS)
+        if email:
+            await rate_limit_hit(acct_key, UNLOCK_WINDOW_SECONDS)
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if u.get("active") is False:
         raise HTTPException(status_code=403, detail="Account is disabled")
+    if u.get("must_change_password"):
+        # Auto-provisioned temporary passwords must be changed in the
+        # dashboard before they can unlock anything long-lived.
+        raise HTTPException(status_code=403, detail="Sign in to the dashboard and change your temporary password first")
     if not _can_unlock(u, tenant):
         raise HTTPException(status_code=403, detail="That account can't unlock tills for this restaurant")
 
@@ -144,4 +186,5 @@ async def remove_pos_device(device_id: str, user: dict = Depends(require_role("M
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Till not found")
+    await cache_delete(_device_cache_key(device_id))
     return {"ok": True}

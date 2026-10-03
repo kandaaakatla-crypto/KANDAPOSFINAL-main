@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from tz import now_ist
 import bcrypt
 import jwt
+from typing import Optional
 from fastapi import Request, HTTPException, Depends
 
 JWT_ALG = "HS256"
@@ -22,7 +23,7 @@ def _secret() -> str:
     return os.environ["JWT_SECRET"]
 
 
-def create_access_token(user_id: str, role: str, tenant_id: str) -> str:
+def create_access_token(user_id: str, role: str, tenant_id: str, device_id: Optional[str] = None) -> str:
     payload = {
         "sub": user_id,
         "role": role,
@@ -30,6 +31,11 @@ def create_access_token(user_id: str, role: str, tenant_id: str) -> str:
         "exp": now_ist() + timedelta(hours=ACCESS_TOKEN_HOURS),
         "type": "access",
     }
+    # Staff sessions started on an unlocked till (routes/pos_devices.py) are
+    # bound to it: get_current_user rejects them once the till is removed or
+    # when the request doesn't come with that till's device token.
+    if device_id:
+        payload["dev"] = device_id
     return jwt.encode(payload, _secret(), algorithm=JWT_ALG)
 
 
@@ -110,6 +116,9 @@ async def get_current_user(request: Request) -> dict:
     # document is held to the same rule.
     if user.get("active") is False:
         raise HTTPException(status_code=401, detail="User not found")
+    if payload.get("dev"):
+        from routes.pos_devices import check_bound_device
+        await check_bound_device(request, payload["dev"], db)
     # Anchor tenant_id from the JWT (not the DB row) — JWT is signed and immutable
     # for the token lifetime, which prevents cross-tenant escalation if a user's
     # tenant assignment changes underneath an active session.

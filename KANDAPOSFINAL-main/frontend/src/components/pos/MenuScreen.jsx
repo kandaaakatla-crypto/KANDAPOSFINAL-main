@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { usePos } from "../../store/PosContext";
 import { pressableSmall } from "../../lib/motion";
-import { menuApi } from "../../api/client";
+import { menuApi, authHeaders } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
@@ -104,7 +104,7 @@ export default function MenuScreen() {
   const apiBase = `${process.env.REACT_APP_BACKEND_URL}/api`;
   const downloadCsv = async (path, filename) => {
     const token = localStorage.getItem("kanda_pos_token_v1");
-    const r = await fetch(`${apiBase}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    const r = await fetch(`${apiBase}${path}`, { headers: authHeaders(token) });
     if (!r.ok) { toast.error("Could not download"); return; }
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
@@ -119,7 +119,7 @@ export default function MenuScreen() {
     const form = new FormData(); form.append("file", file);
     try {
       const r = await fetch(`${apiBase}/menu/import?dry_run=true`, {
-        method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form,
+        method: "POST", headers: authHeaders(token), body: form,
       });
       const body = await r.json();
       if (!r.ok) { toast.error(body.detail || "Preview failed"); return; }
@@ -135,7 +135,7 @@ export default function MenuScreen() {
     const form = new FormData(); form.append("file", importPreview.file);
     try {
       const r = await fetch(`${apiBase}/menu/import`, {
-        method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form,
+        method: "POST", headers: authHeaders(token), body: form,
       });
       const body = await r.json();
       if (!r.ok) { toast.error(body.detail || "Import failed"); return; }

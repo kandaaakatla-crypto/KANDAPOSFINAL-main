@@ -85,6 +85,18 @@ function resolveAuthToken() {
 }
 export { resolveAuthToken as authToken };
 
+// Headers for the few hand-rolled fetch() calls (CSV/PDF downloads, menu
+// import) that bypass the axios interceptor below. Staff sessions started on
+// an unlocked till are bound to it server-side, so the till's device token
+// has to ride along with the bearer token or the request is refused.
+export function authHeaders(token = resolveAuthToken()) {
+  const h = { Authorization: `Bearer ${token}` };
+  const slug = tenantStore.get();
+  const device = slug && deviceStore.get(slug);
+  if (device) h["X-Device-Token"] = device;
+  return h;
+}
+
 export const api = axios.create({ baseURL: BASE });
 
 api.interceptors.request.use((cfg) => {
@@ -116,11 +128,12 @@ api.interceptors.request.use((cfg) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    // A 401 from a PIN check (staff sign-in, time clock punch) means "wrong
-    // PIN", not "session expired" — it must not sign the till or dashboard
-    // out or reload the page away from the keypad.
+    // A 401 from a PIN or password check (staff sign-in, time clock punch,
+    // till unlock) means "wrong PIN/password", not "session expired" — it
+    // must not sign the till or dashboard out or reload the page away from
+    // the form.
     const url = err?.config?.url || "";
-    const isPinCheck = url.endsWith("/auth/login") || url.endsWith("/timeclock/punch");
+    const isPinCheck = ["/auth/login", "/timeclock/punch", "/pos-devices/register"].some((p) => url.endsWith(p));
     if (err?.response?.status === 401 && !isPinCheck) {
       const usedDashFallback = !tokenStore.get() && !!localStorage.getItem(DASH_TOKEN_KEY);
       if (usedDashFallback) {

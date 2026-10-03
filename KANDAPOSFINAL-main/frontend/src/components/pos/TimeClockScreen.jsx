@@ -125,7 +125,9 @@ export default function TimeClockScreen() {
   };
   const clear = () => setPin("");
 
-  if (deviceLocked && tenantName !== false) {
+  // Only once the restaurant is confirmed real — an unknown slug must land
+  // on "Restaurant not found", never on a link that would pin it.
+  if (deviceLocked && typeof tenantName === "string") {
     return (
       <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--pos-bg)" }} data-testid="timeclock-device-locked">
         <div className="w-full max-w-sm text-center">
