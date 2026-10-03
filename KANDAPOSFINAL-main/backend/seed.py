@@ -324,6 +324,12 @@ async def seed_all(db):
         [("tenant_id", 1), ("client_ref", 1)], unique=True,
         partialFilterExpression={"client_ref": {"$type": "string"}},
     )
+    # Idempotency key for website-pushed orders (routes/website_orders.py):
+    # a retried webhook with the same external order id must not duplicate.
+    await db.orders.create_index(
+        [("tenant_id", 1), ("external_ref", 1)], unique=True,
+        partialFilterExpression={"external_ref": {"$type": "string"}},
+    )
 
     # updated_at indexes for offline-sync clients pulling incremental deltas
     # (?since=<ISO8601>) instead of a full collection fetch every time.

@@ -73,6 +73,7 @@ const PayrollScreen = lazy(() => import("./components/dash/PayrollScreen"));
 const BrandScreen = lazy(() => import("./components/dash/BrandScreen"));
 const DashCentralSupply = lazy(() => import("./components/dash/DashCentralSupply"));
 const KioskDevicesPage = lazy(() => import("./components/dash/KioskDevicesPage"));
+const WebsiteOrdersPage = lazy(() => import("./components/dash/WebsiteOrdersPage"));
 
 function RouteLoading() {
   return (
@@ -176,6 +177,7 @@ function App() {
                     <Route path="reports" element={<ReportsScreen />} />
                     <Route path="inventory" element={<InventoryScreen />} />
                     <Route path="devices" element={<KioskDevicesPage />} />
+                    <Route path="website-orders" element={<WebsiteOrdersPage />} />
                     <Route path="voice" element={<DashVoice />} />
                     <Route path="digest" element={<DashDigest />} />
                     <Route path="loyalty" element={<DashLoyalty />} />

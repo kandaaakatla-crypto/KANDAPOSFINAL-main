@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Sun, Moon, QrCode } from "lucide-react";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -25,6 +25,7 @@ const NAV_GROUPS = [
     items: [
       { to: "/dashboard/locations", label: "Locations", icon: MapPin, allow: () => true },
       { to: "/dashboard/branding", label: "QR Branding", icon: QrCode, allow: () => true, feature: "qr_ordering" },
+      { to: "/dashboard/website-orders", label: "Website Orders", icon: Globe, allow: () => true },
       { to: "/dashboard/brand", label: "Brand", icon: Store, allow: (u) => u?.dash_role === "owner" },
       { to: "/dashboard/central-supply", label: "Central Supply", icon: Warehouse, allow: (u) => u?.dash_role === "owner" && !!u?.brand_id },
     ],

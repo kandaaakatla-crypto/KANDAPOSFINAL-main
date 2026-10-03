@@ -8,7 +8,7 @@ OrderType = Literal["delivery", "collection", "dine-in", "sale"]
 OrderStatus = Literal["new", "in-kitchen", "ready", "out-for-delivery", "completed"]
 OrderPayment = Literal["cash", "card", "unpaid"]
 TableStatus = Literal["available", "occupied", "reserved"]
-OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr"]
+OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr", "website"]
 TableShape = Literal["round", "square", "rect"]
 
 # ---------- Business type / feature flags ----------
