@@ -49,8 +49,6 @@ export default function POSLayout() {
     return () => clearInterval(t);
   }, []);
 
-  // Drivers get their own stripped-down app (deliveries + rota only) — never
-  // the full POS chrome, even if they hit one of these routes directly.
   // Manager-only "Lock this till": signs the device itself out (not just the
   // current staff member), so staff PINs stop working here until a manager
   // unlocks it again. Same effect as removing it under Dashboard > Devices.
@@ -69,6 +67,8 @@ export default function POSLayout() {
     window.location.assign(`/pos/${slug}/login`);
   };
 
+  // Drivers get their own stripped-down app (deliveries + rota only) — never
+  // the full POS chrome, even if they hit one of these routes directly.
   useEffect(() => {
     if (staffUser?.role === "Driver") navigate(`/${slug}/driver`, { replace: true });
   }, [staffUser, navigate, slug]);
@@ -145,9 +145,6 @@ export default function POSLayout() {
             {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             {theme === "dark" ? "Light" : "Dark"}
           </button>
-          {/* Hard nav, not navigate("/login") — a client-side transition races
-              Protected's own staffUser-triggered re-render of the outgoing
-              /pos route, which can win and bounce to "/" instead. */}
           {canLockTill && (
             <button data-testid="lock-till-btn" onClick={lockTill}
               className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2 mb-1" style={{ color: "var(--pos-muted)" }}>
@@ -155,6 +152,9 @@ export default function POSLayout() {
               Lock till
             </button>
           )}
+          {/* Hard nav, not navigate("/login") — a client-side transition races
+              Protected's own staffUser-triggered re-render of the outgoing
+              /pos route, which can win and bounce to "/" instead. */}
           <button data-testid="logout-btn" onClick={() => { logout(); window.location.assign(`/pos/${slug}/login`); }}
             className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2" style={{ color: "var(--pos-muted)" }}>
             <LogOut className="w-5 h-5" />
