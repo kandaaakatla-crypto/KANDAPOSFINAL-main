@@ -94,9 +94,11 @@ function RouteLoading() {
 //   display — the "Kanda Display" native app (KDS/packing/customer
 //     display): a role picker, since this device has no staff PIN of its
 //     own to log in with.
+//   driver — the "Kanda Driver" native app: the same Restaurant ID + PIN
+//     sign-in as pos, but LoginScreen only lets Driver-role staff through.
 function RootRoute() {
   const target = process.env.REACT_APP_APP_TARGET;
-  if (target === "pos") return <Navigate to="/pos/login" replace />;
+  if (target === "pos" || target === "driver") return <Navigate to="/pos/login" replace />;
   if (target === "display") return <RolePicker />;
   return <LandingPage />;
 }

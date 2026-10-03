@@ -12,6 +12,7 @@ with it.
 |---|---|---|
 | Android | Kanda POS | ✅ Yes — real release keystore configured |
 | Android | Kanda Display | ✅ Yes — same keystore (shared by design) |
+| Android | Kanda Driver | ✅ Yes — same keystore (shared by design) |
 | Windows | Kanda POS | ❌ No — no code-signing cert configured yet |
 | Windows | Kanda Display | ❌ No — same, shared cert slot once one exists |
 
