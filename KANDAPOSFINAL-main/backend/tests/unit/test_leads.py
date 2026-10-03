@@ -164,3 +164,25 @@ async def test_unknown_referral_code_is_ignored(client, db_name):
     _join(client, "198.51.100.6", email="wl-noref@example.com", ref="ZZZZZZ")
     doc = await _find_lead(db_name, "wl-noref@example.com")
     assert doc.get("referred_by") is None
+
+
+async def test_pre_waitlist_signup_is_recognised_and_given_a_code(client, db_name):
+    m = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    try:
+        await m[db_name].landing_leads.insert_one({
+            "id": "lead_legacy01", "type": "updates", "email": "wl-legacy@example.com",
+            "name": None, "at": "2026-09-01T10:00:00+05:30", "source": "landing_page",
+        })
+    finally:
+        m.close()
+
+    r = _join(client, "198.51.100.7", email="wl-legacy@example.com").json()
+    assert r["already"] is True
+    assert r["ref_code"]
+
+    m = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    try:
+        n = await m[db_name].landing_leads.count_documents({"email": "wl-legacy@example.com"})
+    finally:
+        m.close()
+    assert n == 1

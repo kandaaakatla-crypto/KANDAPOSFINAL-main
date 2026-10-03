@@ -139,8 +139,14 @@ async def create_lead(payload: LeadCreate, request: Request):
     # their place) gets their existing spot back instead of a duplicate row
     # and a second notification email.
     if payload.type == "updates":
-        existing = await db.landing_leads.find_one({"type": "updates", "email_lc": email_lc}, {"_id": 0})
+        # Rows from before email_lc existed only match on the exact email.
+        existing = await db.landing_leads.find_one(
+            {"type": "updates", "$or": [{"email_lc": email_lc}, {"email": email}]}, {"_id": 0})
         if existing:
+            if not existing.get("ref_code"):
+                existing["ref_code"] = _new_ref_code()
+                await db.landing_leads.update_one(
+                    {"id": existing["id"]}, {"$set": {"ref_code": existing["ref_code"], "email_lc": email_lc}})
             return {"ok": True, "already": True, **(await _waitlist_status(db, existing))}
 
     lead = {
