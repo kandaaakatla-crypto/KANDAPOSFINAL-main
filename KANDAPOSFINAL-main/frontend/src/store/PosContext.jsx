@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import {
   auth, tokenStore, tenantStore, menuApi, menuSchedulesApi, tablesApi, customersApi,
-  inventoryApi, ordersApi, tenantApi, loyaltyApi,
+  inventoryApi, ordersApi, tenantApi, loyaltyApi, surgeRulesApi,
   isDeviceLocked,
 } from "../api/client";
 import { connectWs } from "../api/ws";
@@ -16,6 +16,10 @@ const DEFAULT_FEATURES = { tables: true, kitchen_display: true, packing_station:
 const DEFAULT_LOYALTY_CONFIG = { earn_rate: 100, redeem_value: 1, silver_threshold: 5000, gold_threshold: 20000, welcome_bonus_points: 0, silver_multiplier: 1, gold_multiplier: 1, birthday_bonus_points: 0 };
 
 const STAFFUSER_CACHE_KEY = "kanda_pos_staffuser_v1";
+// Aggregator surge rules aren't in the IndexedDB delta-sync set; the last
+// fetched list is kept here (per tenant) so an offline terminal still prices
+// Swiggy/Zomato orders the same way.
+const surgeCacheKey = (tid) => `kanda_pos_surge_rules_v1_${tid}`;
 
 function newLocalId() {
   const rand = typeof crypto !== "undefined" && crypto.randomUUID
@@ -47,6 +51,7 @@ export function PosProvider({ children }) {
   const [tables, setTables] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loyaltyConfig, setLoyaltyConfig] = useState(DEFAULT_LOYALTY_CONFIG);
+  const [surgeRules, setSurgeRules] = useState([]);
 
   const [isOffline, setIsOffline] = useState(typeof navigator !== "undefined" && "onLine" in navigator ? !navigator.onLine : false);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
@@ -84,6 +89,14 @@ export function PosProvider({ children }) {
     } catch { /* IndexedDB unavailable — screens simply stay on whatever's already in state */ }
   }, []);
 
+  const loadSurgeRules = useCallback(async (tid) => {
+    try {
+      const rules = await surgeRulesApi.list();
+      setSurgeRules(rules);
+      try { localStorage.setItem(surgeCacheKey(tid), JSON.stringify(rules)); } catch { /* ignore */ }
+    } catch { /* offline — keep the cached rules */ }
+  }, []);
+
   const hydrateOrders = useCallback(async (tid) => {
     try {
       const local = await repo.listLocalOrders(tid);
@@ -114,10 +127,10 @@ export function PosProvider({ children }) {
     try {
       await processOutbox(tid);
       await pullDeltas(tid);
-      await Promise.all([hydrateFromCache(tid), syncOrdersFromServer(tid)]);
+      await Promise.all([hydrateFromCache(tid), syncOrdersFromServer(tid), loadSurgeRules(tid)]);
     } catch { /* best-effort background sync — the next tick/reconnect retries */ }
     await refreshPendingCount();
-  }, [hydrateFromCache, syncOrdersFromServer, refreshPendingCount]);
+  }, [hydrateFromCache, syncOrdersFromServer, loadSurgeRules, refreshPendingCount]);
 
   const loadAll = useCallback(async () => {
     const tid = tenantStore.get();
@@ -125,6 +138,10 @@ export function PosProvider({ children }) {
     // Cache first: renders instantly even offline, or while the network
     // calls below are still in flight / failing.
     await Promise.all([hydrateFromCache(tid), hydrateOrders(tid)]);
+    try {
+      const cached = localStorage.getItem(surgeCacheKey(tid));
+      setSurgeRules(cached ? JSON.parse(cached) : []);
+    } catch { setSurgeRules([]); }
     await refreshPendingCount();
     try {
       const [tenant, loyaltyCfg] = await Promise.all([
@@ -573,7 +590,7 @@ export function PosProvider({ children }) {
     customers, upsertCustomer, deleteCustomer, refreshCustomers, refreshTables, refreshMenu,
     tables, setTableStatus,
     inventory, adjustStock, reorderStock, upsertInventoryItem, deleteInventoryItem, refreshInventory,
-    loyaltyConfig,
+    loyaltyConfig, surgeRules,
     isOffline, pendingSyncCount,
   };
 

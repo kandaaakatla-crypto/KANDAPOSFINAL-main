@@ -65,6 +65,7 @@ const DashVoice = lazy(() => import("./components/dash/DashVoice"));
 const DashDigest = lazy(() => import("./components/dash/DashDigest"));
 const DashLoyalty = lazy(() => import("./components/dash/DashLoyalty"));
 const DashSchedules = lazy(() => import("./components/dash/DashSchedules"));
+const DashSurge = lazy(() => import("./components/dash/DashSurge"));
 const DashCoupons = lazy(() => import("./components/dash/DashCoupons"));
 const DashGiftCards = lazy(() => import("./components/dash/DashGiftCards"));
 const DashSms = lazy(() => import("./components/dash/DashSms"));
@@ -168,6 +169,7 @@ function App() {
                     <Route index element={<DashHome />} />
                     <Route path="menu" element={<MenuScreen />} />
                     <Route path="schedules" element={<DashSchedules />} />
+                    <Route path="surge" element={<DashSurge />} />
                     <Route path="staff" element={<StaffScreen />} />
                     <Route path="brand" element={<BrandScreen />} />
                     <Route path="central-supply" element={<DashCentralSupply />} />

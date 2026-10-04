@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { loyaltyApi, ordersApi, storeCreditApi, giftCardsApi } from "../../api/client";
 import { effectiveTaxRate, computeLineTax, computeOrderTax, computeServiceCharge } from "../../utils/tax";
 import { applyScheduleToItem } from "../../utils/scheduling";
+import { activeSurge, applySurge } from "../../utils/surge";
 
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 
@@ -25,7 +26,7 @@ const ORDER_TYPES = [
 ];
 
 export default function OrderScreen() {
-  const { menuItems, categories, schedules, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser, loyaltyConfig, setOrderCustomer, setOrderServiceCharge } = usePos();
+  const { menuItems, categories, schedules, customers, upsertCustomer, tables, orders, placeOrder, appendToOrder, updateOrderStatus, staffUser, loyaltyConfig, surgeRules, setOrderCustomer, setOrderServiceCharge } = usePos();
   const redeemValue = loyaltyConfig?.redeem_value || 1;
   // Re-evaluate day-part schedules every minute so a happy-hour window
   // starting/ending mid-shift updates prices without a page reload.
@@ -135,6 +136,7 @@ export default function OrderScreen() {
       if (existing && existing.payment === "unpaid" && !existing.voided && existing.status !== "completed") {
         setEditingOrderId(existing.id);
         setOrderType(existing.type);
+        setOrderSource(existing.source || "in-store");
         if (existing.type === "dine-in" && existing.table != null) {
           setTableNo(String(existing.table));
           const c = existing.customer || {};
@@ -199,17 +201,35 @@ export default function OrderScreen() {
   };
   const removeLine = (lineId) => setCart((prev) => prev.filter((l) => l.lineId !== lineId));
 
-  const subtotal = cart.reduce((s, l) => s + l.price * l.qty, 0);
+  // Aggregator surge: cart lines keep their menu price; the surged price is
+  // derived here from the current source, so switching Store <-> Swiggy
+  // re-prices the whole cart instead of baking a markup into lines.
+  const surge = useMemo(
+    () => activeSurge(surgeRules, orderSource, new Date(scheduleTick)),
+    [surgeRules, orderSource, scheduleTick],
+  );
+  const pricedCart = useMemo(
+    () => (surge.pct > 0
+      ? cart.map((l) => ({ ...l, base_price: l.price, surge_pct: surge.pct, price: applySurge(l.price, surge.pct) }))
+      : cart),
+    [cart, surge.pct],
+  );
+  const toOrderItems = (lines) => lines.map((l) => ({
+    name: l.name, qty: l.qty, price: l.price, mods: l.mods || [], size: l.size || null,
+    ...(l.surge_pct ? { base_price: l.base_price, surge_pct: l.surge_pct } : {}),
+  }));
+
+  const subtotal = pricedCart.reduce((s, l) => s + l.price * l.qty, 0);
   // GST is added on top of restaurant menu pricing (exclusive) — mirrors the
   // authoritative calculation the backend performs at order creation.
   const gst = useMemo(() => {
-    const lineAmounts = cart.map((l) => {
+    const lineAmounts = pricedCart.map((l) => {
       const cat = categories.find((c) => c.id === l.catId);
       const rate = effectiveTaxRate({ tax_rate: l.taxRate }, cat);
       return computeLineTax(l.price, l.qty, rate, false);
     });
     return computeOrderTax(lineAmounts);
-  }, [cart, categories]);
+  }, [pricedCart, categories]);
   // In edit mode, delivery fee was already captured on the original order — don't double it.
   const deliveryFee = !editingOrderId && orderType === "delivery" && cart.length > 0 ? DELIVERY_FEE : 0;
   const discountAmt = (subtotal * discount) / 100;
@@ -282,7 +302,7 @@ export default function OrderScreen() {
       await syncEditedCustomer(editingOrder);
       if (cart.length === 0) { toast.info("No new items to add"); return; }
       try {
-        const items = cart.map((l) => ({ name: l.name, qty: l.qty, price: l.price, mods: l.mods || [], size: l.size || null }));
+        const items = toOrderItems(pricedCart);
         const updated = await appendToOrder(editingOrderId, items);
         toast.success(`Added ${cart.length} item(s) to #${updated.number}`);
         setCart([]);
@@ -301,7 +321,7 @@ export default function OrderScreen() {
     status: "new",
     customer: orderCustomer(),
     table: orderType === "dine-in" ? Number(tableNo) : undefined,
-    items: cart.map((l) => ({ name: l.name, qty: l.qty, price: l.price, mods: l.mods || [], size: l.size || null })),
+    items: toOrderItems(pricedCart),
     deliveryFee, discount: discountAmt + couponDisc + loyaltyDisc + creditDisc + giftDisc, total, payment,
     source: orderSource,
     tip: tipAmt,
@@ -326,7 +346,7 @@ export default function OrderScreen() {
         let current = existing;
         // Append any new items first (they'll go to the KDS immediately).
         if (cart.length > 0) {
-          const items = cart.map((l) => ({ name: l.name, qty: l.qty, price: l.price, mods: l.mods || [], size: l.size || null }));
+          const items = toOrderItems(pricedCart);
           current = await appendToOrder(editingOrderId, items);
         }
         // For non-card methods, mark payment now. Card is set by the Razorpay verify step.
@@ -428,7 +448,8 @@ export default function OrderScreen() {
               { id: "zomato", label: "Zomato", color: "#cb202d" },
               { id: "other", label: "Other" },
             ].map((s) => (
-              <button key={s.id} data-testid={`order-source-${s.id}`} type="button" onClick={() => setOrderSource(s.id)}
+              <button key={s.id} data-testid={`order-source-${s.id}`} type="button" onClick={() => !editingOrder && setOrderSource(s.id)}
+                disabled={!!editingOrder}
                 className="pos-btn h-8 rounded-md text-[10px] font-bold capitalize"
                 style={{
                   background: orderSource === s.id ? (s.color || "var(--pos-accent)") : "var(--pos-panel-2)",
@@ -439,6 +460,11 @@ export default function OrderScreen() {
               </button>
             ))}
           </div>
+          {surge.pct > 0 && (
+            <div className="mt-1.5 px-1 text-[11px] font-semibold" style={{ color: "#f59e0b" }} data-testid="surge-banner">
+              Surge +{surge.pct}% on {orderSource === "other" ? "this aggregator" : orderSource} · {surge.rules.map((r) => r.name).join(", ")}
+            </div>
+          )}
         </div>
 
         {/* Delivery: phone lookup */}
@@ -650,7 +676,7 @@ export default function OrderScreen() {
       {/* Right: cart */}
       <CartPanel
         open={cartOpen} onClose={() => setCartOpen(false)}
-        cart={cart} orderType={orderType} customer={orderCustomer()}
+        cart={pricedCart} orderType={orderType} customer={orderCustomer()}
         subtotal={subtotal} deliveryFee={deliveryFee} discount={discount} discountAmt={discountAmt} total={total} gst={gst}
         onQty={updateQty} onRemove={removeLine} onDiscount={setDiscount}
         onClear={() => { setCart([]); setDiscount(0); setTipPct(0); setCoupon(null); setRedeemPoints(0); }}
