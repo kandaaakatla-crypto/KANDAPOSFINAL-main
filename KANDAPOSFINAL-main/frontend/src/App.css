@@ -175,6 +175,12 @@
 .land-row:hover { background: rgba(249,115,22,0.04); }
 .land-magnet { transition: transform 0.5s var(--spring-ease); }
 .land-magnet:hover { transform: scale(1.04); }
+/* Thermal paper with a torn, zigzag bottom edge (hero receipt). */
+.land-receipt {
+  background: linear-gradient(180deg, #F3EFE8 0, #FFFFFF 14px);
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% calc(100% - 7px) no-repeat, conic-gradient(from 135deg at 50% 0, #000 90deg, #0000 0) bottom / 12px 7px repeat-x;
+          mask: linear-gradient(#000 0 0) top / 100% calc(100% - 7px) no-repeat, conic-gradient(from 135deg at 50% 0, #000 90deg, #0000 0) bottom / 12px 7px repeat-x;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .live-dot { animation: none; }

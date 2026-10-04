@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { toast } from "sonner";
@@ -10,19 +10,10 @@ import {
 import useSeo, { useStructuredData } from "../hooks/useSeo";
 import AlphaWaitlist from "./landing/AlphaWaitlist";
 import { WordReveal, Rise, ScrollWords, Marquee, HoverList, ServiceRows, ScaleCta } from "./landing/motion";
-import { useSmoothScroll, IntroCurtain, CursorFollower, Magnetic, CountUp, StackCards, HorizontalScroll } from "./landing/immersive";
+import { useSmoothScroll, CursorFollower, Magnetic, CountUp, StackCards, HorizontalScroll } from "./landing/immersive";
+import HeroDevice from "./landing/HeroDevice";
 import { OrderScreenMock, KdsMock, DispatchMock, ReportsMock, PulseRings } from "./landing/visuals";
 
-// three.js is ~600 KB — load the hero's 3D scene on its own chunk so the
-// rest of the page paints first.
-const Hero3D = lazy(() => import("./landing/Hero3D"));
-
-/** Renders nothing if the 3D scene throws (no WebGL, lost context). */
-class SceneBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { failed: false }; }
-  static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? null : this.props.children; }
-}
 
 const FEATURES = [
   { icon: ShoppingCart, title: "Order Management", tag: "All", desc: "Delivery, collection and dine in orders on one fast screen, built for busy shifts.", big: true, from: "#EA580C", to: "#2A0D02", note: "Order #142 ready for table 4", noteColor: "#F97316" },
@@ -174,7 +165,6 @@ export default function LandingPage() {
   return (
     <MotionConfig reducedMotion="user">
     <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)", overflowX: "clip" }} className="land-page" data-testid="landing-page">
-      <IntroCurtain />
       <CursorFollower />
 
       {/* Nav */}
@@ -233,14 +223,14 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="relative max-w-7xl mx-auto px-6 pt-12 md:pt-20">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
-          className="relative z-10 flex items-center justify-between text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
+          className="relative z-10 flex items-center justify-between lg:justify-start lg:gap-3 text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
           <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Alpha opening in waves</span>
-          <span>Hyderabad, India</span>
+          <span><span className="hidden lg:inline" aria-hidden="true">· </span>Hyderabad, India</span>
         </motion.div>
         <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[6.2vw] max-w-[14ch] lg:max-w-[10ch]" />
-        {/* One scene for every size: in flow on phones, floated right of the headline on desktop. */}
-        <div className="h-[340px] sm:h-[420px] -mx-6 mt-4 lg:m-0 lg:absolute lg:right-[-6%] lg:top-16 lg:w-[54%] lg:h-[620px] lg:z-0">
-          <SceneBoundary><Suspense fallback={null}><Hero3D /></Suspense></SceneBoundary>
+        {/* One product shot for every size: in flow on phones, floated right of the headline on desktop. */}
+        <div className="relative -mx-3 mt-8 pt-12 pb-10 sm:py-14 lg:m-0 lg:p-0 lg:absolute lg:right-[-5%] lg:top-8 lg:w-[56%] lg:h-[580px] lg:z-0">
+          <HeroDevice />
         </div>
         <div className="relative z-10 grid md:grid-cols-[1fr_auto] gap-8 items-end mt-6 md:mt-14">
           <Rise delay={0.5}>

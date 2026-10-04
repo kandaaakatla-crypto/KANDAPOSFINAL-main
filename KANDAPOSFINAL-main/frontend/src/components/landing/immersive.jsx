@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, useMotionValue, useSpring, useInView, animate, AnimatePresence } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValue, useSpring, useInView, animate } from "framer-motion";
 import Lenis from "lenis";
 
-// Page-level motion for the marketing homepage: smooth scrolling, the intro
-// curtain, a cursor follower, magnetic buttons, pinned scroll scenes and
-// count-ups. All of it backs off under prefers-reduced-motion.
+// Page-level motion for the marketing homepage: smooth scrolling, a cursor
+// follower, magnetic buttons, pinned scroll scenes and count-ups. All of it backs off under prefers-reduced-motion.
 
 const EASE = [0.22, 1, 0.36, 1];
 
@@ -48,49 +47,6 @@ export function useSmoothScroll() {
       lenis.destroy();
     };
   }, []);
-}
-
-/** Dark curtain with the wordmark that lifts away on first load (once per
- *  browser session, so in-site navigation back home doesn't replay it). */
-export function IntroCurtain() {
-  const [show, setShow] = useState(() => {
-    if (prefersReducedMotion()) return false;
-    try {
-      return !sessionStorage.getItem("kanda-intro-seen");
-    } catch {
-      return true;
-    }
-  });
-  useEffect(() => {
-    if (!show) return undefined;
-    try { sessionStorage.setItem("kanda-intro-seen", "1"); } catch { /* private mode */ }
-    const id = setTimeout(() => setShow(false), 1250);
-    return () => clearTimeout(id);
-  }, [show]);
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          className="fixed inset-0 z-[60] flex items-center justify-center"
-          style={{ background: "#121014" }}
-          exit={{ y: "-100%" }}
-          transition={{ duration: 0.9, ease: EASE }}
-          aria-hidden="true"
-        >
-          <div className="overflow-hidden">
-            <motion.div
-              className="land-display text-white text-5xl md:text-8xl"
-              initial={{ y: "110%" }}
-              animate={{ y: "0%" }}
-              transition={{ duration: 0.8, ease: EASE }}
-            >
-              KANDA<span style={{ color: "#F97316" }}>.</span>
-            </motion.div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
 }
 
 /** A soft ring that trails the mouse and swells over links and buttons. */
