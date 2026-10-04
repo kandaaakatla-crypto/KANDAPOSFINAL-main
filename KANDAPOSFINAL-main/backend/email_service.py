@@ -80,7 +80,7 @@ def landing_leads_digest_email(leads: list[dict], date_label: str) -> tuple[str,
         rows_html = "".join(
             '<tr style="border-top:1px solid #eee">'
             f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">'
-            f'<b>{"Demo" if l["type"] == "demo" else "Sign-up"}</b></td>'
+            f'<b>{"Demo" if l["type"] == "demo" else "Waitlist"}</b></td>'
             f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("name") or "—"}</td>'
             f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l["email"]}</td>'
             f'<td style="padding:8px 12px 8px 0;color:#111;font-size:13px;vertical-align:top">{l.get("phone") or "—"}</td>'
@@ -106,7 +106,7 @@ def landing_leads_digest_email(leads: list[dict], date_label: str) -> tuple[str,
         f'<h2 style="margin:0 0 4px;color:#111">Daily leads digest</h2>'
         f'<div style="color:#666;font-size:13px;margin-bottom:16px">{date_label} · '
         f'{demo_count} demo request{"s" if demo_count != 1 else ""}, '
-        f'{updates_count} sign-up{"s" if updates_count != 1 else ""}</div>'
+        f'{updates_count} waitlist sign-up{"s" if updates_count != 1 else ""}</div>'
         f'{body_html}'
         '<p style="color:#999;font-size:11px;margin-top:24px">Full list, filterable and always up to date, in the Owner Portal → Website leads.</p>'
         '</div></div>'
