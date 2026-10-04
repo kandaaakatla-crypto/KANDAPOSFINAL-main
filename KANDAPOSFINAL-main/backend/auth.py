@@ -79,6 +79,11 @@ async def get_current_user(request: Request) -> dict:
         du = await db.dashboard_users.find_one({"id": payload["sub"]}, {"_id": 0, "password_hash": 0})
         if not du or du.get("active") is False:
             raise HTTPException(status_code=401, detail="User not found")
+        # The token's store must still be one this person may reach — an
+        # owner taking a store off an area manager's list cuts them off now,
+        # not when this token expires.
+        from dash_access import assert_store_access, effective_permissions
+        await assert_store_access(db, du, payload.get("tenant_id"))
         display_name = du.get("name") or du["email"]
         initials = "".join(w[0] for w in display_name.split()[:2] if w).upper()[:2] or (du["email"][:2].upper())
         return {
@@ -90,6 +95,7 @@ async def get_current_user(request: Request) -> dict:
             "dash": True,
             "dash_role": du.get("dash_role"),
             "location_ids": du.get("location_ids") or [],
+            "permissions": effective_permissions(du),
         }
 
     # tenant_id in the filter (not just id) matters two ways: it lets this use
