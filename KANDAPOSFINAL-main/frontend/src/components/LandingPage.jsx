@@ -1,15 +1,28 @@
-import React, { useState } from "react";
+import React, { Suspense, lazy, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { toast } from "sonner";
 import {
   ShoppingCart, LayoutGrid, ChefHat, Truck, Boxes, Users, BarChart3,
   MessageCircle, Mic, MapPin, Mail, Menu, X, Plus,
-  ShoppingBag, CheckCircle2, Instagram, ArrowUpRight,
+  ShoppingBag, CheckCircle2, Instagram, ArrowUpRight, Coffee, Sun, Moon, Bike,
 } from "lucide-react";
 import useSeo, { useStructuredData } from "../hooks/useSeo";
 import AlphaWaitlist from "./landing/AlphaWaitlist";
 import { WordReveal, Rise, ScrollWords, Marquee, HoverList, ServiceRows, ScaleCta } from "./landing/motion";
+import { useSmoothScroll, IntroCurtain, CursorFollower, Magnetic, CountUp, StackCards, HorizontalScroll } from "./landing/immersive";
+import { OrderScreenMock, KdsMock, DispatchMock, ReportsMock, PulseRings } from "./landing/visuals";
+
+// three.js is ~600 KB — load the hero's 3D scene on its own chunk so the
+// rest of the page paints first.
+const Hero3D = lazy(() => import("./landing/Hero3D"));
+
+/** Renders nothing if the 3D scene throws (no WebGL, lost context). */
+class SceneBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { failed: false }; }
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? null : this.props.children; }
+}
 
 const FEATURES = [
   { icon: ShoppingCart, title: "Order Management", tag: "All", desc: "Delivery, collection and dine in orders on one fast screen, built for busy shifts.", big: true, from: "#EA580C", to: "#2A0D02", note: "Order #142 ready for table 4", noteColor: "#F97316" },
@@ -29,6 +42,21 @@ const LIVE_CHANNELS = [
   { icon: Truck, title: "Delivery", points: ["Driver assignment", "Live tracking", "Dispatch board"], note: "Drivers tracked from dispatch to the door", from: "#1D4ED8", to: "#0B1230" },
   { icon: ShoppingBag, title: "Collection", points: ["Pickup queue", "Ready alerts", "SMS updates"], note: "Pickup orders marked ready in real time", from: "#166534", to: "#06210F" },
   { icon: ShoppingCart, title: "Retail", points: ["Barcode scanning", "Variants", "Quick checkout"], note: "Barcode checkout at the counter", from: "#7C2D12", to: "#1E0A03" },
+];
+
+const STACK = [
+  { title: "Ring it up", body: "Big, fast tiles built for a packed counter. Dine in, takeaway and delivery from one screen, with GST worked out as you tap.", from: "#EA580C", to: "#431407", visual: <OrderScreenMock /> },
+  { title: "Fire to the kitchen", body: "Tickets land on the right station the moment you send them, with timers that turn red before a guest has to ask.", from: "#1D4ED8", to: "#0B1230", visual: <KdsMock /> },
+  { title: "Out the door", body: "Assign a rider, watch them on the map, and let the customer track it too. Pickup orders flag themselves ready.", from: "#B91C1C", to: "#2A0606", visual: <DispatchMock /> },
+  { title: "Close the day", body: "Sales, peak hours and best sellers roll up by themselves. You see tonight's numbers before you lock the shutter.", from: "#0E7490", to: "#03161C", visual: <ReportsMock /> },
+];
+
+const DAY = [
+  { time: "07:00", icon: Coffee, title: "Chai rush", body: "Fifty Irani chais before nine. Quick keys and saved favourites keep the queue moving.", from: "#B45309", to: "#2A1503" },
+  { time: "13:30", icon: Sun, title: "Lunch, every table", body: "The floor plan fills up live. Orders split by station, bills split by guest.", from: "#EA580C", to: "#431407" },
+  { time: "17:00", icon: ShoppingBag, title: "Retail restock", body: "Low stock alerts and reorder points tell you what to buy before you run out.", from: "#7C3AED", to: "#1E0B3A" },
+  { time: "20:45", icon: Bike, title: "Delivery peak", body: "Online orders, riders and pickup all on one board, so nothing gets lost in the rush.", from: "#B91C1C", to: "#2A0606" },
+  { time: "23:30", icon: Moon, title: "Lights out", body: "Cash drawer closed, GST report ready, tomorrow's prep list waiting.", from: "#1D4ED8", to: "#0B1230" },
 ];
 
 const NAV_LINKS = [
@@ -95,6 +123,7 @@ export default function LandingPage() {
     path: "/",
   });
   useStructuredData("ld-landing", STRUCTURED_DATA);
+  useSmoothScroll();
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", city: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
@@ -144,7 +173,10 @@ export default function LandingPage() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)" }} className="overflow-x-hidden land-page" data-testid="landing-page">
+    <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)", overflowX: "clip" }} className="land-page" data-testid="landing-page">
+      <IntroCurtain />
+      <CursorFollower />
+
       {/* Nav */}
       <header className="sticky top-0 z-20" style={{ background: "rgba(253,250,244,0.85)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3.5">
@@ -199,14 +231,18 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-7xl mx-auto px-6 pt-12 md:pt-20">
+      <section className="relative max-w-7xl mx-auto px-6 pt-12 md:pt-20">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
-          className="flex items-center justify-between text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
+          className="relative z-10 flex items-center justify-between text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
           <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Alpha opening in waves</span>
           <span>Hyderabad, India</span>
         </motion.div>
-        <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="land-display text-[13vw] md:text-[7.4vw] max-w-[14ch]" />
-        <div className="grid md:grid-cols-[1fr_auto] gap-8 items-end mt-10 md:mt-14">
+        <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[6.2vw] max-w-[14ch] lg:max-w-[10ch]" />
+        {/* One scene for every size: in flow on phones, floated right of the headline on desktop. */}
+        <div className="h-[340px] sm:h-[420px] -mx-6 mt-4 lg:m-0 lg:absolute lg:right-[-6%] lg:top-16 lg:w-[54%] lg:h-[620px] lg:z-0">
+          <SceneBoundary><Suspense fallback={null}><Hero3D /></Suspense></SceneBoundary>
+        </div>
+        <div className="relative z-10 grid md:grid-cols-[1fr_auto] gap-8 items-end mt-6 md:mt-14">
           <Rise delay={0.5}>
             <p className="text-lg md:text-xl max-w-xl leading-relaxed" style={{ color: "var(--pos-muted)" }}>
               One system for restaurants and retail: GST ready billing, kitchen sync,
@@ -215,15 +251,19 @@ export default function LandingPage() {
             </p>
           </Rise>
           <Rise delay={0.65} className="flex flex-wrap items-center gap-3">
-            <a href="#contact" className="land-magnet group inline-flex items-center gap-3 rounded-full pl-6 pr-1.5 py-1.5 font-bold text-white" style={{ background: "var(--pos-text)" }}>
-              Book a demo
-              <span className="w-9 h-9 rounded-full flex items-center justify-center transition-transform duration-500 group-hover:rotate-45" style={{ background: "var(--pos-accent)" }}>
-                <ArrowUpRight className="w-4 h-4" />
-              </span>
-            </a>
-            <a href="#waitlist" className="pos-btn land-pos-btn rounded-full px-6 py-3 font-bold" style={{ border: "1.5px solid var(--pos-text)", color: "var(--pos-text)" }}>
-              Join the alpha waitlist
-            </a>
+            <Magnetic>
+              <a href="#contact" className="group inline-flex items-center gap-3 rounded-full pl-6 pr-1.5 py-1.5 font-bold text-white" style={{ background: "var(--pos-text)" }}>
+                Book a demo
+                <span className="w-9 h-9 rounded-full flex items-center justify-center transition-transform duration-500 group-hover:rotate-45" style={{ background: "var(--pos-accent)" }}>
+                  <ArrowUpRight className="w-4 h-4" />
+                </span>
+              </a>
+            </Magnetic>
+            <Magnetic>
+              <a href="#waitlist" className="inline-block rounded-full px-6 py-3 font-bold" style={{ border: "1.5px solid var(--pos-text)", color: "var(--pos-text)", background: "var(--pos-bg)" }}>
+                Join the alpha waitlist
+              </a>
+            </Magnetic>
           </Rise>
         </div>
       </section>
@@ -256,6 +296,26 @@ export default function LandingPage() {
         />
       </section>
 
+      {/* Numbers */}
+      <section className="max-w-7xl mx-auto px-6 pb-20 md:pb-28">
+        <div className="grid grid-cols-2 md:grid-cols-4" style={{ borderTop: "1px solid var(--pos-border)" }}>
+          {[[10, "", "modules in one system"], [4, "", "ways to sell, one live view"], [3, "", "platforms: web, Android, Windows"], [1, "", "screen for the whole counter"]].map(([n, suf, label], i) => (
+            <div key={label} className="pt-6 pb-2 pr-4" style={{ borderLeft: i ? "1px solid var(--pos-border)" : "none", paddingLeft: i ? "1.25rem" : 0 }}>
+              <CountUp to={n} suffix={suf} className="land-display text-6xl md:text-8xl block" />
+              <div className="text-sm mt-2" style={{ color: "var(--pos-muted)" }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Rush hour, as stacking cards */}
+      <section aria-label="How Kanda POS runs a rush hour" className="pb-10">
+        <div className="max-w-7xl mx-auto px-6 mb-6 md:mb-10">
+          <WordReveal as="h2" text="One order, start to finish." className="land-display text-4xl md:text-7xl" />
+        </div>
+        <StackCards cards={STACK} />
+      </section>
+
       {/* Modules */}
       <section id="features" className="max-w-7xl mx-auto px-6 pb-20 md:pb-28">
         <div className="flex items-end justify-between gap-6 mb-8 md:mb-12">
@@ -264,6 +324,13 @@ export default function LandingPage() {
         </div>
         <HoverList items={FEATURES} />
       </section>
+
+      {/* A day at the counter — pinned horizontal scroll */}
+      <HorizontalScroll
+        heading={<WordReveal as="h2" text="A day at the counter." className="land-display text-4xl md:text-7xl" />}
+        panels={DAY.map((d) => ({ ...d, visual: <PulseRings /> }))}
+      />
+      <div className="h-16 md:h-24" />
 
       {/* Live channels */}
       <section id="live" className="px-3 md:px-6">
