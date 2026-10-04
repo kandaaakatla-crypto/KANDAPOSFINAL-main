@@ -33,24 +33,42 @@ export default function LoginScreen({ isDemo = false }) {
   // still renders something sensible before the network round-trip finishes.
   const [businessType, setBusinessType] = useState("restaurant");
 
+  // Set once /tenant/public-info says the slug in the URL isn't a real
+  // restaurant (e.g. a mistyped /pos/login/login) — shows a "not found"
+  // screen instead of a PIN pad, rather than quietly signing in elsewhere.
+  const [notFound, setNotFound] = useState(false);
+
   // /demo/login uses an in-memory-only override so visiting the public demo
   // never overwrites a real device's pinned restaurant (see tenantStore in
-  // api/client.js). /pos/:slug/login persists the slug — that's what makes
-  // this device "belong" to that restaurant for next time.
+  // api/client.js). /pos/:slug/login checks the slug is a real restaurant
+  // first and only then persists it — that's what makes this device
+  // "belong" to that restaurant for next time. An unknown slug is never
+  // pinned, so /pos/login can't keep bouncing back to it.
   useEffect(() => {
+    let cancelled = false;
+    setNotFound(false);
     if (isDemo) {
       tenantStore.setEphemeral("demo");
     } else if (routeSlug) {
-      tenantStore.clearEphemeral();
-      tenantStore.set(routeSlug);
+      tenantStore.setEphemeral(routeSlug.toLowerCase());
     }
-  }, [isDemo, routeSlug]);
-
-  useEffect(() => {
-    let cancelled = false;
     api.get("/tenant/public-info")
-      .then((r) => { if (!cancelled) setBusinessType(r.data.businessType || "restaurant"); })
-      .catch(() => {}); // keep the restaurant default — never block sign-in on this
+      .then((r) => {
+        if (cancelled) return;
+        if (!isDemo && routeSlug) {
+          tenantStore.clearEphemeral();
+          tenantStore.set(routeSlug.toLowerCase());
+        }
+        setBusinessType(r.data.businessType || "restaurant");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (!isDemo && routeSlug && err?.response?.status === 404) {
+          if (localStorage.getItem("kanda_pos_tenant_slug") === routeSlug.toLowerCase()) tenantStore.clear();
+          setNotFound(true);
+        }
+        // Any other failure keeps the restaurant default — never block sign-in on this.
+      });
     return () => { cancelled = true; };
   }, [isDemo, routeSlug]);
 
@@ -92,6 +110,25 @@ export default function LoginScreen({ isDemo = false }) {
   const handleEnter = () => {
     if (pin.length === 4) submit(pin);
   };
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--pos-bg)" }} data-testid="login-tenant-not-found">
+        <div className="w-full max-w-sm fade-in text-center">
+          <img src="/icon-192.png" alt="Kanda POS" className="w-14 h-14 mx-auto mb-4 rounded-xl" />
+          <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--pos-text)" }}>Restaurant not found</h2>
+          <p className="text-sm mb-6" style={{ color: "var(--pos-muted)" }}>
+            There's no restaurant with the ID "{routeSlug}". Check the link, or enter your Restaurant ID.
+          </p>
+          <button data-testid="login-enter-restaurant-id" onClick={() => { tenantStore.clearEphemeral(); navigate("/pos/login"); }}
+            className="pos-btn w-full h-11 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "var(--pos-accent)" }}>
+            Enter Restaurant ID
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex" style={{ background: "var(--pos-bg)" }} data-testid="login-screen">
