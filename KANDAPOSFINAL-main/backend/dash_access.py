@@ -110,6 +110,8 @@ _RULES = [
 
     ("settings", ("PATCH",), "/api/tenant/features"),
     ("settings", ("POST", "DELETE"), "/api/tenant/store/branding"),
+    ("settings", ("GET",), "/api/integrations/website"),
+    ("settings", ("POST", "DELETE"), "/api/integrations/website/key"),
     ("settings", ("PUT",), "/api/voice/config"),
     ("settings", ("POST",), "/api/voice/configure-twilio"),
     ("settings", ("POST",), "/api/voice/numbers/purchase"),
