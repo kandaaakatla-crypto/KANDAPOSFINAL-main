@@ -7,7 +7,7 @@ import {
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
 } from "../ui/alert-dialog";
 
-function CopyRow({ testid, value }) {
+export function CopyRow({ testid, value }) {
   return (
     <div className="flex gap-2">
       <input data-testid={testid} readOnly value={value} onFocus={(e) => e.target.select()}
