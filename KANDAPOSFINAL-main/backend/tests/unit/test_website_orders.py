@@ -139,3 +139,11 @@ def test_key_is_stored_hashed(client, db_name):
 def test_key_management_needs_a_manager(client):
     assert client.post("/api/integrations/website/key").status_code in (401, 403)
     assert client.get("/api/integrations/website").status_code in (401, 403)
+
+
+def test_blank_external_id_is_rejected(client):
+    headers = _manager_headers(client)
+    key = _new_key(client, headers)
+    item = _simple_item(client, headers)
+    r = client.post(INGEST, json=_order(item["id"], external_id="   "), headers={"X-Kanda-Key": key})
+    assert r.status_code == 422, r.text

@@ -25,7 +25,8 @@ import secrets
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
+from typing_extensions import Annotated
 from pymongo.errors import DuplicateKeyError
 
 from auth import require_role
@@ -122,7 +123,9 @@ class WebsiteOrderLine(BaseModel):
 
 
 class WebsiteOrderRequest(BaseModel):
-    external_id: str = Field(min_length=1, max_length=100)
+    # Stripped before the length check, so "   " is a 422 rather than every
+    # blank id collapsing onto one shared idempotency key.
+    external_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
     type: Literal["delivery", "collection"] = "collection"
     customer: WebsiteCustomer
     items: List[WebsiteOrderLine] = Field(min_length=1, max_length=200)
@@ -171,7 +174,7 @@ async def ingest_website_order(payload: WebsiteOrderRequest, request: Request):
     db = get_db()
     tenant = await _tenant_from_key(request, db)
     tenant_id = tenant["id"]
-    external_ref = f"{EXTERNAL_REF_PREFIX}{payload.external_id.strip()}"
+    external_ref = f"{EXTERNAL_REF_PREFIX}{payload.external_id}"
 
     existing = await db.orders.find_one({"tenant_id": tenant_id, "external_ref": external_ref}, PROJECTION)
     if existing:
