@@ -11,7 +11,7 @@ import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
 from tz import now_ist
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 import bcrypt
 import jwt
@@ -20,6 +20,11 @@ from pydantic import BaseModel, ConfigDict
 
 from models import BrandInvite
 from routes._shared import clean
+from dash_access import (
+    OWNER, AREA_MANAGER, MANAGER, PERMISSIONS,
+    accessible_store_ids, assert_store_access, assigned_store_ids,
+    clean_permissions, effective_permissions, owner_store_ids,
+)
 
 from db import get_db
 
@@ -55,6 +60,8 @@ class DashUserPublic(BaseModel):
     location_ids: List[str] = []  # empty list = all locations (owner)
     brand_id: Optional[str] = None  # set only for owners who manage multiple stores under one brand
     must_change_password: bool = False
+    store_ids: List[str] = []  # stores (tenants) this person can switch between
+    permissions: Dict[str, bool] = {}  # dashboard sections they can use — see dash_access.PERMISSIONS
 
 
 class DashChangePassword(BaseModel):
@@ -110,6 +117,8 @@ def _to_public(u: dict, tenant: Optional[dict] = None) -> dict:
         "location_ids": u.get("location_ids") or [],
         "must_change_password": bool(u.get("must_change_password")),
         "brand_id": u.get("brand_id"),
+        "store_ids": assigned_store_ids(u) if u.get("dash_role") != OWNER else [],
+        "permissions": effective_permissions(u),
     }
 
 
@@ -129,8 +138,9 @@ async def get_dash_user(request: Request) -> dict:
         raise HTTPException(status_code=403, detail="Dashboard auth required")
     db = get_db()
     u = await db.dashboard_users.find_one({"id": payload["sub"]}, {"_id": 0, "password_hash": 0})
-    if not u:
+    if not u or u.get("active") is False:
         raise HTTPException(status_code=401, detail="User not found")
+    await assert_store_access(db, u, payload.get("tenant_id"))
     # Anchor tenant_id from the JWT, not the DB row — mirrors get_current_user
     # in auth.py. This is what makes the store switcher work: after switching,
     # the token's tenant_id claim (not the user's home-store row) decides
@@ -164,7 +174,22 @@ async def dash_login(payload: DashLoginRequest):
 async def dash_me(u: dict = Depends(get_dash_user)):
     db = get_db()
     tenant = await db.tenants.find_one({"id": u["tenant_id"]}, {"_id": 0, "slug": 1})
-    return _to_public(u, tenant)
+    # `u["tenant_id"]` is the active store; _to_public's store_ids needs the
+    # home store, so re-read it from the row.
+    home = await db.dashboard_users.find_one({"id": u["id"]}, {"_id": 0, "tenant_id": 1})
+    return _to_public({**u, "tenant_id": home["tenant_id"]}, tenant) | {"tenant_id": u["tenant_id"]}
+
+
+@router.get("/dash/stores")
+async def my_stores(u: dict = Depends(get_dash_user)):
+    """Stores the caller can switch between: every store in the brand for an
+    owner, only the assigned ones for a manager / area manager."""
+    db = get_db()
+    home = await db.dashboard_users.find_one({"id": u["id"]}, {"_id": 0, "password_hash": 0})
+    ids = await accessible_store_ids(db, home)
+    docs = await db.tenants.find({"id": {"$in": ids}}, {"_id": 0, "id": 1, "name": 1, "slug": 1}).to_list(500)
+    by_id = {d["id"]: d for d in docs}
+    return [by_id[i] for i in ids if i in by_id]
 
 
 class BrandSwitchRequest(BaseModel):
@@ -173,24 +198,24 @@ class BrandSwitchRequest(BaseModel):
 
 @router.post("/dash/brand/switch", response_model=DashLoginResponse)
 async def switch_store(payload: BrandSwitchRequest, u: dict = Depends(get_dash_user)):
-    """Mint a new dash token scoped to a different store under the same
-    brand, so a brand owner can move between their stores without a separate
-    login per store. Only owners with a brand_id can switch, and only onto a
-    tenant that belongs to that same brand — this is the single place that
-    authorizes a dash token to act on a tenant other than the user's home
-    store, so both checks matter for tenant isolation."""
-    if u.get("dash_role") != "owner" or not u.get("brand_id"):
-        raise HTTPException(status_code=403, detail="Only a brand owner can switch stores")
+    """Mint a new dash token scoped to a different store, so someone with
+    several stores moves between them without a separate login per store.
+    An owner can switch to any store under their brand; an area manager (or
+    manager) only to the stores the owner assigned them. This is the single
+    place that authorizes a dash token to act on a tenant other than the
+    user's home store, so the check matters for tenant isolation."""
     db = get_db()
-    target = await db.tenants.find_one({"id": payload.tenant_id}, {"_id": 0, "id": 1, "slug": 1, "brand_id": 1})
-    if not target or target.get("brand_id") != u["brand_id"]:
-        raise HTTPException(status_code=403, detail="That store isn't part of your brand")
     # Re-fetch the real identity row (the dependency's `u` may already carry
     # an overridden tenant_id from a previous switch) so must_change_password
     # and the outgoing token are anchored to the account, not the last store.
     fresh = await db.dashboard_users.find_one({"id": u["id"]}, {"_id": 0})
+    if payload.tenant_id not in await accessible_store_ids(db, fresh):
+        raise HTTPException(status_code=403, detail="You don't have access to that store")
+    target = await db.tenants.find_one({"id": payload.tenant_id}, {"_id": 0, "id": 1, "slug": 1, "brand_id": 1})
+    if not target:
+        raise HTTPException(status_code=403, detail="You don't have access to that store")
     token = _create_dash_token(fresh, tenant_id=target["id"])
-    public = _to_public({**fresh, "tenant_id": target["id"]}, target)
+    public = _to_public(fresh, target) | {"tenant_id": target["id"]}
     return {
         "token": token,
         "must_change_password": bool(fresh.get("must_change_password")),
@@ -374,3 +399,166 @@ async def provision_tenant_dashboard(db, tenant: dict) -> List[dict]:
         await db.dashboard_users.insert_one(doc)
         created.append({"dash_role": dash_role, "email": email, "password": temp_pw, "name": display_name})
     return created
+
+
+# ---------- Team & access (owner only) ----------
+# The owner decides who gets a dashboard login, which stores each manager /
+# area manager can reach, and which sections (dash_access.PERMISSIONS) they
+# can use. Changes apply to already-issued tokens on their next request:
+# get_current_user / get_dash_user re-check the store, and
+# enforce_dash_permissions reads permissions fresh from the row.
+class TeamMemberCreate(BaseModel):
+    email: str
+    name: str
+    dash_role: Literal["manager", "area_manager"]
+    store_ids: List[str]
+    permissions: Optional[Dict[str, bool]] = None
+
+
+class TeamMemberUpdate(BaseModel):
+    name: Optional[str] = None
+    dash_role: Optional[Literal["manager", "area_manager"]] = None
+    store_ids: Optional[List[str]] = None
+    permissions: Optional[Dict[str, bool]] = None
+    active: Optional[bool] = None
+
+
+async def _team_owner(u: dict = Depends(get_dash_user)) -> dict:
+    if u.get("dash_role") != OWNER:
+        raise HTTPException(status_code=403, detail="Only the owner can manage team access")
+    db = get_db()
+    # Scope from the owner's real row, not the store they've switched to.
+    fresh = await db.dashboard_users.find_one({"id": u["id"]}, {"_id": 0, "password_hash": 0})
+    fresh["_stores"] = await owner_store_ids(db, fresh)
+    return fresh
+
+
+def _member_public(m: dict) -> dict:
+    return {
+        "id": m["id"],
+        "email": m["email"],
+        "name": m.get("name") or m["email"].split("@")[0],
+        "dash_role": m["dash_role"],
+        "store_ids": assigned_store_ids(m),
+        "permissions": effective_permissions(m),
+        "active": m.get("active") is not False,
+        "must_change_password": bool(m.get("must_change_password")),
+    }
+
+
+def _validate_stores(role: str, store_ids: List[str], allowed: List[str]) -> List[str]:
+    ids: List[str] = []
+    for sid in store_ids:
+        if sid not in ids:
+            ids.append(sid)
+    if not ids:
+        raise HTTPException(status_code=400, detail="Pick at least one store")
+    if any(sid not in allowed for sid in ids):
+        raise HTTPException(status_code=403, detail="You can only assign your own stores")
+    if role == MANAGER and len(ids) != 1:
+        raise HTTPException(status_code=400, detail="A store manager has exactly one store; make them an area manager for more")
+    return ids
+
+
+async def _member_in_scope(db, owner: dict, member_id: str) -> dict:
+    m = await db.dashboard_users.find_one({"id": member_id}, {"_id": 0, "password_hash": 0})
+    if not m or m.get("dash_role") == OWNER or m.get("tenant_id") not in owner["_stores"]:
+        raise HTTPException(status_code=404, detail="Team member not found")
+    return m
+
+
+@router.get("/dash/team")
+async def list_team(owner: dict = Depends(_team_owner)):
+    db = get_db()
+    stores = await db.tenants.find(
+        {"id": {"$in": owner["_stores"]}}, {"_id": 0, "id": 1, "name": 1, "slug": 1},
+    ).to_list(500)
+    members = await db.dashboard_users.find(
+        {"tenant_id": {"$in": owner["_stores"]}, "dash_role": {"$ne": OWNER}},
+        {"_id": 0, "password_hash": 0},
+    ).sort("name", 1).to_list(1000)
+    return {
+        "stores": stores,
+        "permissions": [
+            {"key": k, "label": v[0], "area_manager_default": v[1], "manager_default": v[2]}
+            for k, v in PERMISSIONS.items()
+        ],
+        "members": [_member_public(m) for m in members],
+    }
+
+
+@router.post("/dash/team")
+async def create_team_member(payload: TeamMemberCreate, owner: dict = Depends(_team_owner)):
+    email = (payload.email or "").strip().lower()
+    if "@" not in email:
+        raise HTTPException(status_code=400, detail="Enter a valid email")
+    if not payload.name.strip():
+        raise HTTPException(status_code=400, detail="Enter a name")
+    ids = _validate_stores(payload.dash_role, payload.store_ids, owner["_stores"])
+    db = get_db()
+    if await db.dashboard_users.find_one({"email": email}, {"_id": 0, "id": 1}):
+        raise HTTPException(status_code=409, detail="That email already has a dashboard login")
+    temp_pw = _generate_temp_password()
+    doc = {
+        "id": f"da_{uuid.uuid4().hex[:10]}_{ids[0]}",
+        "email": email,
+        "name": payload.name.strip(),
+        "dash_role": payload.dash_role,
+        "tenant_id": ids[0],
+        "store_ids": ids,
+        "location_ids": [],
+        "permissions": clean_permissions(payload.permissions),
+        "must_change_password": True,
+        "password_hash": _hash_pw(temp_pw),
+        "active": True,
+        "created_by": owner["id"],
+        "created_at": now_ist().isoformat(),
+    }
+    await db.dashboard_users.insert_one(doc)
+    return {"member": _member_public(doc), "temp_password": temp_pw}
+
+
+@router.patch("/dash/team/{member_id}")
+async def update_team_member(member_id: str, payload: TeamMemberUpdate, owner: dict = Depends(_team_owner)):
+    db = get_db()
+    m = await _member_in_scope(db, owner, member_id)
+    updates: dict = {}
+    if payload.name is not None:
+        if not payload.name.strip():
+            raise HTTPException(status_code=400, detail="Enter a name")
+        updates["name"] = payload.name.strip()
+    role = payload.dash_role or m["dash_role"]
+    if payload.dash_role is not None:
+        updates["dash_role"] = role
+    if payload.store_ids is not None or payload.dash_role is not None:
+        requested = payload.store_ids if payload.store_ids is not None else assigned_store_ids(m)
+        ids = _validate_stores(role, requested, owner["_stores"])
+        updates["store_ids"] = ids
+        if m["tenant_id"] not in ids:
+            # Home store taken away — re-home them on their first remaining
+            # store so their next login lands somewhere they're allowed.
+            updates["tenant_id"] = ids[0]
+            updates["location_ids"] = []
+    if payload.permissions is not None:
+        merged = {**(m.get("permissions") or {}), **clean_permissions(payload.permissions)}
+        updates["permissions"] = merged
+    if payload.active is not None:
+        updates["active"] = bool(payload.active)
+    if updates:
+        updates["updated_at"] = now_ist().isoformat()
+        await db.dashboard_users.update_one({"id": member_id}, {"$set": updates})
+    fresh = await db.dashboard_users.find_one({"id": member_id}, {"_id": 0, "password_hash": 0})
+    return _member_public(fresh)
+
+
+@router.post("/dash/team/{member_id}/reset-password")
+async def reset_team_member_password(member_id: str, owner: dict = Depends(_team_owner)):
+    db = get_db()
+    await _member_in_scope(db, owner, member_id)
+    temp_pw = _generate_temp_password()
+    await db.dashboard_users.update_one(
+        {"id": member_id},
+        {"$set": {"password_hash": _hash_pw(temp_pw), "must_change_password": True,
+                  "password_changed_at": now_ist().isoformat()}},
+    )
+    return {"temp_password": temp_pw}

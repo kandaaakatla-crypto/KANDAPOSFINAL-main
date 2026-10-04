@@ -65,6 +65,7 @@ const DashVoice = lazy(() => import("./components/dash/DashVoice"));
 const DashDigest = lazy(() => import("./components/dash/DashDigest"));
 const DashLoyalty = lazy(() => import("./components/dash/DashLoyalty"));
 const DashSchedules = lazy(() => import("./components/dash/DashSchedules"));
+const DashSurge = lazy(() => import("./components/dash/DashSurge"));
 const DashCoupons = lazy(() => import("./components/dash/DashCoupons"));
 const DashGiftCards = lazy(() => import("./components/dash/DashGiftCards"));
 const DashSms = lazy(() => import("./components/dash/DashSms"));
@@ -73,6 +74,7 @@ const PayrollScreen = lazy(() => import("./components/dash/PayrollScreen"));
 const BrandScreen = lazy(() => import("./components/dash/BrandScreen"));
 const DashCentralSupply = lazy(() => import("./components/dash/DashCentralSupply"));
 const KioskDevicesPage = lazy(() => import("./components/dash/KioskDevicesPage"));
+const DashTeam = lazy(() => import("./components/dash/DashTeam"));
 const WebsiteOrdersPage = lazy(() => import("./components/dash/WebsiteOrdersPage"));
 
 function RouteLoading() {
@@ -168,6 +170,7 @@ function App() {
                     <Route index element={<DashHome />} />
                     <Route path="menu" element={<MenuScreen />} />
                     <Route path="schedules" element={<DashSchedules />} />
+                    <Route path="surge" element={<DashSurge />} />
                     <Route path="staff" element={<StaffScreen />} />
                     <Route path="brand" element={<BrandScreen />} />
                     <Route path="central-supply" element={<DashCentralSupply />} />
@@ -187,6 +190,7 @@ function App() {
                     <Route path="whatsapp" element={<DashWhatsApp />} />
                     <Route path="locations" element={<DashLocations />} />
                     <Route path="branding" element={<DashBranding />} />
+                    <Route path="team" element={<DashTeam />} />
                   </Route>
 
                   {/* Kitchen Display — no auth, long-lived ?token= */}
