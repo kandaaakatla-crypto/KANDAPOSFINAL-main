@@ -11,7 +11,7 @@ import useSeo, { useStructuredData } from "../hooks/useSeo";
 import AlphaWaitlist from "./landing/AlphaWaitlist";
 import { WordReveal, Rise, ScrollWords, Marquee, HoverList, ServiceRows, ScaleCta } from "./landing/motion";
 import { useSmoothScroll, CursorFollower, Magnetic, CountUp, StackCards, HorizontalScroll } from "./landing/immersive";
-import HeroDevice from "./landing/HeroDevice";
+import HeroOrderPanel from "./landing/HeroOrderPanel";
 import { OrderScreenMock, KdsMock, DispatchMock, ReportsMock, PulseRings } from "./landing/visuals";
 
 
@@ -223,19 +223,12 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="relative max-w-7xl mx-auto px-6 pt-12 md:pt-20">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
-          className="relative z-10 flex items-center justify-between lg:justify-start lg:gap-3 text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
+          className="relative z-10 flex items-center justify-between text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
           <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Alpha opening in waves</span>
-          <span><span className="hidden lg:inline" aria-hidden="true">· </span>Hyderabad, India</span>
+          <span>Hyderabad, India</span>
         </motion.div>
-        {/* Phones stack headline, product shot, copy. Desktop puts the
-            headline and copy on the left and the product shot in its own
-            right-hand column, so the two never overlap. */}
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-x-10">
-          <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[5.2vw] xl:text-[4.9rem] max-w-[14ch] lg:max-w-[10ch] lg:col-start-1 lg:row-start-1 lg:self-end" />
-          <div className="relative -mx-3 mt-8 pt-12 pb-10 sm:py-14 lg:m-0 lg:py-6 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-center">
-            <HeroDevice />
-          </div>
-          <div className="relative z-10 grid md:grid-cols-[1fr_auto] lg:grid-cols-1 gap-8 items-end mt-6 md:mt-14 lg:mt-10 lg:col-start-1 lg:row-start-2 lg:self-start">
+        <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[6.2vw] max-w-[14ch] lg:max-w-[16ch]" />
+        <div className="relative z-10 grid md:grid-cols-[1fr_auto] gap-8 items-end mt-6 md:mt-12">
           <Rise delay={0.5}>
             <p className="text-lg md:text-xl max-w-xl leading-relaxed" style={{ color: "var(--pos-muted)" }}>
               One system for restaurants and retail: GST ready billing, kitchen sync,
@@ -258,7 +251,10 @@ export default function LandingPage() {
               </a>
             </Magnetic>
           </Rise>
-          </div>
+        </div>
+        {/* The order screen, playing out a live counter order. */}
+        <div className="relative mt-14 md:mt-20 pb-16 md:pb-24">
+          <HeroOrderPanel />
         </div>
       </section>
 
