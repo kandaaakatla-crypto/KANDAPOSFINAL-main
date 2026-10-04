@@ -215,6 +215,8 @@ export const brandApi = {
   createAsset: (id, payload) => dashApi.post(`/brand/${id}/assets`, payload).then((r) => r.data),
   deleteAsset: (id, assetId) => dashApi.delete(`/brand/${id}/assets/${assetId}`).then((r) => r.data),
   smsBroadcast: (id, payload) => dashApi.post(`/brand/${id}/marketing/sms-broadcast`, payload).then((r) => r.data),
+  customers: (id, params = {}) => dashApi.get(`/brand/${id}/customers`, { params }).then((r) => r.data),
+  customerProfile: (id, phone) => dashApi.get(`/brand/${id}/customers/${encodeURIComponent(phone)}`).then((r) => r.data),
   switchStore: (tenantId) => dashApi.post("/dash/brand/switch", { tenant_id: tenantId }).then((r) => r.data),
 
   // Pay-per-store billing
