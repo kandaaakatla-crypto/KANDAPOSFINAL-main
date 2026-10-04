@@ -28,6 +28,7 @@ from fastapi.responses import StreamingResponse
 
 from db import get_db
 from auth import verify_pin, get_current_user, require_role
+from routes.pos_devices import require_pos_device
 from tenants import resolve_tenant_from_request, tenant_filter
 from models import (
     TimePunch, TimePunchRequest, TimePunchManualEdit, TimesheetRow,
@@ -74,6 +75,7 @@ def _doc_to_punch(d: dict) -> dict:
 async def punch(payload: TimePunchRequest, request: Request):
     db = get_db()
     tenant = await resolve_tenant_from_request(request, db)
+    await require_pos_device(request, tenant, db)
     pin = (payload.pin or "").strip()
     if not (pin.isdigit() and len(pin) == 4):
         raise HTTPException(status_code=400, detail="PIN must be 4 digits")

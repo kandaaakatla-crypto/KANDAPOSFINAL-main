@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { payrollApi } from "../../api/client";
+import { payrollApi, authHeaders } from "../../api/client";
 import { Input } from "../ui/input";
 import { Download, Banknote } from "lucide-react";
 import { toast } from "sonner";
@@ -40,7 +40,7 @@ export default function PayrollScreen() {
     const endExclusive = new Date(`${end}T00:00:00Z`);
     endExclusive.setUTCDate(endExclusive.getUTCDate() + 1);
     const url = `${apiBase}/payroll/summary.csv?start=${encodeURIComponent(`${start}T00:00:00Z`)}&end=${encodeURIComponent(endExclusive.toISOString())}`;
-    const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const r = await fetch(url, { headers: authHeaders(token) });
     if (!r.ok) { toast.error("Download failed"); return; }
     const blob = await r.blob();
     const objectUrl = URL.createObjectURL(blob);

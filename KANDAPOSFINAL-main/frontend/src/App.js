@@ -222,7 +222,10 @@ function App() {
                   <Route path="/pos/login" element={<RestaurantGate />} />
                   <Route path="/pos/:slug/login" element={<LoginScreen />} />
                   <Route path="/demo/login" element={<LoginScreen isDemo />} />
-                  <Route path="/clock" element={<TimeClockScreen />} />
+                  <Route path="/pos/:slug/clock" element={<TimeClockScreen />} />
+                  {/* /clock was shared by every restaurant; each now has its own
+                      /pos/:slug/clock, so the old URL is a plain not-found. */}
+                  <Route path="/clock" element={<NotFoundPage />} />
                   <Route path="/:slug" element={<Protected><POSLayout /></Protected>}>
                     <Route index element={<Navigate to="pos" replace />} />
                     <Route path="pos" element={<HomeScreen />} />
