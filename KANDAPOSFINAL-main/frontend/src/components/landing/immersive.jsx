@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, useMotionValue, useSpring, useInView, animate } from "framer-motion";
+import { m, useScroll, useTransform, useMotionValue, useSpring, useInView, animate } from "framer-motion";
 import Lenis from "lenis";
 
 // Page-level motion for the marketing homepage: smooth scrolling, a cursor
@@ -68,7 +68,7 @@ export function CursorFollower() {
   }, [enabled, x, y]);
   if (!enabled) return null;
   return (
-    <motion.div
+    <m.div
       className="pointer-events-none fixed left-0 top-0 z-[55] rounded-full"
       style={{ x: sx, y: sy, translateX: "-50%", translateY: "-50%", border: "1.5px solid #F97316", mixBlendMode: "multiply" }}
       animate={{ width: hover ? 56 : 22, height: hover ? 56 : 22, backgroundColor: hover ? "rgba(249,115,22,0.18)" : "rgba(249,115,22,0)" }}
@@ -93,9 +93,9 @@ export function Magnetic({ children, strength = 0.35, className = "" }) {
   };
   const reset = () => { x.set(0); y.set(0); };
   return (
-    <motion.div ref={ref} className={`inline-block ${className}`} style={{ x: sx, y: sy }} onPointerMove={onMove} onPointerLeave={reset}>
+    <m.div ref={ref} className={`inline-block ${className}`} style={{ x: sx, y: sy }} onPointerMove={onMove} onPointerLeave={reset}>
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -120,11 +120,11 @@ function StackCard({ card, i, total, progress }) {
   const dim = useTransform(progress, [start, 1], [0, (total - 1 - i) * 0.12]);
   return (
     <div className="sticky h-[78vh] md:h-[82vh] flex items-start justify-center" style={{ top: `calc(11vh + ${i * 18}px)` }}>
-      <motion.div
+      <m.div
         style={{ scale, background: `linear-gradient(150deg, ${card.from} 0%, ${card.to} 85%)`, transformOrigin: "top center" }}
         className="relative w-full max-w-6xl h-[70vh] md:h-[66vh] rounded-[2rem] overflow-hidden text-white grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[0.9fr_1.1fr] gap-4 md:gap-6 p-6 md:p-12 shadow-2xl"
       >
-        <motion.div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: dim }} />
+        <m.div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: dim }} />
         <div className="relative flex flex-col justify-between">
           <div className="text-xs font-mono opacity-70">({String(i + 1).padStart(2, "0")}/{String(total).padStart(2, "0")})</div>
           <div>
@@ -133,7 +133,7 @@ function StackCard({ card, i, total, progress }) {
           </div>
         </div>
         <div className="relative flex items-start md:items-center justify-center order-first md:order-none max-h-[34vh] md:max-h-none origin-top scale-[0.78] md:scale-100">{card.visual}</div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -173,10 +173,10 @@ export function HorizontalScroll({ panels, heading }) {
         <div className="px-6 md:px-16 mb-8 md:mb-12 flex items-end justify-between gap-6 text-white">
           {heading}
           <div className="hidden md:block w-48 h-[2px] rounded-full overflow-hidden mb-3" style={{ background: "rgba(255,255,255,0.15)" }}>
-            <motion.div className="h-full" style={{ width: bar, background: "#F97316" }} />
+            <m.div className="h-full" style={{ width: bar, background: "#F97316" }} />
           </div>
         </div>
-        <motion.div ref={track} style={{ x }} className="flex gap-5 md:gap-8 px-6 md:px-16 w-max">
+        <m.div ref={track} style={{ x }} className="flex gap-5 md:gap-8 px-6 md:px-16 w-max">
           {panels.map((p) => (
             <div key={p.time} className="relative w-[82vw] md:w-[38vw] h-[58vh] md:h-[56vh] rounded-[1.75rem] overflow-hidden p-7 md:p-10 flex flex-col justify-between text-white shrink-0"
               style={{ background: `linear-gradient(160deg, ${p.from} 0%, ${p.to} 85%)` }}>
@@ -191,7 +191,7 @@ export function HorizontalScroll({ panels, heading }) {
               </div>
             </div>
           ))}
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

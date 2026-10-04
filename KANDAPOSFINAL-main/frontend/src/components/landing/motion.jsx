@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { motion, useScroll, useTransform, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
+import { m, useScroll, useTransform, useMotionValue, useSpring, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Plus } from "lucide-react";
 
 // Motion building blocks for the marketing homepage: editorial, agency-style
@@ -13,7 +13,7 @@ const EASE = [0.22, 1, 0.36, 1];
  *  in-view trigger sits on the heading itself: the words start clipped by
  *  their mask, so an observer on them would never see them intersect. */
 export function WordReveal({ text, className = "", delay = 0, as = "h1" }) {
-  const Tag = motion[as];
+  const Tag = m[as];
   const words = text.split(" ");
   return (
     <Tag
@@ -26,12 +26,12 @@ export function WordReveal({ text, className = "", delay = 0, as = "h1" }) {
     >
       {words.map((w, i) => (
         <span key={i} className="inline-block overflow-hidden align-bottom pb-[0.08em] -mb-[0.08em]" aria-hidden="true">
-          <motion.span
+          <m.span
             className="inline-block"
             variants={{ hidden: { y: "110%" }, show: { y: "0%", transition: { duration: 0.9, ease: EASE } } }}
           >
             {w}
-          </motion.span>
+          </m.span>
           {i < words.length - 1 && "\u00A0"}
         </span>
       ))}
@@ -42,7 +42,7 @@ export function WordReveal({ text, className = "", delay = 0, as = "h1" }) {
 /** Fades and lifts its children once they scroll into view. */
 export function Rise({ children, delay = 0, className = "", y = 24 }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -50,13 +50,13 @@ export function Rise({ children, delay = 0, className = "", y = 24 }) {
       transition={{ duration: 0.8, ease: EASE, delay }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 function ScrollWord({ word, progress, range }) {
   const opacity = useTransform(progress, range, [0.16, 1]);
-  return <motion.span style={{ opacity }}>{word} </motion.span>;
+  return <m.span style={{ opacity }}>{word} </m.span>;
 }
 
 /** Large statement whose words light up as the reader scrolls through it. */
@@ -129,7 +129,7 @@ export function HoverList({ items }) {
       </div>
       <AnimatePresence>
         {cur && (
-          <motion.div
+          <m.div
             key="preview"
             className="pointer-events-none absolute left-0 top-0 z-10 hidden md:block"
             style={{ x: sx, y: sy }}
@@ -146,7 +146,7 @@ export function HoverList({ items }) {
               <div className="font-bold">{cur.title}</div>
               {cur.note && <div className="text-xs mt-1 opacity-85">{cur.note}</div>}
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
@@ -171,13 +171,13 @@ export function ServiceRows({ items }) {
             >
               <span className="text-xs font-mono tabular-nums" style={{ color: "#A39D95" }}>({String(i + 1).padStart(2, "0")})</span>
               <span className="land-display text-2xl md:text-5xl transition-colors duration-300" style={{ color: isOpen ? "#fff" : "rgba(255,255,255,0.45)" }}>{it.title}</span>
-              <motion.span animate={{ rotate: isOpen ? 45 : 0 }} transition={{ duration: 0.35, ease: EASE }}>
+              <m.span animate={{ rotate: isOpen ? 45 : 0 }} transition={{ duration: 0.35, ease: EASE }}>
                 <Plus className="w-6 h-6" style={{ color: isOpen ? "#FB923C" : "rgba(255,255,255,0.45)" }} />
-              </motion.span>
+              </m.span>
             </button>
             <AnimatePresence initial={false}>
               {isOpen && (
-                <motion.div
+                <m.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
@@ -195,7 +195,7 @@ export function ServiceRows({ items }) {
                       ))}
                     </ul>
                   </div>
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>
@@ -214,9 +214,9 @@ export function ScaleCta({ eyebrow, title, sub, href, cta }) {
   return (
     <section ref={ref} className="max-w-7xl mx-auto px-6 py-24 md:py-36 text-center overflow-hidden">
       <div className="text-xs font-bold tracking-[0.16em] uppercase mb-6" style={{ color: "var(--pos-muted)" }}>{eyebrow}</div>
-      <motion.h2 style={{ scale, opacity }} className="land-display text-[13vw] md:text-[8.5vw] leading-[0.92] mb-8">
+      <m.h2 style={{ scale, opacity }} className="land-display text-[13vw] md:text-[8.5vw] leading-[0.92] mb-8">
         {title}
-      </motion.h2>
+      </m.h2>
       <p className="text-lg mb-10" style={{ color: "var(--pos-muted)" }}>{sub}</p>
       <a href={href} className="land-magnet group inline-flex items-center gap-3 rounded-full pl-7 pr-2 py-2 font-bold text-white" style={{ background: "var(--pos-text)" }}>
         {cta}
