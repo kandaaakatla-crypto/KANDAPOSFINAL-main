@@ -227,12 +227,15 @@ export default function LandingPage() {
           <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Alpha opening in waves</span>
           <span><span className="hidden lg:inline" aria-hidden="true">· </span>Hyderabad, India</span>
         </motion.div>
-        <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[6.2vw] max-w-[14ch] lg:max-w-[10ch]" />
-        {/* One product shot for every size: in flow on phones, floated right of the headline on desktop. */}
-        <div className="relative -mx-3 mt-8 pt-12 pb-10 sm:py-14 lg:m-0 lg:p-0 lg:absolute lg:right-[-5%] lg:top-8 lg:w-[56%] lg:h-[580px] lg:z-0">
-          <HeroDevice />
-        </div>
-        <div className="relative z-10 grid md:grid-cols-[1fr_auto] gap-8 items-end mt-6 md:mt-14">
+        {/* Phones stack headline, product shot, copy. Desktop puts the
+            headline and copy on the left and the product shot in its own
+            right-hand column, so the two never overlap. */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-x-10">
+          <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[5.2vw] xl:text-[4.9rem] max-w-[14ch] lg:max-w-[10ch] lg:col-start-1 lg:row-start-1 lg:self-end" />
+          <div className="relative -mx-3 mt-8 pt-12 pb-10 sm:py-14 lg:m-0 lg:py-6 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-center">
+            <HeroDevice />
+          </div>
+          <div className="relative z-10 grid md:grid-cols-[1fr_auto] lg:grid-cols-1 gap-8 items-end mt-6 md:mt-14 lg:mt-10 lg:col-start-1 lg:row-start-2 lg:self-start">
           <Rise delay={0.5}>
             <p className="text-lg md:text-xl max-w-xl leading-relaxed" style={{ color: "var(--pos-muted)" }}>
               One system for restaurants and retail: GST ready billing, kitchen sync,
@@ -255,6 +258,7 @@ export default function LandingPage() {
               </a>
             </Magnetic>
           </Rise>
+          </div>
         </div>
       </section>
 

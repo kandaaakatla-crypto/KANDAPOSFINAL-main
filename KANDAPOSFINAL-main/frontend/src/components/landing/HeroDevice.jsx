@@ -4,8 +4,9 @@ import { CheckCircle2, ChefHat, FileText } from "lucide-react";
 import { prefersReducedMotion } from "./immersive";
 
 // The hero's product shot: a light tablet on a stand showing a real
-// screenshot of the demo POS order screen (public/landing/pos-screen.jpg,
-// captured from /demo/pos at 1300×960, 1.5× pixel density), with the bill
+// screenshot of the demo POS order screen (public/landing/pos-screen.jpg:
+// /demo/pos captured at 1024×768, 2× pixel density, cropped to the menu
+// and the open order so item names stay legible at hero size), with the bill
 // for that same order printing beside it. Plain HTML and CSS 3D transforms,
 // so the screen and receipt stay pin sharp and nothing heavy is loaded.
 
@@ -19,9 +20,9 @@ const BILL = [
 ];
 
 const NOTES = [
-  { icon: CheckCircle2, color: "#16A34A", title: "UPI received", sub: "₹804.30 · Collection #142", pos: "left-0 top-0 lg:left-[-2%] lg:top-[9%]", delay: 0.9, bob: 0 },
-  { icon: ChefHat, color: "#F97316", title: "Sent to kitchen", sub: "Grill · 6 items", pos: "right-0 bottom-0 lg:right-[-2%] lg:bottom-auto lg:top-[50%]", delay: 1.1, bob: 1.2 },
-  { icon: FileText, color: "#2563EB", title: "GST invoice ready", sub: "CGST + SGST ₹38.30", pos: "hidden lg:flex lg:right-[-1%] lg:top-[11%]", delay: 1.3, bob: 2.1 },
+  { icon: CheckCircle2, color: "#16A34A", title: "UPI received", sub: "₹804.30 · Collection #142", pos: "left-0 top-[-7%] sm:top-[-2%] lg:left-[-4%] lg:top-[-1%]", delay: 0.9, bob: 0 },
+  { icon: ChefHat, color: "#F97316", title: "Sent to kitchen", sub: "Grill · 6 items", pos: "right-0 bottom-0 lg:right-[-4%] lg:bottom-[8%]", delay: 1.1, bob: 1.2 },
+  { icon: FileText, color: "#2563EB", title: "GST invoice ready", sub: "CGST + SGST ₹38.30", pos: "hidden lg:flex lg:right-[-6%] lg:top-[16%]", delay: 1.3, bob: 2.1 },
 ];
 
 function Receipt({ animate }) {
@@ -81,10 +82,10 @@ export default function HeroDevice() {
   // Lean toward the pointer; tip back as the hero scrolls away. Phones get a
   // gentler angle so the screen stays readable at small sizes.
   const [narrow] = useState(() => typeof window !== "undefined" && window.innerWidth < 640);
-  const baseY = narrow ? -5 : -10;
+  const baseY = narrow ? -4 : -7;
   const tiltScroll = useTransform(scrollY, [0, 700], [0, 12]);
-  const rotateY = useTransform(sx, (v) => baseY + v * 8);
-  const rotateX = useTransform([sy, tiltScroll], ([v, s]) => 5 - v * 6 + s);
+  const rotateY = useTransform(sx, (v) => baseY + v * 5);
+  const rotateX = useTransform([sy, tiltScroll], ([v, s]) => 3 - v * 4 + s);
 
   useEffect(() => {
     if (still) return undefined;
@@ -102,13 +103,13 @@ export default function HeroDevice() {
       <div className="absolute inset-[8%] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(closest-side, rgba(249,115,22,0.22), rgba(249,115,22,0) 70%)", filter: "blur(10px)" }} />
       <motion.div
-        className="relative w-[96%] lg:w-[90%]"
+        className="relative w-[86%] sm:w-[72%] lg:w-[74%] ml-auto mr-[2%]"
         initial={{ opacity: 0, y: 70, rotateX: 30 }}
         animate={{ opacity: 1, y: 0, rotateX: 0 }}
         transition={{ duration: 1.3, ease: EASE, delay: 0.2 }}
         style={{ transformStyle: "preserve-3d" }}
       >
-        <motion.div style={{ rotateX: still ? 5 : rotateX, rotateY: still ? baseY : rotateY, transformStyle: "preserve-3d" }}>
+        <motion.div style={{ rotateX: still ? 3 : rotateX, rotateY: still ? baseY : rotateY, transformStyle: "preserve-3d" }}>
           {/* Tablet */}
           <div className="relative rounded-[22px] sm:rounded-[28px] p-[7px] sm:p-[11px]"
             style={{
@@ -116,7 +117,7 @@ export default function HeroDevice() {
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.06), 0 60px 90px -40px rgba(70,38,10,0.55), 0 24px 40px -30px rgba(0,0,0,0.35)",
             }}>
             <div className="relative rounded-[15px] sm:rounded-[18px] overflow-hidden" style={{ background: "#FDFAF4", boxShadow: "0 0 0 1px rgba(0,0,0,0.08)" }}>
-              <img src={SCREEN_IMG} alt="" width={1950} height={1440} className="block w-full h-auto" decoding="async" fetchPriority="high" />
+              <img src={SCREEN_IMG} alt="" width={1324} height={1424} className="block w-full h-auto" decoding="async" fetchPriority="high" />
             </div>
           </div>
           {/* Stand */}
@@ -125,9 +126,9 @@ export default function HeroDevice() {
             style={{ background: "linear-gradient(180deg,#F7F3ED,#D3CABD)", boxShadow: "0 18px 30px -12px rgba(70,38,10,0.45)" }} />
 
           {/* Receipt, floating in front of the device */}
-          <div className="absolute left-[-2%] sm:left-[-7%] bottom-[-4%] sm:bottom-[0%]"
+          <div className="absolute right-[100%] mr-[-32%] sm:mr-[-8%] bottom-[2%]"
             style={{ transform: "translateZ(80px)", filter: "drop-shadow(0 22px 26px rgba(60,35,10,0.28))" }}>
-            <div className="origin-bottom-left scale-[0.62] sm:scale-[0.85] lg:scale-100"><Receipt animate={!still} /></div>
+            <div className="origin-bottom-right scale-[0.56] sm:scale-[0.8] lg:scale-[0.82]"><Receipt animate={!still} /></div>
           </div>
         </motion.div>
       </motion.div>
