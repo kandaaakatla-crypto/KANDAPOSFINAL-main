@@ -1,12 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { RoundedBox, Float, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 
 // The hero's 3D scene: a stylised Kanda POS terminal printing a GST bill,
-// with ₹ coins drifting around it. Everything is built from primitives and
-// canvas-drawn textures (no model files to download), and it is lazy-loaded
-// by LandingPage so three.js stays out of the main bundle.
+// with ₹ coins drifting around it. The terminal's screen shows a real
+// screenshot of the demo POS order screen (public/landing/pos-screen.jpg);
+// everything else is primitives and canvas-drawn textures, with no model
+// files. Lazy-loaded by LandingPage so three.js stays out of the main bundle.
+
+// Captured from /demo/pos (demo tenant, PIN 1234) at 1300×960; the screen
+// plane below keeps that same aspect ratio.
+const SCREEN_IMG = "/landing/pos-screen.jpg";
 
 const ORANGE = "#F97316";
 const ITEMS = [
@@ -30,33 +35,6 @@ function useCanvasTexture(w, h, draw, deps) {
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => texture.dispose(), [texture]);
   return texture;
-}
-
-function drawScreen(ctx, w, h, count) {
-  ctx.fillStyle = "#FDFAF4"; ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = "#251D13"; ctx.font = "700 34px Outfit, sans-serif";
-  ctx.fillText("Table 4 · Dine in", 36, 62);
-  ctx.fillStyle = ORANGE; ctx.beginPath(); ctx.arc(w - 50, 50, 12, 0, Math.PI * 2); ctx.fill();
-  const tiles = [["Biryani", "#FDBA74"], ["Grill", "#FCA5A5"], ["Chai", "#BBF7D0"], ["Sweets", "#BFDBFE"]];
-  tiles.forEach(([t, c], i) => {
-    const x = 36 + i * ((w - 72) / 4);
-    ctx.fillStyle = c; ctx.fillRect(x, 92, (w - 72) / 4 - 14, 70);
-    ctx.fillStyle = "#251D13"; ctx.font = "600 22px Outfit, sans-serif"; ctx.fillText(t, x + 12, 136);
-  });
-  let total = 0;
-  ITEMS.slice(0, count).forEach(([name, price], i) => {
-    const y = 210 + i * 46;
-    ctx.fillStyle = i === count - 1 ? "rgba(249,115,22,0.12)" : "transparent";
-    ctx.fillRect(28, y - 30, w - 56, 42);
-    ctx.fillStyle = "#251D13"; ctx.font = "500 24px Outfit, sans-serif"; ctx.fillText(name, 40, y);
-    ctx.textAlign = "right"; ctx.fillText(`₹${price}`, w - 40, y); ctx.textAlign = "left";
-    total += price;
-  });
-  const gst = Math.round(total * 0.05);
-  ctx.strokeStyle = "#ECE1CD"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(36, h - 92); ctx.lineTo(w - 36, h - 92); ctx.stroke();
-  ctx.fillStyle = "#93805F"; ctx.font = "500 22px Outfit, sans-serif"; ctx.fillText(`GST 5%  ₹${gst}`, 40, h - 56);
-  ctx.fillStyle = ORANGE; ctx.font = "700 40px Outfit, sans-serif"; ctx.textAlign = "right";
-  ctx.fillText(`₹${(total + gst).toFixed(2)}`, w - 40, h - 44); ctx.textAlign = "left";
 }
 
 function drawReceipt(ctx, w, h) {
@@ -91,10 +69,15 @@ function Terminal({ animate }) {
   const group = useRef();
   const receipt = useRef();
   const [count, setCount] = useState(animate ? 1 : ITEMS.length);
-  const screenTex = useCanvasTexture(640, 520, (ctx, w, h) => drawScreen(ctx, w, h, count), [count]);
+  const screenTex = useLoader(THREE.TextureLoader, SCREEN_IMG);
+  useMemo(() => {
+    screenTex.colorSpace = THREE.SRGBColorSpace;
+    screenTex.anisotropy = 8;
+  }, [screenTex]);
   const receiptTex = useCanvasTexture(320, 520, drawReceipt, []);
 
-  // Ring up one item every ~0.9s, then print, then start a new bill.
+  // Tick through a bill every ~0.9s: the receipt feeds out at the end of
+  // each cycle, then tears off and the next one starts.
   useEffect(() => {
     if (!animate) return undefined;
     const id = setInterval(() => setCount((c) => (c >= ITEMS.length + 3 ? 1 : c + 1)), 900);
@@ -107,7 +90,7 @@ function Terminal({ animate }) {
     // Lean toward the pointer, and turn away as the hero scrolls off.
     const scroll = Math.min(window.scrollY / 700, 1);
     const tx = state.pointer.y * -0.18 + 0.12 + scroll * 0.35;
-    const ty = state.pointer.x * 0.35 - 0.45 + scroll * 0.9;
+    const ty = state.pointer.x * 0.3 - 0.28 + scroll * 0.9;
     g.rotation.x = THREE.MathUtils.damp(g.rotation.x, tx, 4, dt);
     g.rotation.y = THREE.MathUtils.damp(g.rotation.y, ty, 4, dt);
     // Receipt feeds out once the bill is complete.
@@ -121,42 +104,42 @@ function Terminal({ animate }) {
   });
 
   return (
-    <group ref={group} position={[0, -0.35, 0]}>
+    <group ref={group} position={[0, -0.6, 0]}>
       {/* Base */}
-      <RoundedBox args={[2.6, 0.32, 1.9]} radius={0.12} smoothness={4} position={[0, 0, 0]}>
+      <RoundedBox args={[3, 0.32, 1.9]} radius={0.12} smoothness={4} position={[0, 0, 0]}>
         <meshStandardMaterial color="#1A1714" roughness={0.45} metalness={0.2} />
       </RoundedBox>
       {/* Printer block with paper slot */}
-      <RoundedBox args={[0.78, 0.42, 0.7]} radius={0.08} smoothness={4} position={[0.98, 0.34, 0.42]}>
+      <RoundedBox args={[0.78, 0.42, 0.7]} radius={0.08} smoothness={4} position={[1.12, 0.34, 0.5]}>
         <meshStandardMaterial color="#26221E" roughness={0.5} />
       </RoundedBox>
-      <mesh position={[0.98, 0.56, 0.42]}>
+      <mesh position={[1.12, 0.56, 0.5]}>
         <boxGeometry args={[0.58, 0.02, 0.06]} />
         <meshStandardMaterial color="#0B0A09" />
       </mesh>
       {/* Receipt paper, anchored at the slot and scaled up as it prints */}
-      <group position={[0.98, 0, 0.42]}>
+      <group position={[1.12, 0, 0.5]}>
         <mesh ref={receipt} position={[0, 0.55, 0]} scale={[1, 0.02, 1]}>
           <planeGeometry args={[0.52, 1.8]} />
           <meshStandardMaterial map={receiptTex} side={THREE.DoubleSide} roughness={0.9} />
         </mesh>
       </group>
       {/* Screen stand + screen */}
-      <mesh position={[-0.42, 0.55, -0.4]} rotation={[-0.25, 0, 0]}>
-        <cylinderGeometry args={[0.07, 0.1, 0.8, 24]} />
+      <mesh position={[-0.3, 0.6, -0.42]} rotation={[-0.2, 0, 0]}>
+        <cylinderGeometry args={[0.08, 0.12, 0.9, 24]} />
         <meshStandardMaterial color="#26221E" metalness={0.4} roughness={0.4} />
       </mesh>
-      <group position={[-0.42, 1.25, -0.35]} rotation={[-0.32, 0, 0]}>
-        <RoundedBox args={[1.9, 1.45, 0.1]} radius={0.06} smoothness={4}>
+      <group position={[-0.3, 1.5, -0.35]} rotation={[-0.22, 0, 0]}>
+        <RoundedBox args={[2.5, 1.9, 0.1]} radius={0.06} smoothness={4}>
           <meshStandardMaterial color="#121014" roughness={0.3} metalness={0.3} />
         </RoundedBox>
         <mesh position={[0, 0, 0.056]}>
-          <planeGeometry args={[1.76, 1.3]} />
+          <planeGeometry args={[2.38, 1.756]} />
           <meshBasicMaterial map={screenTex} toneMapped={false} />
         </mesh>
       </group>
       {/* Orange status light */}
-      <mesh position={[-1.05, 0.17, 0.96]}>
+      <mesh position={[-1.25, 0.17, 0.96]}>
         <sphereGeometry args={[0.04, 16, 16]} />
         <meshBasicMaterial color={ORANGE} toneMapped={false} />
       </mesh>
@@ -197,7 +180,7 @@ export default function Hero3D() {
     <div ref={wrap} className="w-full h-full">
       <Canvas
         dpr={[1, 1.75]}
-        camera={{ position: [0, 1.4, 6.2], fov: 38 }}
+        camera={{ position: [0, 1.5, 6.4], fov: 38 }}
         frameloop={visible ? "always" : "never"}
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         aria-hidden="true"
@@ -206,7 +189,9 @@ export default function Hero3D() {
         <directionalLight position={[3, 5, 4]} intensity={1.6} />
         <pointLight position={[-3, 2, 2]} intensity={18} color={ORANGE} />
         <Float speed={reduced ? 0 : 1.2} rotationIntensity={reduced ? 0 : 0.15} floatIntensity={reduced ? 0 : 0.5}>
-          <Terminal animate={!reduced} />
+          <Suspense fallback={null}>
+            <Terminal animate={!reduced} />
+          </Suspense>
         </Float>
         <Coins animate={!reduced} />
         <ContactShadows position={[0, -1.1, 0]} opacity={0.35} scale={9} blur={2.6} far={3} />
