@@ -122,11 +122,22 @@
 .live-dot { animation: pulse-dot 1.6s infinite; }
 
 /* ---- Landing page ---- */
+/* Stand-in for Outfit while it loads, sized to Outfit's metrics (500
+   weight: 98.4% of Arial's width, ascent 1.0, descent 0.26) so the
+   headline doesn't re-wrap and shove the page down when the font swaps. */
+@font-face {
+  font-family: "Outfit Fallback";
+  src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Liberation Sans"), local("Roboto");
+  size-adjust: 98.4%;
+  ascent-override: 101.6%;
+  descent-override: 26.4%;
+  line-gap-override: 0%;
+}
 .land-page, .land-page input, .land-page textarea {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Outfit', 'Outfit Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 .land-h1, .land-h2, .land-h3 {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Outfit', 'Outfit Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 500;
   letter-spacing: -0.035em;
 }
@@ -157,7 +168,7 @@
 /* Agency-style display type: big, tight grotesk (Outfit) for the
    redesigned homepage's headlines, lists and closing CTA. */
 .land-display {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Outfit', 'Outfit Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 500;
   letter-spacing: -0.045em;
   line-height: 0.98;
@@ -175,6 +186,8 @@
 .land-row:hover { background: rgba(249,115,22,0.04); }
 .land-magnet { transition: transform 0.5s var(--spring-ease); }
 .land-magnet:hover { transform: scale(1.04); }
+.land-pulse { transform: scale(0.3); opacity: 0; animation: land-pulse 3s ease-out infinite; }
+@keyframes land-pulse { from { transform: scale(0.3); opacity: 0.6; } to { transform: scale(1.4); opacity: 0; } }
 /* Thermal paper with a torn, zigzag bottom edge (hero receipt). */
 .land-receipt {
   background: linear-gradient(180deg, #F3EFE8 0, #FFFFFF 14px);
@@ -185,6 +198,7 @@
 @media (prefers-reduced-motion: reduce) {
   .live-dot { animation: none; }
   .land-marquee-track { animation: none; }
+  .land-pulse { animation: none; opacity: 0.4; transform: none; }
 }
 
 

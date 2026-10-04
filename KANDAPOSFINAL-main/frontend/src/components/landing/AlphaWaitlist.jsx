@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { toast } from "sonner";
 import { CheckCircle2, Copy, MessageCircle, Rocket, Headphones, Sparkles } from "lucide-react";
 
@@ -160,7 +160,7 @@ export default function AlphaWaitlist({ submitLead }) {
 
           <div className="rounded-2xl p-6 sm:p-8" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
             {result ? (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-full flex flex-col" data-testid="waitlist-success">
+              <m.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-full flex flex-col" data-testid="waitlist-success">
                 <div className="flex items-center gap-2 text-sm font-semibold mb-5" style={{ color: "var(--pos-accent)" }}>
                   <CheckCircle2 className="w-4 h-4" /> {result.already ? "You're already on the list" : "You're on the list"}
                 </div>
@@ -198,7 +198,7 @@ export default function AlphaWaitlist({ submitLead }) {
                     </div>
                   </div>
                 )}
-              </motion.div>
+              </m.div>
             ) : (
               <form onSubmit={submit} className="grid gap-4" data-testid="waitlist-form">
                 <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--pos-accent)" }}>Join the alpha</div>
@@ -221,10 +221,10 @@ export default function AlphaWaitlist({ submitLead }) {
                   <input type="tel" placeholder="WhatsApp number (optional)" autoComplete="tel" value={form.phone} onChange={update("phone")}
                     className="rounded-lg px-4 py-2.5 text-sm min-w-0" style={inputStyle} />
                 </div>
-                <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={busy}
+                <m.button whileTap={{ scale: 0.97 }} type="submit" disabled={busy}
                   className="land-pos-btn rounded-full px-6 py-3 font-bold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
                   {busy ? "Joining…" : "Join the waitlist"}
-                </motion.button>
+                </m.button>
                 <div className="text-[11px] text-center" style={{ color: "var(--pos-muted)" }}>
                   No spam. Launch news and your alpha invite only.
                 </div>

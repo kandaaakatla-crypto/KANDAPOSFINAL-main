@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, AnimatePresence, animate } from "framer-motion";
+import { m, useScroll, useTransform, useInView, AnimatePresence, animate } from "framer-motion";
 import { CheckCircle2, ChefHat, Send, CreditCard, ShoppingBag, Trash2 } from "lucide-react";
 import { prefersReducedMotion } from "./immersive";
 
@@ -23,7 +23,7 @@ const MENU = [
 ];
 // Tapped in this order; 766.00 + 5% GST = ₹804.30.
 const ORDER = ["gb", "cgb", "bw", "cc", "cz", "fc"];
-const byId = Object.fromEntries(MENU.map((m) => [m.id, m]));
+const byId = Object.fromEntries(MENU.map((it) => [it.id, it]));
 const CATS = ["Pizzas", "Sides", "Chicken", "Drinks", "Desserts"];
 
 // Timeline (ms) for one loop.
@@ -48,19 +48,31 @@ function Ticker({ value, className = "", style }) {
   return <span className={`tabular-nums ${className}`} style={style}>{inr(shown)}</span>;
 }
 
-function useOrderLoop(still) {
-  const [t, setT] = useState(still ? T_PAID + 1 : 0);
+// The moments something on screen changes; the loop sleeps in between
+// instead of re-rendering on a fixed tick.
+const BEATS = [...new Set([
+  ...ORDER.flatMap((_, i) => [i * TAP, i * TAP + TAP * 0.4]),
+  ORDER.length * TAP, T_SEND, T_SENT, T_PAY, T_PAID,
+])].sort((x, y) => x - y);
+
+function useOrderLoop(still, active) {
+  const [t, setT] = useState(still ? T_PAID : 0);
+  const [loop, setLoop] = useState(0);
+  // Advance to the next beat; pauses (and resumes where it left off) while
+  // the panel is off screen.
   useEffect(() => {
-    if (still) return undefined;
-    const start = performance.now();
-    const id = setInterval(() => setT((performance.now() - start) % T_LOOP), 100);
-    return () => clearInterval(id);
-  }, [still]);
+    if (still || !active) return undefined;
+    const next = BEATS.find((x) => x > t) ?? T_LOOP;
+    const id = setTimeout(() => {
+      if (next >= T_LOOP) { setT(0); setLoop((n) => n + 1); } else setT(next);
+    }, next - t);
+    return () => clearTimeout(id);
+  }, [t, still, active]);
   // Each item lands in the order a little after its tile is tapped.
-  const count = t < TAP * 0.4 ? 0 : Math.floor((t - TAP * 0.4) / TAP) + 1;
+  const count = t < TAP * 0.4 ? 0 : Math.min(ORDER.length, Math.floor((t - TAP * 0.4) / TAP) + 1);
   const tapping = t < ORDER.length * TAP ? ORDER[Math.floor(t / TAP)] : null;
   const stage = t >= T_PAID ? "paid" : t >= T_PAY ? "paying" : t >= T_SENT ? "sent" : t >= T_SEND ? "sending" : "adding";
-  return { count: Math.min(count, ORDER.length), tapping, stage, loop: Math.floor(t / T_LOOP) };
+  return { count, tapping, stage, loop };
 }
 
 function Receipt({ lines, subtotal, gst, total }) {
@@ -71,7 +83,7 @@ function Receipt({ lines, subtotal, gst, total }) {
         <div className="absolute left-3 right-3 top-[7px] h-[2px] rounded-full" style={{ background: "#1A1714" }} />
       </div>
       <div className="relative overflow-hidden -mt-2 pt-2">
-        <motion.div
+        <m.div
           initial={{ y: "-100%" }}
           animate={{ y: "0%" }}
           transition={{ duration: 2.2, ease: [0.45, 0, 0.2, 1] }}
@@ -82,8 +94,8 @@ function Receipt({ lines, subtotal, gst, total }) {
           <div className="text-center" style={{ color: "#6B6257" }}>GSTIN 36AAACK1234F1Z8</div>
           <div className="text-center mb-1.5" style={{ color: "#6B6257" }}>Collection #142</div>
           <div className="border-t border-dashed mb-1" style={{ borderColor: "#B9B1A6" }} />
-          {lines.map((m) => (
-            <div key={m.id} className="flex justify-between gap-2"><span className="truncate">{m.name}</span><span>{m.price.toFixed(2)}</span></div>
+          {lines.map((it) => (
+            <div key={it.id} className="flex justify-between gap-2"><span className="truncate">{it.name}</span><span>{it.price.toFixed(2)}</span></div>
           ))}
           <div className="border-t border-dashed my-1" style={{ borderColor: "#B9B1A6" }} />
           <div className="flex justify-between" style={{ color: "#6B6257" }}><span>Subtotal</span><span>{subtotal.toFixed(2)}</span></div>
@@ -91,7 +103,7 @@ function Receipt({ lines, subtotal, gst, total }) {
           <div className="flex justify-between" style={{ color: "#6B6257" }}><span>SGST 2.5%</span><span>{(gst / 2).toFixed(2)}</span></div>
           <div className="flex justify-between font-bold text-[12.5px] mt-1"><span>TOTAL</span><span>{inr(total)}</span></div>
           <div className="text-center mt-2" style={{ color: "#6B6257" }}>Paid by UPI · Thank you!</div>
-        </motion.div>
+        </m.div>
       </div>
     </div>
   );
@@ -99,7 +111,7 @@ function Receipt({ lines, subtotal, gst, total }) {
 
 function Toast({ icon: Icon, color, title, sub, className = "" }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 14, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.96 }}
       transition={{ duration: 0.45, ease: EASE }}
       className={`flex items-center gap-2.5 rounded-2xl pl-2.5 pr-4 py-2.5 ${className}`}
@@ -112,20 +124,21 @@ function Toast({ icon: Icon, color, title, sub, className = "" }) {
         <span className="block text-[12px] font-bold" style={{ color: "#1A1714" }}>{title}</span>
         <span className="block text-[11px]" style={{ color: "#6B6257" }}>{sub}</span>
       </span>
-    </motion.div>
+    </m.div>
   );
 }
 
 export default function HeroOrderPanel() {
   const [still] = useState(() => prefersReducedMotion());
-  const { count, tapping, stage, loop } = useOrderLoop(still);
   const ref = useRef(null);
+  const inView = useInView(ref, { margin: "100px" });
+  const { count, tapping, stage, loop } = useOrderLoop(still, inView);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start 0.2"] });
   const rotateX = useTransform(scrollYProgress, [0, 1], [20, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], [0.92, 1]);
 
   const lines = ORDER.slice(0, count).map((id) => byId[id]);
-  const subtotal = lines.reduce((s, m) => s + m.price, 0);
+  const subtotal = lines.reduce((s, it) => s + it.price, 0);
   const gst = Math.round(subtotal * 5) / 100;
   const total = subtotal + gst;
   const sent = stage !== "adding" && stage !== "sending";
@@ -135,8 +148,8 @@ export default function HeroOrderPanel() {
     <div ref={ref} className="relative max-w-5xl mx-auto" style={{ perspective: 1800 }} aria-hidden="true">
       <div className="absolute -inset-x-[8%] top-[6%] bottom-[-8%] pointer-events-none"
         style={{ background: "radial-gradient(closest-side, rgba(249,115,22,0.18), rgba(249,115,22,0) 72%)" }} />
-      <motion.div initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease: EASE, delay: 0.35 }}>
-        <motion.div
+      <m.div initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease: EASE, delay: 0.35 }}>
+        <m.div
           className="relative rounded-[18px] overflow-hidden text-left"
           style={{
             rotateX: still ? 0 : rotateX, scale: still ? 1 : scale, transformOrigin: "50% 0%",
@@ -171,21 +184,21 @@ export default function HeroOrderPanel() {
                 })}
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-2.5">
-                {MENU.map((m, i) => {
-                  const hot = tapping === m.id;
+                {MENU.map((it, i) => {
+                  const hot = tapping === it.id;
                   return (
-                    <motion.div key={m.id}
+                    <m.div key={it.id}
                       animate={hot ? { scale: [1, 0.94, 1.02, 1] } : { scale: 1 }}
                       transition={{ duration: 0.5, ease: "easeOut" }}
                       className={`relative rounded-xl p-2.5 md:p-3 flex flex-col justify-between min-h-[78px] md:min-h-[96px] ${i >= 6 ? "hidden lg:flex" : i >= 4 ? "hidden md:flex" : ""}`}
                       style={{ background: "#FFFFFF", border: `1.5px solid ${hot ? "#F97316" : "#EFE7DA"}`, boxShadow: hot ? "0 0 0 4px rgba(249,115,22,0.15)" : "none", transition: "border-color .25s, box-shadow .25s" }}
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <span className="text-[12px] md:text-[13px] font-bold leading-snug" style={{ color: "#1A1714" }}>{m.name}</span>
-                        <span className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ background: m.dot }} />
+                        <span className="text-[12px] md:text-[13px] font-bold leading-snug" style={{ color: "#1A1714" }}>{it.name}</span>
+                        <span className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ background: it.dot }} />
                       </div>
-                      <span className="text-[12px] md:text-[13px] font-bold" style={{ color: "#EA580C" }}>{inr(m.price)}</span>
-                    </motion.div>
+                      <span className="text-[12px] md:text-[13px] font-bold" style={{ color: "#EA580C" }}>{inr(it.price)}</span>
+                    </m.div>
                   );
                 })}
               </div>
@@ -203,22 +216,22 @@ export default function HeroOrderPanel() {
               </div>
               <div className="px-3 md:px-4 py-2 md:py-3 flex-1 min-h-[168px] md:min-h-[236px]">
                 <AnimatePresence initial={false}>
-                  {lines.map((m) => (
-                    <motion.div key={`${loop}-${m.id}`}
+                  {lines.map((it) => (
+                    <m.div key={`${loop}-${it.id}`}
                       initial={{ opacity: 0, x: 24, height: 0 }} animate={{ opacity: 1, x: 0, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.45, ease: EASE }} className="overflow-hidden"
                     >
                       <div className="flex items-center justify-between gap-2 py-1.5 md:py-2" style={{ borderBottom: "1px dashed #EFE7DA" }}>
                         <span className="flex items-center gap-2 min-w-0">
                           <span className="text-[11px] font-bold w-5 h-5 rounded-md flex items-center justify-center shrink-0" style={{ background: "#F4EDE2", color: "#1A1714" }}>1</span>
-                          <span className="text-[12px] md:text-[13px] font-semibold truncate" style={{ color: "#1A1714" }}>{m.name}</span>
+                          <span className="text-[12px] md:text-[13px] font-semibold truncate" style={{ color: "#1A1714" }}>{it.name}</span>
                         </span>
                         <span className="flex items-center gap-2">
-                          <span className="text-[12px] md:text-[13px] font-bold tabular-nums" style={{ color: "#1A1714" }}>{inr(m.price)}</span>
+                          <span className="text-[12px] md:text-[13px] font-bold tabular-nums" style={{ color: "#1A1714" }}>{inr(it.price)}</span>
                           <Trash2 className="hidden md:block w-3.5 h-3.5" style={{ color: "#E8A49A" }} />
                         </span>
                       </div>
-                    </motion.div>
+                    </m.div>
                   ))}
                 </AnimatePresence>
               </div>
@@ -231,21 +244,21 @@ export default function HeroOrderPanel() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 px-3 md:px-4 pb-3 md:pb-4">
-                <motion.div animate={stage === "sending" ? { scale: [1, 0.93, 1] } : { scale: 1 }} transition={{ duration: 0.45 }}
+                <m.div animate={stage === "sending" ? { scale: [1, 0.93, 1] } : { scale: 1 }} transition={{ duration: 0.45 }}
                   className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 md:py-3 text-[12px] md:text-[13px] font-bold text-white"
                   style={{ background: sent ? "#16A34A" : "#2563EB", transition: "background .3s" }}>
                   {sent ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />} {sent ? "Sent" : "Send to Kitchen"}
-                </motion.div>
-                <motion.div animate={stage === "paying" ? { scale: [1, 0.93, 1] } : { scale: 1 }} transition={{ duration: 0.45 }}
+                </m.div>
+                <m.div animate={stage === "paying" ? { scale: [1, 0.93, 1] } : { scale: 1 }} transition={{ duration: 0.45 }}
                   className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 md:py-3 text-[12px] md:text-[13px] font-bold text-white"
                   style={{ background: paid ? "#16A34A" : "#F97316", transition: "background .3s" }}>
                   {paid ? <CheckCircle2 className="w-4 h-4" /> : <CreditCard className="w-4 h-4" />} {paid ? "Paid" : `Pay ${inr(total)}`}
-                </motion.div>
+                </m.div>
               </div>
             </div>
           </div>
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
 
       {/* Moments from the order, popping up beside the screen */}
       {/* Phones show only the latest moment, above the screen; larger screens
@@ -259,9 +272,9 @@ export default function HeroOrderPanel() {
       <div className="hidden md:block absolute left-[-3%] lg:left-[-11%] xl:left-[-16%] bottom-[-12%] z-10" style={{ filter: "drop-shadow(0 22px 26px rgba(60,35,10,0.28))" }}>
         <AnimatePresence>
           {paid && (
-            <motion.div key={`r${loop}`} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.4 }} className="origin-bottom-left scale-[0.85] lg:scale-100">
+            <m.div key={`r${loop}`} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.4 }} className="origin-bottom-left scale-[0.85] lg:scale-100">
               <Receipt lines={lines} subtotal={subtotal} gst={gst} total={total} />
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { m, AnimatePresence, MotionConfig, LazyMotion, domAnimation } from "framer-motion";
 import { toast } from "sonner";
 import {
   ShoppingCart, LayoutGrid, ChefHat, Truck, Boxes, Users, BarChart3,
@@ -71,14 +71,14 @@ function Kicker({ children }) {
 // line items (the page's one deliberate scroll moment).
 function RevealRows({ children }) {
   return (
-    <motion.div
+    <m.div
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, margin: "-60px" }}
       variants={{ hidden: {}, show: { transition: { staggerChildren: 0.09 } } }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 const rowVariant = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } } };
@@ -163,6 +163,9 @@ export default function LandingPage() {
   };
 
   return (
+    // LazyMotion + `m` components load only the animation features this page
+    // uses, keeping most of framer-motion out of the homepage bundle.
+    <LazyMotion features={domAnimation}>
     <MotionConfig reducedMotion="user">
     <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)", overflowX: "clip" }} className="land-page" data-testid="landing-page">
       <CursorFollower />
@@ -194,7 +197,7 @@ export default function LandingPage() {
         </div>
         <AnimatePresence>
           {mobileNavOpen && (
-            <motion.nav
+            <m.nav
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -215,18 +218,18 @@ export default function LandingPage() {
                   </a>
                 ))}
               </div>
-            </motion.nav>
+            </m.nav>
           )}
         </AnimatePresence>
       </header>
 
       {/* Hero */}
       <section className="relative max-w-7xl mx-auto px-6 pt-12 md:pt-20">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
+        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
           className="relative z-10 flex items-center justify-between text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
           <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Alpha opening in waves</span>
           <span>Hyderabad, India</span>
-        </motion.div>
+        </m.div>
         <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[6.2vw] max-w-[14ch] lg:max-w-[16ch]" />
         <div className="relative z-10 grid md:grid-cols-[1fr_auto] gap-8 items-end mt-6 md:mt-12">
           <Rise delay={0.5}>
@@ -360,24 +363,24 @@ export default function LandingPage() {
                   <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>Hyderabad, Telangana</div>
                 </div>
                 <RevealRows>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>Hyderabadi Biryani</span><span>₹320</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>Irani Chai ×2</span><span>₹40</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>Osmania Biscuit ×4</span><span>₹80</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>CGST 2.5%</span><span>₹11.00</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>SGST 2.5%</span><span>₹11.00</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between pt-3 font-bold text-[15px]" style={{ color: "var(--pos-accent)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between pt-3 font-bold text-[15px]" style={{ color: "var(--pos-accent)" }}>
                     <span>Total</span><span>₹462.00</span>
-                  </motion.div>
+                  </m.div>
                 </RevealRows>
                 <div className="mt-4 pt-3 text-[10px] leading-relaxed text-center" style={{ borderTop: "1px solid var(--pos-border)", color: "var(--pos-muted)" }}>
                   GSTIN 36AKPPK1234F1Z8<br />Thank you, visit again
@@ -449,9 +452,9 @@ export default function LandingPage() {
                     </div>
                     <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}
                       className="rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                    <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={demoBusy} className="land-pos-btn rounded-full px-6 py-3 font-bold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
+                    <m.button whileTap={{ scale: 0.97 }} type="submit" disabled={demoBusy} className="land-pos-btn rounded-full px-6 py-3 font-bold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
                       {demoBusy ? "Sending…" : "Contact us"}
-                    </motion.button>
+                    </m.button>
                   </form>
                 )}
               </div>
@@ -510,7 +513,7 @@ export default function LandingPage() {
       <div className="md:hidden fixed bottom-5 right-5 z-30 flex flex-col items-end gap-3">
         <AnimatePresence>
           {fabOpen && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 12, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.9 }}
@@ -541,10 +544,10 @@ export default function LandingPage() {
                   <Instagram className="w-4.5 h-4.5 text-white" />
                 </span>
               </a>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
-        <motion.button
+        <m.button
           type="button"
           onClick={() => setFabOpen((v) => !v)}
           whileTap={{ scale: 0.94 }}
@@ -554,9 +557,10 @@ export default function LandingPage() {
           style={{ background: "var(--pos-accent)", boxShadow: "0 10px 24px -8px rgba(0,0,0,0.4)" }}
         >
           {fabOpen ? <X className="w-6 h-6 text-white" /> : <Plus className="w-6 h-6 text-white" />}
-        </motion.button>
+        </m.button>
       </div>
     </div>
     </MotionConfig>
+    </LazyMotion>
   );
 }
