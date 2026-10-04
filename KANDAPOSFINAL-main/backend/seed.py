@@ -304,6 +304,9 @@ async def seed_all(db):
             pass
 
     await db.tenants.create_index("slug", unique=True)
+    await db.pos_devices.create_index("token_hash", unique=True)
+    await db.pos_devices.create_index("id", unique=True)
+    await db.pos_devices.create_index([("tenant_id", 1), ("revoked_at", 1)])
     await db.users.create_index([("tenant_id", 1), ("id", 1)], unique=True)
     await db.menu_items.create_index([("tenant_id", 1), ("id", 1)], unique=True)
     await db.categories.create_index([("tenant_id", 1), ("id", 1)], unique=True)

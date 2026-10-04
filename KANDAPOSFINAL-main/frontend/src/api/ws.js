@@ -2,7 +2,7 @@
  * Lightweight WebSocket client for Kanda POS realtime updates.
  * Auto-reconnect with exponential backoff; the token is passed via query string.
  */
-import { tokenStore } from "./client";
+import { tokenStore, tenantStore, deviceStore } from "./client";
 
 function wsUrl() {
   // REACT_APP_WS_BACKEND_URL is a dedicated override for the WebSocket
@@ -26,7 +26,11 @@ export function connectWs(onEvent) {
   const open = () => {
     const t = tokenStore.get();
     if (!t || closedByCaller) return;
-    socket = new WebSocket(`${wsUrl()}?token=${encodeURIComponent(t)}`);
+    // Staff sessions on an unlocked till are bound to it server-side; the
+    // device token rides as a query param (WebSockets can't set headers).
+    const slug = tenantStore.get();
+    const device = slug && deviceStore.get(slug);
+    socket = new WebSocket(`${wsUrl()}?token=${encodeURIComponent(t)}${device ? `&device=${encodeURIComponent(device)}` : ""}`);
 
     socket.onopen = () => { attempt = 0; };
     socket.onmessage = (ev) => {

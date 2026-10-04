@@ -15,7 +15,8 @@ from . import (
     menu_csv, staff, timeclock, shifts, waste, cashdrawer, tips, coupons,
     locations, prep, refunds, loyalty, onboarding, dash_auth, voice,
     digest, sms, whatsapp, plans, suppliers, storefront, payroll, brands,
-    store_credit, gift_cards, menu_schedules, central_supply, leads, website_orders,
+    store_credit, gift_cards, menu_schedules, central_supply, leads, pos_devices,
+    website_orders,
 )
 
 api_router = APIRouter(prefix="/api")
@@ -31,6 +32,7 @@ for module in (
     menu_csv, staff, timeclock, shifts, waste, cashdrawer, tips, coupons,
     locations, prep, refunds, loyalty, onboarding, dash_auth, voice,
     digest, sms, whatsapp, plans, suppliers, storefront, payroll, brands,
-    store_credit, gift_cards, menu_schedules, central_supply, leads, website_orders,
+    store_credit, gift_cards, menu_schedules, central_supply, leads, pos_devices,
+    website_orders,
 ):
     api_router.include_router(module.router)
