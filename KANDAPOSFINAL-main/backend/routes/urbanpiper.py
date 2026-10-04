@@ -125,8 +125,10 @@ class UPOption(_Lenient):
 
 class UPItem(_Lenient):
     merchant_id: Optional[str] = None
-    title: str = Field(default="", max_length=200)
-    quantity: int = Field(default=1, ge=1, le=999)
+    # No length/upper limits here: a paid order must never 422 on a long
+    # title; values are trimmed where they're used.
+    title: str = ""
+    quantity: int = Field(default=1, ge=1)
     price: float = Field(default=0, ge=0)
     options_to_add: List[UPOption] = Field(default_factory=list)
     instructions: Optional[str] = None
@@ -188,6 +190,23 @@ async def _tenant_from_key(request: Request, db) -> dict:
     return tenant
 
 
+async def _route_to_outlet(db, key_tenant: dict, store_ref: Optional[str]) -> tuple[dict, list[str]]:
+    """One UrbanPiper account can serve several outlets of a brand through a
+    single webhook, so the key alone can't pick the store. When the order's
+    store `merchant_ref_id` is the POS store id of an outlet in the key
+    store's brand, the order goes there; otherwise it stays on the key's
+    store, flagged if the reference named some other store."""
+    ref = (store_ref or "").strip()
+    if not ref or ref == key_tenant["id"]:
+        return key_tenant, []
+    brand_id = key_tenant.get("brand_id")
+    if brand_id:
+        outlet = await db.tenants.find_one({"id": ref, "brand_id": brand_id}, {"_id": 0})
+        if outlet and outlet.get("status") != "suspended":
+            return outlet, []
+    return key_tenant, [f"unknown_aggregator_store: {ref[:100]}"]
+
+
 async def _to_order_items(db, tenant_id: str, lines: List[UPItem]) -> tuple[list[dict], list[str]]:
     """POS order lines at the aggregator's prices. A line whose merchant_id
     is a live POS menu item takes the POS name (KDS, GST and recipes all key
@@ -202,7 +221,7 @@ async def _to_order_items(db, tenant_id: str, lines: List[UPItem]) -> tuple[list
     items, warnings = [], []
     for ln in lines:
         menu_item = by_id.get(ln.merchant_id or "")
-        name = menu_item["name"] if menu_item else (ln.title.strip() or "Aggregator item")
+        name = menu_item["name"] if menu_item else (ln.title.strip()[:200] or "Aggregator item")
         if not menu_item:
             warnings.append(f"unmapped_aggregator_item: {name} ({ln.merchant_id or 'no merchant_id'})")
         mods = [o.title.strip()[:100] for o in ln.options_to_add if o.title and o.title.strip()]
@@ -232,7 +251,10 @@ def _customer(c: Optional[UPCustomer]) -> tuple[dict, Optional[str]]:
 @router.post("/orders", name="ingest_urbanpiper_order")
 async def ingest_urbanpiper_order(payload: UPOrderRelay, request: Request):
     db = get_db()
-    tenant = await _tenant_from_key(request, db)
+    store = payload.order.store
+    tenant, warnings = await _route_to_outlet(
+        db, await _tenant_from_key(request, db), store.merchant_ref_id if store else None,
+    )
     tenant_id = tenant["id"]
     d = payload.order.details
     external_ref = f"{EXTERNAL_REF_PREFIX}{d.id}"
@@ -242,7 +264,8 @@ async def ingest_urbanpiper_order(payload: UPOrderRelay, request: Request):
         return {"orderId": existing["id"], "orderNumber": existing["number"], "duplicate": True}
 
     business_type = tenant.get("business_type", "restaurant")
-    raw_items, warnings = await _to_order_items(db, tenant_id, payload.order.items)
+    raw_items, item_warnings = await _to_order_items(db, tenant_id, payload.order.items)
+    warnings += item_warnings
     # Re-stamp GST from the POS rate for the (possibly re-priced) line;
     # _order_doc's own tax maths then runs on the stamped rates.
     # Its own warnings only repeat the unmapped-item ones above.
@@ -260,7 +283,6 @@ async def ingest_urbanpiper_order(payload: UPOrderRelay, request: Request):
     total = round(doc["total"] + charges - discount, 2)
     if d.order_total is not None and abs(total - d.order_total) > TOTAL_TOLERANCE:
         warnings.append(f"aggregator_total_mismatch: pos {total} vs {channel} {d.order_total}")
-    store = payload.order.store
     doc.update({
         "deliveryFee": charges,
         "discount": discount,
@@ -273,7 +295,7 @@ async def ingest_urbanpiper_order(payload: UPOrderRelay, request: Request):
         "aggregator": channel,
         "aggregatorOrderId": str(d.id),
         "aggregatorTotal": d.order_total,
-        "aggregatorStoreRef": (store.merchant_ref_id if store else None),
+        "aggregatorStoreRef": ((store.merchant_ref_id or "")[:100] or None) if store else None,
         "note": (d.instructions or "").strip()[:500] or None,
         "sync_warnings": list(dict.fromkeys(warnings)),
     })

@@ -48,7 +48,7 @@ def _relay(items, channel="swiggy", **details):
         "order": {
             "details": d,
             "items": items,
-            "store": {"merchant_ref_id": "store-1", "id": 1234},
+            "store": {"merchant_ref_id": "demo", "id": 1234},
             "payment": [{"option": "payment_gateway", "amount": 0}],
             "next_states": ["Acknowledged", "Food Ready", "Dispatched", "Completed"],
         },
@@ -139,6 +139,52 @@ def test_other_channels_are_recorded_as_other(client, db_name):
     assert stored["source"] == "other"
     assert stored["aggregator"] == "magicpin"
     assert stored["type"] == "collection"
+
+
+def test_long_title_does_not_reject_a_paid_order(client, db_name):
+    headers = _manager_headers(client)
+    key = _new_key(client, headers)
+    body = _relay([_line("not-on-pos", 150)])
+    body["order"]["items"][0]["title"] = "X" * 500
+    r = client.post(INGEST, json=body, headers={"X-Kanda-Key": key})
+    assert r.status_code == 200, r.text
+    assert len(_stored(db_name, r.json()["orderId"])["items"][0]["name"]) == 200
+
+
+def test_brand_outlet_orders_route_by_store_ref(client, db_name):
+    """One UrbanPiper webhook (one key) serving several outlets of a brand:
+    the order's store merchant_ref_id picks the outlet; a ref outside the
+    brand stays on the key's store with a warning."""
+    headers = _manager_headers(client)
+    key = _new_key(client, headers)
+    m = MongoClient(os.environ["MONGO_URL"])
+    db = m[db_name]
+    brand = f"brand_up_{random.randint(1000, 9999)}"
+    outlet = f"outlet_up_{random.randint(1000, 9999)}"
+    stranger = f"stranger_up_{random.randint(1000, 9999)}"
+    try:
+        db.tenants.update_one({"id": "demo"}, {"$set": {"brand_id": brand}})
+        db.tenants.insert_many([
+            {"id": outlet, "slug": outlet, "name": "Outlet 2", "brand_id": brand, "business_type": "restaurant", "status": "active"},
+            {"id": stranger, "slug": stranger, "name": "Other brand", "brand_id": "brand_other", "business_type": "restaurant", "status": "active"},
+        ])
+        body = _relay([_line("not-on-pos", 120)])
+        body["order"]["store"]["merchant_ref_id"] = outlet
+        r = client.post(INGEST, json=body, headers={"X-Kanda-Key": key})
+        assert r.status_code == 200, r.text
+        assert _stored(db_name, r.json()["orderId"])["tenant_id"] == outlet
+
+        body = _relay([_line("not-on-pos", 120)])
+        body["order"]["store"]["merchant_ref_id"] = stranger
+        r = client.post(INGEST, json=body, headers={"X-Kanda-Key": key})
+        assert r.status_code == 200, r.text
+        stored = _stored(db_name, r.json()["orderId"])
+        assert stored["tenant_id"] == "demo"
+        assert any(w.startswith("unknown_aggregator_store") for w in stored["sync_warnings"])
+    finally:
+        db.tenants.update_one({"id": "demo"}, {"$unset": {"brand_id": ""}})
+        db.tenants.delete_many({"id": {"$in": [outlet, stranger]}})
+        m.close()
 
 
 def test_retried_webhook_does_not_duplicate(client):
