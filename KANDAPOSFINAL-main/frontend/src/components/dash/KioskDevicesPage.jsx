@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ChefHat, Package, Monitor, Copy, RotateCw, Loader2 } from "lucide-react";
+import { ChefHat, Package, Monitor, Copy, RotateCw, Loader2, Lock, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "../../api/client";
+import { api, posDevicesApi } from "../../api/client";
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
@@ -18,6 +18,88 @@ function TokenUrlRow({ testid, url }) {
         style={{ background: "var(--pos-accent)" }}>
         <Copy className="w-3.5 h-3.5" /> Copy
       </button>
+    </div>
+  );
+}
+
+// POS tills unlocked by a manager (components/pos/DeviceUnlock.jsx). Removing
+// one locks it again: staff PINs stop working there until a manager unlocks
+// it anew.
+function UnlockedTillsCard() {
+  const [tills, setTills] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+  const load = () => posDevicesApi.list()
+    .then((t) => { setTills(t); setLoadError(false); })
+    .catch(() => setLoadError(true));
+  useEffect(() => { load(); }, []);
+
+  const remove = async (id) => {
+    try {
+      await posDevicesApi.remove(id);
+      toast.success("Till removed. It's locked until a manager unlocks it again.");
+      load();
+    } catch (e) {
+      const d = e?.response?.data?.detail;
+      toast.error(typeof d === "string" ? d : "Could not remove till");
+    }
+  };
+
+  const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : "never");
+
+  return (
+    <div data-testid="pos-tills-card" className="rounded-xl mb-5" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+      <div className="px-4 py-3 flex items-center gap-1.5" style={{ borderBottom: "1px solid var(--pos-border)" }}>
+        <Lock className="w-3.5 h-3.5" style={{ color: "var(--pos-accent)" }} />
+        <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Unlocked POS tills</span>
+      </div>
+      <div className="p-4">
+        {loadError ? (
+          <div className="text-xs flex items-center gap-2" style={{ color: "#f87171" }}>
+            Couldn't load the list of tills.
+            <button onClick={load} className="underline" style={{ color: "var(--pos-text)" }}>Try again</button>
+          </div>
+        ) : tills === null ? (
+          <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--pos-muted)" }} />
+        ) : tills.length === 0 ? (
+          <p className="text-xs" style={{ color: "var(--pos-muted)" }}>
+            No tills unlocked yet. Open your restaurant's staff sign-in page on the till and sign in once with a manager's email and password.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {tills.map((t) => (
+              <div key={t.id} data-testid={`pos-till-${t.id}`} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2"
+                style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate" style={{ color: "var(--pos-text)" }}>{t.name}</div>
+                  <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>
+                    Unlocked by {t.created_by} · {fmt(t.created_at)} · last used {fmt(t.last_seen_at)}
+                  </div>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button data-testid={`pos-till-remove-${t.id}`} className="pos-btn h-8 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-1.5 shrink-0"
+                      style={{ background: "var(--pos-panel)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+                      <Trash2 className="w-3 h-3" /> Remove
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove "{t.name}"?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Staff won't be able to sign in or clock in on this till until a manager unlocks it again.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => remove(t.id)}>Remove</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -59,6 +141,8 @@ export default function KioskDevicesPage() {
       <p className="text-sm mb-5" style={{ color: "var(--pos-muted)" }}>
         Set up a Kanda Display tablet by pasting one of these links into it — no staff PIN needed, and it stays signed in.
       </p>
+
+      <UnlockedTillsCard />
 
       <div data-testid="kiosk-devices-card" className="rounded-xl" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
         <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid var(--pos-border)" }}>

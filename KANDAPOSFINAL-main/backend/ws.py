@@ -126,6 +126,13 @@ async def ws_endpoint(websocket: WebSocket):
         tenant_id = payload.get("tenant_id")
         if not tenant_id:
             raise ValueError("missing tenant_id claim")
+        if payload.get("dev"):
+            # Staff session bound to an unlocked till — same rule as
+            # get_current_user, with the device token as a query param
+            # since browsers can't set WebSocket headers.
+            from db import get_db
+            from routes.pos_devices import check_bound_device
+            await check_bound_device(payload["dev"], websocket.query_params.get("device"), get_db())
     except Exception:
         await websocket.close(code=4401)
         return
