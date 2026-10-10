@@ -1,37 +1,59 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { m, AnimatePresence, MotionConfig, LazyMotion, domAnimation } from "framer-motion";
 import { toast } from "sonner";
 import {
   ShoppingCart, LayoutGrid, ChefHat, Truck, Boxes, Users, BarChart3,
   MessageCircle, Mic, MapPin, Mail, Menu, X, Plus,
-  ShoppingBag, CheckCircle2, Instagram,
+  ShoppingBag, CheckCircle2, Instagram, ArrowUpRight, Coffee, Sun, Moon, Bike,
 } from "lucide-react";
 import useSeo, { useStructuredData } from "../hooks/useSeo";
+import AlphaWaitlist from "./landing/AlphaWaitlist";
+import { WordReveal, Rise, ScrollWords, Marquee, HoverList, ServiceRows, ScaleCta } from "./landing/motion";
+import { useSmoothScroll, CursorFollower, Magnetic, CountUp, StackCards, HorizontalScroll } from "./landing/immersive";
+import HeroOrderPanel from "./landing/HeroOrderPanel";
+import { OrderScreenMock, KdsMock, DispatchMock, ReportsMock, PulseRings } from "./landing/visuals";
+
 
 const FEATURES = [
-  { icon: ShoppingCart, title: "Order Management", desc: "Delivery, collection and dine in orders on one fast screen, built for busy shifts.", big: true, from: "#EA580C", to: "#2A0D02", note: "Order #142 ready for table 4", noteColor: "#F97316" },
-  { icon: ShoppingBag, title: "Retail Checkout", desc: "Barcode scanning, product variants and quick checkout for shops.", from: "#7C3AED", to: "#0B0620" },
-  { icon: ChefHat, title: "Kitchen Display", desc: "Tickets routed to the right station in real time, with prep timers.", from: "#1D4ED8", to: "#050A1F", note: "Synced to KDS · Grill", noteColor: "#1D4ED8" },
-  { icon: LayoutGrid, title: "Tables & Floor Plan", desc: "Move tables into your own layout, with live status and reservations.", from: "#0891B2", to: "#03181D" },
-  { icon: Truck, title: "Dispatch & Delivery", desc: "Driver assignment and live order tracking.", from: "#B91C1C", to: "#170403" },
-  { icon: Boxes, title: "Inventory & Waste", desc: "Stock levels, low stock alerts and reorder points.", big: true, from: "#B45309", to: "#1C0D02", note: "3 items below reorder point", noteColor: "#F59E0B" },
-  { icon: Users, title: "Staff & Workforce", desc: "PIN login, time clock, shift scheduling and tips.", from: "#166534", to: "#03140A", note: "Shift clocked in — Aarav Reddy", noteColor: "#22C55E" },
-  { icon: BarChart3, title: "Reports & Analytics", desc: "Daily rollups and heatmaps for your peak hours.", from: "#0E7490", to: "#031015" },
-  { icon: MessageCircle, title: "SMS & WhatsApp", desc: "Order updates and broadcast messaging.", from: "#4D7C0F", to: "#0B1503" },
-  { icon: Mic, title: "Voice & AI Assistant", desc: "Phone orders and AI help, answered automatically.", from: "#4338CA", to: "#080720" },
+  { icon: ShoppingCart, title: "Order Management", tag: "All", desc: "Delivery, collection and dine in orders on one fast screen, built for busy shifts.", big: true, from: "#EA580C", to: "#2A0D02", note: "Order #142 ready for table 4", noteColor: "#F97316" },
+  { icon: ShoppingBag, title: "Retail Checkout", tag: "Retail", desc: "Barcode scanning, product variants and quick checkout for shops.", from: "#7C3AED", to: "#0B0620" },
+  { icon: ChefHat, title: "Kitchen Display", tag: "Restaurants", desc: "Tickets routed to the right station in real time, with prep timers.", from: "#1D4ED8", to: "#050A1F", note: "Synced to KDS · Grill", noteColor: "#1D4ED8" },
+  { icon: LayoutGrid, title: "Tables & Floor Plan", tag: "Restaurants", desc: "Move tables into your own layout, with live status and reservations.", from: "#0891B2", to: "#03181D" },
+  { icon: Truck, title: "Dispatch & Delivery", tag: "Restaurants", desc: "Driver assignment and live order tracking.", from: "#B91C1C", to: "#170403" },
+  { icon: Boxes, title: "Inventory & Waste", tag: "All", desc: "Stock levels, low stock alerts and reorder points.", big: true, from: "#B45309", to: "#1C0D02", note: "3 items below reorder point", noteColor: "#F59E0B" },
+  { icon: Users, title: "Staff & Workforce", tag: "All", desc: "PIN login, time clock, shift scheduling and tips.", from: "#166534", to: "#03140A", note: "Shift clocked in — Aarav Reddy", noteColor: "#22C55E" },
+  { icon: BarChart3, title: "Reports & Analytics", tag: "All", desc: "Daily rollups and heatmaps for your peak hours.", from: "#0E7490", to: "#031015" },
+  { icon: MessageCircle, title: "SMS & WhatsApp", tag: "All", desc: "Order updates and broadcast messaging.", from: "#4D7C0F", to: "#0B1503" },
+  { icon: Mic, title: "Voice & AI Assistant", tag: "All", desc: "Phone orders and AI help, answered automatically.", from: "#4338CA", to: "#080720" },
 ];
 
 const LIVE_CHANNELS = [
-  { icon: LayoutGrid, title: "Dine in", note: "Tables update live as guests are seated", from: "#EA580C", to: "#3B1206" },
-  { icon: Truck, title: "Delivery", note: "Drivers tracked from dispatch to the door", from: "#1D4ED8", to: "#0B1230" },
-  { icon: ShoppingBag, title: "Collection", note: "Pickup orders marked ready in real time", from: "#166534", to: "#06210F" },
-  { icon: ShoppingCart, title: "Retail", note: "Barcode checkout at the counter", from: "#7C2D12", to: "#1E0A03" },
+  { icon: LayoutGrid, title: "Dine in", points: ["Floor plan", "Reservations", "Kitchen tickets"], note: "Tables update live as guests are seated", from: "#EA580C", to: "#3B1206" },
+  { icon: Truck, title: "Delivery", points: ["Driver assignment", "Live tracking", "Dispatch board"], note: "Drivers tracked from dispatch to the door", from: "#1D4ED8", to: "#0B1230" },
+  { icon: ShoppingBag, title: "Collection", points: ["Pickup queue", "Ready alerts", "SMS updates"], note: "Pickup orders marked ready in real time", from: "#166534", to: "#06210F" },
+  { icon: ShoppingCart, title: "Retail", points: ["Barcode scanning", "Variants", "Quick checkout"], note: "Barcode checkout at the counter", from: "#7C2D12", to: "#1E0A03" },
+];
+
+const STACK = [
+  { title: "Ring it up", body: "Big, fast tiles built for a packed counter. Dine in, takeaway and delivery from one screen, with GST worked out as you tap.", from: "#EA580C", to: "#431407", visual: <OrderScreenMock /> },
+  { title: "Fire to the kitchen", body: "Tickets land on the right station the moment you send them, with timers that turn red before a guest has to ask.", from: "#1D4ED8", to: "#0B1230", visual: <KdsMock /> },
+  { title: "Out the door", body: "Assign a rider, watch them on the map, and let the customer track it too. Pickup orders flag themselves ready.", from: "#B91C1C", to: "#2A0606", visual: <DispatchMock /> },
+  { title: "Close the day", body: "Sales, peak hours and best sellers roll up by themselves. You see tonight's numbers before you lock the shutter.", from: "#0E7490", to: "#03161C", visual: <ReportsMock /> },
+];
+
+const DAY = [
+  { time: "07:00", icon: Coffee, title: "Chai rush", body: "Fifty Irani chais before nine. Quick keys and saved favourites keep the queue moving.", from: "#B45309", to: "#2A1503" },
+  { time: "13:30", icon: Sun, title: "Lunch, every table", body: "The floor plan fills up live. Orders split by station, bills split by guest.", from: "#EA580C", to: "#431407" },
+  { time: "17:00", icon: ShoppingBag, title: "Retail restock", body: "Low stock alerts and reorder points tell you what to buy before you run out.", from: "#7C3AED", to: "#1E0B3A" },
+  { time: "20:45", icon: Bike, title: "Delivery peak", body: "Online orders, riders and pickup all on one board, so nothing gets lost in the rush.", from: "#B91C1C", to: "#2A0606" },
+  { time: "23:30", icon: Moon, title: "Lights out", body: "Cash drawer closed, GST report ready, tomorrow's prep list waiting.", from: "#1D4ED8", to: "#0B1230" },
 ];
 
 const NAV_LINKS = [
   { href: "#live", label: "Live view" },
   { href: "#features", label: "Features" },
+  { href: "#waitlist", label: "Alpha waitlist" },
   { href: "#contact", label: "Contact" },
 ];
 
@@ -49,34 +71,17 @@ function Kicker({ children }) {
 // line items (the page's one deliberate scroll moment).
 function RevealRows({ children }) {
   return (
-    <motion.div
+    <m.div
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, margin: "-60px" }}
       variants={{ hidden: {}, show: { transition: { staggerChildren: 0.09 } } }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 const rowVariant = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } } };
-
-function ModuleTile({ f }) {
-  return (
-    <div className={`relative rounded-2xl overflow-hidden p-5 flex flex-col justify-end text-white min-h-[210px] ${f.big ? "sm:col-span-2" : ""}`}
-      style={{ background: `linear-gradient(160deg, ${f.from} 0%, ${f.to} 78%)` }}>
-      {f.note && (
-        <div className="absolute top-4 left-4 right-4 bg-white rounded-lg px-3 py-2 text-xs font-semibold flex items-center gap-2 shadow-lg" style={{ color: "#161311" }}>
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.noteColor }} />
-          {f.note}
-        </div>
-      )}
-      <f.icon className="w-5 h-5 mb-2.5 opacity-90" />
-      <div className="font-bold mb-1">{f.title}</div>
-      <div className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>{f.desc}</div>
-    </div>
-  );
-}
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
@@ -105,18 +110,15 @@ const STRUCTURED_DATA = {
 export default function LandingPage() {
   useSeo({
     title: "Point of sale for restaurants & retail — coming soon",
-    description: "Kanda POS is a GST-ready point of sale for Indian restaurants and retail stores: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one connected system. Launching soon — book a demo or sign up for updates.",
+    description: "Kanda POS is a GST-ready point of sale for Indian restaurants and retail stores: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one connected system. Launching soon — book a demo or join the alpha waitlist.",
     path: "/",
   });
   useStructuredData("ld-landing", STRUCTURED_DATA);
+  useSmoothScroll();
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", city: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [demoBusy, setDemoBusy] = useState(false);
-  const [updatesName, setUpdatesName] = useState("");
-  const [updatesEmail, setUpdatesEmail] = useState("");
-  const [updatesSubmitted, setUpdatesSubmitted] = useState(false);
-  const [updatesBusy, setUpdatesBusy] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
 
@@ -134,8 +136,11 @@ export default function LandingPage() {
     });
     if (!res.ok) {
       const detail = await res.json().catch(() => null);
-      throw new Error(detail?.detail || "Something went wrong. Please try again.");
+      // FastAPI 422s carry a list of field errors, not a string.
+      const msg = typeof detail?.detail === "string" ? detail.detail : null;
+      throw new Error(msg || "Something went wrong. Please try again.");
     }
+    return res.json().catch(() => ({}));
   };
 
   const submitDemo = async (e) => {
@@ -157,28 +162,14 @@ export default function LandingPage() {
     }
   };
 
-  const submitUpdates = async (e) => {
-    e.preventDefault();
-    if (updatesBusy) return;
-    if (!updatesName.trim() || !updatesEmail.trim()) {
-      toast.error("Please enter your name and email.");
-      return;
-    }
-    setUpdatesBusy(true);
-    try {
-      await submitLead({ type: "updates", name: updatesName, email: updatesEmail });
-      setUpdatesSubmitted(true);
-      toast.success("You're on the list — we'll email you at launch.");
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setUpdatesBusy(false);
-    }
-  };
-
   return (
+    // LazyMotion + `m` components load only the animation features this page
+    // uses, keeping most of framer-motion out of the homepage bundle.
+    <LazyMotion features={domAnimation}>
     <MotionConfig reducedMotion="user">
-    <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)" }} className="overflow-x-hidden land-page" data-testid="landing-page">
+    <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)", overflowX: "clip" }} className="land-page" data-testid="landing-page">
+      <CursorFollower />
+
       {/* Nav */}
       <header className="sticky top-0 z-20" style={{ background: "rgba(253,250,244,0.85)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3.5">
@@ -206,7 +197,7 @@ export default function LandingPage() {
         </div>
         <AnimatePresence>
           {mobileNavOpen && (
-            <motion.nav
+            <m.nav
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -227,100 +218,123 @@ export default function LandingPage() {
                   </a>
                 ))}
               </div>
-            </motion.nav>
+            </m.nav>
           )}
         </AnimatePresence>
       </header>
 
       {/* Hero */}
-      <section className="max-w-7xl mx-auto px-6 pt-14 pb-0">
-      <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <Kicker>Coming soon to India</Kicker>
-          <h1 className="land-h1 text-5xl md:text-6xl lg:text-[3.7rem] leading-[1.08] mb-6 max-w-2xl">
-            Point of sale,<br />
-            built for{" "}
-            <span className="relative inline-block whitespace-nowrap">
-              India.
-              <svg viewBox="0 0 200 14" preserveAspectRatio="none" className="absolute left-[-2%] w-[104%]" style={{ bottom: "-0.14em", height: "0.3em" }}>
-                <path d="M2 9 C 40 2, 160 2, 198 9" stroke="var(--pos-accent)" strokeWidth="5" fill="none" strokeLinecap="round" />
-              </svg>
-            </span>
-          </h1>
-          <p className="text-lg max-w-lg mb-8 leading-relaxed" style={{ color: "var(--pos-muted)" }}>
-            One system for restaurants and retail: GST ready billing, kitchen sync
-            and reporting, all in one place. We are putting the finishing touches
-            on Kanda POS before opening the doors.
-          </p>
-          <div className="flex flex-wrap items-center gap-3 mb-12">
-            <a href="#contact" className="pos-btn land-pos-btn rounded-full px-6 py-3 font-bold text-white" style={{ background: "var(--pos-accent)" }}>
-              Book a demo
-            </a>
-            <a href="#updates" className="pos-btn land-pos-btn rounded-full px-6 py-3 font-bold" style={{ background: "transparent", border: "1.5px solid var(--pos-text)", color: "var(--pos-text)" }}>
-              Sign up for updates
-            </a>
-          </div>
-        </motion.div>
-
-        {/* Hero visual — a single device-framed order screen on a dark stage,
-            like a real product screenshot sitting on a counter. */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
-          className="hidden sm:block relative rounded-3xl py-10 px-[6%] overflow-hidden" style={{ background: "#121014" }} aria-hidden="true">
-          <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at 30% 0%, rgba(249,115,22,0.22), transparent 70%)" }} />
-          <div className="relative land-device-mount max-w-3xl mx-auto">
-            <div className="rounded-t-2xl p-3.5 pb-0" style={{ background: "#0B0A0C", border: "1px solid #2A2730", boxShadow: "0 40px 80px -20px rgba(0,0,0,0.6)" }}>
-              <div className="flex items-center gap-1.5 pb-3">
-                <span className="w-2 h-2 rounded-full" style={{ background: "#3A3742" }} />
-                <span className="w-2 h-2 rounded-full" style={{ background: "#3A3742" }} />
-                <span className="w-2 h-2 rounded-full" style={{ background: "#3A3742" }} />
-              </div>
-              <div className="rounded-t-xl p-6" style={{ background: "var(--pos-panel)" }}>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-base font-bold">Dine in order</span>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>Table 4</span>
-                </div>
-                <div className="flex flex-wrap gap-2 mb-3.5">
-                  <span className="text-xs font-bold text-white px-3 py-1.5 rounded-lg" style={{ background: "#EA580C" }}>Biryani</span>
-                  <span className="text-xs font-bold text-white px-3 py-1.5 rounded-lg" style={{ background: "#7C2D12" }}>Grill</span>
-                  <span className="text-xs font-bold text-white px-3 py-1.5 rounded-lg" style={{ background: "#166534" }}>Beverages</span>
-                  <span className="text-xs font-bold text-white px-3 py-1.5 rounded-lg" style={{ background: "#1D4ED8" }}>Desserts</span>
-                </div>
-                <div className="grid grid-cols-4 gap-2.5 mb-4">
-                  {[
-                    ["Biryani", "₹320", "#FDBA74"], ["Chicken 65", "₹220", "#FCA5A5"],
-                    ["Irani Chai", "₹20", "#BBF7D0"], ["Osmania Bis.", "₹20", "#BFDBFE"],
-                  ].map(([name, price, swatch]) => (
-                    <div key={name} className="rounded-lg p-2.5" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
-                      <div className="w-full h-7 rounded mb-2" style={{ background: swatch }} />
-                      <div className="text-[11px] font-bold truncate">{name}</div>
-                      <div className="text-[11px] font-mono" style={{ color: "var(--pos-muted)" }}>{price}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between pt-3.5" style={{ borderTop: "1px solid var(--pos-border)" }}>
-                  <span className="text-xs font-bold" style={{ color: "var(--pos-muted)" }}>Total due</span>
-                  <span className="font-mono font-bold text-lg" style={{ color: "var(--pos-accent)" }}>₹580.00</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      <section className="relative max-w-7xl mx-auto px-6 pt-12 md:pt-20">
+        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
+          className="relative z-10 flex items-center justify-between text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
+          <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Alpha opening in waves</span>
+          <span>Hyderabad, India</span>
+        </m.div>
+        <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[6.2vw] max-w-[14ch] lg:max-w-[16ch]" />
+        <div className="relative z-10 grid md:grid-cols-[1fr_auto] gap-8 items-end mt-6 md:mt-12">
+          <Rise delay={0.5}>
+            <p className="text-lg md:text-xl max-w-xl leading-relaxed" style={{ color: "var(--pos-muted)" }}>
+              One system for restaurants and retail: GST ready billing, kitchen sync,
+              delivery and stock, all on one screen. We are putting the finishing
+              touches on Kanda POS before opening the doors.
+            </p>
+          </Rise>
+          <Rise delay={0.65} className="flex flex-wrap items-center gap-3">
+            <Magnetic>
+              <a href="#contact" className="group inline-flex items-center gap-3 rounded-full pl-6 pr-1.5 py-1.5 font-bold text-white" style={{ background: "var(--pos-text)" }}>
+                Book a demo
+                <span className="w-9 h-9 rounded-full flex items-center justify-center transition-transform duration-500 group-hover:rotate-45" style={{ background: "var(--pos-accent)" }}>
+                  <ArrowUpRight className="w-4 h-4" />
+                </span>
+              </a>
+            </Magnetic>
+            <Magnetic>
+              <a href="#waitlist" className="inline-block rounded-full px-6 py-3 font-bold" style={{ border: "1.5px solid var(--pos-text)", color: "var(--pos-text)", background: "var(--pos-bg)" }}>
+                Join the alpha waitlist
+              </a>
+            </Magnetic>
+          </Rise>
+        </div>
+        {/* The order screen, playing out a live counter order. */}
+        <div className="relative mt-14 md:mt-20 pb-16 md:pb-24">
+          <HeroOrderPanel />
+        </div>
       </section>
 
-      {/* Live channels */}
-      <section id="live" className="max-w-7xl mx-auto px-6 py-16 md:py-20">
-        <Kicker>From an Irani café counter to a kirana till</Kicker>
-        <h2 className="land-h2 text-3xl md:text-4xl mb-10 max-w-xl">Four channels, one live view.</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-          {LIVE_CHANNELS.map(({ icon: Icon, title, note, from, to }) => (
-            <div key={title} className="rounded-2xl p-5 min-h-[150px] flex flex-col justify-end text-white"
-              style={{ background: `linear-gradient(155deg, ${from}, ${to})` }}>
-              <Icon className="w-5 h-5 mb-2.5 opacity-90" />
-              <div className="font-bold mb-1">{title}</div>
-              <div className="text-xs leading-snug" style={{ color: "rgba(255,255,255,0.85)" }}>{note}</div>
+      {/* Module strip — the hero's moving "carousel" */}
+      <Rise delay={0.8} className="mt-14 md:mt-20" y={40}>
+        <Marquee speed={55}>
+          {FEATURES.map((f) => (
+            <div key={f.title} className="relative w-[260px] md:w-[340px] h-[200px] md:h-[250px] rounded-3xl overflow-hidden p-5 flex flex-col justify-end text-white shrink-0"
+              style={{ background: `linear-gradient(160deg, ${f.from} 0%, ${f.to} 78%)` }}>
+              {f.note && (
+                <div className="absolute top-4 left-4 right-4 bg-white rounded-lg px-3 py-2 text-xs font-semibold flex items-center gap-2 shadow-lg" style={{ color: "#161311" }}>
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.noteColor }} />
+                  {f.note}
+                </div>
+              )}
+              <f.icon className="w-5 h-5 mb-2.5 opacity-90" />
+              <div className="font-bold mb-1">{f.title}</div>
+              <div className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>{f.desc}</div>
             </div>
           ))}
+        </Marquee>
+      </Rise>
+
+      {/* Statement */}
+      <section className="max-w-6xl mx-auto px-6 py-24 md:py-36">
+        <ScrollWords
+          className="land-display text-3xl md:text-6xl"
+          text="Dine in, delivery, collection and the retail till. Kanda POS keeps every order, ticket and rupee on one live screen, so the rush hour runs itself."
+        />
+      </section>
+
+      {/* Numbers */}
+      <section className="max-w-7xl mx-auto px-6 pb-20 md:pb-28">
+        <div className="grid grid-cols-2 md:grid-cols-4" style={{ borderTop: "1px solid var(--pos-border)" }}>
+          {[[10, "", "modules in one system"], [4, "", "ways to sell, one live view"], [3, "", "platforms: web, Android, Windows"], [1, "", "screen for the whole counter"]].map(([n, suf, label], i) => (
+            <div key={label} className="pt-6 pb-2 pr-4" style={{ borderLeft: i ? "1px solid var(--pos-border)" : "none", paddingLeft: i ? "1.25rem" : 0 }}>
+              <CountUp to={n} suffix={suf} className="land-display text-6xl md:text-8xl block" />
+              <div className="text-sm mt-2" style={{ color: "var(--pos-muted)" }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Rush hour, as stacking cards */}
+      <section aria-label="How Kanda POS runs a rush hour" className="pb-10">
+        <div className="max-w-7xl mx-auto px-6 mb-6 md:mb-10">
+          <WordReveal as="h2" text="One order, start to finish." className="land-display text-4xl md:text-7xl" />
+        </div>
+        <StackCards cards={STACK} />
+      </section>
+
+      {/* Modules */}
+      <section id="features" className="max-w-7xl mx-auto px-6 pb-20 md:pb-28">
+        <div className="flex items-end justify-between gap-6 mb-8 md:mb-12">
+          <WordReveal as="h2" text="Everything at the counter" className="land-display text-4xl md:text-7xl" />
+          <span className="text-sm shrink-0 pb-2" style={{ color: "var(--pos-muted)" }}>({FEATURES.length} modules)</span>
+        </div>
+        <HoverList items={FEATURES} />
+      </section>
+
+      {/* A day at the counter — pinned horizontal scroll */}
+      <HorizontalScroll
+        heading={<WordReveal as="h2" text="A day at the counter." className="land-display text-4xl md:text-7xl" />}
+        panels={DAY.map((d) => ({ ...d, visual: <PulseRings /> }))}
+      />
+      <div className="h-16 md:h-24" />
+
+      {/* Live channels */}
+      <section id="live" className="px-3 md:px-6">
+        <div className="max-w-[90rem] mx-auto rounded-[2rem] md:rounded-[2.5rem] px-6 md:px-16 py-16 md:py-24 text-white" style={{ background: "#121014" }}>
+          <div className="grid md:grid-cols-[1fr_1fr] gap-6 items-end mb-10 md:mb-16">
+            <WordReveal as="h2" text="Four channels, one live view." className="land-display text-4xl md:text-7xl" />
+            <p className="text-base md:text-lg max-w-md md:justify-self-end" style={{ color: "#A39D95" }}>
+              From an Irani café counter to a kirana till, every way you sell lands on the same screen in real time.
+            </p>
+          </div>
+          <ServiceRows items={LIVE_CHANNELS} />
         </div>
       </section>
 
@@ -349,24 +363,24 @@ export default function LandingPage() {
                   <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>Hyderabad, Telangana</div>
                 </div>
                 <RevealRows>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>Hyderabadi Biryani</span><span>₹320</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>Irani Chai ×2</span><span>₹40</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>Osmania Biscuit ×4</span><span>₹80</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>CGST 2.5%</span><span>₹11.00</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
                     <span>SGST 2.5%</span><span>₹11.00</span>
-                  </motion.div>
-                  <motion.div variants={rowVariant} className="flex justify-between pt-3 font-bold text-[15px]" style={{ color: "var(--pos-accent)" }}>
+                  </m.div>
+                  <m.div variants={rowVariant} className="flex justify-between pt-3 font-bold text-[15px]" style={{ color: "var(--pos-accent)" }}>
                     <span>Total</span><span>₹462.00</span>
-                  </motion.div>
+                  </m.div>
                 </RevealRows>
                 <div className="mt-4 pt-3 text-[10px] leading-relaxed text-center" style={{ borderTop: "1px solid var(--pos-border)", color: "var(--pos-muted)" }}>
                   GSTIN 36AKPPK1234F1Z8<br />Thank you, visit again
@@ -377,16 +391,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Modules */}
-      <section id="features" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
-        <Kicker>Ten modules</Kicker>
-        <h2 className="land-h2 text-3xl md:text-4xl mb-10 max-w-xl">The rest of the till, included.</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5" style={{ gridAutoFlow: "dense" }}>
-          {FEATURES.map((f) => <ModuleTile key={f.title} f={f} />)}
-        </div>
-      </section>
 
-      {/* Contact + updates */}
+      <AlphaWaitlist submitLead={submitLead} />
+
+      <ScaleCta
+        eyebrow="Small team, built in Hyderabad"
+        title="Let's open your counter."
+        sub="Tell us about your counter and we'll set up a walkthrough."
+        href="#contact"
+        cta="Book a demo"
+      />
+
+      {/* Contact */}
       <section id="contact" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
         <div className="flex flex-col gap-5">
           <div className="w-full rounded-2xl p-6 sm:p-10" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
@@ -436,48 +452,15 @@ export default function LandingPage() {
                     </div>
                     <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}
                       className="rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                    <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={demoBusy} className="land-pos-btn rounded-full px-6 py-3 font-bold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
+                    <m.button whileTap={{ scale: 0.97 }} type="submit" disabled={demoBusy} className="land-pos-btn rounded-full px-6 py-3 font-bold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
                       {demoBusy ? "Sending…" : "Contact us"}
-                    </motion.button>
+                    </m.button>
                   </form>
                 )}
               </div>
             </div>
           </div>
 
-          <div id="updates" className="rounded-2xl p-6 sm:p-8" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-            <div className="flex flex-col md:flex-row md:items-center gap-5 md:gap-10">
-              <div className="md:flex-1">
-                <h2 className="land-h3 text-lg mb-1">Get product updates</h2>
-                <p style={{ color: "var(--pos-muted)" }} className="text-sm leading-relaxed">
-                  New features and launch news, straight to your inbox, no spam.
-                </p>
-              </div>
-              {updatesSubmitted ? (
-                <div className="flex items-center gap-2 text-sm shrink-0" style={{ color: "var(--pos-accent)" }}>
-                  <CheckCircle2 className="w-4 h-4" /> You're on the list — we'll email you at launch.
-                </div>
-              ) : (
-                <form onSubmit={submitUpdates} className="flex flex-col gap-3 md:w-80 md:shrink-0">
-                  <input
-                    required placeholder="Your name"
-                    value={updatesName} onChange={(e) => setUpdatesName(e.target.value)}
-                    className="rounded-lg px-4 py-2.5 text-sm min-w-0"
-                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}
-                  />
-                  <input
-                    type="email" required placeholder="you@yourbusiness.com"
-                    value={updatesEmail} onChange={(e) => setUpdatesEmail(e.target.value)}
-                    className="rounded-lg px-4 py-2.5 text-sm min-w-0"
-                    style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}
-                  />
-                  <button type="submit" disabled={updatesBusy} className="pos-btn land-pos-btn rounded-full px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
-                    {updatesBusy ? "Signing up…" : "Sign up for updates"}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
         </div>
       </section>
 
@@ -519,6 +502,9 @@ export default function LandingPage() {
           <div className="mt-10 pt-6 text-sm" style={{ borderTop: "1px solid #2A2730" }}>
             © {new Date().getFullYear()} Kanda Solutions Pvt Ltd. All rights reserved.
           </div>
+          <div className="land-display text-[17vw] lg:text-[15rem] leading-[0.8] text-center select-none mt-10 -mb-4 whitespace-nowrap" style={{ color: "#2A2730" }} aria-hidden="true">
+            KANDA POS
+          </div>
         </div>
       </footer>
 
@@ -527,7 +513,7 @@ export default function LandingPage() {
       <div className="md:hidden fixed bottom-5 right-5 z-30 flex flex-col items-end gap-3">
         <AnimatePresence>
           {fabOpen && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 12, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.9 }}
@@ -558,10 +544,10 @@ export default function LandingPage() {
                   <Instagram className="w-4.5 h-4.5 text-white" />
                 </span>
               </a>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
-        <motion.button
+        <m.button
           type="button"
           onClick={() => setFabOpen((v) => !v)}
           whileTap={{ scale: 0.94 }}
@@ -571,9 +557,10 @@ export default function LandingPage() {
           style={{ background: "var(--pos-accent)", boxShadow: "0 10px 24px -8px rgba(0,0,0,0.4)" }}
         >
           {fabOpen ? <X className="w-6 h-6 text-white" /> : <Plus className="w-6 h-6 text-white" />}
-        </motion.button>
+        </m.button>
       </div>
     </div>
     </MotionConfig>
+    </LazyMotion>
   );
 }

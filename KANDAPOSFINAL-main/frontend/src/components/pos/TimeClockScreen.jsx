@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, useAnimation } from "framer-motion";
 import { Camera, Delete, LogIn, LogOut, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { timeclockApi } from "../../api/client";
+import { api, timeclockApi, tenantStore, deviceStore, isDeviceLocked } from "../../api/client";
 import { pressableSmall } from "../../lib/motion";
 
 /**
@@ -11,9 +11,33 @@ import { pressableSmall } from "../../lib/motion";
  * and punch in/out. While the keypad is shown we keep the webcam stream live so
  * the moment the 4th digit lands we snap a small JPEG selfie and ship it with
  * the punch request — deters buddy-punching without needing a biometric device.
+ *
+ * Lives at /pos/:slug/clock, one per restaurant. The slug in the URL is the
+ * only thing that decides whose staff list a PIN is checked against (sent as
+ * an in-memory override, never saved to the device), so a till pinned to one
+ * restaurant can't punch staff into another, and an unknown slug shows
+ * "Restaurant not found" instead of a keypad.
  */
 export default function TimeClockScreen() {
   const navigate = useNavigate();
+  const { slug: rawSlug } = useParams();
+  const slug = (rawSlug || "").toLowerCase();
+  // null = still checking, false = no such restaurant, string = its name.
+  const [tenantName, setTenantName] = useState(null);
+  // Punches need this till to have been unlocked by a manager (see
+  // DeviceUnlock on the PIN pad); the public demo is exempt.
+  const [deviceLocked, setDeviceLocked] = useState(() => deviceStore.needsUnlock(slug));
+  useEffect(() => { setDeviceLocked(deviceStore.needsUnlock(slug)); }, [slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setTenantName(null);
+    tenantStore.setEphemeral(slug);
+    api.get("/tenant/public-info")
+      .then((r) => { if (!cancelled) setTenantName(r.data.name || slug); })
+      .catch((err) => { if (!cancelled) setTenantName(err?.response?.status === 404 ? false : slug); });
+    return () => { cancelled = true; tenantStore.clearEphemeral(); };
+  }, [slug]);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [pin, setPin] = useState("");
@@ -29,24 +53,30 @@ export default function TimeClockScreen() {
     return () => clearInterval(t);
   }, []);
 
+  // Only open the camera once the restaurant is confirmed real, so a mistyped
+  // /pos/<id>/clock never asks for camera access or leaves the light on.
+  const tenantOk = typeof tenantName === "string" && !deviceLocked;
   useEffect(() => {
+    if (!tenantOk) return undefined;
     let stream;
+    let cancelled = false;
     (async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 320, height: 240, facingMode: "user" }, audio: false,
         });
+        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
           setCameraReady(true);
         }
       } catch (e) {
-        setCameraError(e?.message || "Camera unavailable");
+        if (!cancelled) setCameraError(e?.message || "Camera unavailable");
       }
     })();
-    return () => { if (stream) stream.getTracks().forEach((t) => t.stop()); };
-  }, []);
+    return () => { cancelled = true; if (stream) stream.getTracks().forEach((t) => t.stop()); };
+  }, [tenantOk]);
 
   const captureSelfie = () => {
     if (!cameraReady || !videoRef.current || !canvasRef.current) return null;
@@ -72,7 +102,14 @@ export default function TimeClockScreen() {
       setPin("");
       setTimeout(() => setLastPunch(null), 6000);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Punch failed");
+      if (isDeviceLocked(e)) {
+        deviceStore.clear(slug);
+        setDeviceLocked(true);
+        setPin("");
+        return;
+      }
+      const detail = e?.response?.data?.detail;
+      toast.error(typeof detail === "string" ? detail : "Punch failed");
       setPin("");
       dotsShake.start({ x: [0, -10, 10, -6, 6, -3, 3, 0], transition: { duration: 0.4, ease: "easeInOut" } });
     } finally {
@@ -88,18 +125,54 @@ export default function TimeClockScreen() {
   };
   const clear = () => setPin("");
 
+  // Only once the restaurant is confirmed real — an unknown slug must land
+  // on "Restaurant not found", never on a link that would pin it.
+  if (deviceLocked && typeof tenantName === "string") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--pos-bg)" }} data-testid="timeclock-device-locked">
+        <div className="w-full max-w-sm text-center">
+          <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--pos-text)" }}>This till isn't unlocked</h2>
+          <p className="text-sm mb-6" style={{ color: "var(--pos-muted)" }}>
+            A manager needs to unlock this device once on the staff sign-in screen before the clock can be used.
+          </p>
+          <button onClick={() => navigate(`/pos/${slug}/login`)} className="pos-btn w-full h-11 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "var(--pos-accent)" }}>
+            Go to staff sign-in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (tenantName === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--pos-bg)" }} data-testid="timeclock-tenant-not-found">
+        <div className="w-full max-w-sm text-center">
+          <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--pos-text)" }}>Restaurant not found</h2>
+          <p className="text-sm mb-6" style={{ color: "var(--pos-muted)" }}>
+            There's no restaurant with the ID "{rawSlug}". Check the link, or sign in with your Restaurant ID.
+          </p>
+          <button onClick={() => navigate("/pos/login")} className="pos-btn w-full h-11 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "var(--pos-accent)" }}>
+            Enter Restaurant ID
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex" style={{ background: "var(--pos-bg)" }} data-testid="timeclock-screen">
       <div className="hidden lg:flex flex-col justify-between w-[42%] p-12"
         style={{ background: "linear-gradient(165deg, #fbe9d6 0%, #f6dcc0 100%)", borderRight: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-3">
-          <button data-testid="timeclock-back-btn" onClick={() => navigate("/pos/login")}
+          <button data-testid="timeclock-back-btn" onClick={() => navigate(slug === "demo" ? "/demo/login" : `/pos/${slug}/login`)}
             className="pos-btn p-2 rounded-md" style={{ background: "var(--pos-panel-2)" }}>
             <ArrowLeft className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
           </button>
           <div>
             <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA</div>
-            <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "var(--pos-muted)" }}>Time Clock</div>
+            <div className="text-xs tracking-[0.3em] uppercase" style={{ color: "var(--pos-muted)" }}>Time Clock{tenantName ? ` · ${tenantName}` : ""}</div>
           </div>
         </div>
         <div>

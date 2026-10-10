@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { usePos } from "../../store/PosContext";
 import { useDash } from "../../store/DashContext";
-import { timeclockApi, shiftsApi, staffApi, authToken } from "../../api/client";
+import { timeclockApi, shiftsApi, staffApi, authToken, authHeaders } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -97,7 +97,7 @@ function TimesheetTab({ weekStart, weekEnd, apiBase }) {
   const downloadCsv = async () => {
     const token = authToken();
     const r = await fetch(`${apiBase}/timeclock/timesheet.csv?start=${encodeURIComponent(weekStart.toISOString())}&end=${encodeURIComponent(weekEnd.toISOString())}`,
-      { headers: { Authorization: `Bearer ${token}` } });
+      { headers: authHeaders(token) });
     if (!r.ok) { toast.error("Download failed"); return; }
     const blob = await r.blob();
     const url = URL.createObjectURL(blob);
@@ -251,7 +251,7 @@ function RotaTab({ weekStart, apiBase }) {
     if (!token) { toast.error("Sign in again to download"); return; }
     try {
       const url = `${apiBase}/shifts.pdf?start=${encodeURIComponent(weekStart.toISOString())}&end=${encodeURIComponent(weekEnd.toISOString())}`;
-      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const r = await fetch(url, { headers: authHeaders(token) });
       if (!r.ok) {
         const detail = await r.text().catch(() => "");
         toast.error(`Could not generate PDF (${r.status})${detail ? ` — ${detail.slice(0, 80)}` : ""}`);

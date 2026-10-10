@@ -142,14 +142,14 @@ class TestCreateTenant:
         listed = requests.get(f"{API}/owner/tenants", headers=owner_h).json()
         assert slug in [x["slug"] for x in listed]
 
-        # Manager can sign in via the tenant POS using PIN 9999
+        # A brand-new tenant's tills are locked until a manager unlocks one
+        # (routes/pos_devices.py) — a PIN alone from an unknown browser is
+        # refused, not signed in.
         login = requests.post(f"{API}/auth/login",
                               json={"pin": "9999"},
                               headers={"X-Tenant-Slug": slug})
-        assert login.status_code == 200, login.text
-        body = login.json()
-        assert body["user"]["role"] == "Manager"
-        assert body["user"]["name"] == "QA Manager"
+        assert login.status_code == 403, login.text
+        assert login.json()["detail"]["code"] == "device_not_registered"
 
     def test_create_tenant_bad_slug(self, owner_h):
         r = requests.post(f"{API}/owner/tenants", json={

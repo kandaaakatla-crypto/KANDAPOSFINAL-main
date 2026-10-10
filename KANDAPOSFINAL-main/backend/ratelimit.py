@@ -55,3 +55,13 @@ async def hit(key: str, window_seconds: int) -> int:
     count += 1
     _local_counts[key] = (count, expires_at)
     return count
+
+
+def client_ip(request) -> str:
+    """Best-effort caller IP for rate-limit keys. Cloud Run puts the client's
+    own X-Forwarded-For value first and appends its infra hops after, so the
+    first value is caller-controlled: never key a limiter on this alone."""
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"

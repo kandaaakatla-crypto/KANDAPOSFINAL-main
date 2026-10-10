@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { useDash, canManageStaff, canAddLocation, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, ChevronLeft, ChevronRight, Sun, Moon, QrCode } from "lucide-react";
+import { useDash, hasPerm, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards, canManageCustomers, canViewReports, canManageSettings, canManageTeam } from "../../store/DashContext";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -16,15 +16,16 @@ const NAV_GROUPS = [
     label: "Sales Overview",
     items: [
       { to: "/dashboard", end: true, label: "Overview", icon: LayoutDashboard, allow: () => true },
-      { to: "/dashboard/reports", label: "Reports", icon: BarChart3, allow: () => true },
-      { to: "/dashboard/digest", label: "Daily Digest", icon: Sparkles, allow: () => true, feature: "daily_digest" },
+      { to: "/dashboard/reports", label: "Reports", icon: BarChart3, allow: (u) => canViewReports(u) },
+      { to: "/dashboard/digest", label: "Daily Digest", icon: Sparkles, allow: (u) => canViewReports(u), feature: "daily_digest" },
     ],
   },
   {
     label: "Live Outlets",
     items: [
       { to: "/dashboard/locations", label: "Locations", icon: MapPin, allow: () => true },
-      { to: "/dashboard/branding", label: "QR Branding", icon: QrCode, allow: () => true, feature: "qr_ordering" },
+      { to: "/dashboard/branding", label: "QR Branding", icon: QrCode, allow: (u) => canManageSettings(u), feature: "qr_ordering" },
+      { to: "/dashboard/website-orders", label: "Website Orders", icon: Globe, allow: (u) => canManageSettings(u) },
       { to: "/dashboard/brand", label: "Brand", icon: Store, allow: (u) => u?.dash_role === "owner" },
       { to: "/dashboard/central-supply", label: "Central Supply", icon: Warehouse, allow: (u) => u?.dash_role === "owner" && !!u?.brand_id },
     ],
@@ -34,6 +35,7 @@ const NAV_GROUPS = [
     items: [
       { to: "/dashboard/menu", label: "Menu", icon: BookOpen, allow: () => true },
       { to: "/dashboard/schedules", label: "Schedules", icon: Clock, allow: () => true },
+      { to: "/dashboard/surge", label: "Surge Pricing", icon: TrendingUp, allow: () => true },
       { to: "/dashboard/coupons", label: "Coupons", icon: Ticket, allow: (u) => canManageCoupons(u) },
       { to: "/dashboard/gift-cards", label: "Gift Cards", icon: Wallet, allow: (u) => canManageGiftCards(u) },
       { to: "/dashboard/loyalty", label: "Loyalty", icon: Gift, allow: (u) => canManageLoyalty(u), feature: "loyalty" },
@@ -49,7 +51,8 @@ const NAV_GROUPS = [
   {
     label: "Staff / Shifts",
     items: [
-      { to: "/dashboard/staff", label: "Staff", icon: Users, allow: (u) => canManageStaff(u) || u?.dash_role === "manager" },
+      { to: "/dashboard/staff", label: "Staff", icon: Users, allow: () => true },
+      { to: "/dashboard/team", label: "Team & access", icon: ShieldCheck, allow: (u) => canManageTeam(u) },
       { to: "/dashboard/workforce", label: "Rota", icon: CalendarDays, allow: () => true },
       { to: "/dashboard/payroll", label: "Payroll", icon: Banknote, allow: (u) => canManagePayroll(u), feature: "payroll" },
     ],
@@ -57,10 +60,10 @@ const NAV_GROUPS = [
   {
     label: "Customer CRM",
     items: [
-      { to: "/dashboard/customers", label: "Customers", icon: UserCircle, allow: () => true },
-      { to: "/dashboard/sms", label: "Customer SMS", icon: MessageSquare, allow: () => true, feature: "customer_sms" },
+      { to: "/dashboard/customers", label: "Customers", icon: UserCircle, allow: (u) => hasPerm(u, "customers") },
+      { to: "/dashboard/sms", label: "Customer SMS", icon: MessageSquare, allow: (u) => canManageCustomers(u), feature: "customer_sms" },
       { to: "/dashboard/whatsapp", label: "WhatsApp", icon: MessageCircle, allow: () => true, feature: "whatsapp" },
-      { to: "/dashboard/voice", label: "Voice Agent", icon: PhoneCall, allow: () => true, feature: "voice_agent" },
+      { to: "/dashboard/voice", label: "Voice Agent", icon: PhoneCall, allow: (u) => canManageSettings(u), feature: "voice_agent" },
     ],
   },
 ];
@@ -159,11 +162,14 @@ export default function DashLayout() {
     .map((g) => ({ ...g, items: g.items.filter((i) => i.allow(user) && (!i.feature || features[i.feature])) }))
     .filter((g) => g.items.length > 0);
 
-  // A feature turned off shouldn't be reachable by direct URL either.
+  // A feature turned off, or a section the owner hasn't given this person,
+  // shouldn't be reachable by direct URL either. (The API refuses it anyway;
+  // this just avoids a screen full of errors.)
   useEffect(() => {
     if (!user) return;
-    const disabled = NAV_ITEMS.find((i) => i.feature && location.pathname.startsWith(i.to) && !features[i.feature]);
-    if (disabled) navigate("/dashboard", { replace: true });
+    const blocked = NAV_ITEMS.find((i) => i.to !== "/dashboard" && location.pathname.startsWith(i.to)
+      && ((i.feature && !features[i.feature]) || !i.allow(user)));
+    if (blocked) navigate("/dashboard", { replace: true });
   }, [location.pathname, features, user, navigate]);
 
   if (!user) return <Navigate to="/dashboard/login" replace />;

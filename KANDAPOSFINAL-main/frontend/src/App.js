@@ -65,6 +65,7 @@ const DashVoice = lazy(() => import("./components/dash/DashVoice"));
 const DashDigest = lazy(() => import("./components/dash/DashDigest"));
 const DashLoyalty = lazy(() => import("./components/dash/DashLoyalty"));
 const DashSchedules = lazy(() => import("./components/dash/DashSchedules"));
+const DashSurge = lazy(() => import("./components/dash/DashSurge"));
 const DashCoupons = lazy(() => import("./components/dash/DashCoupons"));
 const DashGiftCards = lazy(() => import("./components/dash/DashGiftCards"));
 const DashSms = lazy(() => import("./components/dash/DashSms"));
@@ -73,6 +74,8 @@ const PayrollScreen = lazy(() => import("./components/dash/PayrollScreen"));
 const BrandScreen = lazy(() => import("./components/dash/BrandScreen"));
 const DashCentralSupply = lazy(() => import("./components/dash/DashCentralSupply"));
 const KioskDevicesPage = lazy(() => import("./components/dash/KioskDevicesPage"));
+const DashTeam = lazy(() => import("./components/dash/DashTeam"));
+const WebsiteOrdersPage = lazy(() => import("./components/dash/WebsiteOrdersPage"));
 
 function RouteLoading() {
   return (
@@ -171,6 +174,7 @@ function App() {
                     <Route index element={<DashHome />} />
                     <Route path="menu" element={<MenuScreen />} />
                     <Route path="schedules" element={<DashSchedules />} />
+                    <Route path="surge" element={<DashSurge />} />
                     <Route path="staff" element={<StaffScreen />} />
                     <Route path="brand" element={<BrandScreen />} />
                     <Route path="central-supply" element={<DashCentralSupply />} />
@@ -180,6 +184,7 @@ function App() {
                     <Route path="reports" element={<ReportsScreen />} />
                     <Route path="inventory" element={<InventoryScreen />} />
                     <Route path="devices" element={<KioskDevicesPage />} />
+                    <Route path="website-orders" element={<WebsiteOrdersPage />} />
                     <Route path="voice" element={<DashVoice />} />
                     <Route path="digest" element={<DashDigest />} />
                     <Route path="loyalty" element={<DashLoyalty />} />
@@ -189,6 +194,7 @@ function App() {
                     <Route path="whatsapp" element={<DashWhatsApp />} />
                     <Route path="locations" element={<DashLocations />} />
                     <Route path="branding" element={<DashBranding />} />
+                    <Route path="team" element={<DashTeam />} />
                   </Route>
 
                   {/* Kitchen Display — no auth, long-lived ?token= */}
@@ -224,7 +230,10 @@ function App() {
                   <Route path="/pos/login" element={<RestaurantGate />} />
                   <Route path="/pos/:slug/login" element={<LoginScreen />} />
                   <Route path="/demo/login" element={<LoginScreen isDemo />} />
-                  <Route path="/clock" element={<TimeClockScreen />} />
+                  <Route path="/pos/:slug/clock" element={<TimeClockScreen />} />
+                  {/* /clock was shared by every restaurant; each now has its own
+                      /pos/:slug/clock, so the old URL is a plain not-found. */}
+                  <Route path="/clock" element={<NotFoundPage />} />
                   <Route path="/:slug" element={<Protected><POSLayout /></Protected>}>
                     <Route index element={<Navigate to="pos" replace />} />
                     <Route path="pos" element={<HomeScreen />} />

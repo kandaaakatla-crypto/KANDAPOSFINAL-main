@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDash, canAddLocation } from "../../store/DashContext";
+import { useDash, canAddLocation, canViewReports, canManageSettings } from "../../store/DashContext";
 import { Lock, ShoppingBag, IndianRupee, Users, Boxes, MapPin, Plus, AlertCircle, Settings2, Receipt, Store } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "../ui/switch";
@@ -34,6 +34,8 @@ export default function DashHome() {
   const [tenantInfo, setTenantInfo] = useState(null);
   const [savingFeature, setSavingFeature] = useState(null);
 
+  const showReports = canViewReports(user);
+
   useEffect(() => {
     api.get("/locations").then((r) => {
       const allowed = user.location_ids && user.location_ids.length
@@ -41,10 +43,10 @@ export default function DashHome() {
         : r.data;
       setLocations(allowed);
     }).catch(() => {});
-    api.get("/reports/summary").then((r) => setSummary(r.data)).catch(() => {});
+    if (showReports) api.get("/reports/summary").then((r) => setSummary(r.data)).catch(() => {});
     api.get("/staff").then((r) => setStaffCount(r.data.filter((s) => s.active).length)).catch(() => {});
     api.get("/tenant/info").then((r) => setTenantInfo(r.data)).catch(() => {});
-  }, [api, user.location_ids]);
+  }, [api, user.location_ids, showReports]);
 
   const toggleFeature = async (key, value) => {
     setSavingFeature(key);
@@ -79,10 +81,10 @@ export default function DashHome() {
       </div>
 
       {/* Sales trend — at-a-glance companion to the interactive chart on Reports */}
-      <SalesTrendChart days={14} />
+      {showReports && <SalesTrendChart days={14} />}
 
       {/* Peak hours heatmap — reveals your busiest weekday × hour buckets */}
-      <PeakHoursHeatmap days={28} />
+      {showReports && <PeakHoursHeatmap days={28} />}
 
       {/* Store type + feature toggles */}
       {tenantInfo && (
@@ -104,7 +106,7 @@ export default function DashHome() {
                   <div className="text-sm font-medium" style={{ color: "var(--pos-text)" }}>{label}</div>
                   <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{desc}</div>
                 </div>
-                <Switch data-testid={`feature-toggle-${key}`} checked={!!tenantInfo.features?.[key]} disabled={savingFeature === key}
+                <Switch data-testid={`feature-toggle-${key}`} checked={!!tenantInfo.features?.[key]} disabled={savingFeature === key || !canManageSettings(user)}
                   onCheckedChange={(v) => toggleFeature(key, v)} className="shrink-0" />
               </div>
             ))}

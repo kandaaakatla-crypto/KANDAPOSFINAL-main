@@ -8,7 +8,7 @@ OrderType = Literal["delivery", "collection", "dine-in", "sale"]
 OrderStatus = Literal["new", "in-kitchen", "ready", "out-for-delivery", "completed"]
 OrderPayment = Literal["cash", "card", "unpaid"]
 TableStatus = Literal["available", "occupied", "reserved"]
-OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr"]
+OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr", "website"]
 TableShape = Literal["round", "square", "rect"]
 
 # ---------- Business type / feature flags ----------
@@ -383,6 +383,48 @@ class MenuScheduleUpdate(BaseModel):
     item_ids: Optional[List[str]] = None
 
 
+# ---------- Aggregator surge / peak pricing ----------
+AggregatorChannel = Literal["swiggy", "zomato", "other"]
+_HHMM = r"^([01][0-9]|2[0-3]):[0-5][0-9]$"
+
+
+class SurgeRule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    # Which aggregators the markup applies to. One channel = that aggregator
+    # only; several (or all) = one combined rule across them. Every active
+    # rule matching an order's source stacks (percentages add up).
+    channels: List[AggregatorChannel]
+    pct: float  # markup % on each line price
+    days: List[int] = []  # ISO weekday: 1=Mon..7=Sun; empty = every day
+    start_time: Optional[str] = None  # "HH:MM" IST; None (with end_time None) = all day
+    end_time: Optional[str] = None  # may be < start_time for an overnight window
+    active: bool = True
+    updated_at: Optional[str] = None
+
+
+class SurgeRuleCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    channels: List[AggregatorChannel] = Field(min_length=1)
+    pct: float = Field(ge=0.01, le=100)
+    days: List[int] = []
+    start_time: Optional[str] = Field(None, pattern=_HHMM)
+    end_time: Optional[str] = Field(None, pattern=_HHMM)
+    active: bool = True
+
+
+class SurgeRuleUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=60)
+    channels: Optional[List[AggregatorChannel]] = Field(None, min_length=1)
+    pct: Optional[float] = Field(None, ge=0.01, le=100)
+    days: Optional[List[int]] = None
+    start_time: Optional[str] = Field(None, pattern=_HHMM)
+    end_time: Optional[str] = Field(None, pattern=_HHMM)
+    all_day: bool = False  # clears start_time/end_time (None can't be sent through exclude_none)
+    active: Optional[bool] = None
+
+
 # ---------- Recipes ----------
 class RecipeIngredient(BaseModel):
     inventory_id: str
@@ -690,6 +732,10 @@ class OrderItem(BaseModel):
     size: Optional[str] = None
     tax_rate: Optional[float] = None  # resolved GST % for this line, stamped server-side
     tax_amount: Optional[float] = None  # resolved GST amount for this line, stamped server-side
+    # Aggregator surge: `price` is already the surged price the POS charged;
+    # these record the pre-surge price and the % applied, for reporting.
+    base_price: Optional[float] = None
+    surge_pct: Optional[float] = None
 
 
 class OrderCreate(BaseModel):
@@ -772,6 +818,7 @@ class Order(BaseModel):
     serviceChargePct: float = 0
     serviceCharge: float = 0
     serviceChargeTax: float = 0
+    surgeAmount: float = 0  # ₹ aggregator surge added to line prices (sum of (price - base_price) * qty)
     client_ref: Optional[str] = None  # idempotency key, set when this order was created offline and later synced
     sync_warnings: List[str] = []  # non-fatal issues found when replaying an offline-queued order (e.g. item since deleted)
 

@@ -304,6 +304,9 @@ async def seed_all(db):
             pass
 
     await db.tenants.create_index("slug", unique=True)
+    await db.pos_devices.create_index("token_hash", unique=True)
+    await db.pos_devices.create_index("id", unique=True)
+    await db.pos_devices.create_index([("tenant_id", 1), ("revoked_at", 1)])
     await db.users.create_index([("tenant_id", 1), ("id", 1)], unique=True)
     await db.menu_items.create_index([("tenant_id", 1), ("id", 1)], unique=True)
     await db.categories.create_index([("tenant_id", 1), ("id", 1)], unique=True)
@@ -324,6 +327,12 @@ async def seed_all(db):
         [("tenant_id", 1), ("client_ref", 1)], unique=True,
         partialFilterExpression={"client_ref": {"$type": "string"}},
     )
+    # Idempotency key for website-pushed orders (routes/website_orders.py):
+    # a retried webhook with the same external order id must not duplicate.
+    await db.orders.create_index(
+        [("tenant_id", 1), ("external_ref", 1)], unique=True,
+        partialFilterExpression={"external_ref": {"$type": "string"}},
+    )
 
     # updated_at indexes for offline-sync clients pulling incremental deltas
     # (?since=<ISO8601>) instead of a full collection fetch every time.
@@ -337,6 +346,13 @@ async def seed_all(db):
     await db.shifts.create_index([("tenant_id", 1), ("user_id", 1), ("start", 1)])
     await db.waste_entries.create_index([("tenant_id", 1), ("at", -1)])
     await db.cash_drawers.create_index([("tenant_id", 1), ("status", 1)])
+    # Alpha waitlist: one row per email, so two simultaneous sign-ups can't
+    # both insert (routes/leads.py). Partial, so pre-waitlist rows without
+    # email_lc are left alone.
+    await db.landing_leads.create_index(
+        "email_lc", unique=True,
+        partialFilterExpression={"type": "updates", "email_lc": {"$type": "string"}},
+    )
     await db.cash_drawers.create_index([("tenant_id", 1), ("opened_at", -1)])
     await db.tip_pools.create_index([("tenant_id", 1), ("shift_date", -1)])
     await db.coupons.create_index([("tenant_id", 1), ("code", 1)], unique=True)

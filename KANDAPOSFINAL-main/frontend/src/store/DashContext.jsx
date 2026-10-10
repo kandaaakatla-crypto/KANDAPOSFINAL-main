@@ -111,13 +111,21 @@ export function useDash() {
   return c;
 }
 
-// Role helpers consumed by route guards + nav.
-export const canManageStaff = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager");
-export const canEditMenu = (u) => !!u; // all 3 roles can edit menu (per user spec — manager edits via dashboard)
-export const canManageCoupons = (u) => !!u;
+// Role helpers consumed by route guards + nav. The owner decides per person
+// which sections a manager / area manager can use (Team & access screen);
+// the API enforces the same `permissions` map (backend/dash_access.py), so
+// these only decide what to show.
+export const isOwner = (u) => !!u && u.dash_role === "owner";
+export const hasPerm = (u, key) => isOwner(u) || !!u?.permissions?.[key];
+export const canManageStaff = (u) => hasPerm(u, "staff");
+export const canEditMenu = (u) => hasPerm(u, "menu");
+export const canManageCoupons = (u) => hasPerm(u, "coupons");
 export const canManageWorkforce = (u) => !!u; // all roles see workforce; scope filtered by location_ids
-export const canAddLocation = (u) => u && u.dash_role === "owner"; // payment-gated, owner only
-export const canManagePayroll = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // wage data — same trust level as staff management
-export const canManageLoyalty = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // program rules affect margin — same trust level as payroll
-export const canManageGiftCards = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // issues real prepaid balance — same trust level as payroll/loyalty
-export const canManageCustomers = (u) => u && (u.dash_role === "owner" || u.dash_role === "area_manager"); // viewing deleted customers + sending SMS — same trust level as staff/payroll
+export const canAddLocation = (u) => isOwner(u); // payment-gated, owner only
+export const canManagePayroll = (u) => hasPerm(u, "payroll");
+export const canManageLoyalty = (u) => hasPerm(u, "loyalty");
+export const canManageGiftCards = (u) => hasPerm(u, "gift_cards");
+export const canManageCustomers = (u) => hasPerm(u, "customer_admin"); // deleted customers + sending SMS
+export const canViewReports = (u) => hasPerm(u, "reports");
+export const canManageSettings = (u) => hasPerm(u, "settings");
+export const canManageTeam = (u) => isOwner(u);

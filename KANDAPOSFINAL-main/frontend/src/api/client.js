@@ -54,6 +54,25 @@ export const tenantStore = {
   clearEphemeral: () => { ephemeralSlug = null; },
 };
 
+// Per-restaurant "this till is unlocked" token, issued once when a manager
+// signs in on the till (POST /pos-devices/register) and kept until the till
+// is removed from the dashboard. Keyed by restaurant slug so one browser can
+// be unlocked for more than one restaurant without them overwriting each
+// other. Sent as X-Device-Token; staff PIN sign-in and the time clock need it.
+const DEVICE_KEY_PREFIX = "kanda_pos_device_v1:";
+export const deviceStore = {
+  get: (slug) => (slug ? localStorage.getItem(DEVICE_KEY_PREFIX + slug.toLowerCase()) : null),
+  set: (slug, t) => localStorage.setItem(DEVICE_KEY_PREFIX + slug.toLowerCase(), t),
+  clear: (slug) => slug && localStorage.removeItem(DEVICE_KEY_PREFIX + slug.toLowerCase()),
+  // True when this browser must be unlocked by a manager before staff PINs
+  // or the clock work for `slug`. The demo tenant is exempt (server too).
+  needsUnlock: (slug) => !!slug && slug.toLowerCase() !== "demo" && !localStorage.getItem(DEVICE_KEY_PREFIX + slug.toLowerCase()),
+};
+
+// True for the server's "this till isn't unlocked" refusal.
+export const isDeviceLocked = (err) =>
+  err?.response?.status === 403 && err?.response?.data?.detail?.code === "device_not_registered";
+
 // Some screens under components/pos/ (Rota, Reports, and formerly Customers)
 // are reused as-is for Dashboard routes that have no staff PIN session at
 // all — only a dashboard login. The backend's get_current_user already
@@ -69,18 +88,40 @@ function resolveAuthToken() {
 }
 export { resolveAuthToken as authToken };
 
+// Headers for the few hand-rolled fetch() calls (CSV/PDF downloads, menu
+// import) that bypass the axios interceptor below. Staff sessions started on
+// an unlocked till are bound to it server-side, so the till's device token
+// has to ride along with the bearer token or the request is refused.
+export function authHeaders(token = resolveAuthToken()) {
+  const h = { Authorization: `Bearer ${token}` };
+  const slug = tenantStore.get();
+  const device = slug && deviceStore.get(slug);
+  if (device) h["X-Device-Token"] = device;
+  return h;
+}
+
 export const api = axios.create({ baseURL: BASE });
 
 api.interceptors.request.use((cfg) => {
+  // Always send the tenant slug when this browser knows one, signed in or
+  // not. The unauthenticated calls need it most: /auth/login,
+  // /tenant/public-info and the time clock resolve the restaurant from this
+  // header alone, and the backend falls back to the "demo" tenant when it is
+  // missing — so dropping it before sign-in silently logged every
+  // /pos/:slug/login PIN pad into the demo restaurant. Authenticated
+  // endpoints ignore it (the JWT carries tenant_id).
+  const slug = tenantStore.get();
+  if (slug) {
+    cfg.headers["X-Tenant-Slug"] = slug;
+    const device = deviceStore.get(slug);
+    if (device) cfg.headers["X-Device-Token"] = device;
+  }
   const t = tokenStore.get();
   if (t) {
     cfg.headers.Authorization = `Bearer ${t}`;
-    const slug = tenantStore.get();
-    if (slug) cfg.headers["X-Tenant-Slug"] = slug;
   } else {
     // No POS session in this browser — fall back to a dashboard session if
-    // one exists (see resolveAuthToken above). No tenant slug header in
-    // this branch: the dash JWT already carries tenant_id.
+    // one exists (see resolveAuthToken above).
     const dashToken = localStorage.getItem(DASH_TOKEN_KEY);
     if (dashToken) cfg.headers.Authorization = `Bearer ${dashToken}`;
   }
@@ -90,7 +131,13 @@ api.interceptors.request.use((cfg) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err?.response?.status === 401) {
+    // A 401 from a PIN or password check (staff sign-in, time clock punch,
+    // till unlock) means "wrong PIN/password", not "session expired" — it
+    // must not sign the till or dashboard out or reload the page away from
+    // the form.
+    const url = err?.config?.url || "";
+    const isPinCheck = ["/auth/login", "/timeclock/punch", "/pos-devices/register"].some((p) => url.endsWith(p));
+    if (err?.response?.status === 401 && !isPinCheck) {
       const usedDashFallback = !tokenStore.get() && !!localStorage.getItem(DASH_TOKEN_KEY);
       if (usedDashFallback) {
         // The dash session itself is what's invalid here (POS token was
@@ -144,6 +191,16 @@ dashApi.interceptors.response.use(
 
 // Brand — franchise/multi-store management, owner-only. Uses dashApi since
 // every /brand/* route requires the strict dash JWT (get_dash_user).
+// Owner-only: who has a dashboard login, which stores and sections each
+// manager / area manager can use. Enforced by the API (backend/dash_access.py).
+export const teamApi = {
+  list: () => dashApi.get("/dash/team").then((r) => r.data),
+  create: (payload) => dashApi.post("/dash/team", payload).then((r) => r.data),
+  update: (id, payload) => dashApi.patch(`/dash/team/${id}`, payload).then((r) => r.data),
+  resetPassword: (id) => dashApi.post(`/dash/team/${id}/reset-password`).then((r) => r.data),
+  myStores: () => dashApi.get("/dash/stores").then((r) => r.data),
+};
+
 export const brandApi = {
   create: (payload) => dashApi.post("/brand", payload).then((r) => r.data),
   get: (id) => dashApi.get(`/brand/${id}`).then((r) => r.data),
@@ -158,6 +215,8 @@ export const brandApi = {
   createAsset: (id, payload) => dashApi.post(`/brand/${id}/assets`, payload).then((r) => r.data),
   deleteAsset: (id, assetId) => dashApi.delete(`/brand/${id}/assets/${assetId}`).then((r) => r.data),
   smsBroadcast: (id, payload) => dashApi.post(`/brand/${id}/marketing/sms-broadcast`, payload).then((r) => r.data),
+  customers: (id, params = {}) => dashApi.get(`/brand/${id}/customers`, { params }).then((r) => r.data),
+  customerProfile: (id, phone) => dashApi.get(`/brand/${id}/customers/${encodeURIComponent(phone)}`).then((r) => r.data),
   switchStore: (tenantId) => dashApi.post("/dash/brand/switch", { tenant_id: tenantId }).then((r) => r.data),
 
   // Pay-per-store billing
@@ -229,6 +288,13 @@ export const menuApi = {
   reorderCategories: (order) => api.patch("/menu/categories/reorder", { order }).then((r) => r.data),
   listRecipes: (itemId) => api.get(`/menu/items/${itemId}/recipes`).then((r) => r.data),
   saveRecipes: (itemId, recipes) => api.put(`/menu/items/${itemId}/recipes`, { recipes }).then((r) => r.data),
+};
+
+export const surgeRulesApi = {
+  list: () => api.get("/pricing/surge-rules").then((r) => r.data),
+  create: (payload) => api.post("/pricing/surge-rules", payload).then((r) => r.data),
+  update: (id, payload) => api.put(`/pricing/surge-rules/${id}`, payload).then((r) => r.data),
+  remove: (id) => api.delete(`/pricing/surge-rules/${id}`).then((r) => r.data),
 };
 
 export const menuSchedulesApi = {
@@ -354,6 +420,16 @@ export const staffApi = {
   create: (payload) => api.post("/staff", payload).then((r) => r.data),
   update: (id, payload) => api.put(`/staff/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/staff/${id}`).then((r) => r.data),
+};
+
+export const posDevicesApi = {
+  // Public — authorised by the manager's email + password in the body, for
+  // the restaurant named by X-Tenant-Slug.
+  register: (payload) => api.post("/pos-devices/register", payload).then((r) => r.data),
+  list: () => api.get("/pos-devices").then((r) => r.data),
+  remove: (id) => api.delete(`/pos-devices/${id}`).then((r) => r.data),
+  // Manager-only: lock the till this browser is (its own device token).
+  lockCurrent: () => api.post("/pos-devices/current/lock").then((r) => r.data),
 };
 
 export const timeclockApi = {

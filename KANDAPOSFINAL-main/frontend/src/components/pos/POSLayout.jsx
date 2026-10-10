@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon } from "lucide-react";
+import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon, Lock } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
@@ -10,6 +10,8 @@ import LocationSwitcher from "./LocationSwitcher";
 import { Sheet, SheetContent } from "../ui/sheet";
 import useSeo from "../../hooks/useSeo";
 import { getTheme, toggleTheme } from "../../lib/theme";
+import { posDevicesApi, deviceStore } from "../../api/client";
+import { toast } from "sonner";
 
 export default function POSLayout() {
   const { staffUser, logout, orders, businessType, features, isOffline, pendingSyncCount } = usePos();
@@ -46,6 +48,24 @@ export default function POSLayout() {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  // Manager-only "Lock this till": signs the device itself out (not just the
+  // current staff member), so staff PINs stop working here until a manager
+  // unlocks it again. Same effect as removing it under Dashboard > Devices.
+  const canLockTill = staffUser?.role === "Manager" && !!deviceStore.get(slug);
+  const lockTill = async () => {
+    if (!window.confirm("Lock this till? Staff won't be able to sign in here until a manager unlocks it again.")) return;
+    try {
+      await posDevicesApi.lockCurrent();
+    } catch (e) {
+      const d = e?.response?.data?.detail;
+      toast.error(typeof d === "string" ? d : "Couldn't lock this till");
+      return;
+    }
+    deviceStore.clear(slug);
+    logout();
+    window.location.assign(`/pos/${slug}/login`);
+  };
 
   // Drivers get their own stripped-down app (deliveries + rota only) — never
   // the full POS chrome, even if they hit one of these routes directly.
@@ -125,6 +145,13 @@ export default function POSLayout() {
             {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             {theme === "dark" ? "Light" : "Dark"}
           </button>
+          {canLockTill && (
+            <button data-testid="lock-till-btn" onClick={lockTill}
+              className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2 mb-1" style={{ color: "var(--pos-muted)" }}>
+              <Lock className="w-5 h-5" />
+              Lock till
+            </button>
+          )}
           {/* Hard nav, not navigate("/login") — a client-side transition races
               Protected's own staffUser-triggered re-render of the outgoing
               /pos route, which can win and bounce to "/" instead. */}
@@ -252,6 +279,13 @@ export default function POSLayout() {
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               {theme === "dark" ? "Light mode" : "Dark mode"}
             </button>
+            {canLockTill && (
+              <button data-testid="mmore-lock-till" onClick={() => { setMoreOpen(false); lockTill(); }}
+                className="pos-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
+                style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
+                <Lock className="w-4 h-4" /> Lock this till
+              </button>
+            )}
             <button data-testid="mmore-logout" onClick={() => { setMoreOpen(false); logout(); window.location.assign(`/pos/${slug}/login`); }}
               className="pos-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
               style={{ background: "var(--pos-panel-2)", color: "#f87171" }}>

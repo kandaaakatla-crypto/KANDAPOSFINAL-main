@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useDash } from "../../store/DashContext";
-import { brandApi } from "../../api/client";
+import { teamApi } from "../../api/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Store } from "lucide-react";
 
-/** Only rendered for owners who manage a brand (multiple stores) — lets them
- * jump their whole dashboard session to a different store under the same
- * brand without a separate login per store. */
+/** Rendered for anyone with more than one store — an owner with a brand, or
+ * an area manager the owner gave several stores — and lets them jump their
+ * whole dashboard session to another of those stores without a separate
+ * login per store. The API decides the list (/dash/stores). */
 export default function StoreSwitcher() {
   const { user, switchStore } = useDash();
   const [stores, setStores] = useState([]);
   const [busy, setBusy] = useState(false);
 
+  const userId = user?.id;
   useEffect(() => {
-    if (!user?.brand_id) return;
-    brandApi.listStores(user.brand_id).then(setStores).catch(() => {});
-  }, [user?.brand_id]);
+    if (!userId) return;
+    teamApi.myStores().then(setStores).catch(() => {});
+  }, [userId]);
 
-  if (!user?.brand_id || stores.length < 2) return null;
+  if (stores.length < 2) return null;
 
   const onChange = async (tenantId) => {
     if (tenantId === user.tenant_id || busy) return;
