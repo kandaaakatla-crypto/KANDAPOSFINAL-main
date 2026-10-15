@@ -471,6 +471,13 @@ class CustomerCreate(BaseModel):
     email: Optional[str] = ""
     birthday: Optional[str] = None
 
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Phone is required")
+        return check_phone(v)
+
 
 class CustomerUpdate(BaseModel):
     name: Optional[str] = None
@@ -480,6 +487,13 @@ class CustomerUpdate(BaseModel):
     notes: Optional[str] = None
     email: Optional[str] = None
     birthday: Optional[str] = None
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError("Phone is required")
+        return check_phone(v)
 
 
 # ---------- Tables + Layout ----------
