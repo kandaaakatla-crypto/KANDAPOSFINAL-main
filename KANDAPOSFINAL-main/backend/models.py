@@ -1185,6 +1185,11 @@ class LocationCreate(BaseModel):
     active: bool = True
     is_default: bool = False
 
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        return check_phone(v)
+
 
 class LocationUpdate(BaseModel):
     name: Optional[str] = None
@@ -1193,6 +1198,11 @@ class LocationUpdate(BaseModel):
     store_number: Optional[str] = None
     active: Optional[bool] = None
     is_default: Optional[bool] = None
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        return check_phone(v)
 
 
 # ---------- Prep list ----------
