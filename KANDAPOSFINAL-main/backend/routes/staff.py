@@ -13,7 +13,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 
 from db import get_db
-from auth import require_role, hash_pin, verify_pin, user_cache_key
+from auth import require_role, hash_pin, verify_pin, find_pin_matches, pin_lookup, user_cache_key
 from cache import cache_delete
 from tenants import tenant_filter
 from models import StaffPublic, StaffCreate, StaffUpdate
@@ -50,10 +50,9 @@ async def create_staff(payload: StaffCreate, user: dict = Depends(require_role("
         raise HTTPException(status_code=400, detail="PIN must be exactly 4 digits")
     db = get_db()
     # PIN uniqueness within the tenant — required because login is PIN-only.
-    existing = await db.users.find(tenant_filter(user), {"_id": 0, "pin_hash": 1, "id": 1}).to_list(500)
-    for u in existing:
-        if verify_pin(payload.pin, u["pin_hash"]):
-            raise HTTPException(status_code=409, detail="PIN is already in use by another employee")
+    existing = await db.users.find(tenant_filter(user), {"_id": 0, "pin_hash": 1, "pin_lookup": 1, "id": 1}).to_list(500)
+    if await find_pin_matches(db, user["tenant_id"], existing, payload.pin):
+        raise HTTPException(status_code=409, detail="PIN is already in use by another employee")
     initials = "".join(p[:1] for p in payload.name.split())[:2].upper() or "??"
     doc = {
         "id": f"u_{uuid.uuid4().hex[:8]}",
@@ -62,6 +61,7 @@ async def create_staff(payload: StaffCreate, user: dict = Depends(require_role("
         "role": payload.role,
         "initials": initials,
         "pin_hash": hash_pin(payload.pin),
+        "pin_lookup": pin_lookup(user["tenant_id"], payload.pin),
         "phone": (payload.phone or "").strip(),
         "pay_type": payload.pay_type or "monthly",
         "monthly_pay": float(payload.monthly_pay or 0),
@@ -100,12 +100,12 @@ async def update_staff(user_id: str, payload: StaffUpdate, user: dict = Depends(
             raise HTTPException(status_code=400, detail="PIN must be exactly 4 digits")
         others = await db.users.find(
             tenant_filter(user, {"id": {"$ne": user_id}}),
-            {"_id": 0, "pin_hash": 1},
+            {"_id": 0, "pin_hash": 1, "pin_lookup": 1, "id": 1},
         ).to_list(500)
-        for o in others:
-            if verify_pin(payload.pin, o["pin_hash"]):
-                raise HTTPException(status_code=409, detail="PIN is already in use")
+        if await find_pin_matches(db, user["tenant_id"], others, payload.pin):
+            raise HTTPException(status_code=409, detail="PIN is already in use")
         updates["pin_hash"] = hash_pin(payload.pin)
+        updates["pin_lookup"] = pin_lookup(user["tenant_id"], payload.pin)
     if updates:
         await db.users.update_one(tenant_filter(user, {"id": user_id}), {"$set": updates})
         await cache_delete(user_cache_key(user["tenant_id"], user_id))
