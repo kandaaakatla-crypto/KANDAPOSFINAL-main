@@ -5,7 +5,7 @@ import { usePos } from "../../store/PosContext";
 import { DEMO_STAFF_HINTS_BY_TENANT } from "../../data/mock";
 import { ShoppingBag, Delete, LogIn, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { api, tenantStore, deviceStore, isDeviceLocked } from "../../api/client";
+import { api, tenantStore, deviceStore, isDeviceLocked, isStaffDeactivated } from "../../api/client";
 import DeviceUnlock from "./DeviceUnlock";
 import useSeo from "../../hooks/useSeo";
 import { pressableSmall } from "../../lib/motion";
@@ -111,6 +111,8 @@ export default function LoginScreen({ isDemo = false }) {
         deviceStore.clear(routeSlug);
         setLocked(true);
         toast.error("This till needs to be unlocked again by a manager.");
+      } else if (isStaffDeactivated(err)) {
+        toast.error(err.response.data.detail);
       }
       return;
     }
