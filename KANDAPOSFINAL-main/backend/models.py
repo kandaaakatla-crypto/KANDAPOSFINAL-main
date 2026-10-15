@@ -611,12 +611,12 @@ class InventoryItem(BaseModel):
 
 
 class InventoryItemCreate(BaseModel):
-    name: str
-    unit: str
-    stock: float = 0
-    reorder: float = 0
+    name: str = Field(min_length=1, pattern=r"\S")
+    unit: str = Field(min_length=1)
+    stock: float = Field(0, ge=0)
+    reorder: float = Field(0, ge=0)
     supplier: str = ""
-    cost_per_unit: float = 0.0
+    cost_per_unit: float = Field(0.0, ge=0)
     expiry_date: Optional[str] = None
     location_id: Optional[str] = None
 
@@ -624,9 +624,9 @@ class InventoryItemCreate(BaseModel):
 class InventoryItemUpdate(BaseModel):
     name: Optional[str] = None
     unit: Optional[str] = None
-    reorder: Optional[float] = None
+    reorder: Optional[float] = Field(None, ge=0)
     supplier: Optional[str] = None
-    cost_per_unit: Optional[float] = None
+    cost_per_unit: Optional[float] = Field(None, ge=0)
     expiry_date: Optional[str] = None  # explicit null clears it; omitted leaves it unchanged
     location_id: Optional[str] = None  # explicit null clears it (moves to shared pool); omitted leaves it unchanged
 
