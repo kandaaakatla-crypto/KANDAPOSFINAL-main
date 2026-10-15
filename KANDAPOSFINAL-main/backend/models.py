@@ -1,7 +1,7 @@
 """Pydantic models for Kanda POS."""
 from __future__ import annotations
 from typing import List, Literal, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 OrderType = Literal["delivery", "collection", "dine-in", "sale"]
@@ -300,6 +300,18 @@ class MenuItem(BaseModel):
     deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
 
+GST_SLABS = (0, 5, 12, 18, 28)
+
+
+def _check_item_fields(price, tax_rate, name=None):
+    if price is not None and not price > 0:
+        raise ValueError("Price must be greater than 0")
+    if tax_rate is not None and tax_rate not in GST_SLABS:
+        raise ValueError("GST rate must be one of 0, 5, 12, 18 or 28")
+    if name is not None and not name.strip():
+        raise ValueError("Name is required")
+
+
 class MenuItemCreate(BaseModel):
     catId: str
     name: str
@@ -313,6 +325,11 @@ class MenuItemCreate(BaseModel):
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
     tax_rate: Optional[float] = None
+
+    @model_validator(mode="after")
+    def _validate(self):
+        _check_item_fields(self.price, self.tax_rate, self.name)
+        return self
 
 
 class MenuItemUpdate(BaseModel):
@@ -328,6 +345,11 @@ class MenuItemUpdate(BaseModel):
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
     tax_rate: Optional[float] = None
+
+    @model_validator(mode="after")
+    def _validate(self):
+        _check_item_fields(self.price, self.tax_rate, self.name)
+        return self
 
 
 class AvailabilityPayload(BaseModel):
