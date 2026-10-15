@@ -3,6 +3,7 @@ import {
   auth, tokenStore, tenantStore, menuApi, menuSchedulesApi, tablesApi, customersApi,
   inventoryApi, ordersApi, tenantApi, loyaltyApi, surgeRulesApi,
   isDeviceLocked,
+  isStaffDeactivated,
 } from "../api/client";
 import { connectWs } from "../api/ws";
 import * as repo from "../data/repo";
@@ -264,7 +265,7 @@ export function PosProvider({ children }) {
       return user;
     } catch (err) {
       // Let the PIN pad tell "this till isn't unlocked" apart from a wrong PIN.
-      if (isDeviceLocked(err)) throw err;
+      if (isDeviceLocked(err) || isStaffDeactivated(err)) throw err;
       return null;
     }
   }, [loadAll]);

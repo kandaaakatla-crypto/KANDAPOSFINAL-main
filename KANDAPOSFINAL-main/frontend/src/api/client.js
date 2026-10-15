@@ -73,6 +73,11 @@ export const deviceStore = {
 export const isDeviceLocked = (err) =>
   err?.response?.status === 403 && err?.response?.data?.detail?.code === "device_not_registered";
 
+// True when the PIN was right but the staff account has been deactivated.
+export const isStaffDeactivated = (err) =>
+  err?.response?.status === 403 && typeof err?.response?.data?.detail === "string"
+  && err.response.data.detail.toLowerCase().includes("deactivated");
+
 // Some screens under components/pos/ (Rota, Reports, and formerly Customers)
 // are reused as-is for Dashboard routes that have no staff PIN session at
 // all — only a dashboard login. The backend's get_current_user already
