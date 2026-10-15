@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 OrderType = Literal["delivery", "collection", "dine-in", "sale"]
 OrderStatus = Literal["new", "in-kitchen", "ready", "out-for-delivery", "completed"]
-OrderPayment = Literal["cash", "card", "unpaid"]
+OrderPayment = Literal["cash", "card", "split", "unpaid"]
 TableStatus = Literal["available", "occupied", "reserved"]
 OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr", "website"]
 TableShape = Literal["round", "square", "rect"]

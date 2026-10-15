@@ -363,8 +363,10 @@ export default function OrderScreen() {
         return null;
       }
     }
-    // For card path the backend will flip payment to "card" after Razorpay verify.
-    const initialPayment = method === "card" ? "unpaid" : method;
+    // Card and split orders are created unpaid; the backend flips them to
+    // "card"/"split" only after Razorpay verifies the card payment. A split
+    // order marked "split" up front looked paid even when the card half failed.
+    const initialPayment = method === "card" || method === "split" ? "unpaid" : method;
     const order = buildOrder(initialPayment, splits);
     try {
       return await placeOrder(order);
