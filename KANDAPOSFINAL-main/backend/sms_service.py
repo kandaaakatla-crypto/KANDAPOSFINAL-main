@@ -78,6 +78,16 @@ def _get_client() -> Client | None:
     return _client
 
 
+def sms_configured() -> tuple[bool, str]:
+    """(usable, reason-if-not) so the UI can show a "Not set up" state
+    instead of letting managers send messages that are guaranteed to fail."""
+    if _get_client() is None:
+        return False, "SMS isn't set up yet: the Twilio account hasn't been connected on the server."
+    if not os.environ.get("TWILIO_FROM_NUMBER", "").strip():
+        return False, "SMS isn't set up yet: no Twilio sender number is configured."
+    return True, ""
+
+
 async def send_sms(to: str, body: str) -> bool:
     """Send a single SMS. Returns True on success, False otherwise."""
     to = normalize_phone(to)

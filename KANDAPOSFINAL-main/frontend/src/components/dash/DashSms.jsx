@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { customersApi, smsApi } from "../../api/client";
+import SmsNotSetUp, { useSmsStatus } from "../SmsNotSetUp";
 import { MessageSquare, Send, Search, Users, History, Loader2, Check, X } from "lucide-react";
 
 /**
@@ -18,6 +19,7 @@ export default function DashSms() {
   const [query, setQuery] = useState("");
   const [body, setBody] = useState("Hi {name}, thanks for being a Kanda customer! ");
   const [sending, setSending] = useState(false);
+  const sms = useSmsStatus();
   const [history, setHistory] = useState([]);
   const [loadingHist, setLoadingHist] = useState(false);
 
@@ -154,11 +156,12 @@ export default function DashSms() {
               </div>
             </div>
 
+            {!sms.configured && <SmsNotSetUp reason={sms.reason} />}
             <button data-testid="sms-broadcast-send" onClick={send}
-              disabled={sending || totalRecipients === 0 || !body.trim()}
+              disabled={sending || totalRecipients === 0 || !body.trim() || !sms.configured}
               className="pos-btn w-full h-11 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2"
               style={{ background: "var(--pos-accent)",
-                       opacity: (sending || totalRecipients === 0 || !body.trim()) ? 0.5 : 1 }}>
+                       opacity: (sending || totalRecipients === 0 || !body.trim() || !sms.configured) ? 0.5 : 1 }}>
               {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending {totalRecipients} SMS…</>
                        : <><Send className="w-4 h-4" /> Send to {totalRecipients} recipient(s)</>}
             </button>
