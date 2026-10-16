@@ -5,6 +5,7 @@ import { Bike, ShoppingBag, UtensilsCrossed, ChevronRight, Clock, Receipt, Undo2
 import { toast } from "sonner";
 import ReceiptModal from "./ReceiptModal";
 import RefundVoidModal from "./RefundVoidModal";
+import { timeAgo } from "../../utils/timeAgo";
 
 const STATUS_FLOW = ["new", "in-kitchen", "ready", "out-for-delivery", "completed"];
 const STATUS_META = {
@@ -21,11 +22,6 @@ function nextStatus(order) {
   if (order.status === "ready") return order.type === "delivery" ? "out-for-delivery" : "completed";
   const idx = STATUS_FLOW.indexOf(order.status);
   return STATUS_FLOW[idx + 1];
-}
-
-function minsAgo(iso) {
-  const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-  return m < 1 ? "just now" : `${m} min ago`;
 }
 
 export default function OrdersScreen() {
@@ -109,7 +105,7 @@ export default function OrdersScreen() {
 
                   <div className="flex items-center justify-between mt-auto">
                     <div className="text-xs flex items-center gap-1" style={{ color: "var(--pos-muted)" }}>
-                      <Clock className="w-3.5 h-3.5" /> {minsAgo(o.placedAt)} · <span className="uppercase font-semibold" style={{ color: o.payment === "unpaid" ? "#f87171" : "#7ee2a8" }}>{o.payment}</span>
+                      <Clock className="w-3.5 h-3.5" /> {timeAgo(o.placedAt)} · <span className="uppercase font-semibold" style={{ color: o.payment === "unpaid" ? "#f87171" : "#7ee2a8" }}>{o.payment}</span>
                     </div>
                     <div className="font-bold tabular-nums" style={{ color: "var(--pos-text)" }}>₹{o.total.toFixed(2)}</div>
                   </div>
