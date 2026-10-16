@@ -99,6 +99,11 @@ export default function RefundVoidModal({ order, onClose, onDone }) {
                     Store credit
                   </button>
                 </div>
+                {!hasCustomerPhone && (
+                  <p data-testid="refund-credit-hint" className="text-[11px] mt-1.5" style={{ color: "var(--pos-muted)" }}>
+                    Store credit needs a customer on the order (walk-in sales have no phone number to credit).
+                  </p>
+                )}
               </div>
             )}
 
