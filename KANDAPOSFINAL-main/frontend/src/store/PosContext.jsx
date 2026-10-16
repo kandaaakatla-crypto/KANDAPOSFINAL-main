@@ -10,6 +10,7 @@ import * as repo from "../data/repo";
 import { pullDeltas, processOutbox } from "../data/syncEngine";
 import { isOnline, subscribeConnectivity } from "../data/connectivity";
 import { toast } from "sonner";
+import { sortTables } from "../utils/sortTables";
 
 const PosContext = createContext(null);
 
@@ -86,7 +87,7 @@ export function PosProvider({ children }) {
         repo.getAll("menuSchedules", tid), repo.getAll("diningTables", tid),
       ]);
       setCategories(cats); setMenuItems(items); setInventory(inv);
-      setCustomers(custs); setSchedules(scheds); setTables(tbls);
+      setCustomers(custs); setSchedules(scheds); setTables(sortTables(tbls));
     } catch { /* IndexedDB unavailable — screens simply stay on whatever's already in state */ }
   }, []);
 
@@ -462,7 +463,7 @@ export function PosProvider({ children }) {
   const refreshTables = useCallback(async () => {
     try {
       const list = await tablesApi.list();
-      setTables(list);
+      setTables(sortTables(list));
     } catch {}
   }, []);
 
