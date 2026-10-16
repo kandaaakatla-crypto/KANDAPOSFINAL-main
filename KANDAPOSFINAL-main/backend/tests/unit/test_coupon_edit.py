@@ -21,16 +21,16 @@ def _make(client, h, **kw):
 def test_percent_value_over_100_rejected_on_update(client):
     h = _login(client)
     c = _make(client, h)
-    r = client.put(f"/api/coupons/{c['id']}", json={"value": 150}, headers=h)
+    r = client.patch(f"/api/coupons/{c['id']}", json={"value": 150}, headers=h)
     assert r.status_code == 400, r.text
-    r = client.put(f"/api/coupons/{c['id']}", json={"value": 0}, headers=h)
+    r = client.patch(f"/api/coupons/{c['id']}", json={"value": 0}, headers=h)
     assert r.status_code == 400, r.text
 
 
 def test_explicit_null_clears_limits(client):
     h = _login(client)
     c = _make(client, h)
-    r = client.put(f"/api/coupons/{c['id']}", json={"valid_to": None, "max_uses": None, "value": 15}, headers=h)
+    r = client.patch(f"/api/coupons/{c['id']}", json={"valid_to": None, "max_uses": None, "value": 15}, headers=h)
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["valid_to"] is None and body["max_uses"] is None and body["value"] == 15
