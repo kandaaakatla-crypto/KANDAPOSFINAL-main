@@ -23,7 +23,15 @@ router = APIRouter()
 _VALID_PIN = lambda p: isinstance(p, str) and p.isdigit() and len(p) == 4
 
 
-def _to_public(doc: dict) -> dict:
+def can_see_pay(user: dict) -> bool:
+    """Dashboard users only see salaries with the Payroll permission, the same
+    switch that gates /api/payroll. PIN-login store managers keep access."""
+    if user.get("dash"):
+        return bool((user.get("permissions") or {}).get("payroll"))
+    return True
+
+
+def _to_public(doc: dict, show_pay: bool = True) -> dict:
     return {
         "id": doc["id"],
         "name": doc["name"],
@@ -31,8 +39,9 @@ def _to_public(doc: dict) -> dict:
         "initials": doc.get("initials") or "".join(p[:1] for p in doc["name"].split())[:2].upper(),
         "phone": doc.get("phone", "") or "",
         "pay_type": doc.get("pay_type") or "monthly",
-        "monthly_pay": float(doc.get("monthly_pay", 0) or 0),
-        "hourly_rate": float(doc.get("hourly_rate", 0) or 0),
+        "monthly_pay": float(doc.get("monthly_pay", 0) or 0) if show_pay else None,
+        "hourly_rate": float(doc.get("hourly_rate", 0) or 0) if show_pay else None,
+        "pay_visible": show_pay,
         "active": bool(doc.get("active", True)),
     }
 
@@ -41,7 +50,8 @@ def _to_public(doc: dict) -> dict:
 async def list_staff(user: dict = Depends(require_role("Manager"))):
     db = get_db()
     docs = await db.users.find(tenant_filter(user), {"_id": 0, "pin_hash": 0}).to_list(500)
-    return [_to_public(d) for d in docs]
+    show_pay = can_see_pay(user)
+    return [_to_public(d, show_pay) for d in docs]
 
 
 @router.post("/staff", response_model=StaffPublic)
@@ -69,8 +79,11 @@ async def create_staff(payload: StaffCreate, user: dict = Depends(require_role("
         "active": bool(payload.active),
         "created_at": now_ist().isoformat(),
     }
+    if not can_see_pay(user):
+        doc["monthly_pay"] = 0.0
+        doc["hourly_rate"] = 0.0
     await db.users.insert_one(doc)
-    return _to_public(doc)
+    return _to_public(doc, can_see_pay(user))
 
 
 @router.put("/staff/{user_id}", response_model=StaffPublic)
@@ -80,6 +93,8 @@ async def update_staff(user_id: str, payload: StaffUpdate, user: dict = Depends(
     if not existing:
         raise HTTPException(status_code=404, detail="Employee not found")
     updates: dict = {}
+    if not can_see_pay(user) and any(v is not None for v in (payload.pay_type, payload.monthly_pay, payload.hourly_rate)):
+        raise HTTPException(status_code=403, detail="Your owner hasn't given you access to Payroll & labour cost")
     if payload.name is not None:
         updates["name"] = payload.name.strip()
         updates["initials"] = "".join(p[:1] for p in payload.name.split())[:2].upper() or "??"
@@ -110,7 +125,7 @@ async def update_staff(user_id: str, payload: StaffUpdate, user: dict = Depends(
         await db.users.update_one(tenant_filter(user, {"id": user_id}), {"$set": updates})
         await cache_delete(user_cache_key(user["tenant_id"], user_id))
     fresh = await db.users.find_one(tenant_filter(user, {"id": user_id}), {"_id": 0, "pin_hash": 0})
-    return _to_public(fresh)
+    return _to_public(fresh, can_see_pay(user))
 
 
 @router.delete("/staff/{user_id}")
