@@ -203,6 +203,7 @@ export const teamApi = {
   create: (payload) => dashApi.post("/dash/team", payload).then((r) => r.data),
   update: (id, payload) => dashApi.patch(`/dash/team/${id}`, payload).then((r) => r.data),
   resetPassword: (id) => dashApi.post(`/dash/team/${id}/reset-password`).then((r) => r.data),
+  remove: (id) => dashApi.delete(`/dash/team/${id}`).then((r) => r.data),
   myStores: () => dashApi.get("/dash/stores").then((r) => r.data),
 };
 
