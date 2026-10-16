@@ -84,10 +84,17 @@ async def update_coupon(coupon_id: str, payload: CouponUpdate, user: dict = Depe
     if not existing:
         raise HTTPException(status_code=404, detail="Coupon not found")
     updates = {k: v for k, v in payload.model_dump(exclude_none=True).items()}
-    if "kind" in updates and updates["kind"] == "percent":
-        v = updates.get("value", existing.get("value", 0))
-        if v is not None and v > 100:
-            raise HTTPException(status_code=400, detail="Percent value cannot exceed 100")
+    # An explicit null clears an optional limit (the edit form does this when
+    # a date / max-uses box is emptied); exclude_none above would drop it.
+    for field in ("valid_from", "valid_to", "max_uses"):
+        if field in payload.model_fields_set and getattr(payload, field) is None:
+            updates[field] = None
+    kind = updates.get("kind", existing.get("kind"))
+    value = updates.get("value", existing.get("value", 0))
+    if "value" in updates and value <= 0:
+        raise HTTPException(status_code=400, detail="Value must be positive")
+    if kind == "percent" and value is not None and value > 100:
+        raise HTTPException(status_code=400, detail="Percent value cannot exceed 100")
     if "valid_from" in updates or "valid_to" in updates:
         check_coupon_dates(updates.get("valid_from", existing.get("valid_from")), updates.get("valid_to", existing.get("valid_to")))
     if updates:
