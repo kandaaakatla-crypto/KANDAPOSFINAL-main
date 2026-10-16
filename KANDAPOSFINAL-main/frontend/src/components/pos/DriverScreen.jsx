@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Bike, Phone, MapPin, CheckCircle2, IndianRupee, Loader2, LogOut, Plus, RefreshCw, CalendarDays } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { MyRotaTab, startOfWeek } from "./WorkforceScreen";
+import { orderNo } from "../../utils/orderNumber";
 
 const Card = ({ order, mine, busy, onClaim, onOnTheWay, onCash, onDelivered }) => {
   const c = order.customer || {};
@@ -17,7 +18,7 @@ const Card = ({ order, mine, busy, onClaim, onOnTheWay, onCash, onDelivered }) =
       style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
       <div className="flex items-center justify-between mb-2">
         <div>
-          <div className="text-lg font-extrabold tabular-nums" style={{ color: "var(--pos-text)" }}>#{order.number}</div>
+          <div className="text-lg font-extrabold tabular-nums" style={{ color: "var(--pos-text)" }}>{orderNo(order)}</div>
           <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>
             ₹{order.total} · {order.payment} · {order.source || "in-store"}
           </div>
@@ -121,7 +122,7 @@ export default function DriverScreen() {
   const open = deliveries.filter((o) => !o.driver && o.status === "ready");
 
   const claim = async (o) => {
-    try { await ordersApi.claim(o.id); toast.success(`Claimed #${o.number}`); load(); }
+    try { await ordersApi.claim(o.id); toast.success(`Claimed ${orderNo(o)}`); load(); }
     catch (e) { toast.error(e?.response?.data?.detail || "Could not claim"); }
   };
   const onway = async (o) => {
@@ -133,7 +134,7 @@ export default function DriverScreen() {
     catch (e) { toast.error("Could not update payment"); }
   };
   const delivered = async (o) => {
-    try { await ordersApi.setStatus(o.id, "completed"); toast.success(`Delivered #${o.number}`); load(); }
+    try { await ordersApi.setStatus(o.id, "completed"); toast.success(`Delivered ${orderNo(o)}`); load(); }
     catch (e) { toast.error("Could not update"); }
   };
 

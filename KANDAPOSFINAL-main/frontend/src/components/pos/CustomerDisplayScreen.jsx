@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { kdsApi } from "../../api/kdsClient";
 import { ChefHat, CheckCircle2 } from "lucide-react";
+import { orderNo } from "../../utils/orderNumber";
 
 /** Public, no-auth customer-facing screen — put it on a TV behind the counter.
  *  /display?token=<kds_token>  (same long-lived kiosk token as the KDS tablet)
@@ -34,7 +35,7 @@ export default function CustomerDisplayScreen() {
 
   const OrderChip = ({ o }) => (
     <div data-testid={`display-order-${o.number}`} className="rounded-2xl px-6 py-4 text-center" style={{ background: "var(--pos-panel)", border: "2px solid var(--pos-border)" }}>
-      <div className="text-4xl font-black tabular-nums" style={{ color: "var(--pos-text)" }}>#{o.number}</div>
+      <div className="text-4xl font-black tabular-nums" style={{ color: "var(--pos-text)" }}>{orderNo(o)}</div>
       {o.table != null ? (
         <div className="text-sm mt-1 uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Table {o.table}</div>
       ) : (

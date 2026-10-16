@@ -9,6 +9,7 @@ import { ScanLine, Minus, Plus, X, ShoppingCart, Package } from "lucide-react";
 import { toast } from "sonner";
 import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
 import { findByCode, isEditableTarget } from "../../utils/barcode";
+import { orderNo } from "../../utils/orderNumber";
 
 /** Retail checkout — basket + barcode/SKU lookup. No order type, no tables,
  *  no kitchen routing. Products with variants (e.g. size/colour) get a quick
@@ -158,7 +159,7 @@ export default function RetailSaleScreen() {
 
   const onPaid = (method, placed) => {
     setPayOpen(false);
-    toast.success(`Sale #${placed.number} paid by ${method} — ₹${total.toFixed(2)}`);
+    toast.success(`Sale ${orderNo(placed)} paid by ${method} — ₹${total.toFixed(2)}`);
     resetAll();
   };
 

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { refundsApi } from "../../api/client";
 import { toast } from "sonner";
+import { orderNo } from "../../utils/orderNumber";
 
 const REFUND_REASONS = ["Wrong item", "Late delivery", "Customer cancellation", "Bad quality", "Other"];
 const VOID_REASONS = ["Mis-key", "Customer changed mind", "Out of stock", "Other"];
@@ -36,14 +37,14 @@ export default function RefundVoidModal({ order, onClose, onDone }) {
     try {
       if (isVoid) {
         await refundsApi.void(order.id, { reason, notes });
-        toast.success(`Order #${order.number} voided`);
+        toast.success(`Order ${orderNo(order)} voided`);
       } else {
         const amt = parseFloat(amount);
         if (!(amt > 0)) { toast.error("Enter a refund amount"); setBusy(false); return; }
         await refundsApi.refund(order.id, { amount: amt, reason, notes, refund_method: refundMethod });
         toast.success(refundMethod === "store_credit"
-          ? `₹${amt.toFixed(2)} issued as store credit for order #${order.number}`
-          : `Refunded ₹${amt.toFixed(2)} for order #${order.number}`);
+          ? `₹${amt.toFixed(2)} issued as store credit for order ${orderNo(order)}`
+          : `Refunded ₹${amt.toFixed(2)} for order ${orderNo(order)}`);
       }
       onDone && onDone();
     } catch (e) {

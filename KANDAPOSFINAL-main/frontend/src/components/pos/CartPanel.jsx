@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { couponsApi, loyaltyApi } from "../../api/client";
 import { toast } from "sonner";
+import { orderNo } from "../../utils/orderNumber";
 
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
 
@@ -94,7 +95,7 @@ export default function CartPanel({
         {runningBill && runningBill.items?.length > 0 && (
           <div className="rounded-lg p-2.5 mb-3" style={{ background: "var(--pos-panel-2)", border: "1px dashed var(--pos-border)" }} data-testid="running-bill-items">
             <div className="text-[10px] uppercase tracking-wider mb-1.5 flex items-center justify-between" style={{ color: "var(--pos-muted)" }}>
-              <span>Already sent to kitchen · #{runningBill.number}</span>
+              <span>Already sent to kitchen · {orderNo(runningBill)}</span>
               <span className="tabular-nums font-bold">₹{runningBill.total.toFixed(2)}</span>
             </div>
             <div className="space-y-0.5">

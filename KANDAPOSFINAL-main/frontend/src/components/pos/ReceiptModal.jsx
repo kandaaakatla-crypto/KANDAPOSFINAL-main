@@ -7,6 +7,7 @@ import { sendEscposReceipt } from "../../utils/escpos";
 import { billToLines, summaryRows, signedMoney, gstinLine } from "../../utils/receiptSummary";
 import { Input } from "../ui/input";
 import { toast } from "sonner";
+import { orderNo } from "../../utils/orderNumber";
 
 const inr = (v) => `₹${Number(v || 0).toFixed(2)}`;
 const EMPTY_CUSTOMER = { name: "", phone: "", email: "", address: "", postcode: "", gstin: "" };
@@ -158,7 +159,7 @@ export default function ReceiptModal({ orderId, open, onClose }) {
               <div className="border-t border-dashed border-black my-2" />
               {data.order.voided && <div className="text-center font-bold" data-testid="receipt-void">*** VOID ***</div>}
               <div className="flex justify-between font-bold">
-                <span>Order #{data.order.number}</span>
+                <span>Order {orderNo(data.order)}</span>
                 <span className="uppercase">{data.order.type}</span>
               </div>
               <div>{(data.order.placedAt || "").slice(0, 19).replace("T", " ")}</div>
