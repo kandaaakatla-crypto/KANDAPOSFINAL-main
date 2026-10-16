@@ -187,8 +187,13 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
 
         {method === "cash" && (
           <div className="space-y-3 fade-in">
-            <div className="grid grid-cols-4 gap-2">
-              {quickAmounts.map((a) => (
+            <div className="grid grid-cols-5 gap-2">
+              <button data-testid="tender-exact" onClick={() => setTendered(total.toFixed(2))}
+                className="pos-btn h-11 rounded-lg font-bold text-sm"
+                style={{ background: "var(--pos-accent)", color: "#fff", border: "1px solid var(--pos-accent)" }}>
+                Exact
+              </button>
+              {quickAmounts.slice(0, 4).map((a) => (
                 <button key={a} data-testid={`tender-${a}`} onClick={() => setTendered(String(a))}
                   className="pos-btn h-11 rounded-lg font-bold text-sm"
                   style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
@@ -196,8 +201,16 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
                 </button>
               ))}
             </div>
-            <Input data-testid="tendered-input" type="number" placeholder="Amount tendered" value={tendered} onChange={(e) => setTendered(e.target.value)}
+            <Input data-testid="tendered-input" type="number" min={0} aria-label="Amount tendered" placeholder="Amount tendered" value={tendered} onChange={(e) => setTendered(e.target.value)}
               className="h-12 text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            {tendered !== "" && tenderedNum < 0 && (
+              <div className="text-xs font-semibold" role="alert" style={{ color: "#f87171" }}>Amount can&apos;t be negative.</div>
+            )}
+            {tenderedNum > 0 && tenderedNum < total && (
+              <div className="text-xs font-semibold" role="alert" data-testid="tender-short" style={{ color: "#f87171" }}>
+                Short by ₹{(total - tenderedNum).toFixed(2)}
+              </div>
+            )}
             {tenderedNum >= total && (
               <div className="flex justify-between items-center rounded-lg px-4 py-3" style={{ background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.4)" }} data-testid="change-due">
                 <span className="text-sm font-semibold" style={{ color: "#16a34a" }}>Change due</span>
