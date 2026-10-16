@@ -141,15 +141,15 @@ export default function CartPanel({
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-2">
-                    <button data-testid="line-qty-minus" onClick={() => onQty(l.lineId, -1)} className="pos-btn w-7 h-7 rounded flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                    <button data-testid="line-qty-minus" aria-label={`Decrease quantity of ${l.name}`} onClick={() => onQty(l.lineId, -1)} className="pos-btn w-7 h-7 rounded flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
                       <Minus className="w-3 h-3" style={{ color: "var(--pos-text)" }} />
                     </button>
                     <span className="text-sm font-bold w-5 text-center" style={{ color: "var(--pos-text)" }}>{l.qty}</span>
-                    <button data-testid="line-qty-plus" onClick={() => onQty(l.lineId, 1)} className="pos-btn w-7 h-7 rounded flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
+                    <button data-testid="line-qty-plus" aria-label={`Increase quantity of ${l.name}`} onClick={() => onQty(l.lineId, 1)} className="pos-btn w-7 h-7 rounded flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
                       <Plus className="w-3 h-3" style={{ color: "var(--pos-text)" }} />
                     </button>
                   </div>
-                  <button data-testid="line-remove" onClick={() => onRemove(l.lineId)} className="pos-btn p-1.5 rounded" style={{ color: "#dc2626" }}>
+                  <button data-testid="line-remove" aria-label={`Remove ${l.name}`} onClick={() => onRemove(l.lineId)} className="pos-btn p-1.5 rounded" style={{ color: "#dc2626" }}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -167,7 +167,7 @@ export default function CartPanel({
             <span className="flex items-center gap-1" style={{ color: "var(--pos-muted)" }}><Gift className="w-3 h-3" /> Tip</span>
             <div className="flex gap-1 flex-1">
               {TIP_PRESETS.map((p) => (
-                <button key={p} data-testid={`tip-${p}`} onClick={() => onTipPct(p)}
+                <button key={p} data-testid={`tip-${p}`} aria-pressed={tipPct === p} onClick={() => onTipPct(p)}
                   className="pos-btn flex-1 h-6 rounded text-[10px] font-bold"
                   style={{ background: tipPct === p ? "var(--pos-accent)" : "var(--pos-panel-2)", color: tipPct === p ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
                   {p === 0 ? "None" : `${p}%`}
@@ -303,7 +303,7 @@ export default function CartPanel({
             <Percent className="w-3.5 h-3.5" /> Discount
             <span className="flex gap-1 ml-1">
               {[0, 10, 20].map((d) => (
-                <button key={d} data-testid={`discount-${d}`} onClick={() => onDiscount(d)}
+                <button key={d} data-testid={`discount-${d}`} aria-pressed={discount === d} onClick={() => onDiscount(d)}
                   className="pos-btn text-[11px] px-1.5 py-0.5 rounded font-semibold"
                   style={{ background: discount === d ? "var(--pos-blue)" : "var(--pos-panel-2)", color: discount === d ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
                   {d === 0 ? "None" : `${d}%`}

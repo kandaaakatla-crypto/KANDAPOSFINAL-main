@@ -67,17 +67,17 @@ export default function DashLogin() {
             <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>Owner, area manager, or store manager.</p>
           </div>
           <div>
-            <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Email</label>
-            <Input data-testid="dash-email-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus
+            <label htmlFor="dash-email" className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Email</label>
+            <Input id="dash-email" data-testid="dash-email-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus
               style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
           </div>
           <div>
-            <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Password</label>
+            <label htmlFor="dash-password" className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Password</label>
             <div className="relative">
-              <Input data-testid="dash-password-input" type={show ? "text" : "password"} value={password}
+              <Input id="dash-password" data-testid="dash-password-input" type={show ? "text" : "password"} value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pr-9" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
-              <button type="button" onClick={() => setShow((v) => !v)}
+              <button type="button" aria-label={show ? "Hide password" : "Show password"} aria-pressed={show} onClick={() => setShow((v) => !v)}
                 className="pos-btn absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded" style={{ color: "var(--pos-muted)" }}>
                 {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
