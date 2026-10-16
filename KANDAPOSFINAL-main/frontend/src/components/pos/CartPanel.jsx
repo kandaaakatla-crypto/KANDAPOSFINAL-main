@@ -228,7 +228,7 @@ export default function CartPanel({
             <Input data-testid="gift-card-code-input" placeholder="Gift card code" value={giftCardCode || ""}
               onChange={(e) => onGiftCardCode(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onCheckGiftCard(); } }}
-              className="h-6 w-28 text-xs tracking-wider" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+              aria-label="Gift card code" className="h-6 w-36 text-xs tracking-wider" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <button data-testid="gift-card-check-btn" onClick={onCheckGiftCard} disabled={!giftCardCode || giftCardChecking}
               className="pos-btn text-[10px] px-2 py-0.5 rounded flex items-center gap-1 disabled:opacity-40" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
               {giftCardChecking ? <Loader2 className="w-3 h-3 animate-spin" /> : "Check"}
