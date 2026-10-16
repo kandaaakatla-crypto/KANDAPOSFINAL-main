@@ -6,6 +6,10 @@ import { Search, UserPlus, Pencil, Trash2, Phone, MapPin, Undo2, MessageSquare, 
 import { toast } from "sonner";
 import { customersApi } from "../../api/client";
 import SmsComposer from "../SmsComposer";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 const EMPTY = { name: "", phone: "", address: "", postcode: "", notes: "", birthday: "" };
 
@@ -64,6 +68,16 @@ export default function CustomersScreen() {
     finally { setTrashLoading(false); }
   };
 
+  const erase = async (id) => {
+    try {
+      await customersApi.erase(id);
+      setTrash((t) => t.filter((c) => c.id !== id));
+      toast.success("Customer permanently deleted");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not delete permanently");
+    }
+  };
+
   const restore = async (id) => {
     try {
       await customersApi.restore(id);
@@ -120,7 +134,23 @@ export default function CustomersScreen() {
                     </button>
                   )}
                   <button data-testid={`edit-customer-${c.id}`} onClick={() => setEditing({ ...c })} className="pos-btn p-2 rounded-lg" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}><Pencil className="w-3.5 h-3.5" /></button>
-                  <button data-testid={`delete-customer-${c.id}`} onClick={() => remove(c.id)} className="pos-btn p-2 rounded-lg" style={{ background: "var(--pos-panel-2)", color: "#f87171" }}><Trash2 className="w-3.5 h-3.5" /></button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button data-testid={`delete-customer-${c.id}`} aria-label={`Delete ${c.name}`} className="pos-btn p-2 rounded-lg" style={{ background: "var(--pos-panel-2)", color: "#f87171" }}><Trash2 className="w-3.5 h-3.5" /></button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {c.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          They move to the trash, where a manager can restore them or erase them permanently.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction data-testid={`delete-customer-confirm-${c.id}`} onClick={() => remove(c.id)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
               <div className="text-[11px] mt-3 px-2 py-0.5 rounded-full inline-block" style={{ background: "#1c2a1c", color: "#7cc97c" }}>{c.orders || 0} orders placed</div>
@@ -184,11 +214,34 @@ export default function CustomersScreen() {
                       Deleted {c.deleted_at ? new Date(c.deleted_at).toLocaleString() : "—"}
                     </div>
                   </div>
+                  <div className="flex items-center gap-2 shrink-0">
                   <button data-testid={`restore-${c.id}`} onClick={() => restore(c.id)}
                     className="pos-btn h-8 px-3 rounded-md text-xs font-bold flex items-center gap-1.5 text-white"
                     style={{ background: "var(--pos-accent)" }}>
                     <Undo2 className="w-3 h-3" /> Restore
                   </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button data-testid={`erase-${c.id}`}
+                        className="pos-btn h-8 px-3 rounded-md text-xs font-bold flex items-center gap-1.5"
+                        style={{ background: "var(--pos-panel)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+                        <Trash2 className="w-3 h-3" /> Delete permanently
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {c.name} permanently?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This cannot be undone. Their profile and loyalty history are erased; past orders keep their totals but lose the customer&apos;s name, phone and address.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction data-testid={`erase-confirm-${c.id}`} onClick={() => erase(c.id)}>Delete permanently</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  </div>
                 </div>
               ))}
             </div>

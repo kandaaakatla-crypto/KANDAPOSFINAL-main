@@ -143,6 +143,23 @@ async def delete_customer(customer_id: str, user: dict = Depends(get_current_use
     return {"ok": True, "soft_deleted": True, "deleted_at": now}
 
 
+@router.delete("/customers/{customer_id}/permanent")
+async def erase_customer(customer_id: str, user: dict = Depends(require_role("Manager"))):
+    """Irreversibly erase a customer that is already in the trash (privacy /
+    DPDP erasure requests). Their loyalty history goes with them, and past
+    orders keep their totals for the books but lose the personal details."""
+    db = get_db()
+    res = await db.customers.delete_one(tenant_filter(user, {"id": customer_id, "deleted_at": {"$ne": None}}))
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Deleted customer not found")
+    await db.loyalty_txns.delete_many(tenant_filter(user, {"customer_id": customer_id}))
+    await db.orders.update_many(
+        tenant_filter(user, {"customer.id": customer_id}),
+        {"$set": {"customer.name": "Deleted customer", "customer.phone": "", "customer.address": "", "customer.postcode": ""}},
+    )
+    return {"ok": True}
+
+
 @router.post("/customers/{customer_id}/restore", response_model=Customer)
 async def restore_customer(customer_id: str, user: dict = Depends(require_role("Manager"))):
     db = get_db()

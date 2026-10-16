@@ -342,6 +342,7 @@ export const customersApi = {
   update: (id, payload) => api.put(`/customers/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/customers/${id}`).then((r) => r.data),
   restore: (id) => api.post(`/customers/${id}/restore`).then((r) => r.data),
+  erase: (id) => api.delete(`/customers/${id}/permanent`).then((r) => r.data),
 };
 
 export const inventoryApi = {
