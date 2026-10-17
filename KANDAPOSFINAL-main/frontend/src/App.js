@@ -76,6 +76,7 @@ const DashCentralSupply = lazy(() => import("./components/dash/DashCentralSupply
 const KioskDevicesPage = lazy(() => import("./components/dash/KioskDevicesPage"));
 const DashTeam = lazy(() => import("./components/dash/DashTeam"));
 const WebsiteOrdersPage = lazy(() => import("./components/dash/WebsiteOrdersPage"));
+const AggregatorOrdersPage = lazy(() => import("./components/dash/AggregatorOrdersPage"));
 
 function RouteLoading() {
   return (
@@ -181,6 +182,7 @@ function App() {
                     <Route path="inventory" element={<InventoryScreen />} />
                     <Route path="devices" element={<KioskDevicesPage />} />
                     <Route path="website-orders" element={<WebsiteOrdersPage />} />
+                    <Route path="aggregator-orders" element={<AggregatorOrdersPage />} />
                     <Route path="voice" element={<DashVoice />} />
                     <Route path="digest" element={<DashDigest />} />
                     <Route path="loyalty" element={<DashLoyalty />} />

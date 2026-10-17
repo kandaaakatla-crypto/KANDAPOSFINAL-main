@@ -112,6 +112,8 @@ _RULES = [
     ("settings", ("POST", "DELETE"), "/api/tenant/store/branding"),
     ("settings", ("GET",), "/api/integrations/website"),
     ("settings", ("POST", "DELETE"), "/api/integrations/website/key"),
+    ("settings", ("GET",), "/api/integrations/urbanpiper"),
+    ("settings", ("POST", "DELETE"), "/api/integrations/urbanpiper/key"),
     ("settings", ("PUT",), "/api/voice/config"),
     ("settings", ("POST",), "/api/voice/configure-twilio"),
     ("settings", ("POST",), "/api/voice/numbers/purchase"),

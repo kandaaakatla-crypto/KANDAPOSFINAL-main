@@ -324,6 +324,19 @@ rules.
 
 ---
 
+## Found during UrbanPiper order intake
+
+### P4-5. Aggregator orders count toward the restaurant's own GST
+
+Since 1 Jan 2022, GST on restaurant orders placed through Swiggy/Zomato is
+collected and paid by the aggregator (section 9(5), CGST Act), not by the
+restaurant. The POS stamps and reports `taxTotal`/`cgst`/`sgst` on every order
+whatever its `source`, so manual "Swiggy" orders today, and UrbanPiper orders
+now, inflate the restaurant's GST liability in reports. Needs a decision on
+how reports should treat `source in (swiggy, zomato, other-aggregator)`.
+Aggregator orders are also recorded as `payment: "card"` (no "online" value
+exists), so they sit in card totals at the till.
+
 ## P4 — dead or stale
 
 ### P4-1. Menu schedules are half-wired
