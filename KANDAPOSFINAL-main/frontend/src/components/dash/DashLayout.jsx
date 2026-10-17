@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, hasPerm, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards, canManageCustomers, canViewReports, canManageSettings, canManageTeam } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, ClipboardList, PackageX, Undo2, UserCheck, CalendarCheck, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp, Trophy, Flame } from "lucide-react";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, ClipboardList, PackageX, Undo2, UserCheck, CalendarCheck, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp, Trophy, Flame, Split } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -20,6 +20,7 @@ const NAV_GROUPS = [
       { to: "/dashboard/reports", label: "Reports", icon: BarChart3, allow: (u) => canViewReports(u) },
       { to: "/dashboard/refunds", label: "Refunds", icon: Undo2, allow: (u) => canViewReports(u) },
       { to: "/dashboard/items", label: "Item performance", icon: Flame, allow: (u) => canViewReports(u) },
+      { to: "/dashboard/channels", label: "Channels", icon: Split, allow: (u) => canViewReports(u) },
       { to: "/dashboard/league", label: "Store league", icon: Trophy, allow: (u) => u?.dash_role === "owner" && !!u?.brand_id },
       { to: "/dashboard/digest", label: "Daily Digest", icon: Sparkles, allow: (u) => canViewReports(u), feature: "daily_digest" },
     ],
