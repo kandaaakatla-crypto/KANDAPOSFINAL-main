@@ -29,7 +29,7 @@ export default function DashLogin() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--pos-bg)" }} data-testid="dash-login">
+    <div className="min-h-screen flex lg-ambient" style={{ backgroundColor: "var(--pos-bg)" }} data-testid="dash-login">
       {/* This panel's warm gradient is fixed regardless of the app's
           light/dark toggle (shared via localStorage across every surface),
           so its text must be fixed too — var(--pos-text) etc. would follow
