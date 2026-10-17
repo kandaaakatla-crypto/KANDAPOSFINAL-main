@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useDash, canManageSettings } from "../../store/DashContext";
 import { teamApi } from "../../api/client";
-import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, ChevronDown, Store, Undo2, Banknote, CreditCard, Clock3, TrendingUp, TrendingDown, Target } from "lucide-react";
+import { shareReport } from "../../lib/shareReport";
+import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, ChevronDown, Store, Undo2, Banknote, CreditCard, Clock3, TrendingUp, TrendingDown, Target, Share2 } from "lucide-react";
 
 // Phone-first overview, shaped after what owner apps (Toast Now, Petpooja,
 // Swiggy/Zomato partner apps) put on their first screen: today's money in
@@ -298,6 +299,45 @@ function SalesTargetBar({ summary }) {
   );
 }
 
+// "Send today's numbers to my partner" — PDF + WhatsApp text (lib/shareReport).
+function ShareReportButton() {
+  const { api } = useDash();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(null);
+
+  const run = async (days) => {
+    setBusy(days);
+    try {
+      const how = await shareReport(api, days);
+      setOpen(false);
+      if (how === "fallback") toast.success("PDF downloaded. WhatsApp opened with the summary.");
+    } catch (e) {
+      toast.error("Could not prepare the report");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen((o) => !o)} data-testid="m-share" aria-expanded={open} aria-label="Share sales report"
+        className="lg-press h-8 px-3 rounded-full text-xs font-semibold flex items-center gap-1.5" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>
+        <Share2 className="w-3.5 h-3.5" /> Share
+      </button>
+      {open && (
+        <div className="absolute right-0 top-10 z-10 lg-glass-strong rounded-2xl p-1.5 w-44 shadow-lg" data-testid="m-share-menu">
+          {[[1, "Today"], [7, "Last 7 days"]].map(([d, label]) => (
+            <button key={d} type="button" disabled={busy != null} onClick={() => run(d)} data-testid={`m-share-${d}`}
+              className="lg-press w-full text-left px-3 h-9 rounded-xl text-sm" style={{ color: "var(--pos-text)" }}>
+              {busy === d ? "Preparing…" : label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashMobileOverview({ refreshTick, user, summary, showReports, lowStockCount, storeCount }) {
   const weekly = summary?.weeklySales || [];
   const yesterday = weekly.length >= 2 ? weekly[weekly.length - 2].sales : null;
@@ -323,7 +363,10 @@ export default function DashMobileOverview({ refreshTick, user, summary, showRep
 
       {showReports && (
         <div className="lg-glass-strong lg-sheen rounded-[28px] p-5" data-testid="m-hero">
-          <div className="text-[11px] uppercase tracking-[0.18em] font-semibold" style={{ color: "var(--pos-muted)" }}>Today's sales</div>
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] uppercase tracking-[0.18em] font-semibold" style={{ color: "var(--pos-muted)" }}>Today's sales</div>
+            <ShareReportButton />
+          </div>
           <div className="text-[40px] leading-none font-bold tabular-nums mt-1.5" style={{ color: "var(--pos-text)" }} data-testid="m-today-sales">
             {summary ? inr(summary.todaySales) : "—"}
           </div>
