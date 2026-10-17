@@ -870,6 +870,8 @@ class ReportSummary(BaseModel):
     # Same weekday last week, midnight up to the current time.
     sameTimeLastWeek: float = 0
     sameTimeLastWeekOrders: int = 0
+    # Owner-set daily sales target (routes/sales_target.py); None = not set.
+    dailyTarget: Optional[float] = None
 
 
 # ---------- Staff / HR ----------

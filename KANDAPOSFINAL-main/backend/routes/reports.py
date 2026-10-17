@@ -379,6 +379,7 @@ async def report_summary(user: dict = Depends(get_current_user)):
             entry["sold"] += it["qty"]
             entry["revenue"] += it["qty"] * it["price"]
     top = sorted(counts.values(), key=lambda x: x["sold"], reverse=True)[:5]
+    tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0, "daily_sales_target": 1})
 
     return ReportSummary(
         todaySales=round(today_sales, 2),
@@ -392,4 +393,5 @@ async def report_summary(user: dict = Depends(get_current_user)):
         topItems=[TopItem(**t) for t in top],
         sameTimeLastWeek=round(sum(o.get("total", 0) for o in lw_orders), 2),
         sameTimeLastWeekOrders=len(lw_orders),
+        dailyTarget=(tenant or {}).get("daily_sales_target"),
     )
