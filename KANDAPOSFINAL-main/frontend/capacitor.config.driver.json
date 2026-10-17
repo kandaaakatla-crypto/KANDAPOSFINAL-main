@@ -1,0 +1,17 @@
+{
+  "appId": "com.kandapos.driver",
+  "appName": "Kanda Driver",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "path": "android-driver",
+    "useLegacyBridge": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

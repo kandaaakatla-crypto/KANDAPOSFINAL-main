@@ -12,8 +12,12 @@ NOT_DELETED = {"$or": [{"deleted_at": {"$exists": False}}, {"deleted_at": None}]
 
 
 def clean(doc: dict) -> dict:
-    """Strip Mongo's `_id` before returning a doc over the wire."""
+    """Strip Mongo's `_id` before returning a doc over the wire. Also drops
+    an order's delivery OTP / tracking token, which only the customer sees
+    (via routes/tracking.py) — never staff or drivers."""
     doc.pop("_id", None)
+    for k in ("deliveryOtp", "deliveryOtpFails", "trackingToken"):
+        doc.pop(k, None)
     return doc
 
 

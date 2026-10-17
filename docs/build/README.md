@@ -11,6 +11,7 @@ to Cloud Run:
 | Windows — Kanda Display | Kitchen Display / Packing / Customer Display desktop app (Electron) | `display` | Tag or manual GitHub Actions run |
 | Android — Kanda POS | Same as the Windows POS app, packaged with Capacitor | `pos` | Tag or manual GitHub Actions run |
 | Android — Kanda Display | Same as the Windows Display app, packaged with Capacitor | `display` | Tag or manual GitHub Actions run |
+| Android — Kanda Driver | Delivery-driver phone app (claim, navigate, live GPS, OTP handover, collect cash), packaged with Capacitor. See [driver-app.md](driver-app.md) | `driver` | Tag or manual GitHub Actions run |
 
 Backend deploys to two Cloud Run regions (asia-south1 for the HTTP API,
 us-central1 for WebSocket) on every push to `master` that touches

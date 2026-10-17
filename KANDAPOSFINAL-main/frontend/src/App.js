@@ -36,6 +36,7 @@ const CustomerDisplayScreen = lazy(() => import("./components/pos/CustomerDispla
 const StaffScreen = lazy(() => import("./components/pos/StaffScreen"));
 const WorkforceScreen = lazy(() => import("./components/pos/WorkforceScreen"));
 const DriverScreen = lazy(() => import("./components/pos/DriverScreen"));
+const TrackOrderPage = lazy(() => import("./components/storefront/TrackOrderPage"));
 
 const TableOrderPage = lazy(() => import("./components/storefront/TableOrderPage"));
 const PickupOrderPage = lazy(() => import("./components/storefront/PickupOrderPage"));
@@ -97,9 +98,11 @@ function RouteLoading() {
 //   display — the "Kanda Display" native app (KDS/packing/customer
 //     display): a role picker, since this device has no staff PIN of its
 //     own to log in with.
+//   driver — the "Kanda Driver" native app: the same Restaurant ID + PIN
+//     sign-in as pos, but LoginScreen only lets Driver-role staff through.
 function RootRoute() {
   const target = process.env.REACT_APP_APP_TARGET;
-  if (target === "pos") return <Navigate to="/pos/login" replace />;
+  if (target === "pos" || target === "driver") return <Navigate to="/pos/login" replace />;
   if (target === "display") return <RolePicker />;
   return <LandingPage />;
 }
@@ -207,6 +210,8 @@ function App() {
                   <Route path="/order/:slug/table/:number" element={<TableOrderPage />} />
                   <Route path="/order/:slug/pickup" element={<PickupOrderPage />} />
                   <Route path="/loyalty/birthday/:token" element={<BirthdayLinkPage />} />
+                  {/* Customer's live delivery tracking link (sent on WhatsApp/SMS) — public, token is the key */}
+                  <Route path="/track/:token" element={<TrackOrderPage />} />
 
                   {/* Driver stripped POS view */}
                   <Route path="/:slug/driver" element={<Protected><DriverScreen /></Protected>} />

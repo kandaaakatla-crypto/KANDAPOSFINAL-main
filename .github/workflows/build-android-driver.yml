@@ -1,0 +1,114 @@
+name: Build signed Android AAB (Kanda Driver)
+
+# Sibling of build-android.yml for delivery drivers — same source tree and
+# Capacitor Android tooling, different native project (android-driver/,
+# its own applicationId) and a REACT_APP_APP_TARGET=driver build that opens
+# to driver sign-in and only lets Driver-role staff in. Tag-triggered for
+# the same reason as build-android.yml: a deliberate, versioned artifact,
+# not rebuilt on every commit.
+on:
+  push:
+    tags:
+      - "android-driver-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install frontend dependencies
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Build web bundle
+        working-directory: KANDAPOSFINAL-main/frontend
+        env:
+          REACT_APP_BACKEND_URL: ${{ vars.REACT_APP_BACKEND_URL }}
+          REACT_APP_SENTRY_DSN: ${{ vars.SENTRY_DSN_FRONTEND }}
+          REACT_APP_SENTRY_ENVIRONMENT: "production-android-driver"
+          # Opens to driver sign-in (Restaurant ID once, then PIN) and
+          # rejects non-Driver staff — see App.js's RootRoute and
+          # LoginScreen.jsx. This build is "Kanda Driver"; the cashier
+          # sibling app is build-android.yml with REACT_APP_APP_TARGET=pos.
+          REACT_APP_APP_TARGET: driver
+          # Push registration only when this build carries a Firebase
+          # config (next step) — without one, registering would fail.
+          REACT_APP_FCM_ENABLED: ${{ secrets.DRIVER_GOOGLE_SERVICES_JSON != '' && 'true' || '' }}
+          CI: false
+          GENERATE_SOURCEMAP: false
+        run: npm run build
+
+      - name: Use Kanda Driver Capacitor config
+        # The Capacitor CLI has no --config override for `cap sync` — it
+        # only ever reads capacitor.config.json from the project root. This
+        # second app's identity (appId com.kandapos.driver, native project
+        # at android-driver/ via the config's android.path) lives in
+        # capacitor.config.driver.json instead; swap it in for this run.
+        # A fresh checkout every run means there's nothing to restore after.
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: cp capacitor.config.driver.json capacitor.config.json
+
+      - name: Add Firebase config for push notifications
+        # Optional: the google-services.json of the Firebase project whose
+        # service account is FCM_SERVICE_ACCOUNT_JSON on the backend. Without
+        # it the app still alerts while it's open/backgrounded, just not
+        # when it's fully closed (see docs/build/driver-app.md).
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.DRIVER_GOOGLE_SERVICES_JSON }}
+        working-directory: KANDAPOSFINAL-main/frontend/android-driver/app
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+          else
+            echo "DRIVER_GOOGLE_SERVICES_JSON not set; building without push notifications."
+          fi
+
+      - name: Sync Capacitor Android project
+        working-directory: KANDAPOSFINAL-main/frontend
+        run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Decode release keystore
+        # Reuses the same signing identity as the main POS app (shared
+        # "Kanda" publisher, per the plan) — see build-android.yml for why
+        # this step always runs regardless of whether the secret is set.
+        working-directory: KANDAPOSFINAL-main/frontend/android-driver/app
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+
+      - name: Build signed release AAB
+        working-directory: KANDAPOSFINAL-main/frontend/android-driver
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'release.keystore' || '' }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease assembleRelease
+
+      - name: Remove decoded keystore
+        if: always()
+        working-directory: KANDAPOSFINAL-main/frontend/android-driver/app
+        run: rm -f release.keystore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-driver-release-aab
+          path: KANDAPOSFINAL-main/frontend/android-driver/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kanda-driver-release-apk
+          path: KANDAPOSFINAL-main/frontend/android-driver/app/build/outputs/apk/release/app-release*.apk
+          retention-days: 90

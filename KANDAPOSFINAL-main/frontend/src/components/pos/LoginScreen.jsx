@@ -102,7 +102,7 @@ export default function LoginScreen({ isDemo = false }) {
     setBusy(true);
     let user;
     try {
-      user = await login(value);
+      user = await login(value, { onlyRole: process.env.REACT_APP_APP_TARGET === "driver" ? "Driver" : undefined });
     } catch (err) {
       setBusy(false);
       setPin("");
@@ -117,6 +117,13 @@ export default function LoginScreen({ isDemo = false }) {
       return;
     }
     setBusy(false);
+    // The Kanda Driver app is for deliveries only — a cashier or manager
+    // signing in here would land on a till with no menu access worth having.
+    if (user?.rejected) {
+      setPin("");
+      toast.error("This app is for delivery drivers. Use Kanda POS to sign in.");
+      return;
+    }
     if (user) {
       toast.success(`Welcome back, ${user.name}`);
       const slug = routeSlug || (isDemo ? "demo" : tenantStore.get());

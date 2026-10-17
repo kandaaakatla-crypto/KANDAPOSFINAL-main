@@ -50,7 +50,7 @@ they use `REACT_APP_BACKEND_URL` directly for everything.
 | `FIREBASE_SERVICE_ACCOUNT` | Deploys to Firebase Hosting (web app + both desktop update-feed sites) | `deploy-frontend.yml`, both Windows "Publish update feed" steps | ✅ set |
 | `WINDOWS_CSC_LINK` | Path/URL to the Authenticode code-signing cert (`.pfx`) | `build-windows.yml`, `build-windows-display.yml` (shared identity, both apps) | ❌ **not set** — builds succeed but produce unsigned installers |
 | `WINDOWS_CSC_KEY_PASSWORD` | Password for the above cert | Same two workflows | ❌ **not set** |
-| `ANDROID_KEYSTORE_BASE64` | Base64-encoded release keystore (`.p12`), shared by both Android apps by this repo's design (both workflows reference the identical secret names) | `build-android.yml`, `build-android-display.yml` | ✅ **set 2026-09-09** — RSA 2048, self-signed, `CN=Kanda POS, O=Kanda POS, L=Hyderabad, ST=Telangana, C=IN`, valid through 2056. Alias `kandapos`. |
+| `ANDROID_KEYSTORE_BASE64` | Base64-encoded release keystore (`.p12`), shared by both Android apps by this repo's design (both workflows reference the identical secret names) | `build-android.yml`, `build-android-display.yml`, `build-android-driver.yml` | ✅ **set 2026-09-09** — RSA 2048, self-signed, `CN=Kanda POS, O=Kanda POS, L=Hyderabad, ST=Telangana, C=IN`, valid through 2056. Alias `kandapos`. |
 | `ANDROID_KEYSTORE_PASSWORD` | Password for the keystore above | Same two | ✅ set |
 | `ANDROID_KEY_ALIAS` | Key alias inside the keystore (`kandapos`) | Same two | ✅ set |
 | `ANDROID_KEY_PASSWORD` | Password for the key entry (same value as the keystore password — PKCS12 convention) | Same two | ✅ set |

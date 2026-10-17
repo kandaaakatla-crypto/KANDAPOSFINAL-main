@@ -20,6 +20,7 @@
       { "source": "/packing", "destination": "/index.html" },
       { "source": "/order/**", "destination": "/index.html" },
       { "source": "/loyalty/**", "destination": "/index.html" },
+      { "source": "/track/**", "destination": "/index.html" },
       { "source": "/driver", "destination": "/index.html" },
       { "source": "/", "destination": "/index.html" },
       { "source": "/start", "destination": "/index.html" },

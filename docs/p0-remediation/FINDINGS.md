@@ -324,6 +324,30 @@ rules.
 
 ---
 
+## Found during the Kanda Driver app PR
+
+Found while building the driver app. These apply to the in-POS driver view
+too; the separate app just puts them on more phones.
+
+### P4-5. Drivers download every order and every customer's details
+`DriverScreen.jsx` polls `GET /orders` every 8 s, which returns up to 1000
+orders for the whole tenant (`routes/orders.py:162`) with customer name,
+phone and address, regardless of role. The screen filters to deliveries
+client-side. A Driver token should get only open deliveries and its own.
+**Fixed in the driver app PR (#37):** the app now uses `GET /driver/feed`, which returns only unclaimed deliveries (no phone/email) and the driver's own orders.
+
+### P4-6. Any staff role can change any order's status or payment
+`PATCH /orders/{id}/status` and `PATCH /orders/{id}/payment`
+(`routes/orders.py:508`) have no role or ownership check, so a Driver can
+mark an order it does not hold as delivered or cash-paid.
+**Fixed for Driver tokens in #37:** a driver can only move their own delivery ready → out-for-delivery → completed, can't complete it unpaid, and can only mark their own unpaid order as cash. Other roles are unchanged.
+
+### P4-7. Delivery ownership is keyed on the driver's display name
+`claim_order` stores `user["name"]` in `order.driver`, and `DriverScreen`
+matches on name. Two drivers with the same name see and act on each
+other's deliveries; renaming a driver orphans their active ones.
+**Partly fixed in #37:** claims now store `driver_id` and ownership checks use it. Orders assigned from Dispatch still go by name.
+
 ## P4 — dead or stale
 
 ### P4-1. Menu schedules are half-wired

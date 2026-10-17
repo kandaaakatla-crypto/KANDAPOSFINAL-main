@@ -28,6 +28,7 @@ directly and a merged PR count as a push.
 | `build-windows-display.yml` | Windows installer, "Kanda Display" (role picker → KDS/packing/customer display) | `windows-display-v*` |
 | `build-android.yml` | Android AAB + APK, "Kanda POS" | `android-v*` |
 | `build-android-display.yml` | Android AAB + APK, "Kanda Display" | `android-display-v*` |
+| `build-android-driver.yml` | Android AAB + APK, "Kanda Driver" (driver-only sign-in → deliveries) | `android-driver-v*` |
 
 These are deliberately **not** triggered by every commit — a desktop/mobile
 release is a versioned artifact someone deliberately ships, not something to
@@ -51,6 +52,7 @@ gh workflow run "Build Windows Electron installer" --ref master
 gh workflow run "Build signed Android AAB" --ref master
 gh workflow run "Build Windows Electron installer (Kanda Display)" --ref master
 gh workflow run "Build signed Android AAB (Kanda Display)" --ref master
+gh workflow run "Build signed Android AAB (Kanda Driver)" --ref master
 ```
 or via the Actions tab → select the workflow → **Run workflow**.
 
@@ -106,6 +108,7 @@ one build-time variable (`frontend/src/App.js`'s `RootRoute()`):
 | *(unset)* | Marketing landing page | Web (`deploy-frontend.yml`) |
 | `pos` | Staff PIN sign-in | `build-windows.yml`, `build-android.yml` |
 | `display` | Role picker (Kitchen Display / Packing / Customer Display) | `build-windows-display.yml`, `build-android-display.yml` |
+| `driver` | Staff PIN sign-in, Driver role only → deliveries | `build-android-driver.yml` |
 
 If you're ever debugging "why does this build show the wrong screen," it's
 almost always this variable.

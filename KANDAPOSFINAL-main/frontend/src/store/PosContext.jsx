@@ -255,9 +255,13 @@ export function PosProvider({ children }) {
   }, [staffUser]);
 
   // ----- Auth -----
-  const login = useCallback(async (pin) => {
+  // onlyRole: the Kanda Driver app passes "Driver" so a cashier/manager PIN
+  // is turned away before their session is stored or the till data loads
+  // (otherwise those background loads 401 after sign-out and reload the page).
+  const login = useCallback(async (pin, { onlyRole } = {}) => {
     try {
       const { token, user } = await auth.login(pin);
+      if (onlyRole && user.role !== onlyRole) return { ...user, rejected: true };
       tokenStore.set(token);
       setStaffUser(user);
       localStorage.setItem(STAFFUSER_CACHE_KEY, JSON.stringify(user));
