@@ -72,6 +72,7 @@ _RULES = [
     ("staff", ("PUT", "DELETE"), "/api/staff/{user_id}"),
 
     ("customers", ("GET",), "/api/customers"),
+    ("customers", ("GET",), "/api/reports/customers"),
     ("customers", ("PUT",), "/api/customers/{customer_id}"),
     ("customer_admin", ("GET",), "/api/customers/trash"),
     ("customer_admin", ("DELETE",), "/api/customers/{customer_id}"),

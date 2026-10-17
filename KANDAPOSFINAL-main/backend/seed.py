@@ -319,6 +319,8 @@ async def seed_all(db):
     await db.orders.create_index([("tenant_id", 1), ("number", 1)], unique=True)
     # For /reports/summary's rolling 7-day window (uses ISO-string $gte filter).
     await db.orders.create_index([("tenant_id", 1), ("placedAt", -1)])
+    # For /reports/customers' first-ever-order lookup per customer.
+    await db.orders.create_index([("tenant_id", 1), ("customer.id", 1), ("placedAt", 1)])
     # Idempotency key for offline-queued order creation (see routes/orders.py
     # create_order) — a retried POST with the same client_ref must resolve to
     # the same order, never a duplicate. Partial so normal online orders
