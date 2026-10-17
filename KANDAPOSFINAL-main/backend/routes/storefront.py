@@ -32,6 +32,7 @@ from payments import _get_client as _get_razorpay_client
 from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
 from scheduling import resolve_item_schedule_state, apply_schedule_pricing
 from ._shared import PROJECTION, NOT_DELETED, clean, menu_doc_to_response, next_order_number, table_doc_to_response
+from .online_pause import assert_taking_online_orders
 import razorpay
 
 router = APIRouter(prefix="/storefront")
@@ -343,6 +344,7 @@ async def place_pickup_order(slug: str, payload: PickupOrderRequest, request: Re
     db = get_db()
     session = await _storefront_session(request, slug, db)
     tenant = session["tenant"]
+    assert_taking_online_orders(tenant)
     business_type = tenant.get("business_type", "restaurant")
 
     raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type)

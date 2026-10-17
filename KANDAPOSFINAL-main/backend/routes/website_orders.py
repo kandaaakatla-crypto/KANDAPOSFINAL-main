@@ -37,6 +37,7 @@ from routes.storefront import CartLine, _order_doc, _resolve_lines
 from tz import now_ist
 from ws import schedule_broadcast
 from ._shared import NOT_DELETED, PROJECTION, clean, next_order_number
+from .online_pause import assert_taking_online_orders
 
 router = APIRouter(prefix="/integrations/website")
 
@@ -179,6 +180,10 @@ async def ingest_website_order(payload: WebsiteOrderRequest, request: Request):
     existing = await db.orders.find_one({"tenant_id": tenant_id, "external_ref": external_ref}, PROJECTION)
     if existing:
         return {"orderId": existing["id"], "orderNumber": existing["number"], "total": existing["total"], "duplicate": True}
+    # A paused store refuses new unpaid orders; a prepaid one is still taken
+    # so the customer's money never lands without an order behind it.
+    if not payload.paid:
+        assert_taking_online_orders(tenant)
 
     business_type = tenant.get("business_type", "restaurant")
     cart = await _to_cart_lines(db, tenant_id, payload.items)

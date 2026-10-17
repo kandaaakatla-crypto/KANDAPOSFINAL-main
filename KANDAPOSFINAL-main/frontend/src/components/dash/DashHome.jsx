@@ -9,6 +9,7 @@ import SalesTrendChart from "./SalesTrendChart";
 import PendingBrandInviteBanner from "./PendingBrandInviteBanner";
 import EmptyState from "../ui/empty-state";
 import DashMobileOverview from "./DashMobileOverview";
+import OnlinePauseCard from "./OnlinePauseCard";
 
 const FEATURE_LABELS = [
   { key: "tables", label: "Tables / floor plan", desc: "Dine-in seating, table QR ordering." },
@@ -82,6 +83,7 @@ export default function DashHome() {
   return (
     <div className="p-4 space-y-4" data-testid="dash-home">
       <PendingBrandInviteBanner />
+      {canManageSettings(user) && <OnlinePauseCard />}
       {/* Phones get their own owner-app overview; the KPI grid below is the desktop view of the same numbers. */}
       <div className="md:hidden">
         <DashMobileOverview refreshTick={refreshTick} user={user} summary={summary} showReports={showReports} lowStockCount={lowStockCount} storeCount={locations.length} />
