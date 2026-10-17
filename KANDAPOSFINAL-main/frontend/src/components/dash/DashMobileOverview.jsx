@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDash } from "../../store/DashContext";
-import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, Undo2, Banknote, CreditCard, Clock3 } from "lucide-react";
+import { teamApi } from "../../api/client";
+import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, ChevronDown, Store, Undo2, Banknote, CreditCard, Clock3 } from "lucide-react";
 
 // Phone-first overview, shaped after what owner apps (Toast Now, Petpooja,
 // Swiggy/Zomato partner apps) put on their first screen: today's money in
@@ -117,6 +118,48 @@ function TopSellers({ items }) {
   );
 }
 
+// Which store Home is showing, switchable in place. Multi-store owners and
+// area managers check one store after another from their phone, so the
+// switch lives on Home instead of behind More. A native <select> gives the
+// platform picker (the iOS wheel, the Android dialog). Single-store users
+// just see the store's name.
+function StorePicker() {
+  const { user, switchStore } = useDash();
+  const [stores, setStores] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    teamApi.myStores().then((list) => setStores(list || [])).catch(() => {});
+  }, [userId]);
+
+  const current = stores.find((s) => s.id === user.tenant_id);
+  if (!current) return null;
+  const multi = stores.length > 1;
+
+  const onChange = async (e) => {
+    const id = e.target.value;
+    if (id === user.tenant_id || busy) return;
+    setBusy(true);
+    try { await switchStore(id); } catch { setBusy(false); } // reloads on success
+  };
+
+  return (
+    <label className={`lg-card relative inline-flex items-center gap-1.5 h-8 pl-3 ${multi ? "pr-2 lg-press" : "pr-3"} rounded-full text-xs font-semibold max-w-full`}
+      style={{ color: "var(--pos-text)" }} data-testid="m-store-picker">
+      <Store className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--pos-accent)" }} />
+      <span className="truncate">{busy ? "Switching…" : current.name}</span>
+      {multi && <ChevronDown className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--pos-muted)" }} />}
+      {multi && (
+        <select aria-label="Switch store" value={user.tenant_id} onChange={onChange} disabled={busy}
+          data-testid="m-store-select" className="absolute inset-0 opacity-0 w-full cursor-pointer">
+          {stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      )}
+    </label>
+  );
+}
+
 // Today's refunds + voids as one line under the hero, linking to the full
 // list. Its own small request so Home's main summary isn't held up by it.
 function RefundsPeek() {
@@ -170,6 +213,7 @@ export default function DashMobileOverview({ user, summary, showReports, lowStoc
         <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>
           {greeting()}, {user.name.split(" ")[0]}
         </h1>
+        <div className="mt-2"><StorePicker /></div>
       </div>
 
       {showReports && (
