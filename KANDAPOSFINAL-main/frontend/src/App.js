@@ -65,6 +65,7 @@ const DashLeague = lazy(() => import("./components/dash/DashLeague"));
 const DashItems = lazy(() => import("./components/dash/DashItems"));
 const DashChannels = lazy(() => import("./components/dash/DashChannels"));
 const DashFoodCost = lazy(() => import("./components/dash/DashFoodCost"));
+const DashCustomerPulse = lazy(() => import("./components/dash/DashCustomerPulse"));
 const DashOnShift = lazy(() => import("./components/dash/DashOnShift"));
 const DashReservations = lazy(() => import("./components/dash/DashReservations"));
 const DashChangePassword = lazy(() => import("./components/dash/DashChangePassword"));
@@ -188,6 +189,7 @@ function App() {
                     <Route path="items" element={<DashItems />} />
                     <Route path="channels" element={<DashChannels />} />
                     <Route path="food-cost" element={<DashFoodCost />} />
+                    <Route path="customer-pulse" element={<DashCustomerPulse />} />
                     <Route path="on-shift" element={<DashOnShift />} />
                     <Route path="reservations" element={<DashReservations />} />
                     <Route path="menu" element={<MenuScreen />} />

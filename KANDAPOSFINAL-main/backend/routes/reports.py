@@ -1,7 +1,7 @@
 """Reports — rolling 7-day weekly chart + today KPIs + top items + labour cost."""
 from datetime import datetime, timezone, timedelta
 from tz import now_ist, IST
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -9,7 +9,7 @@ from db import get_db
 from auth import get_current_user, require_role
 from tenants import tenant_filter
 from models import ReportSummary, WeeklyPoint, TopItem, LabourCostResponse, effective_hourly_rate
-from ._shared import PROJECTION, parse_placed_at
+from ._shared import NOT_DELETED, PROJECTION, parse_placed_at
 
 router = APIRouter()
 
@@ -485,4 +485,73 @@ async def report_food_cost(user: dict = Depends(require_role("Manager")), days: 
             "pct": round(cost / revenue * 100, 1) if revenue else None,
             "coveragePct": round(revenue / all_revenue * 100) if all_revenue else None,
         },
+    }
+
+
+LAPSED_AFTER_DAYS = 21   # a regular counts as gone quiet after 3 weeks away…
+LAPSED_LOOKBACK_DAYS = 90  # …having ordered at least LAPSED_MIN_ORDERS times in this window
+LAPSED_MIN_ORDERS = 3
+
+
+@router.get("/reports/customers")
+async def report_customers(user: dict = Depends(require_role("Manager")), days: int = 7):
+    """Customer pulse for the last `days` (from IST midnight `days - 1` ago):
+
+    - new vs returning: a customer is new if their first-ever (non-voided)
+      order falls in the period, returning otherwise. Orders with no customer
+      attached are counted as walk-ins.
+    - topCustomers: biggest spenders in the period.
+    - lapsedRegulars: ordered LAPSED_MIN_ORDERS+ times in the last
+      LAPSED_LOOKBACK_DAYS but not in the last LAPSED_AFTER_DAYS — people
+      worth a call.
+    """
+    if days not in (7, 30):
+        raise HTTPException(status_code=422, detail="days must be 7 or 30")
+    db = get_db()
+    now = now_ist()
+    start = (now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days - 1)).isoformat()
+    live = {"voided": {"$ne": True}}
+
+    period = await db.orders.aggregate([
+        {"$match": tenant_filter(user, {**live, "placedAt": {"$gte": start}})},
+        {"$group": {"_id": "$customer.id", "orders": {"$sum": 1}, "spend": {"$sum": "$total"}}},
+    ]).to_list(None)
+    walk_ins = sum(r["orders"] for r in period if not r["_id"])
+    seen = {r["_id"]: r for r in period if r["_id"]}
+
+    first = await db.orders.aggregate([
+        {"$match": tenant_filter(user, {**live, "customer.id": {"$in": list(seen)}})},
+        {"$group": {"_id": "$customer.id", "first": {"$min": "$placedAt"}}},
+    ]).to_list(None) if seen else []
+    new_ids = {r["_id"] for r in first if r["first"] >= start}
+
+    lapsed_rows = await db.orders.aggregate([
+        {"$match": tenant_filter(user, {**live, "customer.id": {"$exists": True, "$ne": None},
+                                        "placedAt": {"$gte": (now - timedelta(days=LAPSED_LOOKBACK_DAYS)).isoformat()}})},
+        {"$group": {"_id": "$customer.id", "orders": {"$sum": 1}, "spend": {"$sum": "$total"}, "last": {"$max": "$placedAt"}}},
+        {"$match": {"orders": {"$gte": LAPSED_MIN_ORDERS}, "last": {"$lt": (now - timedelta(days=LAPSED_AFTER_DAYS)).isoformat()}}},
+        {"$sort": {"spend": -1}},
+        {"$limit": 10},
+    ]).to_list(10)
+
+    top_rows = sorted(seen.values(), key=lambda r: -(r["spend"] or 0))[:5]
+    ids = [r["_id"] for r in (*top_rows, *lapsed_rows)]
+    people = {c["id"]: c for c in await db.customers.find(
+        tenant_filter(user, {**NOT_DELETED, "id": {"$in": ids}}), {"_id": 0, "id": 1, "name": 1, "phone": 1},
+    ).to_list(len(ids) or 1)} if ids else {}
+
+    def person(r: dict, **extra) -> Optional[dict]:
+        c = people.get(r["_id"])
+        if not c:
+            return None  # deleted customer: nobody to call
+        return {"id": c["id"], "name": c.get("name", ""), "phone": c.get("phone", ""),
+                "orders": r["orders"], "spend": round(r["spend"] or 0, 2), **extra}
+
+    return {
+        "days": days,
+        "newCustomers": len(new_ids),
+        "returningCustomers": len(seen) - len(new_ids),
+        "walkInOrders": walk_ins,
+        "topCustomers": [p for p in (person(r) for r in top_rows) if p],
+        "lapsedRegulars": [p for p in (person(r, lastOrderAt=r["last"]) for r in lapsed_rows) if p],
     }
