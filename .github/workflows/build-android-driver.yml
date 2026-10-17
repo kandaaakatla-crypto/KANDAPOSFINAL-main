@@ -37,6 +37,9 @@ jobs:
           # LoginScreen.jsx. This build is "Kanda Driver"; the cashier
           # sibling app is build-android.yml with REACT_APP_APP_TARGET=pos.
           REACT_APP_APP_TARGET: driver
+          # Push registration only when this build carries a Firebase
+          # config (next step) — without one, registering would fail.
+          REACT_APP_FCM_ENABLED: ${{ secrets.DRIVER_GOOGLE_SERVICES_JSON != '' && 'true' || '' }}
           CI: false
           GENERATE_SOURCEMAP: false
         run: npm run build
@@ -50,6 +53,21 @@ jobs:
         # A fresh checkout every run means there's nothing to restore after.
         working-directory: KANDAPOSFINAL-main/frontend
         run: cp capacitor.config.driver.json capacitor.config.json
+
+      - name: Add Firebase config for push notifications
+        # Optional: the google-services.json of the Firebase project whose
+        # service account is FCM_SERVICE_ACCOUNT_JSON on the backend. Without
+        # it the app still alerts while it's open/backgrounded, just not
+        # when it's fully closed (see docs/build/driver-app.md).
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.DRIVER_GOOGLE_SERVICES_JSON }}
+        working-directory: KANDAPOSFINAL-main/frontend/android-driver/app
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > google-services.json
+          else
+            echo "DRIVER_GOOGLE_SERVICES_JSON not set; building without push notifications."
+          fi
 
       - name: Sync Capacitor Android project
         working-directory: KANDAPOSFINAL-main/frontend

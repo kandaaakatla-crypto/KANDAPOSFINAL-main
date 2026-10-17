@@ -3,11 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Bike, Phone, MapPin, Navigation, CheckCircle2, IndianRupee, Loader2, LogOut, RefreshCw, CalendarDays,
-  Home, ListOrdered, Wallet, User, Store, Clock, ChevronLeft, Package, Power, BellRing,
+  Home, ListOrdered, Wallet, User, Store, Clock, ChevronLeft, Package, Power, BellRing, LocateFixed, KeyRound, Send,
 } from "lucide-react";
 import { usePos } from "../../store/PosContext";
 import { driverApi, ordersApi } from "../../api/client";
 import { MyRotaTab, startOfWeek } from "./WorkforceScreen";
+import { startLocationSharing, openLocationSettings, ensureNotificationPermission, notify, registerPush } from "../../lib/driverDevice";
 
 /** The Kanda Driver app (also /:slug/driver in the POS for Driver staff).
  *  Modelled on what aggregator rider apps put in front of a delivery
@@ -202,10 +203,33 @@ function ContactRow({ icon: Icon, title, lines, nav, tel }) {
   );
 }
 
-function OrderDetail({ order, store, mine, busy, onBack, onClaim, onPickedUp, onDelivered }) {
+function TrackingNote({ order, busy, onResend }) {
+  const n = order.trackingNotified;
+  if (order.status !== "out-for-delivery" || !n) return null;
+  return (
+    <div className="rounded-xl p-3 mb-3 text-sm" style={panel}>
+      <div className="flex items-start gap-2" style={{ color: "var(--pos-text)" }}>
+        <Send className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: n.ok ? "#16a34a" : "#d97706" }} />
+        <div className="flex-1">
+          {n.ok
+            ? <>Customer was sent the live tracking link{order.otpRequired ? " and a delivery OTP" : ""} on {n.channel === "sms" ? "SMS" : "WhatsApp"}.</>
+            : <>Couldn't message the customer, so no OTP is needed for this one.</>}
+          {order.otpRequired && <div className="text-xs mt-1" style={{ color: "var(--pos-muted)" }}>Ask for the 4-digit OTP when you hand over the order.</div>}
+        </div>
+      </div>
+      <button data-testid="driver-resend-tracking" disabled={busy} onClick={() => onResend(order)}
+        className="pos-btn mt-2 w-full h-9 rounded-lg text-xs font-bold" style={subtle}>
+        Resend link to customer
+      </button>
+    </div>
+  );
+}
+
+function OrderDetail({ order, store, mine, busy, onBack, onClaim, onPickedUp, onDelivered, onResend }) {
   const c = order.customer || {};
   const items = order.items || [];
   const [confirmCash, setConfirmCash] = useState(false);
+  const [otp, setOtp] = useState("");
   const itemsTotal = items.reduce((n, it) => n + (it.price || 0) * (it.qty || 0), 0);
   // GST, service charge and discounts, so the lines add up to the total.
   const rest = (order.total || 0) - itemsTotal - (order.deliveryFee || 0) - (order.tip || 0);
@@ -218,9 +242,10 @@ function OrderDetail({ order, store, mine, busy, onBack, onClaim, onPickedUp, on
   } else if (order.status === "ready") {
     action = { label: "Picked up · start delivery", onClick: () => onPickedUp(order), color: "var(--pos-blue)" };
   } else if (order.status === "out-for-delivery") {
-    action = isPaid(order)
+    // Always confirm the hand-over: it's where the cash and the OTP are taken.
+    action = isPaid(order) && !order.otpRequired
       ? { label: "Mark delivered", onClick: () => onDelivered(order, false), color: "#16a34a" }
-      : { label: `Collect ${rupees(order.total)} cash & deliver`, onClick: () => setConfirmCash(true), color: "#16a34a" };
+      : { label: isPaid(order) ? "Enter OTP & deliver" : `Collect ${rupees(order.total)} cash & deliver`, onClick: () => { setOtp(""); setConfirmCash(true); }, color: "#16a34a" };
   }
 
   return (
@@ -238,6 +263,7 @@ function OrderDetail({ order, store, mine, busy, onBack, onClaim, onPickedUp, on
 
       <main className="flex-1 overflow-y-auto p-3 max-w-md mx-auto w-full">
         {mine && <Steps order={order} />}
+        {mine && <TrackingNote order={order} busy={busy} onResend={onResend} />}
 
         <div className="rounded-xl p-4 mb-3 text-center" style={{ ...panel, borderColor: isPaid(order) ? "var(--pos-border)" : "#dc2626" }}>
           {isPaid(order) ? (
@@ -288,12 +314,30 @@ function OrderDetail({ order, store, mine, busy, onBack, onClaim, onPickedUp, on
       {confirmCash && (
         <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-3" style={{ background: "rgba(0,0,0,0.5)" }}>
           <div className="w-full max-w-sm rounded-2xl p-5" style={panel}>
-            <div className="text-lg font-extrabold" style={{ color: "var(--pos-text)" }}>Collected {rupees(order.total)} cash?</div>
-            <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>This marks order #{order.number} paid in cash and delivered. It's added to your cash in hand.</p>
+            <div className="text-lg font-extrabold" style={{ color: "var(--pos-text)" }}>
+              {isPaid(order) ? `Hand over order #${order.number}` : `Collected ${rupees(order.total)} cash?`}
+            </div>
+            <p className="text-sm mt-1" style={{ color: "var(--pos-muted)" }}>
+              {isPaid(order) ? "Prepaid. Don't collect cash." : "This marks the order paid in cash. It's added to your cash in hand."}
+            </p>
+            {order.otpRequired && (
+              <label className="block mt-4">
+                <span className="text-[11px] uppercase tracking-wider font-bold flex items-center gap-1" style={{ color: "var(--pos-muted)" }}>
+                  <KeyRound className="w-3.5 h-3.5" />Customer's delivery OTP
+                </span>
+                <input data-testid="driver-otp-input" inputMode="numeric" autoComplete="one-time-code" maxLength={4} value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="mt-1 w-full h-14 rounded-lg text-center text-3xl font-extrabold tracking-[0.5em] tabular-nums outline-none"
+                  style={{ ...subtle, letterSpacing: "0.5em" }} placeholder="••••" />
+              </label>
+            )}
             <div className="flex gap-2 mt-4">
               <button onClick={() => setConfirmCash(false)} className="pos-btn flex-1 h-11 rounded-lg text-sm font-bold" style={subtle}>Not yet</button>
-              <button data-testid="driver-confirm-cash" disabled={busy} onClick={() => { setConfirmCash(false); onDelivered(order, true); }}
-                className="pos-btn flex-1 h-11 rounded-lg text-sm font-bold text-white" style={{ background: "#16a34a" }}>Yes, collected</button>
+              <button data-testid="driver-confirm-cash" disabled={busy || (order.otpRequired && otp.length !== 4)}
+                onClick={async () => { if (await onDelivered(order, !isPaid(order), otp)) setConfirmCash(false); }}
+                className="pos-btn flex-1 h-11 rounded-lg text-sm font-bold text-white disabled:opacity-60" style={{ background: "#16a34a" }}>
+                {isPaid(order) ? "Delivered" : "Yes, collected"}
+              </button>
             </div>
           </div>
         </div>
@@ -332,6 +376,7 @@ export default function DriverScreen() {
         const fresh = data.available.filter((o) => !seenAvailable.current.has(o.id));
         if (fresh.length) {
           alertNewOrder();
+          notify(`New delivery #${fresh[0].number}`, fresh[0].customer?.address || "Open Kanda Driver to accept it");
           toast(`New delivery #${fresh[0].number}${fresh.length > 1 ? ` +${fresh.length - 1} more` : ""}`, { icon: <BellRing className="w-4 h-4" /> });
         }
       }
@@ -340,9 +385,36 @@ export default function DriverScreen() {
     finally { setLoading(false); }
   }, []);
 
+  const online = !!feed?.duty?.online;
+  const [gps, setGps] = useState("off"); // off | on | denied | unavailable
+
+  // One-time: notification permission (Android 13+ also needs it for the
+  // location-sharing notification) and, on builds with Firebase, push.
+  useEffect(() => {
+    ensureNotificationPermission();
+    registerPush((token) => driverApi.pushToken(token).catch(() => {}));
+  }, []);
+
+  // Share GPS for as long as the driver is online — that's what moves the
+  // rider on customers' tracking pages.
+  useEffect(() => {
+    if (!online) { setGps("off"); return undefined; }
+    let stop = () => {};
+    let cancelled = false;
+    startLocationSharing(
+      (fix) => { setGps("on"); driverApi.location(fix).catch(() => {}); },
+      (err) => setGps(err),
+    ).then((s) => { if (cancelled) s(); else stop = s; });
+    return () => { cancelled = true; stop(); };
+  }, [online]);
+
+  const onlineRef = useRef(false);
+  onlineRef.current = online;
   useEffect(() => {
     load();
-    const id = setInterval(() => { if (!document.hidden) load(); }, POLL_MS);
+    // Keep polling in the background while online so new-delivery alerts
+    // still fire with the phone in a pocket.
+    const id = setInterval(() => { if (!document.hidden || onlineRef.current) load(); }, POLL_MS);
     const onVisible = () => { if (!document.hidden) load(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVisible); };
@@ -359,10 +431,14 @@ export default function DriverScreen() {
 
   const claim = (o) => run(() => ordersApi.claim(o.id), `Accepted #${o.number}`).then((ok) => ok && setOrdersView("mine"));
   const pickedUp = (o) => run(() => ordersApi.setStatus(o.id, "out-for-delivery"), `Picked up #${o.number}`);
-  const delivered = (o, cash) => run(async () => {
-    if (cash) await ordersApi.setPayment(o.id, "cash");
-    await ordersApi.setStatus(o.id, "completed");
-  }, `Delivered #${o.number}`).then((ok) => ok && setOpenId(null));
+  const delivered = (o, cash, otp) => run(async () => {
+    if (cash && o.payment === "unpaid") await ordersApi.setPayment(o.id, "cash");
+    await driverApi.complete(o.id, otp);
+  }, `Delivered #${o.number}`).then((ok) => { if (ok) setOpenId(null); return ok; });
+  const resend = (o) => run(async () => {
+    const r = await driverApi.resendTracking(o.id);
+    if (!r.ok) throw Object.assign(new Error(), { response: { data: { detail: r.error || "Couldn't send" } } });
+  }, "Sent the tracking link again");
   const toggleDuty = () => run(() => driverApi.setDuty(!feed?.duty?.online), feed?.duty?.online ? "You're offline" : "You're online");
 
   if (!staffUser) return null;
@@ -375,7 +451,6 @@ export default function DriverScreen() {
   }
 
   const { available, active, completed, stats, store, duty } = feed;
-  const online = duty?.online;
   const onlineMins = online ? minsSince(duty.since, now) : null;
   const all = [...active, ...available, ...completed];
   const open = openId && all.find((o) => o.id === openId);
@@ -383,7 +458,7 @@ export default function DriverScreen() {
 
   if (open) {
     return <OrderDetail order={open} store={store} mine={isMine(open)} busy={busy} onBack={() => setOpenId(null)}
-      onClaim={claim} onPickedUp={pickedUp} onDelivered={delivered} />;
+      onClaim={claim} onPickedUp={pickedUp} onDelivered={delivered} onResend={resend} />;
   }
 
   const cards = (list, mine) => list.map((o) => (
@@ -415,7 +490,17 @@ export default function DriverScreen() {
           <>
             {!online && (
               <div className="rounded-xl p-3 mb-3 text-sm" style={{ ...panel, color: "var(--pos-text)" }}>
-                You're offline. Go online to get alerts for new deliveries.
+                You're offline. Go online to get alerts for new deliveries and share your location with customers.
+              </div>
+            )}
+            {online && gps !== "on" && (
+              <div data-testid="driver-gps-banner" className="rounded-xl p-3 mb-3 text-sm flex items-center gap-2" style={{ ...panel, color: "var(--pos-text)", borderColor: gps === "off" ? "var(--pos-border)" : "#d97706" }}>
+                <LocateFixed className="w-4 h-4 flex-shrink-0" style={{ color: "#d97706" }} />
+                <span className="flex-1">
+                  {gps === "denied" ? "Location is off for Kanda Driver. Customers can't see you on the map." :
+                    gps === "unavailable" ? "Can't get your location. Turn on GPS." : "Finding your location…"}
+                </span>
+                {gps === "denied" && <button onClick={openLocationSettings} className="pos-btn h-8 px-3 rounded-md text-xs font-bold" style={subtle}>Settings</button>}
               </div>
             )}
             <div className="grid grid-cols-2 gap-2 mb-4">

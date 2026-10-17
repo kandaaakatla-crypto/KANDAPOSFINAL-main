@@ -36,6 +36,7 @@ const CustomerDisplayScreen = lazy(() => import("./components/pos/CustomerDispla
 const StaffScreen = lazy(() => import("./components/pos/StaffScreen"));
 const WorkforceScreen = lazy(() => import("./components/pos/WorkforceScreen"));
 const DriverScreen = lazy(() => import("./components/pos/DriverScreen"));
+const TrackOrderPage = lazy(() => import("./components/storefront/TrackOrderPage"));
 
 const TableOrderPage = lazy(() => import("./components/storefront/TableOrderPage"));
 const PickupOrderPage = lazy(() => import("./components/storefront/PickupOrderPage"));
@@ -209,6 +210,8 @@ function App() {
                   <Route path="/order/:slug/table/:number" element={<TableOrderPage />} />
                   <Route path="/order/:slug/pickup" element={<PickupOrderPage />} />
                   <Route path="/loyalty/birthday/:token" element={<BirthdayLinkPage />} />
+                  {/* Customer's live delivery tracking link (sent on WhatsApp/SMS) — public, token is the key */}
+                  <Route path="/track/:token" element={<TrackOrderPage />} />
 
                   {/* Driver stripped POS view */}
                   <Route path="/:slug/driver" element={<Protected><DriverScreen /></Protected>} />

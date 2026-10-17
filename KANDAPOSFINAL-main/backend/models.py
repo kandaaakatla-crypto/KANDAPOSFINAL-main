@@ -790,6 +790,7 @@ class Order(BaseModel):
     driver: Optional[str] = None
     driver_id: Optional[str] = None  # staff id of the driver who claimed it (driver app); None when assigned by name from Dispatch
     statusTimes: Dict[str, str] = {}  # status -> ISO time it was set (claimed / ready / out-for-delivery / completed ...)
+    trackingNotified: Optional[dict] = None  # outcome of sending the customer their tracking link + OTP (routes/tracking.py)
     source: OrderSource = "in-store"
     tip: float = 0
     coupon_code: Optional[str] = None
@@ -827,6 +828,7 @@ class Order(BaseModel):
 
 class OrderStatusPayload(BaseModel):
     status: OrderStatus
+    otp: Optional[str] = None  # delivery OTP from the customer; required from drivers completing an OTP'd delivery
 
 
 class OrderPackedPayload(BaseModel):

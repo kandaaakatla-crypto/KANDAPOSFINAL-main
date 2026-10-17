@@ -9,5 +9,9 @@
     "CapacitorSQLite": {
       "androidIsEncryption": false
     }
-  }
+  },
+  "includePlugins": [
+    "@capacitor-community/sqlite",
+    "@capacitor/network"
+  ]
 }

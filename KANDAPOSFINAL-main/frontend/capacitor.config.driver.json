@@ -6,6 +6,12 @@
     "androidScheme": "https"
   },
   "android": {
-    "path": "android-driver"
+    "path": "android-driver",
+    "useLegacyBridge": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
   }
 }

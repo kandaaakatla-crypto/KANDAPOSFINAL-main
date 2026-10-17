@@ -83,6 +83,10 @@ manager = _Manager()
 
 def schedule_broadcast(event_type: str, data: Any, tenant_id: str) -> None:
     """Fire-and-forget tenant-scoped broadcast from async call sites."""
+    if event_type.startswith("order.") and isinstance(data, dict):
+        # The delivery OTP and tracking token are the customer's alone —
+        # never fan them out to tills, KDS screens or driver phones.
+        data = {k: v for k, v in data.items() if k not in ("deliveryOtp", "deliveryOtpFails", "trackingToken")}
     try:
         asyncio.create_task(manager.broadcast(event_type, data, tenant_id))
     except RuntimeError:

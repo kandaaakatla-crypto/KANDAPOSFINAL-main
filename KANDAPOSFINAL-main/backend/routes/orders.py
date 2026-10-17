@@ -4,7 +4,7 @@ import uuid
 import logging
 from datetime import datetime, timezone
 from tz import now_ist
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends
 from pymongo.errors import DuplicateKeyError
@@ -24,10 +24,20 @@ from . import loyalty as loyalty_mod
 from . import store_credit as credit_mod
 from . import gift_cards as gift_card_mod
 from ._shared import PROJECTION, NOT_DELETED, clean, next_order_number, table_doc_to_response
-from .driver import owns_delivery
+from .driver import owns_delivery, notify_drivers_new_delivery
+from .tracking import ensure_tracking, notify_customer, otp_required
 
 logger = logging.getLogger("kanda.orders")
 router = APIRouter()
+_background: set = set()
+
+
+def _spawn(coro) -> None:
+    """Run a side effect (customer message, driver push) after the response
+    without letting the task be garbage-collected mid-flight."""
+    task = asyncio.create_task(coro)
+    _background.add(task)
+    task.add_done_callback(_background.discard)
 
 
 async def _apply_recipes(db, tenant_id: str, items: list[dict]):
@@ -176,7 +186,14 @@ def _with_service_charge(order: dict, items_subtotal: float, items_tax: float, i
 @router.get("/orders", response_model=List[Order])
 async def list_orders(user: dict = Depends(get_current_user)):
     db = get_db()
-    docs = await db.orders.find(tenant_filter(user), PROJECTION).sort("placedAt", -1).to_list(1000)
+    query = tenant_filter(user)
+    if user.get("role") == "Driver":
+        # Drivers use GET /driver/feed; here they only ever see their own
+        # deliveries, never the whole store's orders and customers.
+        query.update({"type": "delivery", "$or": [
+            {"driver_id": user["id"]}, {"driver_id": None, "driver": user["name"]},
+        ]})
+    docs = await db.orders.find(query, PROJECTION).sort("placedAt", -1).to_list(1000)
     return docs
 
 
@@ -361,6 +378,8 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         await db.customers.update_one(
             tenant_filter(user, {"id": payload.customer.id}), {"$inc": {"orders": 1}},
         )
+    if payload.type == "delivery" and not doc.get("driver"):
+        _spawn(notify_drivers_new_delivery(db, dict(doc)))
     cleaned = clean(doc)
     schedule_broadcast("order.upserted", cleaned, user["tenant_id"])
     return cleaned
@@ -480,7 +499,10 @@ async def set_order_customer(order_id: str, payload: OrderCustomer, user: dict =
 _DRIVER_STEPS = {"out-for-delivery": "ready", "completed": "out-for-delivery"}
 
 
-async def _check_driver_status_change(db, user: dict, order_id: str, status: str):
+OTP_MAX_FAILS = 5
+
+
+async def _check_driver_status_change(db, user: dict, order_id: str, status: str, otp: Optional[str] = None):
     order = await db.orders.find_one(tenant_filter(user, {"id": order_id}), PROJECTION)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -490,20 +512,37 @@ async def _check_driver_status_change(db, user: dict, order_id: str, status: str
         raise HTTPException(status_code=409, detail=f"Can't mark a {order.get('status')} order as {status}")
     if status == "completed" and order.get("payment") == "unpaid":
         raise HTTPException(status_code=409, detail="Collect payment before marking delivered")
+    if status == "completed" and otp_required(order):
+        if (order.get("deliveryOtpFails") or 0) >= OTP_MAX_FAILS:
+            raise HTTPException(status_code=429, detail="Too many wrong OTPs. Call the store to close this delivery.")
+        if (otp or "").strip() != order["deliveryOtp"]:
+            await db.orders.update_one(tenant_filter(user, {"id": order_id}), {"$inc": {"deliveryOtpFails": 1}})
+            raise HTTPException(status_code=422, detail="Wrong OTP. Ask the customer for the 4-digit code in their message.")
 
 
 @router.patch("/orders/{order_id}/status", response_model=Order)
 async def set_order_status(order_id: str, payload: OrderStatusPayload, user: dict = Depends(get_current_user)):
     db = get_db()
+    updates = {"status": payload.status, f"statusTimes.{payload.status}": now_ist().isoformat()}
     if user.get("role") == "Driver":
-        await _check_driver_status_change(db, user, order_id, payload.status)
+        await _check_driver_status_change(db, user, order_id, payload.status, payload.otp)
+        if payload.status == "out-for-delivery":
+            # Pin the order to this driver's account (Dispatch assigns by
+            # name) so the customer's tracking page follows their GPS.
+            updates["driver_id"] = user["id"]
     res = await db.orders.find_one_and_update(
-        tenant_filter(user, {"id": order_id}),
-        {"$set": {"status": payload.status, f"statusTimes.{payload.status}": now_ist().isoformat()}},
-        return_document=True,
+        tenant_filter(user, {"id": order_id}), {"$set": updates}, return_document=True,
     )
     if not res:
         raise HTTPException(status_code=404, detail="Order not found")
+    if res.get("type") == "delivery":
+        if payload.status == "out-for-delivery" and not (res.get("trackingNotified") or {}).get("ok"):
+            res = await ensure_tracking(db, res)
+            # Don't hold the driver's tap on Twilio; the outcome is written
+            # to the order and shows up on the next feed poll.
+            _spawn(notify_customer(db, dict(res)))
+        elif payload.status == "ready" and not res.get("driver"):
+            _spawn(notify_drivers_new_delivery(db, dict(res)))
     if payload.status == "completed":
         await db.tables.update_many(
             tenant_filter(user, {"order_id": order_id}),
@@ -586,6 +625,7 @@ async def claim_order(order_id: str, user: dict = Depends(get_current_user)):
     )
     if not res:
         raise HTTPException(status_code=404, detail="Delivery not available or already claimed")
+    res = await ensure_tracking(db, res)
     cleaned = clean(res)
     schedule_broadcast("order.upserted", cleaned, user["tenant_id"])
     return cleaned

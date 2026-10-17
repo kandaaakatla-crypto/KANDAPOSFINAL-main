@@ -387,6 +387,11 @@ export const ordersApi = {
 export const driverApi = {
   feed: () => api.get("/driver/feed").then((r) => r.data),
   setDuty: (online) => api.post("/driver/duty", { online }).then((r) => r.data),
+  location: (fix) => api.post("/driver/location", fix).then((r) => r.data),
+  pushToken: (token) => api.post("/driver/push-token", { token }).then((r) => r.data),
+  resendTracking: (id) => api.post(`/driver/orders/${id}/resend-tracking`).then((r) => r.data),
+  // Hand-over: the customer's delivery OTP when the order needs one.
+  complete: (id, otp) => api.patch(`/orders/${id}/status`, { status: "completed", otp: otp || undefined }).then((r) => r.data),
 };
 
 export const usersApi = {
