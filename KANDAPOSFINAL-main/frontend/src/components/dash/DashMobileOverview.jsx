@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDash } from "../../store/DashContext";
 import { teamApi } from "../../api/client";
-import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, ChevronDown, Store, Undo2, Banknote, CreditCard, Clock3 } from "lucide-react";
+import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, ChevronDown, Store, Undo2, Banknote, CreditCard, Clock3, TrendingUp, TrendingDown } from "lucide-react";
 
 // Phone-first overview, shaped after what owner apps (Toast Now, Petpooja,
 // Swiggy/Zomato partner apps) put on their first screen: today's money in
@@ -193,6 +193,33 @@ function RefundsPeek({ refreshTick }) {
   );
 }
 
+// Today so far against last week's same weekday up to this clock time
+// (server: reports.report_summary), so a quiet morning isn't read against a
+// whole day. Older servers don't send the field; the line just stays hidden.
+function LastWeekPace({ summary }) {
+  if (!summary || summary.sameTimeLastWeek == null) return null;
+  const now = summary.todaySales || 0;
+  const then = summary.sameTimeLastWeek || 0;
+  if (!now && !then) return null;
+  const pct = then ? Math.round(((now - then) / then) * 100) : null;
+  const up = now >= then;
+  const color = up ? "#16a34a" : "#dc2626";
+  const Icon = up ? TrendingUp : TrendingDown;
+  return (
+    <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold" data-testid="m-last-week" style={{ color }}>
+      <Icon className="w-3.5 h-3.5" />
+      {pct == null ? (
+        <span className="font-normal" style={{ color: "var(--pos-muted)" }}>No sales by now last week</span>
+      ) : (
+        <>
+          <span>{`${up ? "+" : ""}${pct}%`}</span>
+          <span className="font-normal" style={{ color: "var(--pos-muted)" }}>vs {inr(then)} by now last week</span>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function DashMobileOverview({ refreshTick, user, summary, showReports, lowStockCount, storeCount }) {
   const weekly = summary?.weeklySales || [];
   const yesterday = weekly.length >= 2 ? weekly[weekly.length - 2].sales : null;
@@ -222,6 +249,7 @@ export default function DashMobileOverview({ refreshTick, user, summary, showRep
           <div className="text-[40px] leading-none font-bold tabular-nums mt-1.5" style={{ color: "var(--pos-text)" }} data-testid="m-today-sales">
             {summary ? inr(summary.todaySales) : "—"}
           </div>
+          <LastWeekPace summary={summary} />
           <div className="text-xs mt-2" style={{ color: "var(--pos-muted)" }}>
             {yesterday != null ? <>Yesterday {inr(yesterday)} · 7 days {inr(weekTotal)}</> : "Loading…"}
           </div>

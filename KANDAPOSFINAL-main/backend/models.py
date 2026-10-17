@@ -867,6 +867,9 @@ class ReportSummary(BaseModel):
     unpaidTotal: float
     weeklySales: List[WeeklyPoint]
     topItems: List[TopItem]
+    # Same weekday last week, midnight up to the current time.
+    sameTimeLastWeek: float = 0
+    sameTimeLastWeekOrders: int = 0
 
 
 # ---------- Staff / HR ----------
