@@ -29,7 +29,8 @@ export default function DashChangePassword() {
   };
 
   return (
-    <div className="p-8 max-w-md mx-auto" data-testid="dash-password-screen">
+    <div className="p-8 max-w-md mx-auto" data-testid="dash-password-screen"
+      style={{ paddingTop: "calc(2rem + var(--safe-top))" }}>
       <div className="flex items-center gap-2 mb-2">
         <KeyRound className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
         <h1 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>{forced ? "Set your password" : "Change password"}</h1>

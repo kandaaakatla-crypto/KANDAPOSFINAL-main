@@ -8,6 +8,7 @@ import PeakHoursHeatmap from "./PeakHoursHeatmap";
 import SalesTrendChart from "./SalesTrendChart";
 import PendingBrandInviteBanner from "./PendingBrandInviteBanner";
 import EmptyState from "../ui/empty-state";
+import DashMobileOverview from "./DashMobileOverview";
 
 const FEATURE_LABELS = [
   { key: "tables", label: "Tables / floor plan", desc: "Dine-in seating, table QR ordering." },
@@ -63,7 +64,12 @@ export default function DashHome() {
   return (
     <div className="p-4 space-y-4" data-testid="dash-home">
       <PendingBrandInviteBanner />
-      <div>
+      {/* Phones get their own owner-app overview; the KPI grid below is the desktop view of the same numbers. */}
+      <div className="md:hidden">
+        <DashMobileOverview user={user} summary={summary} showReports={showReports} lowStockCount={lowStockCount} storeCount={locations.length} />
+      </div>
+
+      <div className="hidden md:block">
         <h1 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Welcome back, {user.name.split(" ")[0]}</h1>
         <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
           {roleLabel} · {locations.length} {locations.length === 1 ? "store" : "stores"} in your scope.
@@ -71,7 +77,7 @@ export default function DashHome() {
       </div>
 
       {/* Top-line KPIs across the user's scope */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="hidden md:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <Kpi label="Today's sales" value={summary ? `₹${summary.todaySales.toFixed(0)}` : "—"} icon={IndianRupee} accent="#22c55e" testid="kpi-sales" />
         <Kpi label="Orders today" value={summary?.ordersToday ?? "—"} icon={ShoppingBag} accent="#7dd3fc" testid="kpi-orders" />
         <Kpi label="Avg order value" value={summary ? `₹${(summary.avgOrder ?? 0).toFixed(0)}` : "—"} icon={Receipt} accent="#fb923c" testid="kpi-aov" />
@@ -81,7 +87,7 @@ export default function DashHome() {
       </div>
 
       {/* Sales trend — at-a-glance companion to the interactive chart on Reports */}
-      {showReports && <SalesTrendChart days={14} />}
+      {showReports && <div className="hidden md:block"><SalesTrendChart days={14} /></div>}
 
       {/* Peak hours heatmap — reveals your busiest weekday × hour buckets */}
       {showReports && <PeakHoursHeatmap days={28} />}

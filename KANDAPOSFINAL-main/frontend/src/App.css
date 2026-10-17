@@ -29,6 +29,115 @@
   --pos-muted: #9a9a9a;
 }
 
+/* Safe-area insets for the notch / status bar / home indicator, used by the
+   dashboard's mobile chrome (and the Kanda Dashboard phone app). Capacitor
+   8's SystemBars plugin injects --safe-area-inset-* on Android, where the
+   WebView's own env() values are unreliable; iOS and mobile browsers fill
+   env() instead. Both resolve to 0 on a desktop browser. */
+:root {
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+/* Liquid glass — the phone dashboard's chrome (header, floating tab bar,
+   More sheet) and its hero card. Glass is the default and is switched off
+   for people who ask for less transparency or more contrast, or on a
+   WebView with no backdrop-filter. The blur values are written out rather
+   than taken from a variable: Safari ignores var() inside
+   -webkit-backdrop-filter. Nothing animates the blur radius (that repaints
+   every frame); only transform/opacity move. */
+:root {
+  --lg-tint: rgba(255, 252, 246, 0.62);
+  --lg-tint-strong: rgba(255, 252, 246, 0.86);
+  --lg-sheet: rgba(253, 250, 244, 0.94);
+  --lg-edge: rgba(255, 255, 255, 0.75);
+  --lg-edge-soft: rgba(61, 50, 35, 0.08);
+  --lg-shine: rgba(255, 255, 255, 0.95);
+  --lg-shadow: 0 12px 36px rgba(61, 50, 35, 0.14), 0 2px 6px rgba(61, 50, 35, 0.06);
+  --lg-card: rgba(255, 255, 255, 0.72);
+}
+:root[data-theme="dark"] {
+  --lg-tint: rgba(22, 22, 22, 0.58);
+  --lg-tint-strong: rgba(22, 22, 22, 0.86);
+  --lg-sheet: rgba(20, 20, 20, 0.94);
+  --lg-edge: rgba(255, 255, 255, 0.14);
+  --lg-edge-soft: rgba(255, 255, 255, 0.06);
+  --lg-shine: rgba(255, 255, 255, 0.16);
+  --lg-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --lg-card: rgba(28, 28, 28, 0.66);
+}
+.lg-glass, .lg-glass-strong {
+  background: var(--lg-tint-strong);
+  border: 1px solid var(--lg-edge-soft);
+  box-shadow: var(--lg-shadow), inset 0 1px 0 var(--lg-shine);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lg-glass {
+    background: var(--lg-tint);
+    border-color: var(--lg-edge);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    backdrop-filter: blur(18px) saturate(180%);
+  }
+  .lg-glass-strong {
+    border-color: var(--lg-edge);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .lg-glass, .lg-glass-strong {
+    background: var(--pos-panel);
+    border-color: var(--pos-border);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+/* Cards inside the scroll area are frosted but unblurred — a blur per
+   card while scrolling is what makes glass UIs stutter on mid-range
+   Android phones. */
+.lg-card {
+  background: var(--lg-card);
+  border: 1px solid var(--lg-edge);
+  box-shadow: 0 6px 20px rgba(61, 50, 35, 0.07), inset 0 1px 0 var(--lg-shine);
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .lg-card { background: var(--pos-panel); border-color: var(--pos-border); }
+}
+/* Light catching the top edge of a glass surface. */
+.lg-sheen { position: relative; overflow: hidden; isolation: isolate; }
+.lg-sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%);
+}
+:root[data-theme="dark"] .lg-sheen::before {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 42%);
+}
+/* Soft colour behind the phone dashboard so the glass has something to
+   bend. Static gradients only — no blur filter, no animation. Phones only:
+   the desktop sidebar layout keeps its flat background. */
+@media (max-width: 767.98px) {
+  .lg-ambient {
+    background:
+      radial-gradient(60% 40% at 0% 0%, rgba(249, 115, 22, 0.28), transparent 70%),
+      radial-gradient(50% 35% at 100% 18%, rgba(251, 191, 36, 0.26), transparent 70%),
+      radial-gradient(60% 40% at 85% 100%, rgba(244, 114, 182, 0.18), transparent 70%),
+      var(--pos-bg);
+  }
+  :root[data-theme="dark"] .lg-ambient {
+    background:
+      radial-gradient(60% 40% at 0% 0%, rgba(249, 115, 22, 0.22), transparent 70%),
+      radial-gradient(50% 35% at 100% 18%, rgba(217, 119, 6, 0.18), transparent 70%),
+      radial-gradient(60% 40% at 85% 100%, rgba(190, 24, 93, 0.16), transparent 70%),
+      var(--pos-bg);
+  }
+}
+.lg-press { transition: transform 0.2s var(--spring-ease); }
+.lg-press:active { transform: scale(0.96); }
+
 /* Landing page — always light, deliberately excluded from the shared
    toggle (it has no dark-mode control of its own). The toggle's
    data-theme="dark" attribute lives on <html> and is shared across every

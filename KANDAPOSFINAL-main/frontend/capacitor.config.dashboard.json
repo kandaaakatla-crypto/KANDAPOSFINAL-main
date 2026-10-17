@@ -1,0 +1,20 @@
+{
+  "appId": "com.kandapos.dashboard",
+  "appName": "Kanda Dashboard",
+  "webDir": "build",
+  "backgroundColor": "#fdfaf4",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "path": "android-dashboard"
+  },
+  "ios": {
+    "path": "ios-dashboard"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css"
+    }
+  }
+}
