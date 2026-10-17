@@ -110,6 +110,7 @@ _RULES = [
 
     ("settings", ("PATCH",), "/api/tenant/features"),
     ("settings", ("PUT",), "/api/tenant/online-pause"),
+    ("settings", ("PUT",), "/api/tenant/sales-target"),
     ("settings", ("POST", "DELETE"), "/api/tenant/store/branding"),
     ("settings", ("GET",), "/api/integrations/website"),
     ("settings", ("POST", "DELETE"), "/api/integrations/website/key"),

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useDash } from "../../store/DashContext";
+import { toast } from "sonner";
+import { useDash, canManageSettings } from "../../store/DashContext";
 import { teamApi } from "../../api/client";
-import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, ChevronDown, Store, Undo2, Banknote, CreditCard, Clock3, TrendingUp, TrendingDown } from "lucide-react";
+import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, ChevronDown, Store, Undo2, Banknote, CreditCard, Clock3, TrendingUp, TrendingDown, Target } from "lucide-react";
 
 // Phone-first overview, shaped after what owner apps (Toast Now, Petpooja,
 // Swiggy/Zomato partner apps) put on their first screen: today's money in
@@ -220,6 +221,83 @@ function LastWeekPace({ summary }) {
   );
 }
 
+// Owner-set "good day" number (routes/sales_target.py) with today's progress.
+// Anyone who can see sales sees the bar; only settings holders can change it.
+function SalesTargetBar({ summary }) {
+  const { api, user } = useDash();
+  const [target, setTarget] = useState(summary?.dailyTarget ?? null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const canEdit = canManageSettings(user);
+
+  useEffect(() => { setTarget(summary?.dailyTarget ?? null); }, [summary?.dailyTarget]);
+
+  if (!summary || (!target && !canEdit)) return null;
+
+  const save = async (value) => {
+    setBusy(true);
+    try {
+      const r = await api.put("/tenant/sales-target", { target: value });
+      setTarget(r.data.target);
+      setEditing(false);
+      toast.success(r.data.target ? `Daily target set to ${inr(r.data.target)}` : "Daily target removed");
+    } catch (e) {
+      toast.error(typeof e?.response?.data?.detail === "string" ? e.response.data.detail : "Enter an amount above ₹0");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <form className="flex items-center gap-2 mt-3" data-testid="m-target-form"
+        onSubmit={(e) => { e.preventDefault(); const n = Number(draft); if (n > 0) save(n); else toast.error("Enter an amount above ₹0"); }}>
+        <span className="text-sm font-semibold" style={{ color: "var(--pos-muted)" }}>₹</span>
+        <input type="number" inputMode="numeric" min="1" autoFocus value={draft} onChange={(e) => setDraft(e.target.value)}
+          placeholder="Daily target" data-testid="m-target-input" aria-label="Daily sales target in rupees"
+          className="flex-1 min-w-0 h-9 rounded-full px-3 text-sm" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }} />
+        <button type="submit" disabled={busy} className="lg-press h-9 px-3 rounded-full text-xs font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save</button>
+        {target ? (
+          <button type="button" disabled={busy} onClick={() => save(null)} className="lg-press h-9 px-3 rounded-full text-xs font-semibold"
+            style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>Remove</button>
+        ) : (
+          <button type="button" onClick={() => setEditing(false)} className="lg-press h-9 px-3 rounded-full text-xs font-semibold"
+            style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>Cancel</button>
+        )}
+      </form>
+    );
+  }
+
+  const open = () => { if (canEdit) { setDraft(target ? String(target) : ""); setEditing(true); } };
+
+  if (!target) {
+    return (
+      <button type="button" onClick={open} data-testid="m-target-set"
+        className="lg-press mt-3 flex items-center gap-1.5 text-xs font-semibold" style={{ color: "var(--pos-accent)" }}>
+        <Target className="w-3.5 h-3.5" /> Set a daily sales target
+      </button>
+    );
+  }
+
+  const pct = Math.round(((summary.todaySales || 0) / target) * 100);
+  const hit = pct >= 100;
+  return (
+    <button type="button" onClick={open} disabled={!canEdit} data-testid="m-target" className="block w-full text-left mt-3">
+      <div className="flex items-center justify-between text-xs">
+        <span className="flex items-center gap-1.5 font-semibold" style={{ color: hit ? "#16a34a" : "var(--pos-text)" }}>
+          <Target className="w-3.5 h-3.5" /> {hit ? "Target hit" : `${pct}% of target`}
+        </span>
+        <span style={{ color: "var(--pos-muted)" }}>{inr(target)}{canEdit ? " · Edit" : ""}</span>
+      </div>
+      <div className="h-2 rounded-full mt-1.5 overflow-hidden" style={{ background: "var(--pos-panel-2)" }} role="progressbar"
+        aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(pct, 100)} aria-label="Progress to daily sales target">
+        <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, background: hit ? "#16a34a" : "var(--pos-accent)" }} />
+      </div>
+    </button>
+  );
+}
+
 export default function DashMobileOverview({ refreshTick, user, summary, showReports, lowStockCount, storeCount }) {
   const weekly = summary?.weeklySales || [];
   const yesterday = weekly.length >= 2 ? weekly[weekly.length - 2].sales : null;
@@ -250,6 +328,7 @@ export default function DashMobileOverview({ refreshTick, user, summary, showRep
             {summary ? inr(summary.todaySales) : "—"}
           </div>
           <LastWeekPace summary={summary} />
+          <SalesTargetBar summary={summary} />
           <div className="text-xs mt-2" style={{ color: "var(--pos-muted)" }}>
             {yesterday != null ? <>Yesterday {inr(yesterday)} · 7 days {inr(weekTotal)}</> : "Loading…"}
           </div>
