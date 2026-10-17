@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, hasPerm, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards, canManageCustomers, canViewReports, canManageSettings, canManageTeam } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, ClipboardList, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, ClipboardList, PackageX, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -35,6 +35,7 @@ const NAV_GROUPS = [
     label: "Menu & Catalog",
     items: [
       { to: "/dashboard/menu", label: "Menu", icon: BookOpen, allow: () => true },
+      { to: "/dashboard/stock", label: "Item stock", icon: PackageX, allow: () => true },
       { to: "/dashboard/schedules", label: "Schedules", icon: Clock, allow: () => true },
       { to: "/dashboard/surge", label: "Surge Pricing", icon: TrendingUp, allow: () => true },
       { to: "/dashboard/coupons", label: "Coupons", icon: Ticket, allow: (u) => canManageCoupons(u) },

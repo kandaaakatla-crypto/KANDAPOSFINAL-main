@@ -123,7 +123,7 @@ export default function DashMobileOverview({ user, summary, showReports, lowStoc
   const today = new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 
   const actions = [
-    { to: "/dashboard/menu", label: "Menu & stock", hint: "Mark items in or out", icon: BookOpen },
+    { to: "/dashboard/stock", label: "Item stock", hint: "Mark items in or out", icon: BookOpen },
     { to: "/dashboard/inventory", label: "Inventory", hint: lowStockCount > 0 ? `${lowStockCount} running low` : "All stocked", icon: Boxes, alert: lowStockCount > 0 },
     { to: "/dashboard/staff", label: "Staff", hint: "Who's on today", icon: Users },
     showReports && { to: "/dashboard/reports", label: "Reports", hint: "Sales, items, hours", icon: BarChart3 },
