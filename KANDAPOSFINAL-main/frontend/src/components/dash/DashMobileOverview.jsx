@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, Banknote, CreditCard, Clock3 } from "lucide-react";
+import { useDash } from "../../store/DashContext";
+import { ShoppingBag, Receipt, Truck, BookOpen, Boxes, Users, BarChart3, AlertTriangle, ChevronRight, Undo2, Banknote, CreditCard, Clock3 } from "lucide-react";
 
 // Phone-first overview, shaped after what owner apps (Toast Now, Petpooja,
 // Swiggy/Zomato partner apps) put on their first screen: today's money in
@@ -116,6 +117,39 @@ function TopSellers({ items }) {
   );
 }
 
+// Today's refunds + voids as one line under the hero, linking to the full
+// list. Its own small request so Home's main summary isn't held up by it.
+function RefundsPeek() {
+  const { api } = useDash();
+  const [today, setToday] = useState(null);
+  useEffect(() => {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    api.get("/refunds/log", { params: { limit: 100 } })
+      .then((r) => {
+        const rows = (r.data || []).filter((l) => new Date(l.at) >= start);
+        setToday({ count: rows.length, amount: rows.reduce((s, l) => s + (l.amount || 0), 0) });
+      })
+      .catch(() => setToday(null));
+  }, [api]);
+  if (!today) return null;
+  return (
+    <Link to="/dashboard/refunds" data-testid="m-refunds-peek" className="lg-card lg-press rounded-2xl px-4 py-3 flex items-center gap-3">
+      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(220,38,38,0.10)" }}>
+        <Undo2 className="w-4 h-4" style={{ color: "#dc2626" }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>
+          {today.count ? `${inr(today.amount)} refunded or voided` : "No refunds or voids today"}
+        </div>
+        <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
+          {today.count ? `${today.count} ${today.count === 1 ? "order" : "orders"} today · see who and why` : "Refunds, voids and discounts"}
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--pos-muted)" }} />
+    </Link>
+  );
+}
+
 export default function DashMobileOverview({ user, summary, showReports, lowStockCount, storeCount }) {
   const weekly = summary?.weeklySales || [];
   const yesterday = weekly.length >= 2 ? weekly[weekly.length - 2].sales : null;
@@ -155,6 +189,8 @@ export default function DashMobileOverview({ user, summary, showReports, lowStoc
           </div>
         </div>
       )}
+
+      {showReports && <RefundsPeek />}
 
       {lowStockCount > 0 && (
         <Link to="/dashboard/inventory" data-testid="m-low-stock-alert"

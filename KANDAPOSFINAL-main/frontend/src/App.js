@@ -60,6 +60,7 @@ const DashLayout = lazy(() => import("./components/dash/DashLayout"));
 const DashHome = lazy(() => import("./components/dash/DashHome"));
 const DashOrders = lazy(() => import("./components/dash/DashOrders"));
 const DashStock = lazy(() => import("./components/dash/DashStock"));
+const DashRefunds = lazy(() => import("./components/dash/DashRefunds"));
 const DashChangePassword = lazy(() => import("./components/dash/DashChangePassword"));
 const DashLocations = lazy(() => import("./components/dash/DashLocations"));
 const DashBranding = lazy(() => import("./components/dash/DashBranding"));
@@ -176,6 +177,7 @@ function App() {
                     <Route index element={<DashHome />} />
                     <Route path="orders" element={<DashOrders />} />
                     <Route path="stock" element={<DashStock />} />
+                    <Route path="refunds" element={<DashRefunds />} />
                     <Route path="menu" element={<MenuScreen />} />
                     <Route path="schedules" element={<DashSchedules />} />
                     <Route path="surge" element={<DashSurge />} />
