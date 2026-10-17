@@ -138,6 +138,19 @@ async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[di
     return line_amounts, warnings
 
 
+def _surge_amount(items: list[dict]) -> float:
+    """₹ that aggregator surge pricing added across `items` — the POS sends
+    each surged line's pre-surge `base_price` next to the `price` it charged
+    (see routes/surge.py), so this is just the difference, per unit, x qty."""
+    total = 0.0
+    for it in items:
+        base = it.get("base_price")
+        if base is None or not it.get("surge_pct"):
+            continue
+        total += max(0.0, float(it.get("price") or 0) - float(base)) * (it.get("qty") or 0)
+    return round(total, 2)
+
+
 def _with_service_charge(order: dict, items_subtotal: float, items_tax: float, items_gross_delta: float, pct: float) -> dict:
     """Recompute an order's service charge (and the totals it feeds) after its
     items or its service-charge rate change. `items_subtotal`/`items_tax` are
@@ -232,6 +245,7 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         "serviceChargePct": sc_pct if sc else 0,
         "serviceCharge": sc,
         "serviceChargeTax": sc_tax,
+        "surgeAmount": _surge_amount(raw_items),
         "payment": payload.payment,
         "placedAt": placed_at,
         "driver": payload.driver,
@@ -398,6 +412,8 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
                 **totals, "status": "new",
                 "sync_warnings": new_warnings,
             },
+            # $inc, not a read-modify-write $set, so two concurrent appends can't drop each other's surge.
+            "$inc": {"surgeAmount": _surge_amount(raw_items)},
         },
         return_document=True,
     )

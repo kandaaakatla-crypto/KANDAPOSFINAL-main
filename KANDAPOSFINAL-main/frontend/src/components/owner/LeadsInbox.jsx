@@ -4,7 +4,11 @@ import { Inbox, Loader2, Mail, MapPin, Phone, RefreshCw, Store } from "lucide-re
 
 const TYPE_LABEL = {
   demo: { label: "Demo request", color: "#f97316" },
-  updates: { label: "Updates sign-up", color: "#3b82f6" },
+  updates: { label: "Alpha waitlist", color: "#3b82f6" },
+};
+
+const BUSINESS_TYPE_LABEL = {
+  restaurant: "Restaurant", cafe: "Café / bakery", cloud_kitchen: "Cloud kitchen", retail: "Retail store", other: "Other",
 };
 
 export default function LeadsInbox() {
@@ -33,7 +37,7 @@ export default function LeadsInbox() {
             className="h-9 px-3 rounded-lg text-xs" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
             <option value="">All types</option>
             <option value="demo">Demo requests</option>
-            <option value="updates">Updates sign-ups</option>
+            <option value="updates">Alpha waitlist</option>
           </select>
           <button onClick={load} className="pos-btn h-9 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5"
             style={{ background: "var(--pos-panel)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
@@ -42,7 +46,7 @@ export default function LeadsInbox() {
         </div>
       </div>
       <p className="text-xs" style={{ color: "var(--pos-muted)" }}>
-        Every "Book a demo" and "Sign up for updates" submission from kandapos.com lands here.
+        Every "Book a demo" and alpha waitlist submission from kandapos.com lands here.
       </p>
 
       <div className="rounded-xl overflow-hidden" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
@@ -64,6 +68,10 @@ export default function LeadsInbox() {
               {l.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {l.phone}</span>}
               {l.business && <span className="flex items-center gap-1"><Store className="w-3 h-3" /> {l.business}</span>}
               {l.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {l.city}</span>}
+              {l.business_type && <span>{BUSINESS_TYPE_LABEL[l.business_type] || l.business_type}</span>}
+              {l.outlets && <span>{l.outlets} outlet{l.outlets === "1" ? "" : "s"}</span>}
+              {l.referred_by && <span>Referred by {l.referred_by}</span>}
+              {l.ref_code && <span>Code {l.ref_code}</span>}
             </div>
             {l.message && (
               <div className="text-sm mt-2 rounded-lg p-2.5 whitespace-pre-wrap" style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)" }}>{l.message}</div>

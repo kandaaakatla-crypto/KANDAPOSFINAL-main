@@ -699,6 +699,107 @@ async def delete_asset(brand_id: str, asset_id: str, u: dict = Depends(_brand_ow
 
 
 # ===================================================================
+# Unified customer profiles — customers are stored per store (tenant), so a
+# regular who visits three stores of the brand is three rows. These views
+# merge them into one profile per person, matched by phone number.
+# ===================================================================
+_ACTIVE_CUSTOMER = {"$or": [{"deleted_at": {"$exists": False}}, {"deleted_at": None}]}
+
+
+def _norm_phone(phone: Optional[str]) -> str:
+    """Digits only, last 10 — so "+91 98765 43210", "09876543210" and
+    "9876543210" all match. Shorter numbers are kept as-is."""
+    digits = "".join(ch for ch in (phone or "") if ch.isdigit())
+    return digits[-10:]
+
+
+async def _brand_profiles(db, brand_id: str) -> tuple[dict, dict]:
+    """Returns ({norm_phone: profile}, {tenant_id: store_name})."""
+    stores = await db.tenants.find({"brand_id": brand_id}, {"_id": 0, "id": 1, "name": 1}).to_list(200)
+    names = {t["id"]: t.get("name") or t["id"] for t in stores}
+    if not names:
+        return {}, names
+    rows = await db.customers.find(
+        {"tenant_id": {"$in": list(names)}, **_ACTIVE_CUSTOMER},
+        {"_id": 0, "id": 1, "tenant_id": 1, "name": 1, "phone": 1, "email": 1, "birthday": 1,
+         "orders": 1, "loyalty_points": 1, "store_credit": 1, "loyalty_lifetime_spend": 1, "updated_at": 1},
+    ).to_list(50000)
+
+    profiles: dict = {}
+    for c in rows:
+        key = _norm_phone(c.get("phone"))
+        if not key:
+            continue
+        p = profiles.setdefault(key, {
+            "phone": key, "name": "", "email": "", "birthday": None, "orders": 0,
+            "loyalty_points": 0, "store_credit": 0.0, "lifetime_spend": 0.0,
+            "last_seen": "", "stores": [],
+        })
+        p["orders"] += int(c.get("orders") or 0)
+        p["loyalty_points"] += int(c.get("loyalty_points") or 0)
+        p["store_credit"] += float(c.get("store_credit") or 0)
+        p["lifetime_spend"] += float(c.get("loyalty_lifetime_spend") or 0)
+        updated = c.get("updated_at") or ""
+        # Name/email/birthday come from the most recently updated store record
+        # that has them, so the freshest details win.
+        if updated >= p["last_seen"] or not p["name"]:
+            p["name"] = c.get("name") or p["name"]
+            p["email"] = c.get("email") or p["email"]
+            p["birthday"] = c.get("birthday") or p["birthday"]
+        p["last_seen"] = max(p["last_seen"], updated)
+        p["stores"].append({
+            "tenant_id": c["tenant_id"], "store_name": names.get(c["tenant_id"]), "customer_id": c["id"],
+            "orders": int(c.get("orders") or 0), "loyalty_points": int(c.get("loyalty_points") or 0),
+        })
+    for p in profiles.values():
+        p["store_credit"] = round(p["store_credit"], 2)
+        p["lifetime_spend"] = round(p["lifetime_spend"], 2)
+    return profiles, names
+
+
+@router.get("/{brand_id}/customers")
+async def brand_customers(
+    brand_id: str,
+    q: Optional[str] = Query(None, description="Phone digits or part of a name"),
+    limit: int = Query(200, ge=1, le=1000),
+    u: dict = Depends(_brand_owner),
+):
+    db = get_db()
+    profiles, _ = await _brand_profiles(db, brand_id)
+    out = list(profiles.values())
+    needle = (q or "").strip()
+    if needle:
+        digits = "".join(ch for ch in needle if ch.isdigit())
+        low = needle.lower()
+        out = [p for p in out if (digits and digits in p["phone"]) or low in (p["name"] or "").lower()]
+    out.sort(key=lambda p: (-p["orders"], -p["lifetime_spend"], p["phone"]))
+    return {"customers": out[:limit], "total": len(out)}
+
+
+@router.get("/{brand_id}/customers/{phone}")
+async def brand_customer_profile(brand_id: str, phone: str, u: dict = Depends(_brand_owner)):
+    db = get_db()
+    key = _norm_phone(phone)
+    profiles, names = await _brand_profiles(db, brand_id)
+    p = profiles.get(key)
+    if not p:
+        raise HTTPException(status_code=404, detail="Customer not found in this brand")
+    orders = []
+    for s in p["stores"]:
+        orders += await db.orders.find(
+            {"tenant_id": s["tenant_id"], "customer.id": s["customer_id"], "voided": {"$ne": True}},
+            {"_id": 0, "id": 1, "number": 1, "tenant_id": 1, "total": 1, "placedAt": 1, "type": 1, "status": 1},
+        ).to_list(5000)
+    orders.sort(key=lambda o: o.get("placedAt") or "", reverse=True)
+    for o in orders:
+        o["store_name"] = names.get(o["tenant_id"])
+    p["order_spend"] = round(sum(float(o.get("total") or 0) for o in orders), 2)
+    p["order_count"] = len(orders)
+    p["recent_orders"] = orders[:50]
+    return p
+
+
+# ===================================================================
 # Marketing — coordinated SMS campaign across every store's customers
 # ===================================================================
 @router.post("/{brand_id}/marketing/sms-broadcast")

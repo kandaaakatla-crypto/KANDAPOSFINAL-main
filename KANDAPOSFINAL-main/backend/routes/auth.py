@@ -10,7 +10,8 @@ from db import get_db
 from auth import verify_pin, create_access_token, get_current_user, require_role
 from tenants import resolve_tenant_from_request, tenant_filter
 from subscriptions import grace_state
-from ratelimit import peek as rate_limit_peek, hit as rate_limit_hit
+from ratelimit import peek as rate_limit_peek, hit as rate_limit_hit, client_ip
+from routes.pos_devices import require_pos_device
 from models import LoginRequest, LoginResponse, UserPublic, TenantInfo, TenantFeaturesUpdate, default_features
 
 router = APIRouter()
@@ -24,12 +25,7 @@ LOGIN_WINDOW_SECONDS = 300
 
 
 def _client_ip(request: Request) -> str:
-    # Cloud Run puts the real client IP first in X-Forwarded-For, with its
-    # own infra's hops appended after.
-    xff = request.headers.get("x-forwarded-for")
-    if xff:
-        return xff.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    return client_ip(request)
 
 
 @router.post("/auth/login", response_model=LoginResponse)
@@ -39,6 +35,7 @@ async def login(payload: LoginRequest, request: Request):
     if not pin:
         raise HTTPException(status_code=400, detail="PIN is required")
     tenant = await resolve_tenant_from_request(request, db)
+    device_id = await require_pos_device(request, tenant, db)
 
     rl_key = f"loginrl:{tenant['id']}:{_client_ip(request)}"
     if await rate_limit_peek(rl_key) >= LOGIN_MAX_FAILURES:
@@ -60,13 +57,25 @@ async def login(payload: LoginRequest, request: Request):
             },
         )
     users = await db.users.find({"tenant_id": tenant["id"]}, {"_id": 0}).to_list(50)
+    matched_inactive = False
     for u in users:
         if verify_pin(pin, u["pin_hash"]):
-            token = create_access_token(u["id"], u["role"], tenant["id"])
+            # Absent `active` means active (legacy rows) — only an explicit
+            # False is deactivated. Keep scanning in case an active user
+            # shares the PIN, but never issue a token for an inactive one:
+            # get_current_user would 401 it on the very next request.
+            if u.get("active") is False:
+                matched_inactive = True
+                continue
+            token = create_access_token(u["id"], u["role"], tenant["id"], device_id=device_id)
             return LoginResponse(
                 token=token,
                 user=UserPublic(id=u["id"], name=u["name"], role=u["role"], initials=u["initials"]),
             )
+    if matched_inactive:
+        # Not a failed guess — the PIN was right — so it doesn't count
+        # against the brute-force limiter.
+        raise HTTPException(status_code=403, detail="This staff account is deactivated. Ask your manager.")
     await rate_limit_hit(rl_key, LOGIN_WINDOW_SECONDS)
     raise HTTPException(status_code=401, detail="Invalid PIN")
 
