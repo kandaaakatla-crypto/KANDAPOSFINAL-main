@@ -27,7 +27,7 @@ const FEATURE_LABELS = [
  * - Manager: only their single location.
  */
 export default function DashHome() {
-  const { user, api, lowStockCount } = useDash();
+  const { user, api, lowStockCount, refreshLowStock } = useDash();
   const navigate = useNavigate();
   const [locations, setLocations] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -49,6 +49,24 @@ export default function DashHome() {
     api.get("/tenant/info").then((r) => setTenantInfo(r.data)).catch(() => {});
   }, [api, user.location_ids, showReports]);
 
+  // Keep the money numbers live while Home is open: refresh every 60s while
+  // visible, and immediately when the app comes back to the foreground (the
+  // phone app is mostly opened, glanced at and backgrounded). `refreshTick`
+  // also nudges Home's smaller cards (refunds) to refetch.
+  const [refreshTick, setRefreshTick] = useState(0);
+  useEffect(() => {
+    if (!showReports) return undefined;
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      api.get("/reports/summary").then((r) => setSummary(r.data)).catch(() => {});
+      refreshLowStock?.();
+      setRefreshTick((t) => t + 1);
+    };
+    const id = setInterval(refresh, 60000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", refresh); };
+  }, [api, showReports, refreshLowStock]);
+
   const toggleFeature = async (key, value) => {
     setSavingFeature(key);
     try {
@@ -66,7 +84,7 @@ export default function DashHome() {
       <PendingBrandInviteBanner />
       {/* Phones get their own owner-app overview; the KPI grid below is the desktop view of the same numbers. */}
       <div className="md:hidden">
-        <DashMobileOverview user={user} summary={summary} showReports={showReports} lowStockCount={lowStockCount} storeCount={locations.length} />
+        <DashMobileOverview refreshTick={refreshTick} user={user} summary={summary} showReports={showReports} lowStockCount={lowStockCount} storeCount={locations.length} />
       </div>
 
       <div className="hidden md:block">
