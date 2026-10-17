@@ -159,7 +159,7 @@ export default function DashMobileOverview({ user, summary, showReports, lowStoc
   const actions = [
     { to: "/dashboard/stock", label: "Item stock", hint: "Mark items in or out", icon: BookOpen },
     { to: "/dashboard/inventory", label: "Inventory", hint: lowStockCount > 0 ? `${lowStockCount} running low` : "All stocked", icon: Boxes, alert: lowStockCount > 0 },
-    { to: "/dashboard/staff", label: "Staff", hint: "Who's on today", icon: Users },
+    { to: "/dashboard/on-shift", label: "On shift", hint: "Who's working now", icon: Users },
     showReports && { to: "/dashboard/reports", label: "Reports", hint: "Sales, items, hours", icon: BarChart3 },
   ].filter(Boolean);
 
