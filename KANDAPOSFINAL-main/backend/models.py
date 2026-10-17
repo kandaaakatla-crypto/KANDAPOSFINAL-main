@@ -1,6 +1,6 @@
 """Pydantic models for Kanda POS."""
 from __future__ import annotations
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -788,6 +788,8 @@ class Order(BaseModel):
     payment: OrderPayment
     placedAt: str
     driver: Optional[str] = None
+    driver_id: Optional[str] = None  # staff id of the driver who claimed it (driver app); None when assigned by name from Dispatch
+    statusTimes: Dict[str, str] = {}  # status -> ISO time it was set (claimed / ready / out-for-delivery / completed ...)
     source: OrderSource = "in-store"
     tip: float = 0
     coupon_code: Optional[str] = None

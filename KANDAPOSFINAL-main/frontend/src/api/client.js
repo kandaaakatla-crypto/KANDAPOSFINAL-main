@@ -384,6 +384,11 @@ export const ordersApi = {
   setServiceCharge: (id, pct) => api.patch(`/orders/${id}/service-charge`, { pct }).then((r) => r.data),
 };
 
+export const driverApi = {
+  feed: () => api.get("/driver/feed").then((r) => r.data),
+  setDuty: (online) => api.post("/driver/duty", { online }).then((r) => r.data),
+};
+
 export const usersApi = {
   drivers: () => api.get("/users/drivers").then((r) => r.data),
 };

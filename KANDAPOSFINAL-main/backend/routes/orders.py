@@ -24,6 +24,7 @@ from . import loyalty as loyalty_mod
 from . import store_credit as credit_mod
 from . import gift_cards as gift_card_mod
 from ._shared import PROJECTION, NOT_DELETED, clean, next_order_number, table_doc_to_response
+from .driver import owns_delivery
 
 logger = logging.getLogger("kanda.orders")
 router = APIRouter()
@@ -472,11 +473,34 @@ async def set_order_customer(order_id: str, payload: OrderCustomer, user: dict =
     return cleaned
 
 
+# A driver may only move their own delivery along its last two steps:
+# ready -> out-for-delivery (picked up) -> completed (delivered), and can't
+# close out an order that's still unpaid — cash has to be marked collected
+# first so the driver's cash-in-hand total stays honest.
+_DRIVER_STEPS = {"out-for-delivery": "ready", "completed": "out-for-delivery"}
+
+
+async def _check_driver_status_change(db, user: dict, order_id: str, status: str):
+    order = await db.orders.find_one(tenant_filter(user, {"id": order_id}), PROJECTION)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.get("type") != "delivery" or not owns_delivery(order, user):
+        raise HTTPException(status_code=403, detail="Not your delivery")
+    if _DRIVER_STEPS.get(status) != order.get("status"):
+        raise HTTPException(status_code=409, detail=f"Can't mark a {order.get('status')} order as {status}")
+    if status == "completed" and order.get("payment") == "unpaid":
+        raise HTTPException(status_code=409, detail="Collect payment before marking delivered")
+
+
 @router.patch("/orders/{order_id}/status", response_model=Order)
 async def set_order_status(order_id: str, payload: OrderStatusPayload, user: dict = Depends(get_current_user)):
     db = get_db()
+    if user.get("role") == "Driver":
+        await _check_driver_status_change(db, user, order_id, payload.status)
     res = await db.orders.find_one_and_update(
-        tenant_filter(user, {"id": order_id}), {"$set": {"status": payload.status}}, return_document=True,
+        tenant_filter(user, {"id": order_id}),
+        {"$set": {"status": payload.status, f"statusTimes.{payload.status}": now_ist().isoformat()}},
+        return_document=True,
     )
     if not res:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -511,7 +535,11 @@ async def set_order_packed(order_id: str, payload: OrderPackedPayload, user: dic
 async def assign_driver(order_id: str, payload: AssignDriverPayload, user: dict = Depends(get_current_user)):
     db = get_db()
     res = await db.orders.find_one_and_update(
-        tenant_filter(user, {"id": order_id}), {"$set": {"driver": payload.driver}}, return_document=True,
+        tenant_filter(user, {"id": order_id}),
+        # Dispatch assigns by name; drop any id a previous driver's claim
+        # stamped so ownership follows the new assignment.
+        {"$set": {"driver": payload.driver, "driver_id": None}},
+        return_document=True,
     )
     if not res:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -527,6 +555,12 @@ async def update_payment(order_id: str, payload: dict, user: dict = Depends(get_
     new_payment = payload.get("payment")
     if new_payment not in ("cash", "card", "unpaid"):
         raise HTTPException(status_code=422, detail="Invalid payment")
+    if user.get("role") == "Driver":
+        order = await db.orders.find_one(tenant_filter(user, {"id": order_id}), PROJECTION)
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        if not owns_delivery(order, user) or new_payment != "cash" or order.get("payment") != "unpaid":
+            raise HTTPException(status_code=403, detail="Drivers can only mark their own unpaid delivery as cash collected")
     res = await db.orders.find_one_and_update(
         tenant_filter(user, {"id": order_id}),
         {"$set": {"payment": new_payment}},
@@ -546,8 +580,8 @@ async def claim_order(order_id: str, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Only drivers can claim")
     db = get_db()
     res = await db.orders.find_one_and_update(
-        tenant_filter(user, {"id": order_id, "type": "delivery", "driver": None}),
-        {"$set": {"driver": user["name"]}},
+        tenant_filter(user, {"id": order_id, "type": "delivery", "driver": None, "voided": {"$ne": True}}),
+        {"$set": {"driver": user["name"], "driver_id": user["id"], "statusTimes.claimed": now_ist().isoformat()}},
         return_document=True,
     )
     if not res:
