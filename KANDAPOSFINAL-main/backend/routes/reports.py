@@ -422,3 +422,67 @@ async def report_channels(user: dict = Depends(get_current_user), days: int = 1)
         "bySource": by_source,
         "byType": await split("type", "sale"),
     }
+
+
+@router.get("/reports/food-cost")
+async def report_food_cost(user: dict = Depends(require_role("Manager")), days: int = 7):
+    """Waste and food cost over the last `days` (rolling, same window as the
+    menu-engineering report it builds on).
+
+    - waste: logged waste valued at each inventory item's current
+      `cost_per_unit`, grouped by item and by reason.
+    - food: recipe cost of the dishes sold vs what they sold for, over the
+      dishes that have a recipe (`coveragePct` says how much of item revenue
+      that is, so a low-coverage % isn't mistaken for the whole menu).
+    """
+    if days not in (7, 30):
+        raise HTTPException(status_code=422, detail="days must be 7 or 30")
+    db = get_db()
+    since = (now_ist() - timedelta(days=days)).isoformat()
+
+    waste_docs = await db.waste_entries.find(
+        tenant_filter(user, {"at": {"$gte": since}}), {"_id": 0, "inventory_id": 1, "inventory_name": 1, "qty": 1, "unit": 1, "reason": 1},
+    ).to_list(5000)
+    inv_ids = list({w["inventory_id"] for w in waste_docs})
+    inv_docs = await db.inventory.find(
+        tenant_filter(user, {"id": {"$in": inv_ids}}), {"_id": 0, "id": 1, "cost_per_unit": 1},
+    ).to_list(len(inv_ids) or 1) if inv_ids else []
+    cost_by_inv = {d["id"]: float(d.get("cost_per_unit", 0) or 0) for d in inv_docs}
+
+    by_item: dict[str, dict] = {}
+    by_reason: dict[str, dict] = {}
+    for w in waste_docs:
+        value = float(w.get("qty", 0) or 0) * cost_by_inv.get(w["inventory_id"], 0)
+        it = by_item.setdefault(w["inventory_id"], {"name": w.get("inventory_name", ""), "qty": 0.0, "unit": w.get("unit", ""), "value": 0.0})
+        it["qty"] += float(w.get("qty", 0) or 0)
+        it["value"] += value
+        rs = by_reason.setdefault(w.get("reason", ""), {"reason": w.get("reason", ""), "entries": 0, "value": 0.0})
+        rs["entries"] += 1
+        rs["value"] += value
+    for row in (*by_item.values(), *by_reason.values()):
+        row["value"] = round(row["value"], 2)
+        if "qty" in row:
+            row["qty"] = round(row["qty"], 3)
+
+    eng = await menu_engineering(user=user, days=days)
+    items = eng.get("items", [])
+    costed = [i for i in items if i.get("has_recipe")]
+    revenue = sum(i["revenue"] for i in costed)
+    cost = sum(i["cost"] * i["qty_sold"] for i in costed)
+    all_revenue = sum(i["revenue"] for i in items)
+
+    return {
+        "days": days,
+        "waste": {
+            "value": round(sum(r["value"] for r in by_item.values()), 2),
+            "entries": len(waste_docs),
+            "byItem": sorted(by_item.values(), key=lambda r: -r["value"])[:10],
+            "byReason": sorted(by_reason.values(), key=lambda r: -r["value"]),
+        },
+        "food": {
+            "revenue": round(revenue, 2),
+            "cost": round(cost, 2),
+            "pct": round(cost / revenue * 100, 1) if revenue else None,
+            "coveragePct": round(revenue / all_revenue * 100) if all_revenue else None,
+        },
+    }

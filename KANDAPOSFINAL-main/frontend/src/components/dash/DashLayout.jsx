@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, hasPerm, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards, canManageCustomers, canViewReports, canManageSettings, canManageTeam } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, ClipboardList, PackageX, Undo2, UserCheck, CalendarCheck, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp, Trophy, Flame, Split } from "lucide-react";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, ClipboardList, PackageX, Undo2, UserCheck, CalendarCheck, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp, Trophy, Flame, Split, ChefHat } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -52,6 +52,7 @@ const NAV_GROUPS = [
     label: "Inventory",
     items: [
       { to: "/dashboard/inventory", label: "Inventory", icon: Boxes, allow: () => true, badge: "lowStock" },
+      { to: "/dashboard/food-cost", label: "Waste & food cost", icon: ChefHat, allow: (u) => canViewReports(u) },
       { to: "/dashboard/devices", label: "Kiosk Devices", icon: MonitorSmartphone, allow: () => true },
     ],
   },
