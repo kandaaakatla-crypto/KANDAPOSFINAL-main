@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from tz import now_ist, IST
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from db import get_db
 from auth import get_current_user, require_role
@@ -395,3 +395,30 @@ async def report_summary(user: dict = Depends(get_current_user)):
         sameTimeLastWeekOrders=len(lw_orders),
         dailyTarget=(tenant or {}).get("daily_sales_target"),
     )
+
+
+@router.get("/reports/channels")
+async def report_channels(user: dict = Depends(get_current_user), days: int = 1):
+    """Sales split by where orders came from (`source`) and by order type,
+    from IST midnight `days - 1` days ago up to now. Voided orders are left
+    out; orders with no recorded source were rung up at the counter."""
+    if days not in (1, 7, 30):
+        raise HTTPException(status_code=422, detail="days must be 1, 7 or 30")
+    start = now_ist().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days - 1)
+    match = tenant_filter(user, {"placedAt": {"$gte": start.isoformat()}, "voided": {"$ne": True}})
+
+    async def split(field: str, default: str) -> list:
+        rows = await get_db().orders.aggregate([
+            {"$match": match},
+            {"$group": {"_id": {"$ifNull": [f"${field}", default]}, "orders": {"$sum": 1}, "sales": {"$sum": "$total"}}},
+            {"$sort": {"sales": -1}},
+        ]).to_list(50)
+        return [{"key": r["_id"], "orders": r["orders"], "sales": round(r["sales"] or 0, 2)} for r in rows]
+
+    by_source = await split("source", "in-store")
+    return {
+        "days": days,
+        "total": round(sum(r["sales"] for r in by_source), 2),
+        "bySource": by_source,
+        "byType": await split("type", "sale"),
+    }

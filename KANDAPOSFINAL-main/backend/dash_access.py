@@ -58,6 +58,7 @@ _RULES = [
     ("reports", ("GET",), "/api/reports/daily-rollup"),
     ("reports", ("POST",), "/api/reports/daily-rollup/rebuild"),
     ("reports", ("GET",), "/api/reports/menu-engineering"),
+    ("reports", ("GET",), "/api/reports/channels"),
     ("reports", _ALL, "/api/digest/config"),
     ("reports", ("GET",), "/api/digest/preview"),
     ("reports", ("POST",), "/api/digest/send-now"),
