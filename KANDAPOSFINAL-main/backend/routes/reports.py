@@ -314,6 +314,10 @@ async def report_summary(user: dict = Depends(get_current_user)):
     now = now_ist()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=6)
+    # Same weekday last week, midnight up to this clock time: a fair
+    # "are we ahead?" line for a day that isn't over yet.
+    lw_now = now - timedelta(days=7)
+    lw_start = today_start - timedelta(days=7)
 
     # `placedAt` is stored as an ISO-8601 IST string (`datetime.isoformat()`),
     # which sorts lexicographically — so a string $gte filter at the DB layer
@@ -341,6 +345,20 @@ async def report_summary(user: dict = Depends(get_current_user)):
     cash = sum(o["total"] for o in today_orders if o.get("payment") == "cash")
     card = sum(o["total"] for o in today_orders if o.get("payment") == "card")
     unpaid = sum(o["total"] for o in today_orders if o.get("payment") == "unpaid")
+
+    lw_docs = await db.orders.find(
+        tenant_filter(user, {"placedAt": {"$gte": lw_start.isoformat(), "$lt": week_start.isoformat()}}),
+        PROJECTION,
+    ).to_list(5000)
+    lw_orders = []
+    for o in lw_docs:
+        ts = parse_placed_at(o.get("placedAt", ""))
+        if not ts:
+            continue
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=IST)
+        if lw_start <= ts <= lw_now:
+            lw_orders.append(o)
 
     weekly: List[WeeklyPoint] = []
     for i in range(6, -1, -1):
@@ -372,4 +390,6 @@ async def report_summary(user: dict = Depends(get_current_user)):
         unpaidTotal=round(unpaid, 2),
         weeklySales=weekly,
         topItems=[TopItem(**t) for t in top],
+        sameTimeLastWeek=round(sum(o.get("total", 0) for o in lw_orders), 2),
+        sameTimeLastWeekOrders=len(lw_orders),
     )
