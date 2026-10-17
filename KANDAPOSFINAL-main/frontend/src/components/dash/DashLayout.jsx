@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useDash, hasPerm, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards, canManageCustomers, canViewReports, canManageSettings, canManageTeam } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, MoreHorizontal, ClipboardList, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
@@ -16,6 +16,7 @@ const NAV_GROUPS = [
     label: "Sales Overview",
     items: [
       { to: "/dashboard", end: true, label: "Overview", icon: LayoutDashboard, allow: () => true },
+      { to: "/dashboard/orders", label: "Orders", icon: ClipboardList, allow: () => true },
       { to: "/dashboard/reports", label: "Reports", icon: BarChart3, allow: (u) => canViewReports(u) },
       { to: "/dashboard/digest", label: "Daily Digest", icon: Sparkles, allow: (u) => canViewReports(u), feature: "daily_digest" },
     ],
@@ -74,7 +75,7 @@ const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 // The four screens an owner checks most from a phone get a bottom tab each
 // on small screens; everything else stays one tap away under "More" (the
 // same nav sheet the header's menu button opens).
-const MOBILE_TABS = ["/dashboard", "/dashboard/reports", "/dashboard/locations", "/dashboard/menu"];
+const MOBILE_TABS = ["/dashboard", "/dashboard/orders", "/dashboard/reports", "/dashboard/menu"];
 const MOBILE_TAB_LABELS = { "/dashboard": "Home" };
 
 const SIDEBAR_COLLAPSED_KEY = "kanda_dash_sidebar_collapsed_v1";
