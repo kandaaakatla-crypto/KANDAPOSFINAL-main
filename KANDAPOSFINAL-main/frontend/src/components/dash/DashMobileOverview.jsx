@@ -162,7 +162,7 @@ function StorePicker() {
 
 // Today's refunds + voids as one line under the hero, linking to the full
 // list. Its own small request so Home's main summary isn't held up by it.
-function RefundsPeek() {
+function RefundsPeek({ refreshTick }) {
   const { api } = useDash();
   const [today, setToday] = useState(null);
   useEffect(() => {
@@ -172,8 +172,8 @@ function RefundsPeek() {
         const rows = (r.data || []).filter((l) => new Date(l.at) >= start);
         setToday({ count: rows.length, amount: rows.reduce((s, l) => s + (l.amount || 0), 0) });
       })
-      .catch(() => setToday(null));
-  }, [api]);
+      .catch(() => {});
+  }, [api, refreshTick]);
   if (!today) return null;
   return (
     <Link to="/dashboard/refunds" data-testid="m-refunds-peek" className="lg-card lg-press rounded-2xl px-4 py-3 flex items-center gap-3">
@@ -193,7 +193,7 @@ function RefundsPeek() {
   );
 }
 
-export default function DashMobileOverview({ user, summary, showReports, lowStockCount, storeCount }) {
+export default function DashMobileOverview({ refreshTick, user, summary, showReports, lowStockCount, storeCount }) {
   const weekly = summary?.weeklySales || [];
   const yesterday = weekly.length >= 2 ? weekly[weekly.length - 2].sales : null;
   const weekTotal = weekly.reduce((s, d) => s + (d.sales || 0), 0);
@@ -234,7 +234,7 @@ export default function DashMobileOverview({ user, summary, showReports, lowStoc
         </div>
       )}
 
-      {showReports && <RefundsPeek />}
+      {showReports && <RefundsPeek refreshTick={refreshTick} />}
 
       {lowStockCount > 0 && (
         <Link to="/dashboard/inventory" data-testid="m-low-stock-alert"
