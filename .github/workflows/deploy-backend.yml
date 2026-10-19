@@ -89,6 +89,9 @@ jobs:
       # lifetime but does essentially no CPU work while idle, so one
       # instance can comfortably hold hundreds of idle terminal/KDS
       # connections without needing to scale out just for connection count.
+      # --timeout 3600: Cloud Run cuts every request, WebSockets included, at
+      # its timeout (default 300s). AI phone calls and POS live updates are
+      # WebSockets on this service, so 5 minutes dropped calls mid-order.
       - name: Deploy to Cloud Run (us-central1 — WebSocket via api.kandapos.com domain mapping)
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
@@ -99,6 +102,7 @@ jobs:
             --min-instances 1 \
             --max-instances 3 \
             --concurrency 250 \
+            --timeout 3600 \
             --allow-unauthenticated \
             --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-ws" \
             --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"
