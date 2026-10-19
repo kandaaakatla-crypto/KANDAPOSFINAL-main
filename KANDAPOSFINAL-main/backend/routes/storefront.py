@@ -95,6 +95,43 @@ async def public_table(slug: str, number: int):
     return {"tenant": {"name": tenant.get("name"), "slug": slug}, "table": {"number": table["number"], "seats": table["seats"]}}
 
 
+@router.get("/{slug}/table/{number}/bill")
+async def public_table_bill(slug: str, number: int):
+    """The table's running bill, for the guest's "Your bill" tab. Anyone
+    holding the table's QR can see it, as with a paper bill on the table,
+    so it carries the items and totals only: no customer details."""
+    db = get_db()
+    tenant = await _tenant_by_slug(slug, db)
+    table = await db.tables.find_one({"tenant_id": tenant["id"], "number": number}, PROJECTION)
+    if not table:
+        raise HTTPException(status_code=404, detail="Table not found")
+    order = None
+    if table.get("order_id"):
+        order = await db.orders.find_one(
+            {"tenant_id": tenant["id"], "id": table["order_id"], "voided": {"$ne": True}, "status": {"$ne": "completed"}},
+            PROJECTION,
+        )
+    if not order:
+        return {"open": False}
+    return {
+        "open": True,
+        "orderId": order["id"],
+        "orderNumber": order["number"],
+        "paid": (order.get("payment") or "unpaid") != "unpaid",
+        "items": [
+            {"name": it.get("name"), "qty": it.get("qty"), "price": it.get("price"), "mods": it.get("mods") or []}
+            for it in order.get("items") or []
+        ],
+        "subtotal": order.get("subtotal"),
+        "taxTotal": order.get("taxTotal"),
+        "cgst": order.get("cgst"),
+        "sgst": order.get("sgst"),
+        "serviceCharge": order.get("serviceCharge") or 0,
+        "discount": order.get("discount") or 0,
+        "total": order.get("total"),
+    }
+
+
 # ===================================================================
 # Cart line resolution — server is the source of truth for price
 # ===================================================================
@@ -460,7 +497,11 @@ async def create_storefront_payment_order(slug: str, payload: StorefrontPaymentO
     tenant = await _tenant_by_slug(slug, db)
     if not (tenant.get("features") or {}).get("online_payments", True):
         raise HTTPException(status_code=403, detail="Online payment isn't available for this store")
-    order = await db.orders.find_one({"tenant_id": tenant["id"], "id": payload.order_id, "source": "qr"}, {"_id": 0})
+    # QR orders, plus any table bill (a table staff opened can be paid from its QR).
+    order = await db.orders.find_one({
+        "tenant_id": tenant["id"], "id": payload.order_id, "voided": {"$ne": True},
+        "$or": [{"source": "qr"}, {"type": "dine-in", "table": {"$ne": None}}],
+    }, {"_id": 0})
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 

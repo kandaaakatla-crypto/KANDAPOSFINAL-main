@@ -8,6 +8,7 @@ const BASE = `${process.env.REACT_APP_BACKEND_URL}/api/storefront`;
 export const storefrontApi = {
   menu: (slug) => axios.get(`${BASE}/${slug}/menu`).then((r) => r.data),
   table: (slug, number) => axios.get(`${BASE}/${slug}/table/${number}`).then((r) => r.data),
+  tableBill: (slug, number) => axios.get(`${BASE}/${slug}/table/${number}/bill`).then((r) => r.data),
   placeTableOrder: (slug, number, payload, token) =>
     axios.post(`${BASE}/${slug}/table/${number}/order`, payload, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined).then((r) => r.data),
   requestOtp: (slug, name, phone) =>
