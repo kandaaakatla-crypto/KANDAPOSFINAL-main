@@ -37,6 +37,7 @@ beforeAll(() => { global.IS_REACT_ACT_ENVIRONMENT = true; });
 
 beforeEach(() => {
   jest.clearAllMocks();
+  window.localStorage.clear();
   storefrontApi.menu.mockResolvedValue(MENU);
   storefrontApi.table.mockResolvedValue({ number: 4 });
   storefrontApi.placeTableOrder.mockResolvedValue({ orderId: "o1", orderNumber: 12, total: 210 });
@@ -67,7 +68,7 @@ async function renderAndCheckout() {
   await click(byTestId("sf-checkout-btn"));
 }
 
-describe("QR table ordering without sign-in", () => {
+describe("QR table ordering when the store doesn't require a phone code", () => {
   it("pays online straight away, with no phone verification step", async () => {
     await renderAndCheckout();
     await click(byTestId("table-pay-online"));
@@ -116,5 +117,72 @@ describe("Your bill tab", () => {
     await openBill();
     expect(byTestId("table-bill-empty")).not.toBeNull();
     expect(byTestId("table-bill-pay")).toBeNull();
+  });
+});
+
+describe("QR table ordering with phone verification", () => {
+  const MENU_OTP = { ...MENU, tenant: { ...MENU.tenant, qrOtpRequired: true } };
+  const type = (el, value) => act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    setter.call(el, value);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+
+  beforeEach(() => {
+    storefrontApi.menu.mockResolvedValue(MENU_OTP);
+    storefrontApi.requestOtp.mockResolvedValue({ ok: true, phone: "+919876543210", channel: "whatsapp", resendIn: 30 });
+    storefrontApi.verifyOtp.mockResolvedValue({
+      token: "tok123", name: "Ravi", phone: "+919876543210",
+      expiresAt: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
+    });
+  });
+
+  it("asks for name, phone and code before the first order, then places it verified", async () => {
+    await renderAndCheckout();
+    expect(byTestId("table-auth-step")).not.toBeNull();
+    expect(byTestId("table-payment-step")).toBeNull();
+
+    await type(byTestId("table-auth-name"), "Ravi");
+    await type(byTestId("table-auth-phone"), "98765 43210");
+    await click(byTestId("table-auth-send"));
+    await flush();
+    expect(storefrontApi.requestOtp).toHaveBeenCalledWith("spice-hub", "Ravi", "98765 43210");
+    const resend = byTestId("table-auth-resend");
+    expect(resend.disabled).toBe(true);
+    expect(resend.textContent).toMatch(/Resend code in \d+s/);
+
+    await type(byTestId("table-auth-code"), "123456");
+    await click(byTestId("table-auth-verify"));
+    await flush();
+    expect(storefrontApi.verifyOtp).toHaveBeenCalledWith("spice-hub", "98765 43210", "123456");
+    expect(JSON.parse(window.localStorage.getItem("kanda_sf_session_spice-hub")).token).toBe("tok123");
+
+    await click(byTestId("table-pay-later"));
+    await flush();
+    expect(storefrontApi.placeTableOrder).toHaveBeenCalledWith("spice-hub", "4", expect.objectContaining({ items: expect.any(Array) }), "tok123");
+    expect(byTestId("table-order-confirmed")).not.toBeNull();
+  });
+
+  it("doesn't ask again on this device while the session is valid", async () => {
+    window.localStorage.setItem("kanda_sf_session_spice-hub", JSON.stringify({
+      token: "tokOld", name: "Ravi", phone: "+919876543210",
+      expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+    }));
+    await renderAndCheckout();
+    expect(byTestId("table-auth-step")).toBeNull();
+    await click(byTestId("table-pay-later"));
+    await flush();
+    expect(storefrontApi.requestOtp).not.toHaveBeenCalled();
+    expect(storefrontApi.placeTableOrder.mock.calls[0][3]).toBe("tokOld");
+  });
+
+  it("asks again when the server says the session is no longer valid", async () => {
+    window.localStorage.setItem("kanda_sf_session_spice-hub", JSON.stringify({ token: "tokBad", name: "Ravi", phone: "+919876543210" }));
+    storefrontApi.placeTableOrder.mockRejectedValueOnce({ response: { status: 401, data: { detail: "Session expired" } } });
+    await renderAndCheckout();
+    await click(byTestId("table-pay-later"));
+    await flush();
+    expect(byTestId("table-auth-step")).not.toBeNull();
+    expect(window.localStorage.getItem("kanda_sf_session_spice-hub")).toBeNull();
   });
 });

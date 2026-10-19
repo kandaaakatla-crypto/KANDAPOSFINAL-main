@@ -23,6 +23,12 @@ class _FakeRzp:
             return {"id": f"order_{uuid.uuid4().hex[:10]}", **data}
 
 
+@pytest.fixture(autouse=True)
+def _qr_otp_off(monkeypatch):
+    # These cover the running bill, not phone sign-in (see test_qr_otp.py).
+    monkeypatch.setenv("QR_OTP_REQUIRED", "0")
+
+
 @pytest.fixture
 def table(client, db_name, monkeypatch):
     os.environ.setdefault("RAZORPAY_KEY_ID", "rzp_test_unit")

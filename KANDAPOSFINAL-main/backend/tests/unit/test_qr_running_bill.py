@@ -11,6 +11,12 @@ import pytest
 from pymongo import MongoClient
 
 
+@pytest.fixture(autouse=True)
+def _qr_otp_off(monkeypatch):
+    # These cover the running bill, not phone sign-in (see test_qr_otp.py).
+    monkeypatch.setenv("QR_OTP_REQUIRED", "0")
+
+
 @pytest.fixture
 def table(client, db_name):
     tag = uuid.uuid4().hex[:6]
