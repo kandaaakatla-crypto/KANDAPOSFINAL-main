@@ -19,7 +19,7 @@ from models import (
     Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload,
     OrderCustomer, ServiceChargePayload, OrderSplit,
 )
-from tax import resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst, apply_taxable_discount
+from tax import collects_gst, resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst, apply_taxable_discount
 from . import loyalty as loyalty_mod
 from . import store_credit as credit_mod
 from . import gift_cards as gift_card_mod
@@ -95,7 +95,8 @@ def _base_item_name(name: str) -> str:
     return name
 
 
-async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[dict]) -> tuple[list[tuple], list[str]]:
+async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[dict],
+                          charge_gst: bool = True) -> tuple[list[tuple], list[str]]:
     """Resolve each order item's effective GST rate via its menu item/category,
     stamp tax_rate/tax_amount onto the item dict in place, and return the
     (taxable_value, tax_amount) pairs for the order-level GST breakdown, plus
@@ -131,6 +132,8 @@ async def _stamp_item_tax(db, tenant_id: str, business_type: str, items: list[di
             business_type,
             it.get("price"),
         )
+        if not charge_gst:
+            rate = 0.0
         taxable, tax_amt = compute_line_tax(it.get("price", 0) or 0, it.get("qty", 0) or 0, rate, inclusive)
         it["tax_rate"] = rate
         it["tax_amount"] = tax_amt
@@ -205,7 +208,7 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     # stamp tax_rate/tax_amount onto the item, and derive the authoritative
     # order total server-side — the whole point of "tax compliant" is that
     # these numbers are computed here, not merely trusted from the client.
-    line_amounts, sync_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
+    line_amounts, sync_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items, collects_gst(tenant_doc))
     tax = compute_order_tax(line_amounts)
     # GST is on the discounted value, not the sticker price (test report P0-2).
     discount_total = float(payload.discount or 0)
@@ -399,7 +402,7 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
     business_type = tenant_doc.get("business_type", "restaurant")
 
     raw_items = [it.model_dump() for it in payload.items]
-    line_amounts, append_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
+    line_amounts, append_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items, collects_gst(tenant_doc))
     add_tax = compute_order_tax(line_amounts)
     annotated = await annotate_order_items_for_kds(db, user["tenant_id"], raw_items)
     items_tax = float(existing.get("taxTotal", 0) or 0) - float(existing.get("serviceChargeTax") or 0)

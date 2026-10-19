@@ -85,6 +85,12 @@ def resolve_effective_rate(
     return suggest_tax_rate(category_name, business_type, item_price), "auto"
 
 
+def collects_gst(tenant: Optional[dict]) -> bool:
+    """Only a regular GST-registered store charges GST. Composition-scheme and
+    unregistered stores may not, and issue a Bill of Supply instead."""
+    return ((tenant or {}).get("store") or {}).get("gst_scheme", "regular") == "regular"
+
+
 def compute_line_tax(price: float, qty: int, rate: float, inclusive: bool) -> Tuple[float, float]:
     """Given a line's unit price/qty and effective GST rate, return
     (taxable_value, tax_amount) for that line.
