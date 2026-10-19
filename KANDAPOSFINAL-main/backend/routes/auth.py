@@ -1,8 +1,9 @@
 """Tenant staff auth + drivers list + per-tenant billing-status helper."""
 import base64
 import io
-from typing import List, Literal
+from typing import List, Literal, Optional
 
+from pydantic import BaseModel, Field, field_validator
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Form
 from PIL import Image, UnidentifiedImageError
 
@@ -127,6 +128,39 @@ async def update_tenant_features(payload: TenantFeaturesUpdate, user: dict = Dep
     await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"features": merged}})
     return TenantInfo(id=tenant["id"], slug=tenant.get("slug", tenant["id"]), name=tenant.get("name", ""),
                        businessType=business_type, features=merged)
+
+
+class StoreDetailsUpdate(BaseModel):
+    """What a restaurant prints on its bills. GSTIN is the 15-character GST
+    registration; FSSAI is the 14-digit food licence number."""
+    name: str = Field(min_length=1, max_length=80)
+    address: str = Field("", max_length=300)
+    phone: str = Field("", max_length=20)
+    gstin: Optional[str] = Field(None, pattern=r"^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
+    fssai: Optional[str] = Field(None, pattern=r"^\d{14}$")
+    footer: str = Field("", max_length=200)
+
+    @field_validator("gstin", "fssai", mode="before")
+    @classmethod
+    def _blank_is_none(cls, v):
+        if isinstance(v, str):
+            v = v.strip().upper().replace(" ", "")
+        return v or None
+
+
+@router.put("/tenant/store")
+async def update_store_details(payload: StoreDetailsUpdate, user: dict = Depends(require_role("Manager"))):
+    """Save this store's business details (merged into tenant.store, which
+    also holds the QR branding images). Returns the updated store dict."""
+    db = get_db()
+    tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    store = {**(tenant.get("store") or {}),
+             "name": payload.name.strip(), "address": payload.address.strip(), "phone": payload.phone.strip(),
+             "tax_id": payload.gstin or "", "fssai": payload.fssai or "", "footer": payload.footer.strip()}
+    await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"store": store}})
+    return store
 
 
 # QR ordering branding — a store's own logo + background photo on its

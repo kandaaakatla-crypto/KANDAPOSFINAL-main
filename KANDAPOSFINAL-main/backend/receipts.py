@@ -25,13 +25,9 @@ from tenants import tenant_filter, get_tenant
 
 receipts_router = APIRouter()
 
-FALLBACK_STORE = {
-    "name": "Demo Restaurant",
-    "address": "Plot 22, HiTech City Main Rd, Madhapur, Hyderabad 500081",
-    "phone": "+91 40 4500 1234",
-    "tax_id": "GSTIN 36ABCDE1234F1Z5",
-    "footer": "Thank you for ordering!",
-}
+# Blanks for anything a store hasn't filled in yet. Never another store's
+# details: this used to be the demo restaurant's address and GSTIN.
+FALLBACK_STORE = {"name": "", "address": "", "phone": "", "tax_id": "", "fssai": "", "footer": "Thank you!"}
 
 # ---------- ESC/POS helpers ----------
 ESC = b"\x1b"
@@ -67,6 +63,18 @@ def _gstin_line(tax_id: str | None) -> str:
     if not v:
         return ""
     return v if v.upper().startswith("GST") else f"GSTIN {v}"
+
+
+def _header_lines(store: dict) -> list[str]:
+    """Address, phone, GSTIN and FSSAI licence under the store name, skipping
+    anything not filled in. FSSAI is required on food business bills."""
+    lines = [store.get("address") or ""]
+    if store.get("phone"):
+        lines.append("Tel " + store["phone"])
+    lines.append(_gstin_line(store.get("tax_id")))
+    if store.get("fssai"):
+        lines.append("FSSAI Lic. No. " + store["fssai"])
+    return [l for l in lines if l]
 
 
 def _bill_to_lines(order: dict) -> list[str]:
@@ -135,9 +143,8 @@ def _build_escpos(order: dict, store: dict, kind: str) -> bytes:
     if kind == "kitchen":
         out += BOLD_ON + DBL_ON + _line("*** KITCHEN ***") + DBL_OFF + BOLD_OFF
     else:
-        out += _line(store["address"])
-        out += _line("Tel " + store["phone"])
-        out += _line(_gstin_line(store.get("tax_id")))
+        for hl in _header_lines(store):
+            out += _line(hl)
     out += _line("-" * 32)
 
     out += ALIGN_LEFT
@@ -187,7 +194,8 @@ async def _load_order_and_store(order_id: str, user: dict):
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     tenant = await get_tenant(user, db)
-    store = tenant.get("store") or FALLBACK_STORE
+    store = {**FALLBACK_STORE, "name": tenant.get("name", ""),
+             **{k: v for k, v in (tenant.get("store") or {}).items() if v is not None}}
     return order, store
 
 
@@ -293,7 +301,7 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
     if order.get("type") == "dine-in" and order.get("table") is not None:
         right_lines.append(f"Table {e(order.get('table'))}")
     header = Table([[
-        Paragraph(f"<b>{e(store.get('name', 'Kanda POS'))}</b><br/>{e(store.get('address', ''))}<br/>Tel {e(store.get('phone', ''))}<br/>{e(_gstin_line(store.get('tax_id')))}", sub_st),
+        Paragraph(f"<b>{e(store.get('name') or 'Kanda POS')}</b><br/>" + "<br/>".join(e(hl) for hl in _header_lines(store)), sub_st),
         Paragraph("<br/>".join(right_lines), right_st),
     ]], colWidths=[100 * mm, 75 * mm])
     header.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
