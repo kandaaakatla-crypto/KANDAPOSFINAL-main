@@ -58,9 +58,10 @@ export function buildEscposReceipt(order, store, kind = "customer") {
   if (kind === "kitchen") {
     b.push(BOLD_ON, DBL_ON).line("*** KITCHEN ***").push(DBL_OFF, BOLD_OFF);
   } else {
-    b.line(store.address || "");
-    b.line("Tel " + (store.phone || ""));
-    b.line(gstinLine(store.tax_id));
+    if (store.address) b.line(store.address);
+    if (store.phone) b.line("Tel " + store.phone);
+    if (store.tax_id) b.line(gstinLine(store.tax_id));
+    if (store.fssai) b.line("FSSAI Lic. No. " + store.fssai);
   }
   b.line("-".repeat(32));
 

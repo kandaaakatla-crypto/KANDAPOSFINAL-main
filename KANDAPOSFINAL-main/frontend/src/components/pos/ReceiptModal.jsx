@@ -152,9 +152,10 @@ export default function ReceiptModal({ orderId, open, onClose }) {
             <div id="receipt-printable" className="bg-white text-black px-6 py-5 font-mono text-[12px] leading-tight">
               <div className="text-center">
                 <div className="font-bold text-base">{data.store.name}</div>
-                <div>{data.store.address}</div>
-                <div>Tel {data.store.phone}</div>
+                {data.store.address && <div>{data.store.address}</div>}
+                {data.store.phone && <div>Tel {data.store.phone}</div>}
                 {data.store.tax_id && <div>{gstinLine(data.store.tax_id)}</div>}
+                {data.store.fssai && <div data-testid="receipt-fssai">FSSAI Lic. No. {data.store.fssai}</div>}
               </div>
               <div className="border-t border-dashed border-black my-2" />
               {data.order.voided && <div className="text-center font-bold" data-testid="receipt-void">*** VOID ***</div>}
