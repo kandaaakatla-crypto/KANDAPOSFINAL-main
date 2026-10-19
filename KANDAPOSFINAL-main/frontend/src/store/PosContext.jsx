@@ -469,8 +469,8 @@ export function PosProvider({ children }) {
       const created = await customersApi.create(cust);
       setCustomers((prev) => [created, ...prev]);
       return created;
-    } catch {
-      toast.error("Could not save customer");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not save customer");
     }
   }, []);
 
