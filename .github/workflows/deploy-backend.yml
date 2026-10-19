@@ -81,7 +81,7 @@ jobs:
             --max-instances 8 \
             --concurrency 40 \
             --allow-unauthenticated \
-            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-api" \
+            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-api,QR_OTP_REQUIRED=${{ vars.QR_OTP_REQUIRED || '0' }},WA_OTP_CONTENT_SID=${{ vars.WA_OTP_CONTENT_SID }},SMS_OTP_ENABLED=${{ vars.SMS_OTP_ENABLED }}" \
             --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"
 
       # us-central1 (WebSocket): concurrency raised well above the default —
@@ -104,5 +104,5 @@ jobs:
             --concurrency 250 \
             --timeout 3600 \
             --allow-unauthenticated \
-            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-ws" \
+            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-ws,QR_OTP_REQUIRED=${{ vars.QR_OTP_REQUIRED || '0' }},WA_OTP_CONTENT_SID=${{ vars.WA_OTP_CONTENT_SID }},SMS_OTP_ENABLED=${{ vars.SMS_OTP_ENABLED }}" \
             --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"
