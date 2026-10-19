@@ -11,6 +11,7 @@ Two flows:
 Prices are always resolved server-side from the live menu — the client only
 ever sends item ids, never amounts, so a tampered request can't undercharge.
 """
+import re
 import os
 import secrets
 import uuid
@@ -19,7 +20,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 import jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from db import get_db
 from tz import now_ist
@@ -339,19 +340,39 @@ async def _storefront_session(request: Request, slug: str, db) -> dict:
 
 class PickupOrderRequest(BaseModel):
     items: List[CartLine]
+    # No sign-in needed (SMS OTP is off): name + mobile at checkout, as on
+    # Petpooja. Ignored when the customer is signed in.
+    customer_name: Optional[str] = Field(None, max_length=60)
+    customer_phone: Optional[str] = Field(None, max_length=20)
+
+
+def _indian_mobile(raw: Optional[str]) -> Optional[str]:
+    """+91XXXXXXXXXX for a valid 10-digit Indian mobile, else None."""
+    p = normalize_phone(raw or "")
+    return p if re.fullmatch(r"\+91[6-9]\d{9}", p or "") else None
 
 
 @router.post("/{slug}/pickup/order")
 async def place_pickup_order(slug: str, payload: PickupOrderRequest, request: Request):
     db = get_db()
-    session = await _storefront_session(request, slug, db)
-    tenant = session["tenant"]
+    session = await _optional_storefront_session(request, slug, db)
+    if session:
+        tenant = session["tenant"]
+        customer = {"id": None, "name": session["name"], "phone": session["phone"], "address": None, "postcode": None}
+    else:
+        tenant = await _tenant_by_slug(slug, db)
+        name = (payload.customer_name or "").strip()
+        phone = _indian_mobile(payload.customer_phone)
+        if not name:
+            raise HTTPException(status_code=400, detail="Please enter your name")
+        if not phone:
+            raise HTTPException(status_code=400, detail="Please enter a valid 10-digit mobile number")
+        customer = {"id": None, "name": name, "phone": phone, "address": None, "postcode": None}
     business_type = tenant.get("business_type", "restaurant")
 
     raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type, collects_gst(tenant))
     items = await annotate_order_items_for_kds(db, tenant["id"], raw_items)
     numbr = await next_order_number(db, tenant["id"])
-    customer = {"id": None, "name": session["name"], "phone": session["phone"], "address": None, "postcode": None}
     doc = _order_doc(tenant["id"], numbr, "collection", customer, None, items, business_type=business_type)
     await db.orders.insert_one(doc)
     await _apply_recipes(db, tenant["id"], raw_items)

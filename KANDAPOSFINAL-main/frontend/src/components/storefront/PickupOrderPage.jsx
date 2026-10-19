@@ -7,11 +7,11 @@ import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/t
 import StorefrontItemModal from "./StorefrontItemModal";
 import "./storefront.css";
 import {
-  UtensilsCrossed, ShoppingBag, Minus, Plus, X, ShoppingCart, CheckCircle2, Loader2, ShieldCheck,
-  Sun, Moon, User, ChevronLeft, Wallet, CreditCard, Clock,
+  UtensilsCrossed, ShoppingBag, Minus, Plus, X, ShoppingCart, CheckCircle2, Loader2,
+  Sun, Moon, ChevronLeft, Wallet, CreditCard, Clock,
 } from "lucide-react";
 
-const STEP = { IDENTIFY: "identify", OTP: "otp", MENU: "menu", DONE: "done" };
+const STEP = { MENU: "menu", DONE: "done" };
 const SHEET = { CART: "cart", PAYMENT: "payment", PLACING: "placing" };
 
 async function runOnlinePayment({ slug, orderId, amount, customerName }) {
@@ -52,15 +52,11 @@ export default function PickupOrderPage() {
   const [menu, setMenu] = useState(null);
   const StoreIcon = menu?.tenant?.businessType === "retail" ? ShoppingBag : UtensilsCrossed;
   const [error, setError] = useState("");
-  const [step, setStep] = useState(STEP.IDENTIFY);
+  const [step, setStep] = useState(STEP.MENU);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [devCode, setDevCode] = useState("");
-  const [sessionToken, setSessionToken] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [otpError, setOtpError] = useState("");
+  const [detailsError, setDetailsError] = useState("");
 
   const [activeCat, setActiveCat] = useState(null);
   const [cart, setCart] = useState([]);
@@ -70,8 +66,6 @@ export default function PickupOrderPage() {
   const [placing, setPlacing] = useState(false);
   const [confirmed, setConfirmed] = useState(null);
 
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [account, setAccount] = useState(null);
 
   useEffect(() => {
     storefrontApi.menu(slug).then((m) => { setMenu(m); if (m.categories.length) setActiveCat(m.categories[0].id); })
@@ -92,30 +86,6 @@ export default function PickupOrderPage() {
   }, [cart, menu]);
   const total = +(subtotal + gst.taxTotal).toFixed(2);
 
-  const requestOtp = async () => {
-    if (!name.trim() || phone.trim().length < 8) { setOtpError("Enter your name and phone number"); return; }
-    setBusy(true); setOtpError("");
-    try {
-      const r = await storefrontApi.requestOtp(slug, name.trim(), phone.trim());
-      setDevCode(r.dev_code || "");
-      setStep(STEP.OTP);
-    } catch (e) {
-      setOtpError(e?.response?.data?.detail || "Could not send code");
-    } finally { setBusy(false); }
-  };
-
-  const verifyOtp = async () => {
-    if (code.trim().length !== 6) { setOtpError("Enter the 6-digit code"); return; }
-    setBusy(true); setOtpError("");
-    try {
-      const r = await storefrontApi.verifyOtp(slug, phone.trim(), code.trim());
-      setSessionToken(r.token);
-      setStep(STEP.MENU);
-    } catch (e) {
-      setOtpError(e?.response?.data?.detail || "Incorrect code");
-    } finally { setBusy(false); }
-  };
-
   const handleItemClick = (item) => {
     if (!item.available) return;
     if (item.isPizza || item.catId === "deals" || (Array.isArray(item.variants) && item.variants.length)) { setModalItem(item); return; }
@@ -128,16 +98,17 @@ export default function PickupOrderPage() {
   const openCart = () => { setSheetStep(SHEET.CART); setCartOpen(true); };
   const goToPayment = () => { if (cart.length) setSheetStep(SHEET.PAYMENT); };
 
-  const openAccount = async () => {
-    setAccountOpen(true);
-    try { setAccount(await storefrontApi.me(slug, sessionToken)); } catch { /* ignore */ }
-  };
-
+  // No sign-in: just a name and a 10-digit mobile at checkout.
+  const mobileOk = /^[6-9]\d{9}$/.test(phone.replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, ""));
   const finalizeOrder = async (payOnline) => {
+    if (!name.trim()) { setDetailsError("Please enter your name"); return; }
+    if (!mobileOk) { setDetailsError("Please enter a valid 10-digit mobile number"); return; }
+    setDetailsError("");
     setPlacing(true); setSheetStep(SHEET.PLACING);
     try {
-      const res = await storefrontApi.placePickupOrder(slug, sessionToken, {
+      const res = await storefrontApi.placePickupOrder(slug, {
         items: cart.map((l) => ({ item_id: l.item_id, qty: l.qty, size: l.size, variant: l.variant, mods: l.mods })),
+        customer_name: name.trim(), customer_phone: phone.trim(),
       });
       let paid = false;
       if (payOnline) {
@@ -188,52 +159,6 @@ export default function PickupOrderPage() {
     );
   }
 
-  if (step === STEP.IDENTIFY || step === STEP.OTP) {
-    return (
-      <div className={themeClass} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div className="absolute top-4 right-4">{ThemeToggleBtn}</div>
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 sf-btn-accent"><StoreIcon className="w-6 h-6" /></div>
-            <div className="text-xl font-bold">{menu?.tenant?.name || "Pickup order"}</div>
-            <div className="text-xs mt-1" style={{ color: "var(--sf-text-muted)" }}>Order ahead for collection</div>
-          </div>
-
-          {step === STEP.IDENTIFY ? (
-            <div className="space-y-3" data-testid="pickup-identify-step">
-              <input data-testid="pickup-name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} className="w-full h-11 px-3.5 rounded-xl text-sm sf-input" />
-              <input data-testid="pickup-phone" placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full h-11 px-3.5 rounded-xl text-sm sf-input" />
-              {otpError && <p className="text-xs" style={{ color: "var(--sf-danger)" }}>{otpError}</p>}
-              <button data-testid="pickup-send-otp" onClick={requestOtp} disabled={busy}
-                className="w-full h-11 rounded-full font-bold flex items-center justify-center gap-2 disabled:opacity-50 sf-btn-accent">
-                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send verification code"}
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3" data-testid="pickup-otp-step">
-              <div className="flex items-center gap-2 text-xs mb-1" style={{ color: "var(--sf-text-muted)" }}>
-                <ShieldCheck className="w-3.5 h-3.5" /> Code sent to {phone}
-              </div>
-              {devCode && (
-                <div className="text-xs rounded-lg px-3 py-2" style={{ background: "var(--sf-bg-sunken)", color: "var(--sf-accent)" }}>
-                  No SMS provider configured. Your code is <b>{devCode}</b>
-                </div>
-              )}
-              <input data-testid="pickup-otp-code" placeholder="6-digit code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="w-full h-11 px-3 rounded-xl text-sm text-center tracking-[0.5em] font-bold sf-input" />
-              {otpError && <p className="text-xs" style={{ color: "var(--sf-danger)" }}>{otpError}</p>}
-              <button data-testid="pickup-verify-otp" onClick={verifyOtp} disabled={busy}
-                className="w-full h-11 rounded-full font-bold flex items-center justify-center gap-2 disabled:opacity-50 sf-btn-accent">
-                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify"}
-              </button>
-              <button onClick={() => setStep(STEP.IDENTIFY)} className="w-full text-xs" style={{ color: "var(--sf-text-muted)" }}>Change phone number</button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   if (!menu) {
     return (
       <div className={themeClass} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -262,7 +187,6 @@ export default function PickupOrderPage() {
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {ThemeToggleBtn}
-          <button onClick={openAccount} data-testid="sf-account-btn" className="w-9 h-9 rounded-full flex items-center justify-center sf-input"><User className="w-4 h-4" /></button>
           <button onClick={openCart} className="relative w-9 h-9 rounded-full flex items-center justify-center sf-input">
             <ShoppingCart className="w-4 h-4" />
             {cart.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center sf-btn-accent">{cart.length}</span>}
@@ -364,6 +288,13 @@ export default function PickupOrderPage() {
                 <button onClick={() => setSheetStep(SHEET.CART)} className="flex items-center gap-1 text-xs mb-3" style={{ color: "var(--sf-text-muted)" }}>
                   <ChevronLeft className="w-3.5 h-3.5" /> Back to cart
                 </button>
+                <div className="space-y-2 mb-4" data-testid="pickup-details">
+                  <input data-testid="pickup-name" placeholder="Your name" value={name} maxLength={60} autoComplete="name"
+                    onChange={(e) => setName(e.target.value)} className="w-full h-11 px-3.5 rounded-xl text-sm sf-input" />
+                  <input data-testid="pickup-phone" placeholder="Mobile number" value={phone} inputMode="tel" maxLength={14} autoComplete="tel"
+                    onChange={(e) => setPhone(e.target.value)} className="w-full h-11 px-3.5 rounded-xl text-sm sf-input" />
+                  {detailsError && <p className="text-xs" role="alert" style={{ color: "var(--sf-danger)" }}>{detailsError}</p>}
+                </div>
                 <div className="text-lg font-bold mb-1">How would you like to pay?</div>
                 <div className="text-sm mb-4" style={{ color: "var(--sf-text-muted)" }}>Total <b>₹{total.toFixed(2)}</b></div>
                 <div className="space-y-2.5">
@@ -385,36 +316,6 @@ export default function PickupOrderPage() {
               <div className="py-16 flex flex-col items-center gap-3">
                 <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--sf-accent)" }} />
                 <div className="text-sm" style={{ color: "var(--sf-text-muted)" }}>{placing ? "Placing your order…" : "One moment…"}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {accountOpen && (
-        <div className="fixed inset-0 z-20 flex items-end sm:items-center sm:justify-center" style={{ background: "var(--sf-overlay)" }} onClick={() => setAccountOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className={`sf ${theme === "dark" ? "sf-dark" : ""} w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto sf-card`} data-testid="pickup-account-sheet">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-lg font-bold">Account</div>
-              <button onClick={() => setAccountOpen(false)}><X className="w-5 h-5" style={{ color: "var(--sf-text-muted)" }} /></button>
-            </div>
-            <div className="text-sm mb-1">{name}</div>
-            <div className="text-xs mb-4" style={{ color: "var(--sf-text-muted)" }}>{phone}</div>
-            <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: "var(--sf-text-muted)" }}>Recent orders</div>
-            {!account ? (
-              <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--sf-accent)" }} /></div>
-            ) : account.orders.length === 0 ? (
-              <p className="text-sm py-4" style={{ color: "var(--sf-text-muted)" }}>No previous orders yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {account.orders.map((o) => (
-                  <div key={o.id} className="rounded-xl p-3 sf-input">
-                    <div className="flex items-center justify-between text-sm font-semibold">
-                      <span>#{o.number}</span><span>₹{o.total.toFixed(2)}</span>
-                    </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: "var(--sf-text-muted)" }}>{o.type} · {o.status}</div>
-                  </div>
-                ))}
               </div>
             )}
           </div>
