@@ -548,6 +548,13 @@ async def update_payment(order_id: str, payload: dict, user: dict = Depends(get_
     new_payment = payload.get("payment")
     if new_payment not in ("cash", "card", "upi", "card_machine", "other", "split", "unpaid"):
         raise HTTPException(status_code=422, detail="Invalid payment")
+    current = await db.orders.find_one(tenant_filter(user, {"id": order_id}), {"_id": 0, "total": 1, "payment": 1})
+    if not current:
+        raise HTTPException(status_code=404, detail="Order not found")
+    # Anyone can settle an unpaid bill; changing how a paid bill was paid
+    # (or reopening it) moves money out of the drawer count, so it's a manager's call.
+    if (current.get("payment") or "unpaid") != "unpaid" and user.get("role") != "Manager":
+        raise HTTPException(status_code=403, detail="Only a manager can change a bill that's already paid")
     update = {"payment": new_payment}
     if new_payment == "split":
         # Settling a running tab in parts: record every part so the cash half
@@ -556,9 +563,6 @@ async def update_payment(order_id: str, payload: dict, user: dict = Depends(get_
             parts = [OrderSplit(**s) for s in (payload.get("splits") or [])]
         except (TypeError, ValueError):
             raise HTTPException(status_code=422, detail="Invalid splits")
-        current = await db.orders.find_one(tenant_filter(user, {"id": order_id}), {"_id": 0, "total": 1})
-        if not current:
-            raise HTTPException(status_code=404, detail="Order not found")
         if len(parts) < 2 or any(p.amount <= 0 for p in parts) or \
                 abs(round(sum(p.amount for p in parts), 2) - round(float(current.get("total") or 0), 2)) > 0.01:
             raise HTTPException(status_code=400, detail="Split amounts must add up to the order total")
