@@ -120,6 +120,42 @@ describe("Your bill tab", () => {
   });
 });
 
+describe("Item notes in the cart", () => {
+  const type = (el, value) => act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    setter.call(el, value);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+
+  it("lets the guest add a short note to a line and sends it with the order", async () => {
+    act(() => { root.render(<TableOrderPage />); });
+    await flush();
+    await click(byTestId("sf-item-i1"));
+    await click(byTestId("sf-view-cart"));
+
+    const lineId = document.querySelector('[data-testid^="sf-line-note-btn-"]').dataset.testid.replace("sf-line-note-btn-", "");
+    await click(byTestId(`sf-line-note-btn-${lineId}`));
+    const input = byTestId(`sf-line-note-${lineId}`);
+    expect(input.maxLength).toBe(140);
+    await type(input, "less spicy");
+    await act(async () => { input.dispatchEvent(new FocusEvent("focusout", { bubbles: true })); });
+    expect(byTestId(`sf-line-note-btn-${lineId}`).textContent).toBe("Note: less spicy");
+
+    await click(byTestId("sf-checkout-btn"));
+    await click(byTestId("table-pay-later"));
+    await flush();
+    const sent = storefrontApi.placeTableOrder.mock.calls[0][2];
+    expect(sent.items[0].note).toBe("less spicy");
+  });
+
+  it("sends no note when none was added", async () => {
+    await renderAndCheckout();
+    await click(byTestId("table-pay-later"));
+    await flush();
+    expect(storefrontApi.placeTableOrder.mock.calls[0][2].items[0].note).toBeUndefined();
+  });
+});
+
 describe("QR table ordering with phone verification", () => {
   const MENU_OTP = { ...MENU, tenant: { ...MENU.tenant, qrOtpRequired: true } };
   const type = (el, value) => act(async () => {

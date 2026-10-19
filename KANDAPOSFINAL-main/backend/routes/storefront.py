@@ -54,6 +54,7 @@ OTP_MAX_PER_HOUR = 5
 OTP_MAX_ATTEMPTS = 5
 SESSION_TTL_HOURS = 2
 DUPLICATE_WINDOW_SECONDS = 60
+NOTE_MAX_CHARS = 140
 SIZE_LABEL = {"sm": "Small", "md": "Medium", "lg": "Large"}
 
 
@@ -165,7 +166,7 @@ class CartLine(BaseModel):
     size: Optional[str] = None
     variant: Optional[str] = None  # variant label, for generic retail products
     mods: List[str] = []
-    note: Optional[str] = None
+    note: Optional[str] = Field(None, max_length=NOTE_MAX_CHARS)  # "less spicy"
 
 
 async def _resolve_lines(db, tenant_id: str, lines: List[CartLine], business_type: str = "restaurant",
@@ -214,8 +215,9 @@ async def _resolve_lines(db, tenant_id: str, lines: List[CartLine], business_typ
         else:
             price = item.get("price") or 0
             out.append({"name": item["name"], "qty": qty, "price": float(price), "mods": ln.mods[:20], "size": None})
-        if ln.note:
-            out[-1]["mods"] = out[-1]["mods"] + [f"Note: {ln.note.strip()[:200]}"]
+        note = (ln.note or "").strip()[:NOTE_MAX_CHARS]
+        if note:
+            out[-1]["mods"] = out[-1]["mods"] + [f"Note: {note}"]
         rate, _source = resolve_effective_rate(
             item.get("tax_rate"), cat.get("tax_rate") if cat else None,
             cat["name"] if cat else "", business_type, out[-1]["price"],
