@@ -484,7 +484,7 @@ export default function OrderScreen() {
                 <Input data-testid="phone-input" value={phoneQuery}
                   onChange={(e) => { setPhoneQuery(e.target.value); setSuggestOpen(true); }}
                   onFocus={() => setSuggestOpen(true)}
-                  placeholder="Name or phone number..."
+                  placeholder="Name or phone"
                   onKeyDown={(e) => e.key === "Enter" && lookupCustomer()}
                   className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 <button data-testid="phone-search-btn" onClick={lookupCustomer} className="pos-btn h-10 w-10 shrink-0 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-blue)" }}>
@@ -647,7 +647,7 @@ export default function OrderScreen() {
             // Show what the customer will be charged: the cart applies the
             // active aggregator surge, so the menu cards must too.
             const shown = (p) => applySurge(p, surge.pct).toFixed(2);
-            const priceLabel = item.isPizza ? `₹${shown(item.sizes.sm)} – ₹${shown(item.sizes.lg)}` : `₹${shown(item.price)}`;
+            const priceLabel = item.isPizza ? `from ₹${shown(item.sizes.sm)}` : `₹${shown(item.price)}`;
             return (
               <div key={item.id} data-testid={`menu-item-${item.id}`} onClick={() => handleItemClick(item)}
                 className="menu-tile rounded-xl p-3.5 flex flex-col justify-between min-h-[110px]"
@@ -661,7 +661,7 @@ export default function OrderScreen() {
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm font-bold" style={{ color: "var(--pos-accent)" }}>{priceLabel}</span>
-                  {!item.available && <span className="text-[10px] uppercase font-bold text-red-400">86&apos;d</span>}
+                  {!item.available && <span className="text-[10px] uppercase font-bold text-red-400">Sold out</span>}
                   {item.available && item._onSchedule && (
                     <span className="text-[10px] uppercase font-bold" style={{ color: "#d97706" }}>
                       {item._pricingMode === "fixed" ? `₹${item._pricingValue}` : `-${item._pricingValue}%`}
