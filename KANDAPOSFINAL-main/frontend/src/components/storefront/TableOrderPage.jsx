@@ -14,6 +14,7 @@ import {
   Sun, Moon, Search, ChevronLeft, Wallet, CreditCard, Clock, ShieldCheck,
 } from "lucide-react";
 
+const NOTE_MAX = 140; // server caps a cart line's note at 140 characters
 const STEP = { CART: "cart", AUTH: "auth", PAYMENT: "payment", PLACING: "placing" };
 
 // The verified-phone session, kept per store so the next order from this
@@ -130,6 +131,8 @@ export default function TableOrderPage() {
   const addFromModal = (line) => setCart((prev) => [...prev, { ...line, lineId: `l_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }]);
   const updateQty = (lineId, delta) => setCart((prev) => prev.map((l) => (l.lineId === lineId ? { ...l, qty: Math.max(1, l.qty + delta) } : l)));
   const removeLine = (lineId) => setCart((prev) => prev.filter((l) => l.lineId !== lineId));
+  const [noteOpen, setNoteOpen] = useState({});
+  const setLineNote = (lineId, note) => setCart((prev) => prev.map((l) => (l.lineId === lineId ? { ...l, note: note.slice(0, NOTE_MAX) } : l)));
 
   const openCart = () => { setSheetStep(STEP.CART); setCartOpen(true); };
 
@@ -181,7 +184,7 @@ export default function TableOrderPage() {
     const token = otpRequired ? session?.token : undefined;
     try {
       const res = await storefrontApi.placeTableOrder(slug, number, {
-        items: cart.map((l) => ({ item_id: l.item_id, qty: l.qty, size: l.size, variant: l.variant, mods: l.mods })),
+        items: cart.map((l) => ({ item_id: l.item_id, qty: l.qty, size: l.size, variant: l.variant, mods: l.mods, note: l.note?.trim() || undefined })),
         customer_name: token ? undefined : (name.trim() || undefined),
       }, token);
       if (res.duplicate) toast.info("You'd already sent this order, so we didn't send it twice.");
@@ -387,10 +390,17 @@ export default function TableOrderPage() {
                 ) : (
                   <div className="space-y-3 mb-4">
                     {cart.map((l) => (
-                      <div key={l.lineId} className="flex items-center justify-between gap-2">
+                      <div key={l.lineId}>
+                      <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <div className="text-sm truncate">{l.displayName}</div>
                           {l.mods?.length > 0 && <div className="text-[11px]" style={{ color: "var(--sf-text-muted)" }}>{l.mods.join(" · ")}</div>}
+                          {!noteOpen[l.lineId] && (
+                            <button data-testid={`sf-line-note-btn-${l.lineId}`} onClick={() => setNoteOpen((o) => ({ ...o, [l.lineId]: true }))}
+                              className="text-[11px] underline text-left break-words" style={{ color: "var(--sf-text-muted)" }}>
+                              {l.note ? `Note: ${l.note}` : "Add note"}
+                            </button>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <button onClick={() => updateQty(l.lineId, -1)} className="w-7 h-7 rounded-full flex items-center justify-center sf-input"><Minus className="w-3 h-3" /></button>
@@ -398,6 +408,14 @@ export default function TableOrderPage() {
                           <button onClick={() => updateQty(l.lineId, 1)} className="w-7 h-7 rounded-full flex items-center justify-center sf-input"><Plus className="w-3 h-3" /></button>
                           <button onClick={() => removeLine(l.lineId)} className="w-7 h-7 rounded-full flex items-center justify-center sf-input"><X className="w-3 h-3" style={{ color: "var(--sf-danger)" }} /></button>
                         </div>
+                      </div>
+                      {noteOpen[l.lineId] && (
+                        <input data-testid={`sf-line-note-${l.lineId}`} placeholder="Note for the kitchen, e.g. less spicy" autoFocus
+                          value={l.note || ""} maxLength={NOTE_MAX} onChange={(e) => setLineNote(l.lineId, e.target.value)}
+                          onBlur={() => setNoteOpen((o) => ({ ...o, [l.lineId]: false }))}
+                          onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                          className="w-full h-9 px-3 mt-1.5 rounded-lg text-xs sf-input" />
+                      )}
                       </div>
                     ))}
                   </div>
