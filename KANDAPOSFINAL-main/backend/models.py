@@ -377,32 +377,45 @@ class MenuSchedule(BaseModel):
     deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
 
+_SCHEDULE_HHMM = r"^([01][0-9]|2[0-3]):[0-5][0-9]$"
+
+
+def _check_schedule_days(days):
+    if days is not None and any(d not in range(1, 8) for d in days):
+        raise ValueError("Days must be 1 (Mon) to 7 (Sun)")
+    return days
+
+
 class MenuScheduleCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, pattern=r"\S")
     days: List[int] = []
-    start_time: str
-    end_time: str
+    start_time: str = Field(pattern=_SCHEDULE_HHMM)
+    end_time: str = Field(pattern=_SCHEDULE_HHMM)
     active: bool = True
     restrict_availability: bool = False
     pricing_mode: Literal["none", "percent", "fixed"] = "none"
-    discount_pct: Optional[float] = None
-    fixed_price: Optional[float] = None
+    discount_pct: Optional[float] = Field(None, ge=0, le=100)
+    fixed_price: Optional[float] = Field(None, ge=0)
     category_ids: List[str] = []
     item_ids: List[str] = []
 
+    _days = field_validator("days")(lambda cls, v: _check_schedule_days(v))
+
 
 class MenuScheduleUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, pattern=r"\S")
     days: Optional[List[int]] = None
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
+    start_time: Optional[str] = Field(None, pattern=_SCHEDULE_HHMM)
+    end_time: Optional[str] = Field(None, pattern=_SCHEDULE_HHMM)
     active: Optional[bool] = None
     restrict_availability: Optional[bool] = None
     pricing_mode: Optional[Literal["none", "percent", "fixed"]] = None
-    discount_pct: Optional[float] = None
-    fixed_price: Optional[float] = None
+    discount_pct: Optional[float] = Field(None, ge=0, le=100)
+    fixed_price: Optional[float] = Field(None, ge=0)
     category_ids: Optional[List[str]] = None
     item_ids: Optional[List[str]] = None
+
+    _days = field_validator("days")(lambda cls, v: _check_schedule_days(v))
 
 
 # ---------- Aggregator surge / peak pricing ----------
