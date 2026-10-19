@@ -15,9 +15,21 @@ const STATUS_META = {
   "out-for-delivery": { label: "Out for Delivery", color: "#3b82f6", bg: "#14233f" },
   "completed": { label: "Completed", color: "var(--pos-muted)", bg: "#1a2235" },
 };
+const VOIDED_META = { label: "Voided", color: "#f87171", bg: "#2b1212" };
+const REFUNDED_META = { label: "Refunded", color: "#fbbf24", bg: "#33260e" };
+
+// A voided or fully refunded order is no longer in its kitchen/payment state,
+// so the headline badge says so instead of the stale "Completed"/"New".
+function statusMeta(order) {
+  if (order.voided) return VOIDED_META;
+  if (order.refunded_amount > 0 && order.refunded_amount >= order.total) return REFUNDED_META;
+  return STATUS_META[order.status];
+}
+
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
 
 function nextStatus(order) {
+  if (order.voided) return null;
   if (order.status === "completed") return null;
   if (order.status === "ready") return order.type === "delivery" ? "out-for-delivery" : "completed";
   const idx = STATUS_FLOW.indexOf(order.status);
@@ -87,7 +99,7 @@ export default function OrdersScreen() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {filtered.map((o) => {
-              const meta = STATUS_META[o.status];
+              const meta = statusMeta(o);
               const TypeIcon = TYPE_ICON[o.type];
               const ns = nextStatus(o);
               return (
