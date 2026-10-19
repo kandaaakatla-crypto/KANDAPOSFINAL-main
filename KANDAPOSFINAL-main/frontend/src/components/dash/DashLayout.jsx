@@ -1,87 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from "react-router-dom";
-import { useDash, hasPerm, canManagePayroll, canManageLoyalty, canManageCoupons, canManageGiftCards, canManageCustomers, canViewReports, canManageSettings, canManageTeam } from "../../store/DashContext";
-import { LayoutDashboard, Users, UserCircle, Boxes, BarChart3, CalendarDays, BookOpen, MapPin, LogOut, KeyRound, PhoneCall, Sparkles, MessageSquare, MessageCircle, Menu as MenuIcon, Banknote, Store, Gift, Ticket, Wallet, Clock, Warehouse, MonitorSmartphone, Globe, ChevronLeft, ChevronRight, Sun, Moon, QrCode, ShieldCheck, TrendingUp, FileText } from "lucide-react";
+import { useDash } from "../../store/DashContext";
+import { LogOut, KeyRound, Menu as MenuIcon, ChevronLeft, ChevronRight, Sun, Moon } from "lucide-react";
 import { Sheet, SheetContent } from "../ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import StoreSwitcher from "./StoreSwitcher";
 import { getTheme, toggleTheme } from "../../lib/theme";
-
-// Grouped into the six business verticals of the dashboard blueprint.
-// `Schedules` is menu-availability scheduling (day/time price windows), not
-// staff shifts, so it sits under Menu & Catalog next to the other
-// catalog-shaping tools rather than next to Rota/Payroll.
-const NAV_GROUPS = [
-  {
-    label: "Sales Overview",
-    items: [
-      { to: "/dashboard", end: true, label: "Overview", icon: LayoutDashboard, allow: () => true },
-      { to: "/dashboard/reports", label: "Reports", icon: BarChart3, allow: (u) => canViewReports(u) },
-      { to: "/dashboard/digest", label: "Daily Digest", icon: Sparkles, allow: (u) => canViewReports(u), feature: "daily_digest" },
-    ],
-  },
-  {
-    label: "Live Outlets",
-    items: [
-      { to: "/dashboard/business", label: "Business Details", icon: FileText, allow: (u) => canManageSettings(u) },
-      { to: "/dashboard/locations", label: "Locations", icon: MapPin, allow: () => true },
-      { to: "/dashboard/branding", label: "QR Branding", icon: QrCode, allow: (u) => canManageSettings(u), feature: "qr_ordering" },
-      { to: "/dashboard/website-orders", label: "Website Orders", icon: Globe, allow: (u) => canManageSettings(u) },
-      { to: "/dashboard/brand", label: "Brand", icon: Store, allow: (u) => u?.dash_role === "owner" },
-      { to: "/dashboard/central-supply", label: "Central Supply", icon: Warehouse, allow: (u) => u?.dash_role === "owner" && !!u?.brand_id },
-    ],
-  },
-  {
-    label: "Menu & Catalog",
-    items: [
-      { to: "/dashboard/menu", label: "Menu", icon: BookOpen, allow: () => true },
-      { to: "/dashboard/schedules", label: "Schedules", icon: Clock, allow: () => true },
-      { to: "/dashboard/surge", label: "Surge Pricing", icon: TrendingUp, allow: () => true },
-      { to: "/dashboard/coupons", label: "Coupons", icon: Ticket, allow: (u) => canManageCoupons(u) },
-      { to: "/dashboard/gift-cards", label: "Gift Cards", icon: Wallet, allow: (u) => canManageGiftCards(u) },
-      { to: "/dashboard/loyalty", label: "Loyalty", icon: Gift, allow: (u) => canManageLoyalty(u), feature: "loyalty" },
-    ],
-  },
-  {
-    label: "Inventory",
-    items: [
-      { to: "/dashboard/inventory", label: "Inventory", icon: Boxes, allow: () => true, badge: "lowStock" },
-      { to: "/dashboard/devices", label: "Kiosk Devices", icon: MonitorSmartphone, allow: () => true },
-    ],
-  },
-  {
-    label: "Staff / Shifts",
-    items: [
-      { to: "/dashboard/staff", label: "Staff", icon: Users, allow: () => true },
-      { to: "/dashboard/team", label: "Team & access", icon: ShieldCheck, allow: (u) => canManageTeam(u) },
-      { to: "/dashboard/workforce", label: "Rota", icon: CalendarDays, allow: () => true },
-      { to: "/dashboard/payroll", label: "Payroll", icon: Banknote, allow: (u) => canManagePayroll(u), feature: "payroll" },
-    ],
-  },
-  {
-    label: "Customer CRM",
-    items: [
-      { to: "/dashboard/customers", label: "Customers", icon: UserCircle, allow: (u) => hasPerm(u, "customers") },
-      { to: "/dashboard/sms", label: "Customer SMS", icon: MessageSquare, allow: (u) => canManageCustomers(u), feature: "customer_sms" },
-      { to: "/dashboard/whatsapp", label: "WhatsApp", icon: MessageCircle, allow: () => true, feature: "whatsapp" },
-      { to: "/dashboard/voice", label: "Voice Agent", icon: PhoneCall, allow: (u) => canManageSettings(u), feature: "voice_agent" },
-    ],
-  },
-];
-// Flat view of every item — used for the feature-gate redirect effect and
-// kept so that logic doesn't need to know about groups at all.
-const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+import { NAV_SECTIONS, ALL_PAGES, visibleTabs, tabVisible, tabMatches } from "./dashNav";
 
 const SIDEBAR_COLLAPSED_KEY = "kanda_dash_sidebar_collapsed_v1";
 
 // One nav row, shared by the grouped desktop list and the mobile sheet.
 // When `collapsed`, the label is dropped in favor of a hover tooltip and the
 // row centers its icon — the low-stock badge becomes a plain dot overlay.
-function NavRow({ to, end, label, icon: Icon, onNavigate, collapsed, badgeCount }) {
+// `active` is worked out by the caller: a section row stays highlighted on
+// any of its tabs, not only the one it links to.
+function NavRow({ to, end, label, icon: Icon, onNavigate, collapsed, badgeCount, active }) {
   const row = (
-    <NavLink key={to} to={to} end={end} data-testid={`dash-nav-${label.toLowerCase()}`} onClick={onNavigate}
-      className={({ isActive }) => `pos-btn relative flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium ${isActive ? "text-white" : ""} ${collapsed ? "justify-center px-0" : ""}`}
-      style={({ isActive }) => ({ background: isActive ? "var(--pos-accent)" : "transparent", color: isActive ? "#fff" : "var(--pos-muted)" })}>
+    <NavLink key={to} to={to} end={end} data-testid={`dash-nav-${label.toLowerCase().replace(/\s+/g, "-")}`} onClick={onNavigate}
+      className={() => `pos-btn relative flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium ${active ? "text-white" : ""} ${collapsed ? "justify-center px-0" : ""}`}
+      style={() => ({ background: active ? "var(--pos-accent)" : "transparent", color: active ? "#fff" : "var(--pos-muted)" })}>
       <Icon className="w-4 h-4 shrink-0" />
       {!collapsed && <span className="truncate">{label}</span>}
       {!collapsed && badgeCount > 0 && (
@@ -128,17 +66,6 @@ function FooterLink({ onClick, onNavigate, icon: Icon, label, collapsed, color, 
   );
 }
 
-// Plain group label — always visible, not a toggle. Grouping alone (without
-// hiding anything behind a click) is the de-clutter mechanism here; density
-// (tighter row height/spacing) does the rest.
-function GroupHeader({ label }) {
-  return (
-    <div className="px-3 pb-0.5 pt-1.5 text-[9.5px] font-bold uppercase tracking-wider" style={{ color: "#5c6d8f" }}>
-      {label}
-    </div>
-  );
-}
-
 export default function DashLayout() {
   const { user, logout, features, lowStockCount } = useDash();
   const navigate = useNavigate();
@@ -153,17 +80,17 @@ export default function DashLayout() {
     try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0"); } catch { /* ignore */ }
   }, [collapsed]);
 
-  const visibleGroups = NAV_GROUPS
-    .map((g) => ({ ...g, items: g.items.filter((i) => i.allow(user) && (!i.feature || features[i.feature])) }))
-    .filter((g) => g.items.length > 0);
+  const visibleSections = NAV_SECTIONS
+    .map((s) => ({ ...s, tabs: visibleTabs(s, user, features) }))
+    .filter((s) => s.tabs.length > 0);
 
   // A feature turned off, or a section the owner hasn't given this person,
   // shouldn't be reachable by direct URL either. (The API refuses it anyway;
   // this just avoids a screen full of errors.)
   useEffect(() => {
     if (!user) return;
-    const blocked = NAV_ITEMS.find((i) => i.to !== "/dashboard" && location.pathname.startsWith(i.to)
-      && ((i.feature && !features[i.feature]) || !i.allow(user)));
+    const blocked = ALL_PAGES.find((i) => i.to !== "/dashboard" && location.pathname.startsWith(i.to)
+      && !tabVisible(i, user, features));
     if (blocked) navigate("/dashboard", { replace: true });
   }, [location.pathname, features, user, navigate]);
 
@@ -200,16 +127,10 @@ export default function DashLayout() {
   const NavItems = ({ onNavigate, collapsed: navCollapsed = false }) => (
     <>
       <nav className="flex-1 min-h-0 p-2 space-y-0.5 overflow-y-auto">
-        {visibleGroups.map((group) => (
-          <div key={group.label}>
-            {!navCollapsed && <GroupHeader label={group.label} />}
-            <div className="space-y-0.5">
-              {group.items.map(({ to, end, label, icon, badge }) => (
-                <NavRow key={to} to={to} end={end} label={label} icon={icon} onNavigate={onNavigate}
-                  collapsed={navCollapsed} badgeCount={badge === "lowStock" ? lowStockCount : 0} />
-              ))}
-            </div>
-          </div>
+        {visibleSections.map(({ key, label, icon, badge, tabs }) => (
+          <NavRow key={key} to={tabs[0].to} end={tabs[0].end} label={label} icon={icon} onNavigate={onNavigate}
+            collapsed={navCollapsed} badgeCount={badge === "lowStock" ? lowStockCount : 0}
+            active={tabs.some((t) => tabMatches(t, location.pathname))} />
         ))}
       </nav>
       <div className="p-2 space-y-0.5" style={{ borderTop: "1px solid var(--pos-border)" }}>
