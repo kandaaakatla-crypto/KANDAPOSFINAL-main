@@ -6,6 +6,7 @@ import { useStorefrontTheme } from "./useStorefrontTheme";
 import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
 import StorefrontItemModal from "./StorefrontItemModal";
 import FoodMark from "./FoodMark";
+import TableBill from "./TableBill";
 import { filterStorefrontItems } from "../../utils/foodType";
 import "./storefront.css";
 import {
@@ -55,6 +56,10 @@ export default function TableOrderPage() {
   const [activeCat, setActiveCat] = useState(null);
   const [query, setQuery] = useState("");
   const [vegOnly, setVegOnly] = useState(false);
+  const [tab, setTab] = useState("menu"); // "menu" | "bill"
+  const [bill, setBill] = useState(null);
+  const [billLoading, setBillLoading] = useState(false);
+  const [billPaying, setBillPaying] = useState(false);
   const [cart, setCart] = useState([]);
   const [modalItem, setModalItem] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -94,6 +99,22 @@ export default function TableOrderPage() {
   const removeLine = (lineId) => setCart((prev) => prev.filter((l) => l.lineId !== lineId));
 
   const openCart = () => { setSheetStep(STEP.CART); setCartOpen(true); };
+
+  const loadBill = async () => {
+    setBillLoading(true);
+    try { setBill(await storefrontApi.tableBill(slug, number)); }
+    catch { toast.error("Couldn't load the bill, please try again."); }
+    finally { setBillLoading(false); }
+  };
+  const showBill = () => { setConfirmed(null); setTab("bill"); loadBill(); };
+  const payBill = async () => {
+    if (!bill?.open || bill.paid) return;
+    setBillPaying(true);
+    const result = await runOnlinePayment({ slug, orderId: bill.orderId, amount: bill.total, customerName: name });
+    if (result.ok) toast.success("Paid. Thank you!"); else toast.info(result.reason.replace("Your order is saved, pay at the table.", "You can pay at the table."));
+    await loadBill();
+    setBillPaying(false);
+  };
 
   const finalizeOrder = async (payOnline) => {
     setPlacing(true); setSheetStep(STEP.PLACING);
@@ -146,9 +167,14 @@ export default function TableOrderPage() {
             {confirmed.paid ? <><CheckCircle2 className="w-3.5 h-3.5" /> Paid online</> : <><Clock className="w-3.5 h-3.5" /> Pay at the table</>}
           </div>
           <p className="text-xs" style={{ color: "var(--sf-text-muted)" }}>Want to add more? Just scan the QR again.</p>
-          <button onClick={() => setConfirmed(null)} className="mt-6 h-11 px-6 rounded-full font-bold sf-btn-accent">
-            Order more
-          </button>
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <button onClick={() => setConfirmed(null)} className="h-11 px-6 rounded-full font-bold sf-btn-accent">
+              Order more
+            </button>
+            <button onClick={showBill} data-testid="confirmed-view-bill" className="h-11 px-6 rounded-full font-bold sf-input">
+              View bill
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -191,6 +217,23 @@ export default function TableOrderPage() {
         </div>
       </header>
 
+      <div className="grid grid-cols-2 gap-1 mx-4 mt-3 p-1 rounded-xl sf-input" role="tablist">
+        {[["menu", "Menu"], ["bill", "Your bill"]].map(([key, label]) => (
+          <button key={key} role="tab" aria-selected={tab === key} data-testid={`sf-tab-${key}`}
+            onClick={() => (key === "bill" ? showBill() : setTab("menu"))}
+            className="h-9 rounded-lg text-sm font-semibold"
+            style={tab === key ? { background: "var(--sf-accent)", color: "var(--sf-accent-text)" } : undefined}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "bill" && (
+        <TableBill bill={bill} loading={billLoading} onRefresh={loadBill} onPay={payBill} paying={billPaying}
+          onlinePayments={menu.tenant.onlinePayments !== false} />
+      )}
+
+      {tab === "menu" && (<>
       <div className="flex items-center gap-2 px-4 pt-3">
         <label className="flex-1 flex items-center gap-2 h-10 px-3 rounded-xl sf-input">
           <Search className="w-4 h-4 shrink-0" style={{ color: "var(--sf-text-muted)" }} />
@@ -249,8 +292,9 @@ export default function TableOrderPage() {
           );
         })}
       </div>
+      </>)}
 
-      {cart.length > 0 && !cartOpen && (
+      {cart.length > 0 && !cartOpen && tab === "menu" && (
         <button onClick={openCart} data-testid="sf-view-cart"
           className="fixed bottom-4 inset-x-4 h-14 rounded-2xl font-bold flex items-center justify-between px-5 sf-btn-accent" style={{ boxShadow: "var(--sf-shadow)" }}>
           <span>{cart.length} item{cart.length > 1 ? "s" : ""}</span>
@@ -317,7 +361,7 @@ export default function TableOrderPage() {
                     <button data-testid="table-pay-online" onClick={() => finalizeOrder(true)}
                       className="w-full h-14 rounded-2xl font-bold flex items-center gap-3 px-4 sf-input">
                       <CreditCard className="w-5 h-5" style={{ color: "var(--sf-accent)" }} />
-                      <span className="text-left flex-1">Pay online now<span className="block text-[11px] font-normal" style={{ color: "var(--sf-text-muted)" }}>UPI, cards and wallets</span></span>
+                      <span className="text-left flex-1">Pay online now<span className="block text-[11px] font-normal" style={{ color: "var(--sf-text-muted)" }}>UPI or card, for the whole table bill</span></span>
                     </button>
                   )}
                   <button data-testid="table-pay-later" onClick={() => finalizeOrder(false)}

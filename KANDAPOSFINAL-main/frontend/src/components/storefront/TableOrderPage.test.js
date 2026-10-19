@@ -14,6 +14,7 @@ jest.mock("../../api/storefrontClient", () => ({
   storefrontApi: {
     menu: jest.fn(),
     table: jest.fn(),
+    tableBill: jest.fn(),
     placeTableOrder: jest.fn(),
     requestOtp: jest.fn(),
     verifyOtp: jest.fn(),
@@ -81,5 +82,39 @@ describe("QR table ordering without sign-in", () => {
   it("has no sign-in button in the header", async () => {
     await renderAndCheckout();
     expect(byTestId("sf-account-btn")).toBeNull();
+  });
+});
+
+describe("Your bill tab", () => {
+  const BILL = {
+    open: true, orderId: "o9", orderNumber: 31, paid: false,
+    items: [{ name: "Paneer Tikka", qty: 2, price: 200, mods: [] }],
+    subtotal: 400, taxTotal: 20, cgst: 10, sgst: 10, serviceCharge: 0, discount: 0, total: 420,
+  };
+
+  async function openBill() {
+    act(() => { root.render(<TableOrderPage />); });
+    await flush();
+    await click(byTestId("sf-tab-bill"));
+    await flush();
+  }
+
+  it("shows the table's running bill and pays it online", async () => {
+    storefrontApi.tableBill.mockResolvedValue(BILL);
+    await openBill();
+    expect(storefrontApi.tableBill).toHaveBeenCalledWith("spice-hub", "4");
+    expect(byTestId("table-bill").textContent).toContain("Paneer Tikka");
+    expect(byTestId("table-bill-total").textContent).toContain("420.00");
+
+    await click(byTestId("table-bill-pay"));
+    await flush();
+    expect(storefrontApi.createPaymentOrder).toHaveBeenCalledWith("spice-hub", "o9", 420);
+  });
+
+  it("says when nothing has been ordered yet", async () => {
+    storefrontApi.tableBill.mockResolvedValue({ open: false });
+    await openBill();
+    expect(byTestId("table-bill-empty")).not.toBeNull();
+    expect(byTestId("table-bill-pay")).toBeNull();
   });
 });
