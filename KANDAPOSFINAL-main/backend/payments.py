@@ -105,10 +105,17 @@ async def verify_payment(payload: VerifyPaymentRequest, user: dict = Depends(get
         raise HTTPException(status_code=400, detail="Invalid payment signature")
 
     db = get_db()
+    # A split order's card portion settling completes the split; a plain card
+    # order is simply paid by card.
+    pending = await db.orders.find_one(
+        tenant_filter(user, {"id": payload.orderId, "razorpayOrderId": payload.razorpay_order_id}),
+        {"_id": 0, "splits": 1},
+    )
+    settled_as = "split" if (pending or {}).get("splits") else "card"
     updated = await db.orders.find_one_and_update(
         tenant_filter(user, {"id": payload.orderId, "razorpayOrderId": payload.razorpay_order_id}),
         {"$set": {
-            "payment": "card",
+            "payment": settled_as,
             "razorpayPaymentId": payload.razorpay_payment_id,
             "razorpayStatus": "captured",
         }},

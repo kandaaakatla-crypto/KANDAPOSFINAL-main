@@ -25,7 +25,7 @@ function ChartTooltip({ active, payload }) {
   return (
     <div className="rounded-lg px-3 py-2 text-xs" style={{ background: PANEL_2, border: `1px solid ${BORDER}` }}>
       <div className="font-bold mb-1" style={{ color: TEXT }}>{fmtDay(p.date)}</div>
-      <div style={{ color: MUTED }}>Sales <span className="font-semibold tabular-nums" style={{ color: TEXT }}>₹{(p.gross_sales || 0).toFixed(0)}</span></div>
+      <div style={{ color: MUTED }}>Sales <span className="font-semibold tabular-nums" style={{ color: TEXT }}>₹{(p.net_sales || 0).toFixed(0)}</span></div>
       <div style={{ color: MUTED }}>Orders <span className="font-semibold tabular-nums" style={{ color: TEXT }}>{p.orders || 0}</span></div>
     </div>
   );
@@ -51,8 +51,8 @@ export default function SalesTrendChart({ days = 14 }) {
     return () => { cancel = true; };
   }, [days]);
 
-  const total = rollups.reduce((s, d) => s + (d.gross_sales || 0), 0);
-  const hasData = rollups.some((d) => (d.gross_sales || 0) > 0);
+  const total = rollups.reduce((s, d) => s + (d.net_sales || 0), 0);
+  const hasData = rollups.some((d) => (d.net_sales || 0) > 0);
 
   return (
     <div className="rounded-xl p-4" data-testid="sales-trend-chart" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
@@ -90,7 +90,7 @@ export default function SalesTrendChart({ days = 14 }) {
               <XAxis dataKey="date" tickFormatter={fmtDay} tick={{ fill: MUTED, fontSize: 10 }} axisLine={{ stroke: BORDER }} tickLine={false} minTickGap={24} />
               <YAxis tickFormatter={fmtAxisCurrency} tick={{ fill: MUTED, fontSize: 10 }} axisLine={false} tickLine={false} width={44} />
               <Tooltip content={<ChartTooltip />} cursor={{ stroke: ACCENT, strokeWidth: 1, strokeDasharray: "3 3" }} />
-              <Area type="monotone" dataKey="gross_sales" stroke={ACCENT} strokeWidth={2} fill="url(#salesTrendFill)" activeDot={{ r: 4, fill: ACCENT, stroke: PANEL, strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="net_sales" stroke={ACCENT} strokeWidth={2} fill="url(#salesTrendFill)" activeDot={{ r: 4, fill: ACCENT, stroke: PANEL, strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
