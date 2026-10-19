@@ -6,6 +6,7 @@ import { PosProvider, usePos } from "./store/PosContext";
 import { OwnerProvider, useOwner } from "./store/OwnerContext";
 import { DashProvider, useDash } from "./store/DashContext";
 import { tenantStore } from "./api/client";
+import useAndroidBackButton from "./hooks/useAndroidBackButton";
 
 // Eager: the marketing homepage and legal pages are the first thing a new
 // visitor loads, so they stay in the main bundle. Everything below is
@@ -141,6 +142,12 @@ function OwnerProtected({ children }) {
 // rule for tenant-scoped POS paths) — otherwise Firebase Hosting's catch-all
 // falls through to the backend's soft-404 handler (server.py) and a real
 // route gets served as a 404. Add new top-level routes to both places.
+// Renders nothing; it only needs to sit inside the router.
+function AndroidBackButton() {
+  useAndroidBackButton();
+  return null;
+}
+
 function App() {
   return (
     <div className="App">
@@ -148,6 +155,7 @@ function App() {
         <DashProvider>
           <PosProvider>
             <BrowserRouter>
+              <AndroidBackButton />
               <Suspense fallback={<RouteLoading />}>
                 <Routes>
                   {/* Owner portal */}
