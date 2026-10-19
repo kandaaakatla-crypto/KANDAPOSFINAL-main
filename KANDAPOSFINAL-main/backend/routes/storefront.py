@@ -383,7 +383,7 @@ async def my_account(slug: str, request: Request):
 # ===================================================================
 class StorefrontPaymentOrderRequest(BaseModel):
     order_id: str
-    amount: float
+    amount: Optional[float] = None  # ignored: the server charges the order's own total
 
 
 @router.post("/{slug}/payments/order")
@@ -396,8 +396,11 @@ async def create_storefront_payment_order(slug: str, payload: StorefrontPaymentO
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
+    if order.get("payment") not in (None, "unpaid"):
+        raise HTTPException(status_code=409, detail="This order is already paid")
+
     currency = os.environ.get("CURRENCY", "INR")
-    amount_paise = int(round(payload.amount * 100))
+    amount_paise = int(round(float(order.get("total") or 0) * 100))
     if amount_paise <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than zero")
 
