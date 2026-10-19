@@ -18,6 +18,7 @@ import { applyScheduleToItem } from "../../utils/scheduling";
 import { activeSurge, applySurge } from "../../utils/surge";
 
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
+import { orderNo } from "../../utils/orderNumber";
 
 const ORDER_TYPES = [
   { id: "delivery", label: "Delivery", icon: Bike },
@@ -150,7 +151,7 @@ export default function OrderScreen() {
           setCollectionName(existing.customer.name?.replace(/^Walk-in — /, "") || "");
           setPhoneQuery(existing.customer.phone || "");
         }
-        toast.info(`Reopened bill #${existing.number}`);
+        toast.info(`Reopened bill ${orderNo(existing)}`);
       } else if (existing) {
         toast.error("Order is already settled or voided");
       }
@@ -264,7 +265,7 @@ export default function OrderScreen() {
   const onServiceCharge = async (on, pct) => {
     if (editingOrderId) {
       const updated = await setOrderServiceCharge(editingOrderId, on ? pct : 0);
-      if (updated) toast.success(on ? `${pct}% service charge added to bill #${updated.number}` : "Service charge removed");
+      if (updated) toast.success(on ? `${pct}% service charge added to bill ${orderNo(updated)}` : "Service charge removed");
       if (on) setServiceChargePct(pct);
       return;
     }
@@ -308,15 +309,16 @@ export default function OrderScreen() {
       try {
         const items = toOrderItems(pricedCart);
         const updated = await appendToOrder(editingOrderId, items);
-        toast.success(`Added ${cart.length} item(s) to #${updated.number}`);
+        toast.success(`Added ${cart.length} item(s) to ${orderNo(updated)}`);
         setCart([]);
       } catch { /* error already toasted by appendToOrder */ }
       return;
     }
     if (!validateOrder()) return;
     const order = buildOrder("unpaid");
-    placeOrder(order);
-    toast.success(`Order #sent to kitchen — ₹${total.toFixed(2)}`);
+    let placed = null;
+    try { placed = await placeOrder(order); } catch { return; }
+    toast.success(`Order ${orderNo(placed)} sent to kitchen — ₹${total.toFixed(2)}`);
     resetAll();
   };
 
@@ -384,12 +386,12 @@ export default function OrderScreen() {
     if (editingOrderId) {
       // Finalise the running-tab order: mark completed so the table is released.
       try { await updateOrderStatus(editingOrderId, "completed"); } catch { /* best-effort */ }
-      toast.success(`Bill #${placed.number} settled by ${method} — ₹${total.toFixed(2)}`);
+      toast.success(`Bill ${orderNo(placed)} settled by ${method} — ₹${total.toFixed(2)}`);
       resetAll();
       navigate(`/${slug}/tables`);
       return;
     }
-    toast.success(`Order #${placed.number} paid by ${method} — ₹${total.toFixed(2)}`);
+    toast.success(`Order ${orderNo(placed)} paid by ${method} — ₹${total.toFixed(2)}`);
     resetAll();
   };
 
@@ -404,7 +406,7 @@ export default function OrderScreen() {
             style={{ background: "rgba(37,99,235,0.14)", border: "1px solid rgba(37,99,235,0.4)" }}>
             <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--pos-blue)" }} />
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold" style={{ color: "var(--pos-text)" }}>Reopened Bill #{editingOrder.number}</div>
+              <div className="text-xs font-bold" style={{ color: "var(--pos-text)" }}>Reopened Bill {orderNo(editingOrder)}</div>
               <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-text)" }}>
                 {editingOrder.type === "dine-in" && editingOrder.table != null ? `Table ${editingOrder.table} · ` : ""}
                 {editingOrder.items?.length} sent · ₹{editingOrder.total.toFixed(2)}

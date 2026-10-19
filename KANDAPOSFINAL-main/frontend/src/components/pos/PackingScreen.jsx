@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { kdsApi } from "../../api/kdsClient";
 import { PackageCheck, Package, Bike, ShoppingBag, UtensilsCrossed, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { orderNo } from "../../utils/orderNumber";
 
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
 
@@ -22,7 +23,7 @@ function OrderCard({ order, onPacked }) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
-          <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{order.number}</span>
+          <span className="font-bold" style={{ color: "var(--pos-text)" }}>{orderNo(order)}</span>
           <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>{order.type}</span>
         </div>
         {order.table != null && <span className="text-xs" style={{ color: "var(--pos-muted)" }}>Table {order.table}</span>}
@@ -81,7 +82,7 @@ export default function PackingScreen() {
   const handlePacked = async (order) => {
     try {
       await kdsApi.setPacked(token, order.id, true);
-      toast.success(`Order #${order.number} packed`);
+      toast.success(`Order ${orderNo(order)} packed`);
       refresh();
     } catch {
       toast.error("Could not update — check the connection");
@@ -135,7 +136,7 @@ export default function PackingScreen() {
                 {packed.map((o) => (
                   <div key={o.id} data-testid={`packed-card-${o.number}`} className="rounded-xl p-3 flex items-center justify-between" style={{ background: "var(--pos-panel)", border: "1px solid #2e7d4f" }}>
                     <div>
-                      <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{o.number}</span>
+                      <span className="font-bold" style={{ color: "var(--pos-text)" }}>{orderNo(o)}</span>
                       <span className="text-xs ml-2" style={{ color: "var(--pos-muted)" }}>{o.customer?.name}</span>
                     </div>
                     <button data-testid={`pack-undo-${o.number}`} onClick={() => undoPacked(o)} className="text-[11px] font-bold" style={{ color: "var(--pos-muted)" }}>Undo</button>

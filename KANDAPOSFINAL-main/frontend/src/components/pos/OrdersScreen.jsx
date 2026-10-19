@@ -5,6 +5,7 @@ import { Bike, ShoppingBag, UtensilsCrossed, ChevronRight, Clock, Receipt, Undo2
 import { toast } from "sonner";
 import ReceiptModal from "./ReceiptModal";
 import RefundVoidModal from "./RefundVoidModal";
+import { orderNo } from "../../utils/orderNumber";
 
 const STATUS_FLOW = ["new", "in-kitchen", "ready", "out-for-delivery", "completed"];
 const STATUS_META = {
@@ -52,7 +53,7 @@ export default function OrdersScreen() {
     if (!ns) return;
     if (needsPayment(order)) { navigate(`/${slug}/pos?order=${order.id}`); return; }
     updateOrderStatus(order.id, ns);
-    toast.success(`Order #${order.number} → ${STATUS_META[ns].label}`);
+    toast.success(`Order ${orderNo(order)} → ${STATUS_META[ns].label}`);
   };
 
   const FILTERS = [
@@ -94,7 +95,7 @@ export default function OrdersScreen() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{o.number}</span>
+                        <span className="font-bold" style={{ color: "var(--pos-text)" }}>{orderNo(o)}</span>
                         <TypeIcon className="w-4 h-4" style={{ color: "var(--pos-muted)" }} />
                         <span className="text-xs capitalize" style={{ color: "var(--pos-muted)" }}>{o.type}{o.table ? ` · Table ${o.table}` : ""}</span>
                       </div>
