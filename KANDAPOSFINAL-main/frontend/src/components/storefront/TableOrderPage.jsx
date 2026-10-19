@@ -136,7 +136,7 @@ export default function TableOrderPage() {
         <div className="text-center max-w-sm" data-testid="table-order-confirmed">
           <CheckCircle2 className="w-14 h-14 mx-auto mb-4" style={{ color: "var(--sf-success)" }} />
           <div className="text-2xl font-bold mb-1">Sent to the kitchen!</div>
-          <div className="text-sm mb-1" style={{ color: "var(--sf-text-muted)" }}>Order #{confirmed.orderNumber} · ₹{confirmed.total.toFixed(2)}</div>
+          <div className="text-sm mb-1" style={{ color: "var(--sf-text-muted)" }}>Order #{confirmed.orderNumber} · Table bill ₹{confirmed.total.toFixed(2)}</div>
           <div className="text-xs mb-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: confirmed.paid ? "var(--sf-success-bg)" : "var(--sf-bg-sunken)", color: confirmed.paid ? "var(--sf-success)" : "var(--sf-text-muted)" }}>
             {confirmed.paid ? <><CheckCircle2 className="w-3.5 h-3.5" /> Paid online</> : <><Clock className="w-3.5 h-3.5" /> Pay at the table</>}
           </div>

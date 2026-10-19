@@ -28,7 +28,7 @@ from auth import _secret, JWT_ALG
 from ws import schedule_broadcast
 from kds import annotate_order_items_for_kds
 from sms_service import send_sms, normalize_phone, sms_enabled
-from routes.orders import _apply_recipes
+from routes.orders import _apply_recipes, _with_service_charge
 from payments import _get_client as _get_razorpay_client
 from tax import collects_gst, resolve_effective_rate, compute_line_tax, compute_order_tax
 from scheduling import resolve_item_schedule_state, apply_schedule_pricing
@@ -231,6 +231,40 @@ async def _optional_storefront_session(request: Request, slug: str, db) -> Optio
         return None
 
 
+async def _add_to_open_table_bill(db, tenant_id: str, table: dict, items: list[dict], business_type: str):
+    """A table has one running bill. If the table's current order is still
+    open (unpaid, not voided or completed), add this round to it, as staff
+    do with an occupied table, and return the updated order; else None."""
+    order_id = table.get("order_id")
+    if not order_id:
+        return None
+    open_filter = {
+        "tenant_id": tenant_id, "id": order_id, "voided": {"$ne": True},
+        "status": {"$ne": "completed"}, "payment": {"$in": [None, "unpaid"]},
+    }
+    existing = await db.orders.find_one(open_filter, PROJECTION)
+    if not existing:
+        return None
+    inclusive = business_type == "retail"
+    add = compute_order_tax([
+        compute_line_tax(it["price"], it["qty"], it.get("tax_rate", 0) or 0, inclusive) for it in items
+    ])
+    items_tax = float(existing.get("taxTotal", 0) or 0) - float(existing.get("serviceChargeTax") or 0)
+    totals = _with_service_charge(
+        existing,
+        float(existing.get("subtotal", 0) or 0) + add["subtotal"],
+        items_tax + add["tax_total"],
+        add["items_total"],
+        float(existing.get("serviceChargePct") or 0),
+    )
+    # Same open filter on the write: if the bill was settled in between, start a new one.
+    return await db.orders.find_one_and_update(
+        open_filter,
+        {"$push": {"items": {"$each": items}}, "$set": {**totals, "status": "new"}},
+        projection=PROJECTION, return_document=True,
+    )
+
+
 @router.post("/{slug}/table/{number}/order")
 async def place_table_order(slug: str, number: int, payload: TableOrderRequest, request: Request):
     db = get_db()
@@ -243,6 +277,15 @@ async def place_table_order(slug: str, number: int, payload: TableOrderRequest, 
     session = await _optional_storefront_session(request, slug, db)
     raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type, collects_gst(tenant))
     items = await annotate_order_items_for_kds(db, tenant["id"], raw_items)
+
+    running = await _add_to_open_table_bill(db, tenant["id"], table, items, business_type)
+    if running:
+        await _apply_recipes(db, tenant["id"], raw_items)
+        cleaned = clean(running)
+        schedule_broadcast("order.upserted", cleaned, tenant["id"])
+        schedule_broadcast("kds.ticket", {"orderId": running["id"], "number": running["number"]}, tenant["id"])
+        return {"orderId": running["id"], "orderNumber": running["number"], "total": running["total"]}
+
     numbr = await next_order_number(db, tenant["id"])
     if session:
         customer = {"id": None, "name": session["name"], "phone": session["phone"], "address": None, "postcode": None}
