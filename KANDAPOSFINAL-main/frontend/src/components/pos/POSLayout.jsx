@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, UserCog, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon, Lock } from "lucide-react";
+import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon, Lock } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
@@ -117,17 +117,6 @@ export default function POSLayout() {
               <RailLink key={n.to} to={n.to} label={n.label} Icon={n.icon} end={n.end}
                 badge={n.to === `/${slug}/orders` ? activeCount : 0} />
             ))}
-            {staffUser?.role === "Manager" && (
-              <>
-                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--pos-border)" }} />
-                <a href="/dashboard" data-testid="nav-dashboard-link" title="Open Restaurant Dashboard"
-                  className="pos-btn relative flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] font-medium"
-                  style={{ background: "transparent", color: "var(--pos-muted)" }}>
-                  <UserCog className="w-5 h-5" />
-                  Dashboard
-                </a>
-              </>
-            )}
             {staffUser && staffUser.role !== "Manager" && (
               <>
                 <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--pos-border)" }} />
@@ -253,12 +242,6 @@ export default function POSLayout() {
                 <Icon className="w-5 h-5" /> {label}
               </NavLink>
             ))}
-            {staffUser?.role === "Manager" && (
-              <a href="/dashboard" data-testid="mmore-dashboard" className="pos-btn flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium"
-                style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
-                <UserCog className="w-5 h-5" /> Restaurant Dashboard
-              </a>
-            )}
             {staffUser && staffUser.role !== "Manager" && (
               <NavLink to={ALL_STAFF_WORKFORCE.to} data-testid="mmore-rota" onClick={() => setMoreOpen(false)}
                 className="pos-btn flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium"
