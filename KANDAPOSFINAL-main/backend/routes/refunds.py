@@ -10,6 +10,7 @@ audit-logged.
 
 `/api/refunds/log` — Manager view of all refund + void audit entries.
 """
+import math
 import uuid
 from datetime import datetime, timezone
 from tz import now_ist
@@ -56,7 +57,8 @@ async def _log(db, user: dict, order: dict, kind: str, amount: float, reason: st
 @router.post("/orders/{order_id}/refund")
 async def refund_order(order_id: str, payload: RefundRequest,
                        user: dict = Depends(require_role("Manager"))):
-    if payload.amount <= 0:
+    amount = round(float(payload.amount), 2) if math.isfinite(payload.amount) else 0.0
+    if amount <= 0:
         raise HTTPException(status_code=400, detail="Refund amount must be positive")
     if not (payload.reason or "").strip():
         raise HTTPException(status_code=400, detail="Reason is required")
@@ -66,35 +68,58 @@ async def refund_order(order_id: str, payload: RefundRequest,
         raise HTTPException(status_code=404, detail="Order not found")
     if order.get("voided"):
         raise HTTPException(status_code=400, detail="Cannot refund a voided order")
-    already = float(order.get("refunded_amount") or 0)
-    max_refundable = round(float(order["total"]) - already, 2)
-    if payload.amount > max_refundable + 0.005:
-        raise HTTPException(status_code=400, detail=f"Cannot refund more than ₹{max_refundable:.2f}")
+
+    # Reserve the refund in ONE conditional update: it only matches while
+    # what has already been refunded plus this amount still fits inside the
+    # bill total. Two terminals refunding the same bill at the same moment
+    # can no longer both pass a read-then-write check and pay out twice.
+    already_expr = {"$ifNull": ["$refunded_amount", 0]}
+    updated = await db.orders.find_one_and_update(
+        tenant_filter(user, {
+            "id": order_id,
+            "voided": {"$ne": True},
+            "$expr": {"$lte": [{"$add": [already_expr, amount]}, {"$add": ["$total", 0.005]}]},
+        }),
+        [{"$set": {
+            "refunded_amount": {"$round": [{"$add": [already_expr, amount]}, 2]},
+            "refunded_at": _now(),
+            "refunded_by": user["name"],
+        }}],
+        projection={"_id": 0},
+        return_document=True,
+    )
+    if not updated:
+        fresh = await db.orders.find_one(tenant_filter(user, {"id": order_id}), {"_id": 0})
+        if not fresh:
+            raise HTTPException(status_code=404, detail="Order not found")
+        if fresh.get("voided"):
+            raise HTTPException(status_code=400, detail="Cannot refund a voided order")
+        remaining = max(0.0, round(float(fresh["total"]) - float(fresh.get("refunded_amount") or 0), 2))
+        raise HTTPException(status_code=400, detail=f"Cannot refund more than ₹{remaining:.2f}")
+    new_total = round(float(updated["refunded_amount"]), 2)
 
     credit_result = None
     if payload.refund_method == "store_credit":
         phone = (order.get("customer") or {}).get("phone") or ""
-        credit_result = await credit_mod.add_credit_for_refund(
-            db, user["tenant_id"], phone, payload.amount, order_id, order["number"], user["id"], user["name"],
-        )
+        try:
+            credit_result = await credit_mod.add_credit_for_refund(
+                db, user["tenant_id"], phone, amount, order_id, order["number"], user["id"], user["name"],
+            )
+        except Exception:
+            # No credit was issued, so give the reserved amount back.
+            await db.orders.update_one(
+                tenant_filter(user, {"id": order_id}),
+                [{"$set": {"refunded_amount": {"$round": [{"$subtract": [already_expr, amount]}, 2]}}}],
+            )
+            raise
 
-    new_total = round(already + payload.amount, 2)
-    updated = await db.orders.find_one_and_update(
-        tenant_filter(user, {"id": order_id}),
-        {"$set": {
-            "refunded_amount": new_total,
-            "refunded_at": _now(),
-            "refunded_by": user["name"],
-        }},
-        return_document=True,
-    )
     # Push the refunded order to every terminal so cached copies (receipt
     # reprints, the Orders board) show the refund without a manual reload.
     schedule_broadcast("order.upserted", clean(updated), user["tenant_id"])
     reason = payload.reason.strip()
     if payload.refund_method == "store_credit":
         reason += " (refunded to store credit)"
-    log = await _log(db, user, order, "refund", payload.amount, reason, payload.notes)
+    log = await _log(db, user, order, "refund", amount, reason, payload.notes)
     return {"ok": True, "refunded_total": new_total, "log": log, "credit": credit_result}
 
 
