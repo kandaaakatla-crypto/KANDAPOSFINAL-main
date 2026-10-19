@@ -410,10 +410,8 @@ async def wa_incoming(request: Request):
         ]},
         {"_id": 0, "id": 1, "name": 1},
     )
-    if not tenant:
-        # Fallback — single-tenant deployment or sandbox. Route everything to
-        # the "demo" tenant so the dashboard has a place to display it.
-        tenant = await db.tenants.find_one({"slug": "demo"}, {"_id": 0, "id": 1, "name": 1})
+    # No fallback: an unmatched message must not land in another store's
+    # inbox (it used to go to the public demo store).
     if not tenant:
         logger.warning("Incoming WA with no matching tenant (to=%s)", to_addr)
         return Response(content="<Response/>", media_type="application/xml")
