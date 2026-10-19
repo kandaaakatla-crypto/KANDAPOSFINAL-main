@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from db import get_db
 from routes.dash_auth import get_dash_user
 from email_service import send_email
+from sales import PAID_NOT_VOIDED, NET_EXPR
 from sms_service import send_sms
 from report_tools import (
     _tool_todays_sales,
@@ -68,9 +69,9 @@ async def _yesterday_sales(db, tenant_id: str) -> dict:
         {"$match": {
             "tenant_id": tenant_id,
             "placedAt": {"$gte": yesterday.isoformat(), "$lt": today.isoformat()},
-            "voided": {"$ne": True},
+            **PAID_NOT_VOIDED,
         }},
-        {"$group": {"_id": None, "count": {"$sum": 1}, "revenue": {"$sum": "$total"}}},
+        {"$group": {"_id": None, "count": {"$sum": 1}, "revenue": {"$sum": NET_EXPR}}},
     ]
     r = await db.orders.aggregate(pipe).to_list(1)
     if not r:
@@ -82,7 +83,7 @@ async def _gather_digest_data(db, tenant_id: str) -> dict:
     today_sales, yesterday_sales, top_items, low_stock, expiring_stock, active_orders, on_duty = await asyncio.gather(
         _tool_todays_sales(db, tenant_id),
         _yesterday_sales(db, tenant_id),
-        _tool_top_items(db, tenant_id, days=1, limit=5),
+        _tool_top_items(db, tenant_id, limit=5, today_only=True),
         _tool_low_stock(db, tenant_id),
         _tool_expiring_stock(db, tenant_id, days=7),
         _tool_active_orders(db, tenant_id),

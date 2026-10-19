@@ -9,6 +9,7 @@ from db import get_db
 from auth import get_current_user, require_role
 from tenants import tenant_filter
 from models import ReportSummary, WeeklyPoint, TopItem, LabourCostResponse, effective_hourly_rate
+from sales import net_sales, is_paid, NOT_VOIDED
 from ._shared import PROJECTION, parse_placed_at
 
 router = APIRouter()
@@ -127,6 +128,7 @@ async def daily_rollup(user: dict = Depends(get_current_user), days: int = 30):
     night by the daily_rollup_cron_loop, or lazily on first request). Today
     is always computed fresh.
     """
+    from background_tasks import _compute_day_rollup, ROLLUP_VERSION  # local: avoids an import cycle
     db = get_db()
     now = now_ist()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0).date()
@@ -138,29 +140,14 @@ async def daily_rollup(user: dict = Depends(get_current_user), days: int = 30):
         cached = None
         if not is_today:
             cached = await db.report_rollups.find_one(
-                tenant_filter(user, {"date": d.isoformat()}), {"_id": 0},
+                tenant_filter(user, {"date": d.isoformat(), "v": ROLLUP_VERSION}), {"_id": 0},
             )
         if cached:
             rollups.append({k: v for k, v in cached.items() if k != "tenant_id"})
             continue
-        start_iso = datetime(d.year, d.month, d.day, tzinfo=IST).isoformat()
-        end_iso = (datetime(d.year, d.month, d.day, tzinfo=IST) + timedelta(days=1)).isoformat()
-        docs = await db.orders.find(
-            tenant_filter(user, {"placedAt": {"$gte": start_iso, "$lt": end_iso}, "voided": {"$ne": True}}),
-            {"_id": 0, "total": 1, "refunded_amount": 1},
-        ).to_list(5000)
-        gross = sum(float(o.get("total", 0)) for o in docs)
-        refunded = sum(float(o.get("refunded_amount", 0) or 0) for o in docs)
-        entry = {
-            "date": d.isoformat(),
-            "orders": len(docs),
-            "gross_sales": round(gross, 2),
-            "refunded": round(refunded, 2),
-            "net_sales": round(gross - refunded, 2),
-            "computed_at": now.isoformat(),
-        }
+        # One definition of a day's sales, shared with the nightly job.
+        entry = await _compute_day_rollup(db, user["tenant_id"], datetime(d.year, d.month, d.day, tzinfo=IST))
         if not is_today:
-            entry["tenant_id"] = user["tenant_id"]
             await db.report_rollups.replace_one(
                 {"tenant_id": user["tenant_id"], "date": entry["date"]},
                 entry, upsert=True,
@@ -319,7 +306,9 @@ async def report_summary(user: dict = Depends(get_current_user)):
     # which sorts lexicographically — so a string $gte filter at the DB layer
     # is correct and lets the (tenant_id, placedAt) index do the heavy lifting
     # instead of pulling the whole order history into Python.
-    db_filter = tenant_filter(user, {"placedAt": {"$gte": week_start.isoformat()}})
+    # Voided orders are excluded everywhere (sales.py); unpaid ones stay in
+    # the list only so they can be shown as "open", never as sales.
+    db_filter = tenant_filter(user, {"placedAt": {"$gte": week_start.isoformat()}, **NOT_VOIDED})
     week_docs = await db.orders.find(db_filter, PROJECTION).to_list(5000)
 
     today_orders = []
@@ -334,13 +323,14 @@ async def report_summary(user: dict = Depends(get_current_user)):
             today_orders.append(o)
         week_orders.append((ts, o))
 
-    today_sales = sum(o.get("total", 0) for o in today_orders)
+    today_sales = sum(net_sales(o) for o in today_orders)
     today_count = len(today_orders)
-    avg = (today_sales / today_count) if today_count else 0
+    paid_count = sum(1 for o in today_orders if is_paid(o))
+    avg = (today_sales / paid_count) if paid_count else 0
     deliveries = sum(1 for o in today_orders if o.get("type") == "delivery")
-    cash = sum(o["total"] for o in today_orders if o.get("payment") == "cash")
-    card = sum(o["total"] for o in today_orders if o.get("payment") == "card")
-    unpaid = sum(o["total"] for o in today_orders if o.get("payment") == "unpaid")
+    cash = sum(net_sales(o) for o in today_orders if o.get("payment") == "cash")
+    card = sum(net_sales(o) for o in today_orders if o.get("payment") == "card")
+    unpaid = sum(o["total"] for o in today_orders if not is_paid(o))
 
     weekly: List[WeeklyPoint] = []
     for i in range(6, -1, -1):
@@ -349,12 +339,14 @@ async def report_summary(user: dict = Depends(get_current_user)):
         bucket = [o for ts, o in week_orders if day <= ts < day_end]
         weekly.append(WeeklyPoint(
             day=_DAY_LABELS[day.weekday()],
-            sales=round(sum(o.get("total", 0) for o in bucket), 2),
+            sales=round(sum(net_sales(o) for o in bucket), 2),
             orders=len(bucket),
         ))
 
     counts: dict[str, dict] = {}
     for _ts, o in week_orders:
+        if not is_paid(o):
+            continue  # open (unpaid) orders aren't sold yet
         for it in o.get("items", []):
             key = it["name"]
             entry = counts.setdefault(key, {"name": key, "sold": 0, "revenue": 0.0})
