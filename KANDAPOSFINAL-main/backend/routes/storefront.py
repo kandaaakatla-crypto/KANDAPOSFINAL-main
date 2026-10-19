@@ -100,7 +100,7 @@ async def public_table(slug: str, number: int):
 # ===================================================================
 class CartLine(BaseModel):
     item_id: str
-    qty: int = 1
+    qty: int = Field(1, ge=1, le=99)
     size: Optional[str] = None
     variant: Optional[str] = None  # variant label, for generic retail products
     mods: List[str] = []

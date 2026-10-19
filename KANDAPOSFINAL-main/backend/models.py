@@ -797,39 +797,55 @@ class OrderItem(BaseModel):
     surge_pct: Optional[float] = None
 
 
+def _check_order_items(items) -> None:
+    """Input-side checks only. The stored Order model reuses OrderItem, so
+    the rules live here rather than on the field, where they'd reject old
+    orders on read."""
+    for it in items:
+        if it.qty < 1:
+            raise ValueError("Item quantity must be at least 1")
+        if it.price < 0:
+            raise ValueError("Item price cannot be negative")
+
+
 class OrderCreate(BaseModel):
     type: OrderType
     status: OrderStatus = "new"
     customer: OrderCustomer
     table: Optional[int] = None
     items: List[OrderItem]
-    deliveryFee: float = 0
-    discount: float = 0
+    deliveryFee: float = Field(0, ge=0)
+    discount: float = Field(0, ge=0)
     # The part of `discount` that lowers the taxable value (bill discount,
     # coupon, loyalty). Gift cards and store credit are tenders, not price
     # reductions, so they're in `discount` but not here. Absent (older
     # clients) means the whole discount is taxable-reducing.
-    taxable_discount: Optional[float] = None
-    total: float
+    taxable_discount: Optional[float] = Field(None, ge=0)
+    total: float = Field(..., ge=0)
     payment: OrderPayment = "unpaid"
     driver: Optional[str] = None
     source: OrderSource = "in-store"
-    tip: float = 0
+    tip: float = Field(0, ge=0)
     coupon_code: Optional[str] = None
     location_id: Optional[str] = None
     customer_email: Optional[str] = None
     send_email_receipt: bool = False
     service_charge_pct: float = Field(0, ge=0, le=100)  # optional, off unless the customer agrees to it
-    redeem_loyalty_points: int = 0  # cashier elects to burn X points → ₹X off
-    redeem_store_credit: float = 0  # ₹ amount to burn from the customer's own wallet balance
+    redeem_loyalty_points: int = Field(0, ge=0)  # cashier elects to burn X points → ₹X off
+    redeem_store_credit: float = Field(0, ge=0)  # ₹ amount to burn from the customer's own wallet balance
     gift_card_code: Optional[str] = None
-    gift_card_amount: float = 0  # ₹ amount to redeem against gift_card_code
+    gift_card_amount: float = Field(0, ge=0)  # ₹ amount to redeem against gift_card_code
     # Split payment: list of {method, amount} that sums to total when supplied.
     splits: Optional[List["OrderSplit"]] = None
     # Client-generated idempotency key for offline-queued order creation — a
     # retried POST with the same client_ref returns the already-created order
     # instead of creating a duplicate. None for normal online order creation.
     client_ref: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _validate_items(self):
+        _check_order_items(self.items)
+        return self
 
 
 class OrderSplit(BaseModel):
@@ -902,6 +918,11 @@ class ServiceChargePayload(BaseModel):
 class OrderAppendPayload(BaseModel):
     """Add extra items to an already-placed order (running tab / occupied table)."""
     items: List[OrderItem]
+
+    @model_validator(mode="after")
+    def _validate_items(self):
+        _check_order_items(self.items)
+        return self
 
 
 class AssignDriverPayload(BaseModel):
