@@ -166,6 +166,31 @@ export default function DashLayout() {
     if (blocked) navigate("/dashboard", { replace: true });
   }, [location.pathname, features, user, navigate]);
 
+  // Idle timeout: the owner session sits in localStorage on whatever device
+  // was used, so on a shared till someone could open /dashboard hours later.
+  // Sign out after IDLE_MS without any interaction (checked on load too, so
+  // a long-closed tab can't resurrect an old session).
+  useEffect(() => {
+    if (!user) return undefined;
+    const KEY = "kanda_dash_last_active_v1";
+    const IDLE_MS = 30 * 60 * 1000;
+    const stamp = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch { /* ignore */ } };
+    const check = () => {
+      let last = 0;
+      try { last = Number(localStorage.getItem(KEY)) || 0; } catch { /* ignore */ }
+      if (last && Date.now() - last > IDLE_MS) { logout(); navigate("/dashboard/login", { replace: true }); return true; }
+      return false;
+    };
+    if (check()) return undefined;
+    stamp();
+    let lastWrite = Date.now();
+    const onActivity = () => { if (Date.now() - lastWrite > 15000) { lastWrite = Date.now(); stamp(); } };
+    const events = ["pointerdown", "keydown", "scroll"];
+    events.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
+    const id = setInterval(check, 60000);
+    return () => { events.forEach((e) => window.removeEventListener(e, onActivity)); clearInterval(id); };
+  }, [user, logout, navigate]);
+
   if (!user) return <Navigate to="/dashboard/login" replace />;
   if (user.must_change_password) return <Navigate to="/dashboard/account/password" replace />;
   const roleLabel = { owner: "Restaurant Owner", area_manager: "Area Manager", manager: "Store Manager" }[user.dash_role] || user.dash_role;
