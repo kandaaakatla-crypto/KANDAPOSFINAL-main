@@ -66,23 +66,37 @@ async def redeem_gift_card_for_order(db, user_doc: dict, order_doc: dict, code: 
     subtotal). Raises on invalid/inactive/not-found card."""
     if amount <= 0 or not code:
         return 0.0
-    card = await db.gift_cards.find_one(tenant_filter(user_doc, {"code": code.strip().upper()}), {"_id": 0})
-    if not card:
-        raise HTTPException(status_code=404, detail="Gift card not found")
-    if card["status"] != "active":
-        raise HTTPException(status_code=400, detail=f"Gift card is {card['status']}")
     gross_items = sum(float(it.get("price", 0)) * float(it.get("qty", 0)) for it in order_doc.get("items", []))
-    redeemed = round(min(amount, float(card["balance"]), gross_items), 2)
-    if redeemed <= 0:
-        return 0.0
-    new_balance = round(float(card["balance"]) - redeemed, 2)
-    update = {"balance": new_balance}
-    if new_balance <= 0:
-        update["status"] = "redeemed"
-        update["redeemed_at"] = _now()
-    await db.gift_cards.update_one({"id": card["id"], "tenant_id": user_doc["tenant_id"]}, {"$set": update})
-    await _log_txn(db, user_doc["tenant_id"], card, "redeem", -redeemed, order_doc["id"], user_doc["id"], user_doc["name"])
-    return redeemed
+    # The debit is one conditional update that only matches while the card
+    # is still active and still holds at least what we're taking, so two
+    # terminals redeeming the same card at once can't both spend the same
+    # balance. If another terminal got there first, re-read and try again
+    # with whatever is left.
+    for _ in range(5):
+        card = await db.gift_cards.find_one(tenant_filter(user_doc, {"code": code.strip().upper()}), {"_id": 0})
+        if not card:
+            raise HTTPException(status_code=404, detail="Gift card not found")
+        if card["status"] != "active":
+            raise HTTPException(status_code=400, detail=f"Gift card is {card['status']}")
+        redeemed = round(min(amount, float(card["balance"]), gross_items), 2)
+        if redeemed <= 0:
+            return 0.0
+        now = _now()
+        after = {"$max": [0, {"$round": [{"$subtract": ["$balance", redeemed]}, 2]}]}
+        updated = await db.gift_cards.find_one_and_update(
+            {"id": card["id"], "tenant_id": user_doc["tenant_id"],
+             "status": "active", "balance": {"$gte": redeemed - 0.005}},
+            [{"$set": {"balance": after}},
+             {"$set": {
+                 "status": {"$cond": [{"$lte": ["$balance", 0]}, "redeemed", "$status"]},
+                 "redeemed_at": {"$cond": [{"$lte": ["$balance", 0]}, now, "$redeemed_at"]},
+             }}],
+            projection={"_id": 0},
+        )
+        if updated:
+            await _log_txn(db, user_doc["tenant_id"], card, "redeem", -redeemed, order_doc["id"], user_doc["id"], user_doc["name"])
+            return redeemed
+    raise HTTPException(status_code=409, detail="Gift card is being used on another terminal, try again")
 
 
 @router.post("/gift-cards", response_model=GiftCard)
