@@ -27,7 +27,7 @@ from tz import now_ist
 from auth import _secret, JWT_ALG
 from ws import schedule_broadcast
 from kds import annotate_order_items_for_kds
-from sms_service import send_sms, normalize_phone
+from sms_service import send_sms, normalize_phone, sms_enabled
 from routes.orders import _apply_recipes
 from payments import _get_client as _get_razorpay_client
 from tax import collects_gst, resolve_effective_rate, compute_line_tax, compute_order_tax
@@ -279,6 +279,10 @@ class OtpVerifyPayload(BaseModel):
 
 @router.post("/{slug}/otp/request")
 async def request_otp(slug: str, payload: OtpRequestPayload):
+    # Sign-in codes go by SMS; with SMS off there's no safe way to deliver one
+    # (the old fallback returned the code in this response).
+    if not sms_enabled():
+        raise HTTPException(status_code=410, detail="Sign-in by SMS is turned off")
     db = get_db()
     tenant = await _tenant_by_slug(slug, db)
     phone = normalize_phone(payload.phone)
@@ -294,12 +298,9 @@ async def request_otp(slug: str, payload: OtpRequestPayload):
     await db.customer_otps.replace_one({"tenant_id": tenant["id"], "phone": phone}, doc, upsert=True)
     sent = await send_sms(phone, f"Your {tenant.get('name','Kanda POS')} verification code is {code}. Valid for {OTP_TTL_MINUTES} minutes.")
 
-    resp = {"ok": True, "phone": phone}
-    if not sent and not os.environ.get("TWILIO_ACCOUNT_SID", "").strip():
-        # No SMS provider configured in this environment — surface the code
-        # directly so the flow is still testable end-to-end locally.
-        resp["dev_code"] = code
-    return resp
+    if not sent:
+        raise HTTPException(status_code=502, detail="Could not send the code, please try again")
+    return {"ok": True, "phone": phone}
 
 
 @router.post("/{slug}/otp/verify")

@@ -67,6 +67,12 @@ def normalize_phone(raw: str) -> str:
     return "+" + s.lstrip("0")
 
 
+def sms_enabled() -> bool:
+    """SMS is off unless SMS_ENABLED=1 (off for launch: bills and reviews go
+    by WhatsApp instead). Every send below is a no-op while it's off."""
+    return os.environ.get("SMS_ENABLED", "").strip() == "1"
+
+
 def _get_client() -> Client | None:
     global _client
     sid = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
@@ -81,6 +87,8 @@ def _get_client() -> Client | None:
 def sms_configured() -> tuple[bool, str]:
     """(usable, reason-if-not) so the UI can show a "Not set up" state
     instead of letting managers send messages that are guaranteed to fail."""
+    if not sms_enabled():
+        return False, "SMS is turned off"
     if _get_client() is None:
         return False, "SMS isn't set up yet: the Twilio account hasn't been connected on the server."
     if not os.environ.get("TWILIO_FROM_NUMBER", "").strip():
@@ -90,6 +98,8 @@ def sms_configured() -> tuple[bool, str]:
 
 async def send_sms(to: str, body: str) -> bool:
     """Send a single SMS. Returns True on success, False otherwise."""
+    if not sms_enabled():
+        return False
     to = normalize_phone(to)
     if not to:
         return False
@@ -118,6 +128,8 @@ async def send_sms(to: str, body: str) -> bool:
 async def send_sms_detailed(to: str, body: str) -> dict:
     """Same as send_sms but returns {ok, to, error} so callers can surface
     the specific Twilio failure to the user."""
+    if not sms_enabled():
+        return {"ok": False, "to": to, "error": "SMS is turned off"}
     to = normalize_phone(to)
     if not to:
         return {"ok": False, "to": to, "error": "Empty or invalid phone number"}
