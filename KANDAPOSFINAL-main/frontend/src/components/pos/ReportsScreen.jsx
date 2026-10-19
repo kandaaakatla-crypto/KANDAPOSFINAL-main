@@ -54,7 +54,7 @@ export default function ReportsScreen() {
   const topItems = summary?.topItems ?? [];
 
   const refundedInRange = rollups.reduce((s, r) => s + (r.refunded || 0), 0);
-  const maxSales = rollups.length ? Math.max(...rollups.map((d) => d.gross_sales || 0), 1) : 1;
+  const maxSales = rollups.length ? Math.max(...rollups.map((d) => d.net_sales || 0), 1) : 1;
   const payTotal = cashTotal + cardTotal + unpaidTotal || 1;
   const fmtLabel = (dateStr) => {
     const d = new Date(dateStr + "T00:00:00Z");
@@ -152,16 +152,16 @@ export default function ReportsScreen() {
             </div>
           </div>
           <div className="text-xs mb-5" style={{ color: "var(--pos-muted)" }}>
-            Last {range} days · ₹{rollups.reduce((s, d) => s + (d.gross_sales || 0), 0).toFixed(0)} total
+            Last {range} days · ₹{rollups.reduce((s, d) => s + (d.net_sales || 0), 0).toFixed(0)} total
           </div>
           {rollupsLoading ? (
             <div className="h-44 flex items-center justify-center text-xs" style={{ color: "var(--pos-muted)" }}>Loading…</div>
           ) : (
             <div className="flex items-end gap-[3px] h-44 overflow-x-auto pos-scroll">
               {rollups.map((d) => (
-                <div key={d.date} className="flex-1 min-w-[18px] flex flex-col items-center gap-1.5" title={`${d.date} · ₹${(d.gross_sales || 0).toFixed(2)}`}>
-                  {range <= 7 && <span className="text-[10px] tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(d.gross_sales || 0).toFixed(0)}</span>}
-                  <div className="w-full rounded-t-md" style={{ height: `${((d.gross_sales || 0) / maxSales) * 100}%`, background: (d.gross_sales || 0) === maxSales ? "var(--pos-accent)" : "var(--pos-border)", minHeight: 4, transition: "height 0.4s ease" }} />
+                <div key={d.date} className="flex-1 min-w-[18px] flex flex-col items-center gap-1.5" title={`${d.date} · ₹${(d.net_sales || 0).toFixed(2)}`}>
+                  {range <= 7 && <span className="text-[10px] tabular-nums" style={{ color: "var(--pos-muted)" }}>₹{(d.net_sales || 0).toFixed(0)}</span>}
+                  <div className="w-full rounded-t-md" style={{ height: `${((d.net_sales || 0) / maxSales) * 100}%`, background: (d.net_sales || 0) === maxSales ? "var(--pos-accent)" : "var(--pos-border)", minHeight: 4, transition: "height 0.4s ease" }} />
                   <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: "var(--pos-muted)" }}>{fmtLabel(d.date)}</span>
                 </div>
               ))}

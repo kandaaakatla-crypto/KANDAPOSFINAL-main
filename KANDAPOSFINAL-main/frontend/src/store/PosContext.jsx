@@ -10,6 +10,7 @@ import * as repo from "../data/repo";
 import { pullDeltas, processOutbox } from "../data/syncEngine";
 import { isOnline, subscribeConnectivity } from "../data/connectivity";
 import { toast } from "sonner";
+import { sortTables } from "../utils/sortTables";
 
 const PosContext = createContext(null);
 
@@ -65,6 +66,11 @@ export function PosProvider({ children }) {
   // convention used throughout this codebase's seed data) — every Repo call
   // needs it, so it's cheaper to resolve once than re-derive per call.
   const tenantIdRef = useRef(null);
+  // local order id -> server order, filled as the outbox lands order.create
+  // mutations. Anything that needs the *server* id of an order placed a
+  // moment ago (card/split payments) waits on this — see waitForServerOrder.
+  const syncedOrdersRef = useRef(new Map());
+  const orderFailuresRef = useRef(new Map());
 
   const refreshPendingCount = useCallback(async () => {
     const tid = tenantIdRef.current;
@@ -86,7 +92,7 @@ export function PosProvider({ children }) {
         repo.getAll("menuSchedules", tid), repo.getAll("diningTables", tid),
       ]);
       setCategories(cats); setMenuItems(items); setInventory(inv);
-      setCustomers(custs); setSchedules(scheds); setTables(tbls);
+      setCustomers(custs); setSchedules(scheds); setTables(sortTables(tbls));
     } catch { /* IndexedDB unavailable — screens simply stay on whatever's already in state */ }
   }, []);
 
@@ -126,7 +132,10 @@ export function PosProvider({ children }) {
     if (!tid) return;
     if (isOfflineRef.current) return;
     try {
-      await processOutbox(tid);
+      await processOutbox(tid, {
+        onOrderSynced: (localId, created) => { syncedOrdersRef.current.set(localId, created); orderFailuresRef.current.delete(localId); },
+        onOrderFailed: (localId, err) => { orderFailuresRef.current.set(localId, err); },
+      });
       await pullDeltas(tid);
       await Promise.all([hydrateFromCache(tid), syncOrdersFromServer(tid), loadSurgeRules(tid)]);
     } catch { /* best-effort background sync — the next tick/reconnect retries */ }
@@ -291,6 +300,29 @@ export function PosProvider({ children }) {
     runSync(tid);
   }, [refreshPendingCount, runSync]);
 
+  // Resolves with the *server* copy of an order the POS just placed. Placing
+  // is local-first, so right after "Pay" the order only has a browser-only
+  // `lo_…` id — and the server has never heard of it, so a payment call made
+  // with that id 404s ("POS order not found") and each retry spawns another
+  // duplicate. Card/split payments must wait here first.
+  const waitForServerOrder = useCallback(async (order, timeoutMs = 20000) => {
+    if (!order?.id?.startsWith("lo_")) return order;
+    const started = Date.now();
+    for (;;) {
+      const done = syncedOrdersRef.current.get(order.id);
+      if (done) return done;
+      const failure = orderFailuresRef.current.get(order.id);
+      if (failure && failure?.response?.status >= 400 && failure?.response?.status < 500) {
+        throw new Error(failure?.response?.data?.detail || "The server rejected this order — nothing was charged.");
+      }
+      if (Date.now() - started > timeoutMs) {
+        throw new Error("This order hasn't reached the server yet — nothing was charged. Check the connection and try again.");
+      }
+      await runSync(tenantIdRef.current);
+      if (!syncedOrdersRef.current.has(order.id)) await new Promise((r) => setTimeout(r, 1000));
+    }
+  }, [runSync]);
+
   const placeOrder = useCallback(async (order) => {
     const tid = tenantIdRef.current;
     const localId = newLocalId();
@@ -438,8 +470,8 @@ export function PosProvider({ children }) {
       const created = await customersApi.create(cust);
       setCustomers((prev) => [created, ...prev]);
       return created;
-    } catch {
-      toast.error("Could not save customer");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not save customer");
     }
   }, []);
 
@@ -462,7 +494,7 @@ export function PosProvider({ children }) {
   const refreshTables = useCallback(async () => {
     try {
       const list = await tablesApi.list();
-      setTables(list);
+      setTables(sortTables(list));
     } catch {}
   }, []);
 
@@ -586,7 +618,7 @@ export function PosProvider({ children }) {
     tenantInfo, businessType, features, refreshTenantInfo,
     categories,
     menuItems, upsertMenuItem, toggleItemAvailability, schedules,
-    orders, placeOrder, appendToOrder, updateOrderStatus, setOrderPacked, assignDriver, reloadOrders,
+    orders, placeOrder, waitForServerOrder, appendToOrder, updateOrderStatus, setOrderPacked, assignDriver, reloadOrders,
     setOrderCustomer, setOrderServiceCharge,
     customers, upsertCustomer, deleteCustomer, refreshCustomers, refreshTables, refreshMenu,
     tables, setTableStatus,

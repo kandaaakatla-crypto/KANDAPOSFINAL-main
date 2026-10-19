@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import ReceiptModal from "./ReceiptModal";
 import RefundVoidModal from "./RefundVoidModal";
 import { timeAgo } from "../../utils/timeAgo";
+import { orderNo } from "../../utils/orderNumber";
 
 const STATUS_FLOW = ["new", "in-kitchen", "ready", "out-for-delivery", "completed"];
 const STATUS_META = {
@@ -15,9 +16,21 @@ const STATUS_META = {
   "out-for-delivery": { label: "Out for Delivery", color: "#3b82f6", bg: "#14233f" },
   "completed": { label: "Completed", color: "var(--pos-muted)", bg: "#1a2235" },
 };
+const VOIDED_META = { label: "Voided", color: "#f87171", bg: "#2b1212" };
+const REFUNDED_META = { label: "Refunded", color: "#fbbf24", bg: "#33260e" };
+
+// A voided or fully refunded order is no longer in its kitchen/payment state,
+// so the headline badge says so instead of the stale "Completed"/"New".
+function statusMeta(order) {
+  if (order.voided) return VOIDED_META;
+  if (order.refunded_amount > 0 && order.refunded_amount >= order.total) return REFUNDED_META;
+  return STATUS_META[order.status];
+}
+
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
 
 function nextStatus(order) {
+  if (order.voided) return null;
   if (order.status === "completed") return null;
   if (order.status === "ready") return order.type === "delivery" ? "out-for-delivery" : "completed";
   const idx = STATUS_FLOW.indexOf(order.status);
@@ -38,11 +51,17 @@ export default function OrdersScreen() {
     return o.status === filter;
   });
 
+  // Closing an unpaid order would hide the Bill button and block voiding, so
+  // the last step for an unpaid non-delivery order is collecting payment, not
+  // "Mark Completed" (delivery stays exempt: the driver collects cash).
+  const needsPayment = (order) => nextStatus(order) === "completed" && order.payment === "unpaid" && order.type !== "delivery";
+
   const advance = (order) => {
     const ns = nextStatus(order);
     if (!ns) return;
+    if (needsPayment(order)) { navigate(`/${slug}/pos?order=${order.id}`); return; }
     updateOrderStatus(order.id, ns);
-    toast.success(`Order #${order.number} → ${STATUS_META[ns].label}`);
+    toast.success(`Order ${orderNo(order)} → ${STATUS_META[ns].label}`);
   };
 
   const FILTERS = [
@@ -76,7 +95,7 @@ export default function OrdersScreen() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {filtered.map((o) => {
-              const meta = STATUS_META[o.status];
+              const meta = statusMeta(o);
               const TypeIcon = TYPE_ICON[o.type];
               const ns = nextStatus(o);
               return (
@@ -84,7 +103,7 @@ export default function OrdersScreen() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{o.number}</span>
+                        <span className="font-bold" style={{ color: "var(--pos-text)" }}>{orderNo(o)}</span>
                         <TypeIcon className="w-4 h-4" style={{ color: "var(--pos-muted)" }} />
                         <span className="text-xs capitalize" style={{ color: "var(--pos-muted)" }}>{o.type}{o.table ? ` · Table ${o.table}` : ""}</span>
                       </div>
@@ -114,7 +133,7 @@ export default function OrdersScreen() {
                     <button data-testid={`advance-${o.number}`} onClick={() => advance(o)}
                       className="pos-btn mt-3 h-10 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-1"
                       style={{ background: STATUS_META[ns].color }}>
-                      Mark {STATUS_META[ns].label} <ChevronRight className="w-4 h-4" />
+                      {needsPayment(o) ? "Collect payment" : `Mark ${STATUS_META[ns].label}`} <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
                   <button data-testid={`receipt-${o.number}`} onClick={() => setReceiptOrderId(o.id)}
@@ -122,7 +141,7 @@ export default function OrdersScreen() {
                     style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
                     <Receipt className="w-3.5 h-3.5" /> Receipt / KOT
                   </button>
-                  {o.payment === "unpaid" && !o.voided && o.status !== "completed" && (
+                  {o.payment === "unpaid" && !o.voided && (
                     <button data-testid={`bill-${o.number}`} onClick={() => navigate(`/${slug}/pos?order=${o.id}`)}
                       className="pos-btn mt-2 h-9 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5"
                       style={{ background: "var(--pos-accent)" }}>
@@ -138,7 +157,7 @@ export default function OrdersScreen() {
                         <Undo2 className="w-3 h-3" /> Refund
                       </button>
                       <button data-testid={`void-${o.number}`} onClick={() => setRefundOrder({ ...o, kind: "void" })}
-                        disabled={["served", "completed"].includes(o.status)}
+                        disabled={["served", "completed"].includes(o.status) && o.payment !== "unpaid"}
                         className="pos-btn h-8 rounded-md text-xs font-bold flex items-center justify-center gap-1 disabled:opacity-40"
                         style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #6b1f1f" }}>
                         <Ban className="w-3 h-3" /> Void

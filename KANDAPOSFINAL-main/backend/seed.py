@@ -1,7 +1,7 @@
 """Seed Kanda POS Mongo with mock data on first boot. Idempotent."""
 from datetime import datetime, timezone, timedelta
 from tz import now_ist
-from auth import hash_pin
+from auth import hash_pin, pin_lookup
 
 
 STAFF = [
@@ -252,6 +252,7 @@ async def seed_all(db):
                 "id": s["id"], "tenant_id": tid,
                 "name": s["name"], "role": s["role"], "initials": s["initials"],
                 "pin_hash": hash_pin(s["pin"]),
+                "pin_lookup": pin_lookup(tid, s["pin"]),
                 "created_at": now_ist().isoformat(),
             })
         await db.users.insert_many(docs)

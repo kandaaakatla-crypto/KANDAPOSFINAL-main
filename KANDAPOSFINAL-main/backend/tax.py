@@ -123,15 +123,50 @@ def compute_order_tax(line_amounts: List[Tuple[float, float]]) -> OrderTaxBreakd
         "items_total": items_total,
         "subtotal": subtotal,
         "tax_total": tax_total,
-        "cgst": round(tax_total / 2, 2),
-        "sgst": round(tax_total - round(tax_total / 2, 2), 2),
+        "cgst": split_cgst_sgst(tax_total)[0],
+        "sgst": split_cgst_sgst(tax_total)[1],
     }
 
 
+def _paise(x: float) -> int:
+    return int(round(float(x) * 100))
+
+
+def apply_taxable_discount(subtotal: float, tax_total: float, discount, inclusive: bool) -> Tuple[float, float, float]:
+    """Take a discount off the taxable value, then re-derive the GST on what's
+    left → (subtotal, tax_total, items_total) after the discount.
+
+    GST is charged on the value actually supplied, so a bill discount or
+    coupon lowers the tax too (tax is scaled by the same factor as the base,
+    which is exact because every line keeps its own rate). Restaurant
+    (exclusive) menus take the discount off the pre-tax subtotal; retail
+    (inclusive) MRP takes it off the gross. Done in integer paise with
+    half-up rounding so the frontend's mirror (utils/tax.js
+    applyTaxableDiscount) lands on exactly the same figures. Clamped to
+    [0, base]; a missing/negative discount is a no-op."""
+    sub_p, tax_p = _paise(subtotal), _paise(tax_total)
+    base_p = sub_p + tax_p if inclusive else sub_p
+    d_p = max(0, min(_paise(discount or 0), base_p))
+    if d_p == 0 or base_p == 0:
+        return round(sub_p / 100, 2), round(tax_p / 100, 2), round((sub_p + tax_p) / 100, 2)
+    left_p = base_p - d_p
+    new_tax_p = (tax_p * left_p * 2 + base_p) // (2 * base_p)  # round half up
+    if inclusive:
+        new_sub_p = left_p - new_tax_p
+        items_p = left_p
+    else:
+        new_sub_p = left_p
+        items_p = left_p + new_tax_p
+    return round(new_sub_p / 100, 2), round(new_tax_p / 100, 2), round(items_p / 100, 2)
+
+
 def split_cgst_sgst(tax_total: float) -> Tuple[float, float]:
-    """Intra-state 50/50 split, with any odd paisa going to SGST."""
-    cgst = round(tax_total / 2, 2)
-    return cgst, round(tax_total - cgst, 2)
+    """Intra-state 50/50 split, with any odd paisa going to SGST. Integer
+    paise (not float round()) so the screen, receipt and server always agree
+    — 19.95 is 9.97 + 9.98 everywhere."""
+    total_p = _paise(tax_total)
+    cgst_p = total_p // 2
+    return round(cgst_p / 100, 2), round((total_p - cgst_p) / 100, 2)
 
 
 def compute_service_charge(subtotal: float, tax_total: float, pct: float) -> Tuple[float, float]:

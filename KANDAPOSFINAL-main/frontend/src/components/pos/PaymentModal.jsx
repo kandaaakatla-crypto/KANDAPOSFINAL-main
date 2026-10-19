@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Banknote, CreditCard, CheckCircle2, Loader2, XCircle, Split } from "lucide-react";
 import { Input } from "../ui/input";
 import { paymentsApi } from "../../api/client";
+import { usePos } from "../../store/PosContext";
 import { toast } from "sonner";
 
 /**
@@ -15,6 +16,7 @@ import { toast } from "sonner";
  * @param {(method:"cash"|"card"|"split", order:object) => void} props.onPaid
  */
 export default function PaymentModal({ open, onClose, total, customerName, onCreateOrder, onPaid }) {
+  const { waitForServerOrder } = usePos();
   const [method, setMethod] = useState("cash");
   const [tendered, setTendered] = useState("");
   const [cardState, setCardState] = useState("idle");
@@ -59,9 +61,18 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
       onPaid("split", placed);
       return;
     }
+    // The order is local-first; payment must reference the *server* order.
+    let serverOrder;
+    try {
+      serverOrder = await waitForServerOrder(placed);
+    } catch (e) {
+      toast.error(e.message);
+      setCardState("failed");
+      return;
+    }
     let rzpOrder;
     try {
-      rzpOrder = await paymentsApi.createRazorpayOrder(placed.id, splitCardNum);
+      rzpOrder = await paymentsApi.createRazorpayOrder(serverOrder.id, splitCardNum);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Could not start card portion");
       setCardState("failed");
@@ -84,7 +95,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
         setCardState("verifying");
         try {
           const result = await paymentsApi.verify({
-            orderId: placed.id, razorpay_order_id: resp.razorpay_order_id,
+            orderId: serverOrder.id, razorpay_order_id: resp.razorpay_order_id,
             razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature,
           });
           setCardState("approved");
@@ -107,9 +118,17 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
     const placed = await onCreateOrder("card");
     if (!placed) { setCardState("idle"); return; }
 
+    let serverOrder;
+    try {
+      serverOrder = await waitForServerOrder(placed);
+    } catch (e) {
+      toast.error(e.message);
+      setCardState("failed");
+      return;
+    }
     let rzpOrder;
     try {
-      rzpOrder = await paymentsApi.createRazorpayOrder(placed.id, total);
+      rzpOrder = await paymentsApi.createRazorpayOrder(serverOrder.id, total);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Could not create Razorpay order");
       setCardState("failed");
@@ -137,7 +156,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
         setCardState("verifying");
         try {
           const result = await paymentsApi.verify({
-            orderId: placed.id,
+            orderId: serverOrder.id,
             razorpay_order_id: resp.razorpay_order_id,
             razorpay_payment_id: resp.razorpay_payment_id,
             razorpay_signature: resp.razorpay_signature,
@@ -187,8 +206,13 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
 
         {method === "cash" && (
           <div className="space-y-3 fade-in">
-            <div className="grid grid-cols-4 gap-2">
-              {quickAmounts.map((a) => (
+            <div className="grid grid-cols-5 gap-2">
+              <button data-testid="tender-exact" onClick={() => setTendered(total.toFixed(2))}
+                className="pos-btn h-11 rounded-lg font-bold text-sm"
+                style={{ background: "var(--pos-accent)", color: "#fff", border: "1px solid var(--pos-accent)" }}>
+                Exact
+              </button>
+              {quickAmounts.slice(0, 4).map((a) => (
                 <button key={a} data-testid={`tender-${a}`} onClick={() => setTendered(String(a))}
                   className="pos-btn h-11 rounded-lg font-bold text-sm"
                   style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
@@ -196,8 +220,16 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
                 </button>
               ))}
             </div>
-            <Input data-testid="tendered-input" type="number" placeholder="Amount tendered" value={tendered} onChange={(e) => setTendered(e.target.value)}
+            <Input data-testid="tendered-input" type="number" min={0} aria-label="Amount tendered" placeholder="Amount tendered" value={tendered} onChange={(e) => setTendered(e.target.value)}
               className="h-12 text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            {tendered !== "" && tenderedNum < 0 && (
+              <div className="text-xs font-semibold" role="alert" style={{ color: "#f87171" }}>Amount can&apos;t be negative.</div>
+            )}
+            {tenderedNum > 0 && tenderedNum < total && (
+              <div className="text-xs font-semibold" role="alert" data-testid="tender-short" style={{ color: "#f87171" }}>
+                Short by ₹{(total - tenderedNum).toFixed(2)}
+              </div>
+            )}
             {tenderedNum >= total && (
               <div className="flex justify-between items-center rounded-lg px-4 py-3" style={{ background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.4)" }} data-testid="change-due">
                 <span className="text-sm font-semibold" style={{ color: "#16a34a" }}>Change due</span>
