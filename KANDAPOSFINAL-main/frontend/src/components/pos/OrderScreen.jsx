@@ -644,7 +644,10 @@ export default function OrderScreen() {
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3" data-testid="item-grid">
           {items.map((item) => {
             const cat = CATEGORIES.find((c) => c.id === item.catId);
-            const priceLabel = item.isPizza ? `₹${item.sizes.sm.toFixed(2)} – ₹${item.sizes.lg.toFixed(2)}` : `₹${item.price.toFixed(2)}`;
+            // Show what the customer will be charged: the cart applies the
+            // active aggregator surge, so the menu cards must too.
+            const shown = (p) => applySurge(p, surge.pct).toFixed(2);
+            const priceLabel = item.isPizza ? `₹${shown(item.sizes.sm)} – ₹${shown(item.sizes.lg)}` : `₹${shown(item.price)}`;
             return (
               <div key={item.id} data-testid={`menu-item-${item.id}`} onClick={() => handleItemClick(item)}
                 className="menu-tile rounded-xl p-3.5 flex flex-col justify-between min-h-[110px]"
@@ -708,7 +711,7 @@ export default function OrderScreen() {
         onServiceCharge={onServiceCharge}
       />
 
-      <ItemModal item={modalItem} menuItems={effectiveMenuItems} onClose={() => setModalItem(null)} onAdd={addLine} />
+      <ItemModal item={modalItem} menuItems={effectiveMenuItems} surgePct={surge.pct} onClose={() => setModalItem(null)} onAdd={addLine} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName={orderCustomer()?.name} onCreateOrder={onCreateOrder} onPaid={onPaid} />
 
       <Dialog open={zReportOpen} onOpenChange={setZReportOpen}>
