@@ -75,7 +75,7 @@ const MUTATION_HANDLERS = {
 // (its dependsOnLocalId hasn't resolved yet) rather than skipping ahead out
 // of order — the next call (next reconnect tick) picks up where this left
 // off. Returns a summary for the caller to toast/log.
-export async function processOutbox(tenantId, { onOrderSynced } = {}) {
+export async function processOutbox(tenantId, { onOrderSynced, onOrderFailed } = {}) {
   const pending = await repo.listPendingMutations(tenantId);
   const summary = { synced: 0, failed: 0, blocked: 0 };
   // localId -> real id, for order.create entries synced earlier in *this*
@@ -112,6 +112,7 @@ export async function processOutbox(tenantId, { onOrderSynced } = {}) {
       // will never succeed by retrying as-is — surface it, don't spin on it
       // forever. Network errors / 5xx get retried on the next pass.
       const status = err?.response?.status;
+      if (m.kind === "order.create") onOrderFailed?.(m.localOrderId, err);
       const permanent = typeof status === "number" && status >= 400 && status < 500 && status !== 429;
       await repo.markMutationFailed(m.seq, err, permanent);
       summary.failed += 1;

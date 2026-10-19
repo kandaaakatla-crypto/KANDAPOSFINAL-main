@@ -27,7 +27,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 
 from db import get_db
-from auth import verify_pin, get_current_user, require_role
+from auth import verify_pin, find_pin_matches, get_current_user, require_role
 from routes.pos_devices import require_pos_device
 from tenants import resolve_tenant_from_request, tenant_filter
 from models import (
@@ -81,11 +81,8 @@ async def punch(payload: TimePunchRequest, request: Request):
         raise HTTPException(status_code=400, detail="PIN must be 4 digits")
 
     users = await db.users.find({"tenant_id": tenant["id"]}, {"_id": 0}).to_list(500)
-    matched = None
-    for u in users:
-        if verify_pin(pin, u["pin_hash"]):
-            matched = u
-            break
+    found = await find_pin_matches(db, tenant["id"], users, pin)
+    matched = found[0] if found else None
     if not matched:
         raise HTTPException(status_code=401, detail="Unknown PIN")
     if matched.get("active") is False:

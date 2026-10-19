@@ -42,9 +42,15 @@ export default function OrdersScreen() {
     return o.status === filter;
   });
 
+  // Closing an unpaid order would hide the Bill button and block voiding, so
+  // the last step for an unpaid non-delivery order is collecting payment, not
+  // "Mark Completed" (delivery stays exempt: the driver collects cash).
+  const needsPayment = (order) => nextStatus(order) === "completed" && order.payment === "unpaid" && order.type !== "delivery";
+
   const advance = (order) => {
     const ns = nextStatus(order);
     if (!ns) return;
+    if (needsPayment(order)) { navigate(`/${slug}/pos?order=${order.id}`); return; }
     updateOrderStatus(order.id, ns);
     toast.success(`Order #${order.number} → ${STATUS_META[ns].label}`);
   };
@@ -118,7 +124,7 @@ export default function OrdersScreen() {
                     <button data-testid={`advance-${o.number}`} onClick={() => advance(o)}
                       className="pos-btn mt-3 h-10 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-1"
                       style={{ background: STATUS_META[ns].color }}>
-                      Mark {STATUS_META[ns].label} <ChevronRight className="w-4 h-4" />
+                      {needsPayment(o) ? "Collect payment" : `Mark ${STATUS_META[ns].label}`} <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
                   <button data-testid={`receipt-${o.number}`} onClick={() => setReceiptOrderId(o.id)}
@@ -126,7 +132,7 @@ export default function OrdersScreen() {
                     style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
                     <Receipt className="w-3.5 h-3.5" /> Receipt / KOT
                   </button>
-                  {o.payment === "unpaid" && !o.voided && o.status !== "completed" && (
+                  {o.payment === "unpaid" && !o.voided && (
                     <button data-testid={`bill-${o.number}`} onClick={() => navigate(`/${slug}/pos?order=${o.id}`)}
                       className="pos-btn mt-2 h-9 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5"
                       style={{ background: "var(--pos-accent)" }}>
@@ -142,7 +148,7 @@ export default function OrdersScreen() {
                         <Undo2 className="w-3 h-3" /> Refund
                       </button>
                       <button data-testid={`void-${o.number}`} onClick={() => setRefundOrder({ ...o, kind: "void" })}
-                        disabled={["served", "completed"].includes(o.status)}
+                        disabled={["served", "completed"].includes(o.status) && o.payment !== "unpaid"}
                         className="pos-btn h-8 rounded-md text-xs font-bold flex items-center justify-center gap-1 disabled:opacity-40"
                         style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #6b1f1f" }}>
                         <Ban className="w-3 h-3" /> Void

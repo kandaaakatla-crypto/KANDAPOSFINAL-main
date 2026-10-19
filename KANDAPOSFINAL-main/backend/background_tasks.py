@@ -24,17 +24,25 @@ from tz import now_ist
 from routes.loyalty import _get_config as _get_loyalty_config
 from sms_service import send_sms
 from email_service import send_email, landing_leads_digest_email
+from sales import PAID_NOT_VOIDED, net_sales
 
 logger = logging.getLogger("kanda.cron")
+
+
+# Bump when the definition of a rollup changes: cached days with an older (or
+# missing) `v` are recomputed on read instead of showing stale numbers.
+ROLLUP_VERSION = 2
 
 
 async def _compute_day_rollup(db, tenant_id: str, day: datetime) -> dict:
     start_iso = day.isoformat()
     end_iso = (day + timedelta(days=1)).isoformat()
+    # Paid, non-voided orders only (sales.py) — unpaid/voided orders are not
+    # sales, and refunds are netted out so nothing is counted twice.
     docs = await db.orders.find(
         {"tenant_id": tenant_id, "placedAt": {"$gte": start_iso, "$lt": end_iso},
-         "voided": {"$ne": True}},
-        {"_id": 0, "total": 1, "refunded_amount": 1, "items": 1, "placedAt": 1},
+         **PAID_NOT_VOIDED},
+        {"_id": 0, "total": 1, "refunded_amount": 1, "items": 1, "placedAt": 1, "payment": 1},
     ).to_list(20000)
 
     gross = 0.0
@@ -45,12 +53,12 @@ async def _compute_day_rollup(db, tenant_id: str, day: datetime) -> dict:
         total = float(o.get("total", 0) or 0)
         gross += total
         refunded += float(o.get("refunded_amount", 0) or 0)
-        # Hourly bucket by IST hour of placedAt.
+        # Hourly bucket by IST hour of placedAt (net of refunds).
         placed = o.get("placedAt") or ""
         try:
             hr = int(placed[11:13])
             if 0 <= hr < 24:
-                hourly[hr] += total
+                hourly[hr] += net_sales(o)
         except (ValueError, IndexError):
             pass
         for it in (o.get("items") or []):
@@ -78,6 +86,7 @@ async def _compute_day_rollup(db, tenant_id: str, day: datetime) -> dict:
         "top_items": top_items,
         "computed_at": now_ist().isoformat(),
         "is_final": True,
+        "v": ROLLUP_VERSION,
     }
 
 

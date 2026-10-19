@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Banknote, CreditCard, CheckCircle2, Loader2, XCircle, Split } from "lucide-react";
 import { Input } from "../ui/input";
 import { paymentsApi } from "../../api/client";
+import { usePos } from "../../store/PosContext";
 import { toast } from "sonner";
 
 /**
@@ -15,6 +16,7 @@ import { toast } from "sonner";
  * @param {(method:"cash"|"card"|"split", order:object) => void} props.onPaid
  */
 export default function PaymentModal({ open, onClose, total, customerName, onCreateOrder, onPaid }) {
+  const { waitForServerOrder } = usePos();
   const [method, setMethod] = useState("cash");
   const [tendered, setTendered] = useState("");
   const [cardState, setCardState] = useState("idle");
@@ -59,9 +61,18 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
       onPaid("split", placed);
       return;
     }
+    // The order is local-first; payment must reference the *server* order.
+    let serverOrder;
+    try {
+      serverOrder = await waitForServerOrder(placed);
+    } catch (e) {
+      toast.error(e.message);
+      setCardState("failed");
+      return;
+    }
     let rzpOrder;
     try {
-      rzpOrder = await paymentsApi.createRazorpayOrder(placed.id, splitCardNum);
+      rzpOrder = await paymentsApi.createRazorpayOrder(serverOrder.id, splitCardNum);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Could not start card portion");
       setCardState("failed");
@@ -84,7 +95,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
         setCardState("verifying");
         try {
           const result = await paymentsApi.verify({
-            orderId: placed.id, razorpay_order_id: resp.razorpay_order_id,
+            orderId: serverOrder.id, razorpay_order_id: resp.razorpay_order_id,
             razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature,
           });
           setCardState("approved");
@@ -107,9 +118,17 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
     const placed = await onCreateOrder("card");
     if (!placed) { setCardState("idle"); return; }
 
+    let serverOrder;
+    try {
+      serverOrder = await waitForServerOrder(placed);
+    } catch (e) {
+      toast.error(e.message);
+      setCardState("failed");
+      return;
+    }
     let rzpOrder;
     try {
-      rzpOrder = await paymentsApi.createRazorpayOrder(placed.id, total);
+      rzpOrder = await paymentsApi.createRazorpayOrder(serverOrder.id, total);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Could not create Razorpay order");
       setCardState("failed");
@@ -137,7 +156,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
         setCardState("verifying");
         try {
           const result = await paymentsApi.verify({
-            orderId: placed.id,
+            orderId: serverOrder.id,
             razorpay_order_id: resp.razorpay_order_id,
             razorpay_payment_id: resp.razorpay_payment_id,
             razorpay_signature: resp.razorpay_signature,
