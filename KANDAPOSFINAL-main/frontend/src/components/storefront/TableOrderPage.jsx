@@ -7,11 +7,11 @@ import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/t
 import StorefrontItemModal from "./StorefrontItemModal";
 import "./storefront.css";
 import {
-  UtensilsCrossed, Minus, Plus, X, ShoppingCart, CheckCircle2, Loader2, ShieldCheck,
-  Sun, Moon, User, ChevronLeft, Wallet, CreditCard, Clock,
+  UtensilsCrossed, Minus, Plus, X, ShoppingCart, CheckCircle2, Loader2,
+  Sun, Moon, ChevronLeft, Wallet, CreditCard, Clock,
 } from "lucide-react";
 
-const STEP = { CART: "cart", AUTH: "auth", PAYMENT: "payment", PLACING: "placing" };
+const STEP = { CART: "cart", PAYMENT: "payment", PLACING: "placing" };
 
 async function runOnlinePayment({ slug, orderId, amount, customerName }) {
   if (typeof window.Razorpay !== "function") {
@@ -59,19 +59,6 @@ export default function TableOrderPage() {
   const [placing, setPlacing] = useState(false);
   const [confirmed, setConfirmed] = useState(null);
 
-  // Optional sign-in — verified identity unlocks online payment + order history.
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [devCode, setDevCode] = useState("");
-  const [sessionToken, setSessionToken] = useState("");
-  const [sessionName, setSessionName] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpError, setOtpError] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const [accountOpen, setAccountOpen] = useState(false);
-  const [account, setAccount] = useState(null);
-
   useEffect(() => {
     Promise.all([storefrontApi.menu(slug), storefrontApi.table(slug, number)])
       .then(([m]) => { setMenu(m); if (m.categories.length) setActiveCat(m.categories[0].id); })
@@ -103,44 +90,17 @@ export default function TableOrderPage() {
 
   const openCart = () => { setSheetStep(STEP.CART); setCartOpen(true); };
 
-  const requestOtp = async () => {
-    if (!name.trim() || phone.trim().length < 8) { setOtpError("Enter your name and phone number"); return; }
-    setBusy(true); setOtpError("");
-    try {
-      const r = await storefrontApi.requestOtp(slug, name.trim(), phone.trim());
-      setDevCode(r.dev_code || ""); setOtpSent(true);
-    } catch (e) { setOtpError(e?.response?.data?.detail || "Could not send code"); }
-    finally { setBusy(false); }
-  };
-
-  const verifyOtp = async () => {
-    if (code.trim().length !== 6) { setOtpError("Enter the 6-digit code"); return; }
-    setBusy(true); setOtpError("");
-    try {
-      const r = await storefrontApi.verifyOtp(slug, phone.trim(), code.trim());
-      setSessionToken(r.token); setSessionName(r.name);
-      setSheetStep(STEP.PAYMENT);
-    } catch (e) { setOtpError(e?.response?.data?.detail || "Incorrect code"); }
-    finally { setBusy(false); }
-  };
-
-  const openAccount = async () => {
-    setAccountOpen(true);
-    if (!sessionToken) return;
-    try { setAccount(await storefrontApi.me(slug, sessionToken)); } catch { /* ignore */ }
-  };
-
   const finalizeOrder = async (payOnline) => {
     setPlacing(true); setSheetStep(STEP.PLACING);
     try {
       const res = await storefrontApi.placeTableOrder(slug, number, {
         items: cart.map((l) => ({ item_id: l.item_id, qty: l.qty, size: l.size, variant: l.variant, mods: l.mods })),
-        customer_name: sessionToken ? undefined : (name.trim() || undefined),
-      }, sessionToken || undefined);
+        customer_name: name.trim() || undefined,
+      });
 
       let paid = false;
       if (payOnline) {
-        const result = await runOnlinePayment({ slug, orderId: res.orderId, amount: res.total, customerName: sessionName || name });
+        const result = await runOnlinePayment({ slug, orderId: res.orderId, amount: res.total, customerName: name });
         if (result.ok) paid = true; else toast.info(result.reason);
       }
       setConfirmed({ ...res, paid });
@@ -218,9 +178,6 @@ export default function TableOrderPage() {
         <div className="flex items-center gap-1.5 shrink-0">
           <button onClick={toggleTheme} className="w-9 h-9 rounded-full flex items-center justify-center sf-input" aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          <button onClick={openAccount} data-testid="sf-account-btn" className="w-9 h-9 rounded-full flex items-center justify-center sf-input">
-            <User className="w-4 h-4" />
           </button>
           <button onClick={openCart} className="relative w-9 h-9 rounded-full flex items-center justify-center sf-input">
             <ShoppingCart className="w-4 h-4" />
@@ -303,10 +260,8 @@ export default function TableOrderPage() {
                     ))}
                   </div>
                 )}
-                {!sessionToken && (
-                  <input placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl text-sm mb-3 sf-input" />
-                )}
+                <input placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-xl text-sm mb-3 sf-input" />
                 {gst.taxTotal > 0 && (
                   <div className="flex items-center justify-between text-xs mb-1" style={{ color: "var(--sf-text-muted)" }}>
                     <span>GST (CGST ₹{gst.cgst.toFixed(2)} + SGST ₹{gst.sgst.toFixed(2)})</span><span>₹{gst.taxTotal.toFixed(2)}</span>
@@ -322,37 +277,6 @@ export default function TableOrderPage() {
               </>
             )}
 
-            {sheetStep === STEP.AUTH && (
-              <div data-testid="table-auth-step">
-                <button onClick={() => setSheetStep(STEP.PAYMENT)} className="flex items-center gap-1 text-xs mb-3" style={{ color: "var(--sf-text-muted)" }}>
-                  <ChevronLeft className="w-3.5 h-3.5" /> Back
-                </button>
-                <div className="text-lg font-bold mb-1">Verify your number</div>
-                <div className="text-xs mb-4" style={{ color: "var(--sf-text-muted)" }}>Needed to pay online and save your order history.</div>
-                {!otpSent ? (
-                  <div className="space-y-3">
-                    <input data-testid="table-auth-name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} className="w-full h-11 px-3.5 rounded-xl text-sm sf-input" />
-                    <input data-testid="table-auth-phone" placeholder="Phone number" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full h-11 px-3.5 rounded-xl text-sm sf-input" />
-                    {otpError && <p className="text-xs" style={{ color: "var(--sf-danger)" }}>{otpError}</p>}
-                    <button data-testid="table-auth-send" onClick={requestOtp} disabled={busy} className="w-full h-11 rounded-full font-bold flex items-center justify-center gap-2 disabled:opacity-50 sf-btn-accent">
-                      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send verification code"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs mb-1" style={{ color: "var(--sf-text-muted)" }}><ShieldCheck className="w-3.5 h-3.5" /> Code sent to {phone}</div>
-                    {devCode && <div className="text-xs rounded-lg px-3 py-2" style={{ background: "var(--sf-bg-sunken)", color: "var(--sf-accent)" }}>No SMS provider configured. Your code is <b>{devCode}</b></div>}
-                    <input data-testid="table-auth-code" placeholder="6-digit code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                      className="w-full h-11 px-3 rounded-xl text-sm text-center tracking-[0.5em] font-bold sf-input" />
-                    {otpError && <p className="text-xs" style={{ color: "var(--sf-danger)" }}>{otpError}</p>}
-                    <button data-testid="table-auth-verify" onClick={verifyOtp} disabled={busy} className="w-full h-11 rounded-full font-bold flex items-center justify-center gap-2 disabled:opacity-50 sf-btn-accent">
-                      {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
             {sheetStep === STEP.PAYMENT && (
               <div data-testid="table-payment-step">
                 <button onClick={() => setSheetStep(STEP.CART)} className="flex items-center gap-1 text-xs mb-3" style={{ color: "var(--sf-text-muted)" }}>
@@ -362,10 +286,10 @@ export default function TableOrderPage() {
                 <div className="text-sm mb-4" style={{ color: "var(--sf-text-muted)" }}>Total <b>₹{total.toFixed(2)}</b></div>
                 <div className="space-y-2.5">
                   {menu.tenant.onlinePayments !== false && (
-                    <button data-testid="table-pay-online" onClick={() => { if (!sessionToken) { setOtpSent(false); setOtpError(""); setSheetStep(STEP.AUTH); } else { finalizeOrder(true); } }}
+                    <button data-testid="table-pay-online" onClick={() => finalizeOrder(true)}
                       className="w-full h-14 rounded-2xl font-bold flex items-center gap-3 px-4 sf-input">
                       <CreditCard className="w-5 h-5" style={{ color: "var(--sf-accent)" }} />
-                      <span className="text-left flex-1">Pay online now{!sessionToken && <span className="block text-[11px] font-normal" style={{ color: "var(--sf-text-muted)" }}>Requires phone verification</span>}</span>
+                      <span className="text-left flex-1">Pay online now<span className="block text-[11px] font-normal" style={{ color: "var(--sf-text-muted)" }}>UPI, cards and wallets</span></span>
                     </button>
                   )}
                   <button data-testid="table-pay-later" onClick={() => finalizeOrder(false)}
@@ -381,46 +305,6 @@ export default function TableOrderPage() {
               <div className="py-16 flex flex-col items-center gap-3">
                 <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--sf-accent)" }} />
                 <div className="text-sm" style={{ color: "var(--sf-text-muted)" }}>{placing ? "Placing your order…" : "One moment…"}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {accountOpen && (
-        <div className="fixed inset-0 z-20 flex items-end sm:items-center sm:justify-center" style={{ background: "var(--sf-overlay)" }} onClick={() => setAccountOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className={`sf ${theme === "dark" ? "sf-dark" : ""} w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl p-5 max-h-[85vh] overflow-y-auto sf-card`} data-testid="table-account-sheet">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-lg font-bold">Account</div>
-              <button onClick={() => setAccountOpen(false)}><X className="w-5 h-5" style={{ color: "var(--sf-text-muted)" }} /></button>
-            </div>
-            {!sessionToken ? (
-              <div className="text-center py-6">
-                <User className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--sf-text-muted)" }} />
-                <p className="text-sm mb-4" style={{ color: "var(--sf-text-muted)" }}>Verify your phone number to see your order history and pay online.</p>
-                <button onClick={() => { setAccountOpen(false); setOtpSent(false); setOtpError(""); setCartOpen(true); setSheetStep(STEP.AUTH); }} className="h-11 px-6 rounded-full font-bold sf-btn-accent">Sign in</button>
-              </div>
-            ) : (
-              <div>
-                <div className="text-sm mb-1">{sessionName || account?.name}</div>
-                <div className="text-xs mb-4" style={{ color: "var(--sf-text-muted)" }}>{phone || account?.phone}</div>
-                <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: "var(--sf-text-muted)" }}>Recent orders</div>
-                {!account ? (
-                  <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--sf-accent)" }} /></div>
-                ) : account.orders.length === 0 ? (
-                  <p className="text-sm py-4" style={{ color: "var(--sf-text-muted)" }}>No previous orders yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {account.orders.map((o) => (
-                      <div key={o.id} className="rounded-xl p-3 sf-input">
-                        <div className="flex items-center justify-between text-sm font-semibold">
-                          <span>#{o.number}</span><span>₹{o.total.toFixed(2)}</span>
-                        </div>
-                        <div className="text-[11px] mt-0.5" style={{ color: "var(--sf-text-muted)" }}>{o.type} · {o.status}{o.table != null ? ` · Table ${o.table}` : ""}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
           </div>
