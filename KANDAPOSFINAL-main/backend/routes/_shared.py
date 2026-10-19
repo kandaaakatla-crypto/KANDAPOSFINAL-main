@@ -50,6 +50,7 @@ def menu_doc_to_response(doc: dict) -> dict:
         "barcode": doc.get("barcode"),
         "variants": doc.get("variants"),
         "tax_rate": doc.get("tax_rate"),
+        "foodType": doc.get("food_type"),
         "updated_at": doc.get("updated_at"),
         "deleted_at": doc.get("deleted_at"),
     }

@@ -5,10 +5,12 @@ import { storefrontApi } from "../../api/storefrontClient";
 import { useStorefrontTheme } from "./useStorefrontTheme";
 import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
 import StorefrontItemModal from "./StorefrontItemModal";
+import FoodMark from "./FoodMark";
+import { filterStorefrontItems } from "../../utils/foodType";
 import "./storefront.css";
 import {
   UtensilsCrossed, Minus, Plus, X, ShoppingCart, CheckCircle2, Loader2,
-  Sun, Moon, ChevronLeft, Wallet, CreditCard, Clock,
+  Sun, Moon, Search, ChevronLeft, Wallet, CreditCard, Clock,
 } from "lucide-react";
 
 const STEP = { CART: "cart", PAYMENT: "payment", PLACING: "placing" };
@@ -51,6 +53,8 @@ export default function TableOrderPage() {
   const [menu, setMenu] = useState(null);
   const [error, setError] = useState("");
   const [activeCat, setActiveCat] = useState(null);
+  const [query, setQuery] = useState("");
+  const [vegOnly, setVegOnly] = useState(false);
   const [cart, setCart] = useState([]);
   const [modalItem, setModalItem] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -65,7 +69,8 @@ export default function TableOrderPage() {
       .catch((e) => setError(e?.response?.data?.detail || "This link isn't valid."));
   }, [slug, number]);
 
-  const items = useMemo(() => (menu?.items || []).filter((m) => m.catId === activeCat), [menu, activeCat]);
+  const items = useMemo(() => filterStorefrontItems(menu?.items, { catId: activeCat, query, vegOnly }), [menu, activeCat, query, vegOnly]);
+  const hasVegMarks = useMemo(() => (menu?.items || []).some((i) => i.foodType), [menu]);
   const subtotal = useMemo(() => cart.reduce((s, l) => s + l.displayPrice * l.qty, 0), [cart]);
   // GST is added on top of restaurant menu pricing (exclusive) — preview only;
   // the backend recomputes and charges the authoritative amount at checkout.
@@ -186,9 +191,24 @@ export default function TableOrderPage() {
         </div>
       </header>
 
-      <div className="flex gap-1.5 overflow-x-auto sf-scroll px-4 py-3">
+      <div className="flex items-center gap-2 px-4 pt-3">
+        <label className="flex-1 flex items-center gap-2 h-10 px-3 rounded-xl sf-input">
+          <Search className="w-4 h-4 shrink-0" style={{ color: "var(--sf-text-muted)" }} />
+          <input data-testid="sf-search" type="search" placeholder="Search the menu" value={query} onChange={(e) => setQuery(e.target.value)}
+            className="flex-1 min-w-0 bg-transparent outline-none text-sm" />
+        </label>
+        {hasVegMarks && (
+          <button data-testid="sf-veg-only" onClick={() => setVegOnly((v) => !v)} aria-pressed={vegOnly}
+            className="shrink-0 h-10 px-3 rounded-xl flex items-center gap-1.5 text-xs font-semibold sf-input"
+            style={vegOnly ? { borderColor: "#16a34a", color: "#16a34a" } : undefined}>
+            <FoodMark type="veg" size={12} /> Veg only
+          </button>
+        )}
+      </div>
+
+      <div className="flex gap-1.5 overflow-x-auto sf-scroll px-4 py-3" style={query.trim() ? { opacity: 0.5 } : undefined}>
         {menu.categories.map((c) => (
-          <button key={c.id} onClick={() => setActiveCat(c.id)}
+          <button key={c.id} onClick={() => { setActiveCat(c.id); setQuery(""); }}
             className="shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap sf-input"
             style={activeCat === c.id ? { background: "var(--sf-accent)", color: "var(--sf-accent-text)", borderColor: "var(--sf-accent)" } : undefined}>
             {c.name}
@@ -196,6 +216,11 @@ export default function TableOrderPage() {
         ))}
       </div>
 
+      {items.length === 0 && (
+        <p className="text-sm text-center px-4 py-10" style={{ color: "var(--sf-text-muted)" }} data-testid="sf-no-results">
+          {query.trim() ? `Nothing on the menu matches "${query.trim()}".` : "No dishes here."}
+        </p>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5 px-4">
         {items.map((item) => {
           const priceLabel = item.isPizza ? `₹${item.sizes.sm.toFixed(0)} – ₹${item.sizes.lg.toFixed(0)}`
@@ -211,7 +236,10 @@ export default function TableOrderPage() {
                 </div>
               )}
               <div className="p-2.5 flex flex-col gap-1 flex-1">
-                <div className="font-semibold text-sm leading-snug">{item.name}</div>
+                <div className="font-semibold text-sm leading-snug flex items-start gap-1.5">
+                  {item.foodType && <span className="mt-0.5"><FoodMark type={item.foodType} size={12} /></span>}
+                  <span>{item.name}</span>
+                </div>
                 {item.desc && <div className="text-[11px] leading-snug line-clamp-2" style={{ color: "var(--sf-text-muted)" }}>{item.desc}</div>}
                 <div className="text-sm font-bold mt-auto pt-1" style={{ color: "var(--sf-accent)" }}>
                   {item.available ? priceLabel : "Sold out"}

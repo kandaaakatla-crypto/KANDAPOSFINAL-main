@@ -284,6 +284,10 @@ class ProductVariant(BaseModel):
     available: bool = True
 
 
+# The veg / egg / non-veg mark Indian menus print next to each dish.
+FoodType = Literal["veg", "egg", "nonveg"]
+
+
 class MenuItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
@@ -299,6 +303,7 @@ class MenuItem(BaseModel):
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
     tax_rate: Optional[float] = None  # GST % override; None = inherit the category's rate
+    foodType: Optional[FoodType] = None  # veg / egg / nonveg mark; None = not set
     updated_at: Optional[str] = None  # for offline-client delta sync (?since=)
     deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
@@ -328,6 +333,7 @@ class MenuItemCreate(BaseModel):
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
     tax_rate: Optional[float] = None
+    foodType: Optional[FoodType] = None
 
     @model_validator(mode="after")
     def _validate(self):
@@ -348,6 +354,7 @@ class MenuItemUpdate(BaseModel):
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
     tax_rate: Optional[float] = None
+    foodType: Optional[FoodType] = None
 
     @model_validator(mode="after")
     def _validate(self):
