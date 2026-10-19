@@ -36,7 +36,7 @@ from twilio.request_validator import RequestValidator
 from twilio.twiml.voice_response import VoiceResponse, Connect, Stream
 
 from db import get_db
-from auth import get_current_user, require_role
+from auth import get_current_user, require_role, forbid_demo_tenant
 from tenants import tenant_filter, get_tenant
 from ws import schedule_broadcast
 from ._shared import next_order_number
@@ -209,7 +209,7 @@ async def get_voice_config(user: dict = Depends(get_current_user)):
     }
 
 
-@router.put("/voice/config")
+@router.put("/voice/config", dependencies=[Depends(forbid_demo_tenant)])
 async def update_voice_config(payload: VoiceConfigPayload, user: dict = Depends(require_role("Manager"))):
     db = get_db()
     updates: dict[str, Any] = {}
@@ -224,7 +224,7 @@ async def update_voice_config(payload: VoiceConfigPayload, user: dict = Depends(
     return await get_voice_config(user)
 
 
-@router.post("/voice/configure-twilio")
+@router.post("/voice/configure-twilio", dependencies=[Depends(forbid_demo_tenant)])
 async def configure_twilio_webhook(request: Request, user: dict = Depends(require_role("Manager"))):
     """Auto-configure the tenant's Twilio number to point its inbound voice
     webhook at our backend. Requires the number to have been pasted into the
@@ -348,7 +348,7 @@ async def list_owned_numbers(user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=502, detail=f"Twilio fetch failed: {exc}")
 
 
-@router.post("/voice/numbers/purchase")
+@router.post("/voice/numbers/purchase", dependencies=[Depends(forbid_demo_tenant)])
 async def purchase_number(payload: PurchaseNumberPayload, request: Request,
                           user: dict = Depends(require_role("Manager"))):
     """Buy a number from Twilio and (optionally) claim it for this tenant.
@@ -410,7 +410,7 @@ class OutboundCallPayload(BaseModel):
     message: Optional[str] = None  # extra instructions appended to the prompt
 
 
-@router.post("/voice/call")
+@router.post("/voice/call", dependencies=[Depends(forbid_demo_tenant)])
 async def place_outbound_call(payload: OutboundCallPayload, request: Request,
                               user: dict = Depends(require_role("Manager"))):
     """Initiate an outbound call from the tenant's Twilio number to `to`.
@@ -548,7 +548,7 @@ class WhisperPayload(BaseModel):
     message: str
 
 
-@router.post("/voice/calls/{call_id}/whisper")
+@router.post("/voice/calls/{call_id}/whisper", dependencies=[Depends(forbid_demo_tenant)])
 async def whisper_into_call(call_id: str, payload: WhisperPayload,
                             user: dict = Depends(require_role("Manager"))):
     """Inject a live "manager whisper" into an in-progress AI voice call.

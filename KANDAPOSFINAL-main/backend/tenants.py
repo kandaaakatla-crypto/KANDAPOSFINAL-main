@@ -41,6 +41,8 @@ DEMO_TENANT = {
     },
 }
 
+DEMO_PAID_FEATURES = ("voice_agent", "customer_sms", "whatsapp")
+
 
 def tenant_filter(user: dict, extra: Optional[dict] = None) -> dict:
     """Return a Mongo filter scoped to the authenticated user's tenant."""
@@ -72,6 +74,13 @@ async def seed_default_tenant(db) -> None:
         doc = dict(DEMO_TENANT)
         doc["created_at"] = now_ist().isoformat()
         await db.tenants.insert_one(doc)
+
+    # The demo store's logins are public: keep its paid channels off even if an
+    # older deploy created it with them on.
+    await db.tenants.update_one(
+        {"id": DEMO_TENANT["id"]},
+        {"$set": {f"features.{k}": False for k in DEMO_PAID_FEATURES}},
+    )
 
     # Backfill any rows that pre-date multi-tenancy.
     for coll in ["users", "categories", "menu_items", "customers", "tables", "inventory", "orders"]:

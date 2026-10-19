@@ -33,7 +33,7 @@ from twilio.request_validator import RequestValidator
 from twilio.rest import Client as TwilioClient
 
 from db import get_db
-from auth import get_current_user, require_role
+from auth import get_current_user, require_role, forbid_demo_tenant
 from tenants import tenant_filter
 from sms_service import normalize_phone
 from ws import schedule_broadcast
@@ -212,7 +212,7 @@ class SendTemplatePayload(BaseModel):
     variables: dict[str, str] = Field(default_factory=dict)
 
 
-@router.post("/whatsapp/send-template")
+@router.post("/whatsapp/send-template", dependencies=[Depends(forbid_demo_tenant)])
 async def wa_send_template(payload: SendTemplatePayload,
                            user: dict = Depends(require_role("Manager"))):
     """Send an approved WhatsApp template. Works outside the 24-hour window."""
@@ -446,7 +446,7 @@ class SendWaPayload(BaseModel):
     body: str = Field(min_length=1, max_length=1500)
 
 
-@router.post("/whatsapp/send")
+@router.post("/whatsapp/send", dependencies=[Depends(forbid_demo_tenant)])
 async def wa_send(payload: SendWaPayload, user: dict = Depends(require_role("Manager"))):
     client = _twilio_client()
     if client is None:
@@ -553,7 +553,7 @@ async def mark_read(conv_id: str, user: dict = Depends(get_current_user)):
     return {"ok": True}
 
 
-@router.post("/whatsapp/conversations/start")
+@router.post("/whatsapp/conversations/start", dependencies=[Depends(forbid_demo_tenant)])
 async def start_conversation(payload: SendWaPayload, user: dict = Depends(require_role("Manager"))):
     """Create a conversation shell for a phone number (without necessarily
     sending yet). Useful when a manager wants to open a thread to a new
