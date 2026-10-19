@@ -10,7 +10,7 @@ Flow:
   2. Server checks: active_locations >= 1 + tenant.paid_slots → 402 with
      {code: 'payment_required', price, currency}
   3. Client opens Razorpay via POST /api/payments/purchase-location
-  4. On Razorpay success handler, client POSTs /api/payments/verify
+  4. On Razorpay success handler, client POSTs /api/payments/location/verify
   5. Server validates HMAC, increments tenant.paid_slots by 1 (idempotent),
      and returns {ok, slots_added, slots_remaining}
   6. Client re-issues the original POST /locations which now succeeds
@@ -156,7 +156,7 @@ class VerifyRequest(BaseModel):
     razorpay_signature: str
 
 
-@router.post("/payments/verify")
+@router.post("/payments/location/verify")
 async def verify_payment(payload: VerifyRequest, user: dict = Depends(get_current_user)):
     key_secret = os.environ["RAZORPAY_KEY_SECRET"].encode()
     body = f"{payload.razorpay_order_id}|{payload.razorpay_payment_id}".encode()
