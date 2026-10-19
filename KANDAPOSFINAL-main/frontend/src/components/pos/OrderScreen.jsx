@@ -487,7 +487,7 @@ export default function OrderScreen() {
                   placeholder="Name or phone"
                   onKeyDown={(e) => e.key === "Enter" && lookupCustomer()}
                   className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
-                <button data-testid="phone-search-btn" onClick={lookupCustomer} className="pos-btn h-10 w-10 shrink-0 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-blue)" }}>
+                <button data-testid="phone-search-btn" aria-label="Search customer" onClick={lookupCustomer} className="pos-btn h-10 w-10 shrink-0 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-blue)" }}>
                   <Search className="w-4 h-4 text-white" />
                 </button>
               </div>
@@ -650,6 +650,8 @@ export default function OrderScreen() {
             const priceLabel = item.isPizza ? `from ₹${shown(item.sizes.sm)}` : `₹${shown(item.price)}`;
             return (
               <div key={item.id} data-testid={`menu-item-${item.id}`} onClick={() => handleItemClick(item)}
+                role="button" tabIndex={0} aria-label={`${item.name}, ${priceLabel}${item.available ? "" : ", sold out"}`}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleItemClick(item); } }}
                 className="menu-tile rounded-xl p-3.5 flex flex-col justify-between min-h-[110px]"
                 style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", opacity: item.available ? 1 : 0.45 }}>
                 <div>

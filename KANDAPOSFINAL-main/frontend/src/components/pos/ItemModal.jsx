@@ -118,7 +118,7 @@ export default function ItemModal({ item, menuItems = [], surgePct = 0, onClose,
               <div className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: "var(--pos-muted)" }}>Size</div>
               <div className="grid grid-cols-3 gap-2">
                 {PIZZA_SIZES.map((s) => (
-                  <button key={s.id} data-testid={`size-${s.id}`} onClick={() => setSize(s.id)}
+                  <button key={s.id} data-testid={`size-${s.id}`} aria-pressed={size === s.id} onClick={() => setSize(s.id)}
                     className="pos-btn rounded-lg py-2.5 text-sm font-semibold"
                     style={{ background: size === s.id ? "var(--pos-accent)" : "var(--pos-panel-2)", color: size === s.id ? "#fff" : "var(--pos-muted)", border: `1px solid ${size === s.id ? "var(--pos-accent)" : "var(--pos-border)"}` }}>
                     {s.label}<div className="text-xs font-normal mt-0.5">₹{shownUnit(item.sizes[s.id]).toFixed(2)}</div>

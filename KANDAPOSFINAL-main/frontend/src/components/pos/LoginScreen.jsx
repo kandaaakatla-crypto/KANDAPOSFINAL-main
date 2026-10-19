@@ -198,7 +198,7 @@ export default function LoginScreen({ isDemo = false }) {
           </div>
 
           {/* PIN dots */}
-          <motion.div animate={dotsShake} className="flex justify-center gap-4 mb-8" data-testid="pin-dots">
+          <motion.div animate={dotsShake} className="flex justify-center gap-4 mb-8" data-testid="pin-dots" role="img" aria-label={`${pin.length} of 4 digits entered`}>
             {[0, 1, 2, 3].map((i) => (
               <motion.div key={i} className="w-4 h-4 rounded-full"
                 animate={{ background: i < pin.length ? "var(--pos-accent)" : "var(--pos-border)", scale: i < pin.length ? 1.15 : 1 }}
@@ -216,7 +216,7 @@ export default function LoginScreen({ isDemo = false }) {
                 {n}
               </motion.button>
             ))}
-            <motion.button data-testid="pin-key-clear" onClick={() => { setPin(""); setError(false); }} {...pressableSmall}
+            <motion.button data-testid="pin-key-clear" aria-label="Clear PIN" onClick={() => { setPin(""); setError(false); }} {...pressableSmall}
               className="pin-key h-16 rounded-xl flex items-center justify-center"
               style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
               <Delete className="w-6 h-6" style={{ color: "var(--pos-muted)" }} />
@@ -226,7 +226,7 @@ export default function LoginScreen({ isDemo = false }) {
               style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
               0
             </motion.button>
-            <motion.button data-testid="pin-enter" onClick={handleEnter} disabled={pin.length !== 4 || busy} {...pressableSmall}
+            <motion.button data-testid="pin-enter" aria-label="Sign in" onClick={handleEnter} disabled={pin.length !== 4 || busy} {...pressableSmall}
               className="pin-key h-16 rounded-xl flex items-center justify-center disabled:opacity-40"
               style={{ background: "var(--pos-accent)" }}>
               {busy ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <LogIn className="w-6 h-6 text-white" />}
