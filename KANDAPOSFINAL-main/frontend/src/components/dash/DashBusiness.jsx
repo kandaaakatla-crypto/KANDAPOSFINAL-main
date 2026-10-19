@@ -11,7 +11,7 @@ const FSSAI_RE = /^\d{14}$/;
 const fromStore = (s = {}, fallbackName = "") => ({
   name: s.name || fallbackName, address: s.address || "", phone: s.phone || "",
   gstin: (s.tax_id || "").replace(/^GSTIN\s*/i, ""), fssai: s.fssai || "", footer: s.footer || "",
-  gst_scheme: s.gst_scheme || "regular",
+  gst_scheme: s.gst_scheme || "regular", google_review_url: s.google_review_url || "",
 });
 
 const SCHEMES = [
@@ -92,6 +92,8 @@ export default function DashBusiness() {
             fssaiBad ? "An FSSAI number is 14 digits." : null)}
         </div>
         {field("footer", "Bill footer", { maxLength: 200, placeholder: "Thank you, visit again!" })}
+        {field("google_review_url", "Google review link", { maxLength: 300, type: "url", placeholder: "https://g.page/r/…/review" },
+          form.google_review_url && !/^https:\/\/\S+$/.test(form.google_review_url.trim()) ? "Paste the full link, starting with https://" : null)}
         <button type="submit" data-testid="biz-save" disabled={busy || gstinBad || fssaiBad}
           className="pos-btn h-11 px-6 rounded-lg font-bold text-white disabled:opacity-50 flex items-center gap-2" style={{ background: "var(--pos-accent)" }}>
           {busy && <Loader2 className="w-4 h-4 animate-spin" />} Save

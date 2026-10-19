@@ -8,6 +8,7 @@ import { billToLines, summaryRows, signedMoney, gstinLine } from "../../utils/re
 import { Input } from "../ui/input";
 import { toast } from "sonner";
 import { orderNo } from "../../utils/orderNumber";
+import WhatsAppBillForm from "./WhatsAppBillForm";
 
 const inr = (v) => `₹${Number(v || 0).toFixed(2)}`;
 const EMPTY_CUSTOMER = { name: "", phone: "", email: "", address: "", postcode: "", gstin: "" };
@@ -236,6 +237,8 @@ export default function ReceiptModal({ orderId, open, onClose }) {
                 style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
                 <Download className="w-3.5 h-3.5" /> KOT
               </button>
+              <WhatsAppBillForm key={orderId} orderId={orderId} defaultPhone={data.order.customer?.phone || ""}
+                canAskReview={!!data.store.google_review_url} />
             </div>
           </>
         )}

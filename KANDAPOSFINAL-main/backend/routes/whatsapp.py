@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import os
 import uuid
 from datetime import datetime, timezone
@@ -36,6 +37,7 @@ from db import get_db
 from auth import get_current_user, require_role, forbid_demo_tenant
 from tenants import tenant_filter
 from sms_service import normalize_phone
+from receipts import bill_link_url
 from ws import schedule_broadcast
 
 logger = logging.getLogger("kanda.whatsapp")
@@ -563,3 +565,72 @@ async def start_conversation(payload: SendWaPayload, user: dict = Depends(requir
     db = get_db()
     conv = await _upsert_conversation(db, user["tenant_id"], phone, "", direction="out")
     return conv
+
+
+# ===================================================================
+# Outbound bills and review requests (launch scope)
+# ===================================================================
+# Sent from Kanda's main WhatsApp number with Meta-approved templates, so
+# they work without the customer messaging first. Template SIDs come from
+# the environment; until they're set the endpoint says so and sends nothing.
+#   WA_BILL_CONTENT_SID    vars: 1 store name, 2 bill total, 3 bill link
+#   WA_REVIEW_CONTENT_SID  vars: 1 store name, 2 review link
+class OrderWhatsAppPayload(BaseModel):
+    phone: str = Field(..., max_length=20)
+    review: bool = False
+
+
+async def _send_wa_template(client, to_addr: str, content_sid: str, variables: dict) -> str:
+    import json as _json
+    msg = await asyncio.to_thread(
+        client.messages.create, to=to_addr, from_=_wa_from(),
+        content_sid=content_sid, content_variables=_json.dumps(variables),
+    )
+    return msg.sid
+
+
+@router.post("/orders/{order_id}/whatsapp", dependencies=[Depends(forbid_demo_tenant)])
+async def whatsapp_order_bill(order_id: str, payload: OrderWhatsAppPayload, user: dict = Depends(get_current_user)):
+    bill_sid = os.environ.get("WA_BILL_CONTENT_SID", "").strip()
+    review_sid = os.environ.get("WA_REVIEW_CONTENT_SID", "").strip()
+    client = _twilio_client()
+    if not bill_sid or client is None:
+        raise HTTPException(status_code=503, detail="WhatsApp bills aren't switched on yet")
+
+    phone = normalize_phone(payload.phone)
+    if not re.fullmatch(r"\+91[6-9]\d{9}", phone or ""):
+        raise HTTPException(status_code=400, detail="Enter the customer's WhatsApp number")
+    to_addr = f"whatsapp:{phone}"
+
+    db = get_db()
+    order = await db.orders.find_one(tenant_filter(user, {"id": order_id}), {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0}) or {}
+    store = tenant.get("store") or {}
+    store_name = (store.get("name") or tenant.get("name") or "").strip() or "our restaurant"
+    review_url = (store.get("google_review_url") or "").strip()
+    if payload.review and not (review_sid and review_url):
+        raise HTTPException(status_code=400, detail="Add your Google review link in Business Details first")
+
+    sent = []
+    try:
+        total = float(order.get("total") or 0) - float(order.get("refunded_amount") or 0)
+        sent.append({"kind": "bill", "sid": await _send_wa_template(client, to_addr, bill_sid, {
+            "1": store_name, "2": f"\u20b9{total:.2f}", "3": bill_link_url(user["tenant_id"], order_id),
+        })})
+        if payload.review:
+            sent.append({"kind": "review", "sid": await _send_wa_template(client, to_addr, review_sid, {
+                "1": store_name, "2": review_url,
+            })})
+    except Exception as exc:  # noqa: BLE001
+        detail = getattr(exc, "msg", None) or str(exc)
+        logger.warning("WA bill send for order %s failed: %s", order_id, detail)
+        raise HTTPException(status_code=502, detail="WhatsApp couldn't deliver that. Check the number and try again.")
+
+    at = now_ist().isoformat()
+    await db.orders.update_one(
+        tenant_filter(user, {"id": order_id}),
+        {"$push": {"whatsapp_sent": {"$each": [{**s, "at": at, "by": user.get("name")} for s in sent]}}},
+    )
+    return {"ok": True, "sent": [s["kind"] for s in sent]}
