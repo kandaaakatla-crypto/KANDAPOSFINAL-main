@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from PIL import Image, UnidentifiedImageError
 
 from db import get_db
-from auth import verify_pin, find_pin_matches, create_access_token, get_current_user, require_role
+from auth import verify_pin, find_pin_matches, pin_lookup, create_access_token, get_current_user, require_role
 from tenants import resolve_tenant_from_request, tenant_filter
 from subscriptions import grace_state
 from ratelimit import peek as rate_limit_peek, hit as rate_limit_hit, client_ip
@@ -57,7 +57,14 @@ async def login(payload: LoginRequest, request: Request):
                 "plan": sub["plan"],
             },
         )
-    users = await db.users.find({"tenant_id": tenant["id"]}, {"_id": 0}).to_list(50)
+    # Only the rows this PIN could belong to: its pin_lookup, plus legacy
+    # rows that don't have one yet (find_pin_matches bcrypt-checks those and
+    # backfills them). No cap: a fixed-size list of the whole roster left
+    # everyone past the 50th unable to sign in.
+    users = await db.users.find(
+        {"tenant_id": tenant["id"], "pin_lookup": {"$in": [pin_lookup(tenant["id"], pin), None, ""]}},
+        {"_id": 0},
+    ).to_list(None)
     matched_inactive = False
     for u in await find_pin_matches(db, tenant["id"], users, pin):
         # Absent `active` means active (legacy rows) — only an explicit
