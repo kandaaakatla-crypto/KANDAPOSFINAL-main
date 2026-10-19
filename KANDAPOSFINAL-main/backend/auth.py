@@ -159,6 +159,16 @@ async def get_current_user(request: Request) -> dict:
     return user
 
 
+# The public demo store: its logins are published, so it must never reach
+# anything billed to Kanda (SMS, WhatsApp, phone numbers, calls).
+DEMO_TENANT_IDS = {"demo"}
+
+
+async def forbid_demo_tenant(user: dict = Depends(get_current_user)) -> None:
+    if user.get("tenant_id") in DEMO_TENANT_IDS:
+        raise HTTPException(status_code=403, detail="Not available in the demo store")
+
+
 def require_role(*roles: str):
     """FastAPI dependency factory — restricts an endpoint to the given staff roles."""
     async def dep(user: dict = Depends(get_current_user)) -> dict:

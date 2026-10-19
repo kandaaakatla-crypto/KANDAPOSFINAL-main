@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from db import get_db
-from auth import get_current_user, require_role
+from auth import get_current_user, require_role, forbid_demo_tenant
 from tenants import tenant_filter
 from sms_service import send_sms_detailed, normalize_phone, sms_configured
 
@@ -81,7 +81,7 @@ async def status(user: dict = Depends(get_current_user)):
     return {"configured": ok, "reason": reason}
 
 
-@router.post("/sms/send")
+@router.post("/sms/send", dependencies=[Depends(forbid_demo_tenant)])
 async def send_one(payload: SendSmsPayload, user: dict = Depends(require_role("Manager"))):
     if not payload.to.strip():
         raise HTTPException(status_code=400, detail="Recipient phone required")
@@ -93,7 +93,7 @@ async def send_one(payload: SendSmsPayload, user: dict = Depends(require_role("M
     return res
 
 
-@router.post("/sms/broadcast")
+@router.post("/sms/broadcast", dependencies=[Depends(forbid_demo_tenant)])
 async def broadcast(payload: BroadcastPayload, user: dict = Depends(require_role("Manager"))):
     db = get_db()
     targets: list[dict] = []
