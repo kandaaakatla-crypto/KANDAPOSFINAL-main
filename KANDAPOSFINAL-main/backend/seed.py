@@ -364,6 +364,9 @@ async def seed_all(db):
     await db.dashboard_users.create_index("email", unique=True)
     await db.dashboard_users.create_index([("tenant_id", 1), ("dash_role", 1)])
     await db.suppliers.create_index([("tenant_id", 1), ("id", 1)], unique=True)
+    # QR table-order duplicate guard (routes/storefront.py): claims only
+    # matter for a minute; let Mongo clear them out.
+    await db.qr_order_dedupe.create_index("created", expireAfterSeconds=3600)
 
     # Seed the 3 demo dashboard accounts (owner / manager / area_manager).
     from routes.dash_auth import ensure_demo_dashboard_users

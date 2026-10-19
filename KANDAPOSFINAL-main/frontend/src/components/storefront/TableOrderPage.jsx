@@ -11,10 +11,27 @@ import { filterStorefrontItems } from "../../utils/foodType";
 import "./storefront.css";
 import {
   UtensilsCrossed, Minus, Plus, X, ShoppingCart, CheckCircle2, Loader2,
-  Sun, Moon, Search, ChevronLeft, Wallet, CreditCard, Clock,
+  Sun, Moon, Search, ChevronLeft, Wallet, CreditCard, Clock, ShieldCheck,
 } from "lucide-react";
 
-const STEP = { CART: "cart", PAYMENT: "payment", PLACING: "placing" };
+const STEP = { CART: "cart", AUTH: "auth", PAYMENT: "payment", PLACING: "placing" };
+
+// The verified-phone session, kept per store so the next order from this
+// phone doesn't ask again until the token expires.
+const sessionKey = (slug) => `kanda_sf_session_${slug}`;
+function loadSession(slug) {
+  try {
+    const s = JSON.parse(window.localStorage.getItem(sessionKey(slug)) || "null");
+    if (s?.token && (!s.expiresAt || new Date(s.expiresAt).getTime() > Date.now() + 60000)) return s;
+  } catch { /* storage blocked or bad JSON */ }
+  return null;
+}
+function saveSession(slug, s) {
+  try {
+    if (s) window.localStorage.setItem(sessionKey(slug), JSON.stringify(s));
+    else window.localStorage.removeItem(sessionKey(slug));
+  } catch { /* storage blocked: the session lasts for this visit only */ }
+}
 
 async function runOnlinePayment({ slug, orderId, amount, customerName }) {
   if (typeof window.Razorpay !== "function") {
@@ -68,6 +85,22 @@ export default function TableOrderPage() {
   const [placing, setPlacing] = useState(false);
   const [confirmed, setConfirmed] = useState(null);
 
+  // Phone + one-time code before ordering, when the store requires it.
+  const [session, setSession] = useState(() => loadSession(slug));
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+  const otpRequired = !!menu?.tenant?.qrOtpRequired;
+
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
   useEffect(() => {
     Promise.all([storefrontApi.menu(slug), storefrontApi.table(slug, number)])
       .then(([m]) => { setMenu(m); if (m.categories.length) setActiveCat(m.categories[0].id); })
@@ -110,36 +143,73 @@ export default function TableOrderPage() {
   const payBill = async () => {
     if (!bill?.open || bill.paid) return;
     setBillPaying(true);
-    const result = await runOnlinePayment({ slug, orderId: bill.orderId, amount: bill.total, customerName: name });
+    const result = await runOnlinePayment({ slug, orderId: bill.orderId, amount: bill.total, customerName: session?.name || name });
     if (result.ok) toast.success("Paid. Thank you!"); else toast.info(result.reason.replace("Your order is saved, pay at the table.", "You can pay at the table."));
     await loadBill();
     setBillPaying(false);
   };
 
+  const signOut = () => { saveSession(slug, null); setSession(null); };
+
+  const requestOtp = async () => {
+    if (!name.trim()) { setOtpError("Please enter your name"); return; }
+    if (phone.replace(/\D/g, "").length < 10) { setOtpError("Please enter your 10-digit mobile number"); return; }
+    setOtpBusy(true); setOtpError("");
+    try {
+      const r = await storefrontApi.requestOtp(slug, name.trim(), phone.trim());
+      setOtpSent(true); setCode("");
+      setResendIn(r?.resendIn || 30);
+    } catch (e) { setOtpError(e?.response?.data?.detail || "Could not send the code, please try again."); }
+    finally { setOtpBusy(false); }
+  };
+
+  const verifyOtp = async () => {
+    if (code.trim().length !== 6) { setOtpError("Enter the 6-digit code"); return; }
+    setOtpBusy(true); setOtpError("");
+    try {
+      const r = await storefrontApi.verifyOtp(slug, phone.trim(), code.trim());
+      const s = { token: r.token, name: r.name, phone: r.phone, expiresAt: r.expiresAt };
+      saveSession(slug, s); setSession(s);
+      setOtpSent(false); setCode("");
+      setSheetStep(STEP.PAYMENT);
+    } catch (e) { setOtpError(e?.response?.data?.detail || "Incorrect code"); }
+    finally { setOtpBusy(false); }
+  };
+
   const finalizeOrder = async (payOnline) => {
     setPlacing(true); setSheetStep(STEP.PLACING);
+    const token = otpRequired ? session?.token : undefined;
     try {
       const res = await storefrontApi.placeTableOrder(slug, number, {
         items: cart.map((l) => ({ item_id: l.item_id, qty: l.qty, size: l.size, variant: l.variant, mods: l.mods })),
-        customer_name: name.trim() || undefined,
-      });
+        customer_name: token ? undefined : (name.trim() || undefined),
+      }, token);
+      if (res.duplicate) toast.info("You'd already sent this order, so we didn't send it twice.");
 
       let paid = false;
       if (payOnline) {
-        const result = await runOnlinePayment({ slug, orderId: res.orderId, amount: res.total, customerName: name });
+        const result = await runOnlinePayment({ slug, orderId: res.orderId, amount: res.total, customerName: session?.name || name });
         if (result.ok) paid = true; else toast.info(result.reason);
       }
       setConfirmed({ ...res, paid });
       setCart([]);
       setCartOpen(false);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Could not place your order, please try again.");
-      setSheetStep(STEP.PAYMENT);
+      if (otpRequired && e?.response?.status === 401) {
+        // Session expired or not valid for this store: verify again.
+        signOut(); setOtpSent(false);
+        setOtpError("Please verify your number again.");
+        setSheetStep(STEP.AUTH);
+      } else {
+        toast.error(e?.response?.data?.detail || "Could not place your order, please try again.");
+        setSheetStep(STEP.PAYMENT);
+      }
     } finally { setPlacing(false); }
   };
 
   const goToPayment = () => {
     if (cart.length === 0) return;
+    if (otpRequired && !session) { setOtpError(""); setSheetStep(STEP.AUTH); return; }
     setSheetStep(STEP.PAYMENT);
   };
 
@@ -332,8 +402,15 @@ export default function TableOrderPage() {
                     ))}
                   </div>
                 )}
-                <input placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl text-sm mb-3 sf-input" />
+                {!otpRequired ? (
+                  <input placeholder="Your name (optional)" value={name} onChange={(e) => setName(e.target.value)}
+                    className="w-full h-11 px-3.5 rounded-xl text-sm mb-3 sf-input" />
+                ) : session && (
+                  <div className="flex items-center justify-between text-xs mb-3" data-testid="table-session" style={{ color: "var(--sf-text-muted)" }}>
+                    <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Ordering as {session.name} · {session.phone}</span>
+                    <button onClick={signOut} className="underline">Not you?</button>
+                  </div>
+                )}
                 {gst.taxTotal > 0 && (
                   <div className="flex items-center justify-between text-xs mb-1" style={{ color: "var(--sf-text-muted)" }}>
                     <span>GST (CGST ₹{gst.cgst.toFixed(2)} + SGST ₹{gst.sgst.toFixed(2)})</span><span>₹{gst.taxTotal.toFixed(2)}</span>
@@ -347,6 +424,48 @@ export default function TableOrderPage() {
                   Checkout
                 </button>
               </>
+            )}
+
+            {sheetStep === STEP.AUTH && (
+              <div data-testid="table-auth-step">
+                <button onClick={() => setSheetStep(STEP.CART)} className="flex items-center gap-1 text-xs mb-3" style={{ color: "var(--sf-text-muted)" }}>
+                  <ChevronLeft className="w-3.5 h-3.5" /> Back to cart
+                </button>
+                <div className="text-lg font-bold mb-1">Verify your number</div>
+                <div className="text-xs mb-4" style={{ color: "var(--sf-text-muted)" }}>We'll send you a code (on WhatsApp, or by SMS) so orders on this table come from you. You only do this once.</div>
+                {!otpSent ? (
+                  <div className="space-y-3">
+                    <input data-testid="table-auth-name" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
+                      className="w-full h-11 px-3.5 rounded-xl text-sm sf-input" />
+                    <input data-testid="table-auth-phone" placeholder="10-digit mobile number" inputMode="tel" value={phone} maxLength={15}
+                      onChange={(e) => setPhone(e.target.value)} className="w-full h-11 px-3.5 rounded-xl text-sm sf-input" />
+                    {otpError && <p className="text-xs" style={{ color: "var(--sf-danger)" }}>{otpError}</p>}
+                    <button data-testid="table-auth-send" onClick={requestOtp} disabled={otpBusy}
+                      className="w-full h-11 rounded-full font-bold flex items-center justify-center gap-2 disabled:opacity-50 sf-btn-accent">
+                      {otpBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send code"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs" style={{ color: "var(--sf-text-muted)" }}>
+                      <ShieldCheck className="w-3.5 h-3.5" /> Code sent to {phone}.
+                      <button onClick={() => { setOtpSent(false); setOtpError(""); }} className="underline">Change</button>
+                    </div>
+                    <input data-testid="table-auth-code" placeholder="6-digit code" inputMode="numeric" autoComplete="one-time-code" value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      className="w-full h-11 px-3 rounded-xl text-sm text-center tracking-[0.5em] font-bold sf-input" />
+                    {otpError && <p className="text-xs" style={{ color: "var(--sf-danger)" }}>{otpError}</p>}
+                    <button data-testid="table-auth-verify" onClick={verifyOtp} disabled={otpBusy}
+                      className="w-full h-11 rounded-full font-bold flex items-center justify-center gap-2 disabled:opacity-50 sf-btn-accent">
+                      {otpBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify"}
+                    </button>
+                    <button data-testid="table-auth-resend" onClick={requestOtp} disabled={otpBusy || resendIn > 0}
+                      className="w-full text-xs disabled:opacity-60" style={{ color: "var(--sf-text-muted)" }}>
+                      {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
             {sheetStep === STEP.PAYMENT && (

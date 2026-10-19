@@ -96,10 +96,28 @@ def sms_configured() -> tuple[bool, str]:
     return True, ""
 
 
+def sms_otp_enabled() -> bool:
+    """Sign-in codes may go by SMS (as the fallback when WhatsApp can't
+    deliver one) when SMS_OTP_ENABLED=1, even while SMS_ENABLED is off.
+    Nothing else is ever sent by SMS under this switch."""
+    return os.environ.get("SMS_OTP_ENABLED", "").strip() == "1"
+
+
 async def send_sms(to: str, body: str) -> bool:
     """Send a single SMS. Returns True on success, False otherwise."""
     if not sms_enabled():
         return False
+    return await _send(to, body)
+
+
+async def send_otp_sms(to: str, body: str) -> bool:
+    """Send a sign-in code by SMS. Gated by SMS_OTP_ENABLED only."""
+    if not sms_otp_enabled():
+        return False
+    return await _send(to, body)
+
+
+async def _send(to: str, body: str) -> bool:
     to = normalize_phone(to)
     if not to:
         return False

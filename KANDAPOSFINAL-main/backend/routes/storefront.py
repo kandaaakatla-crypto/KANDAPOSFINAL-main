@@ -1,33 +1,42 @@
 """Public, unauthenticated customer-facing ordering API — reached by scanning
 a per-table or pickup QR code. No staff PIN, no owner/dash JWT.
 
+Sign-in: POST /storefront/{slug}/otp/request  → code by WhatsApp (SMS fallback)
+         POST /storefront/{slug}/otp/verify   → short-lived storefront JWT
+
 Two flows:
-  - Table:   POST /storefront/{slug}/table/{number}/order   — no identity check,
-             the customer is physically at that table.
-  - Pickup:  POST /storefront/{slug}/otp/request  → SMS code
-             POST /storefront/{slug}/otp/verify   → short-lived storefront JWT
-             POST /storefront/{slug}/pickup/order (Bearer <storefront JWT>)
+  - Table:   POST /storefront/{slug}/table/{number}/order (Bearer <storefront JWT>)
+             — needs a verified phone while QR_OTP_REQUIRED is on (default),
+             so a forwarded or misplaced QR link can't put orders on a table.
+  - Pickup:  POST /storefront/{slug}/pickup/order — name + mobile at checkout,
+             or a storefront JWT.
 
 Prices are always resolved server-side from the live menu — the client only
 ever sends item ids, never amounts, so a tampered request can't undercharge.
 """
+import asyncio
+import hashlib
+import json
+import logging
 import re
 import os
 import secrets
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Request
 import jwt
 from pydantic import BaseModel, Field
+from pymongo.errors import DuplicateKeyError
 
 from db import get_db
 from tz import now_ist
-from auth import _secret, JWT_ALG
+from auth import _secret, JWT_ALG, DEMO_TENANT_IDS
 from ws import schedule_broadcast
 from kds import annotate_order_items_for_kds
-from sms_service import send_sms, normalize_phone, sms_enabled
+from sms_service import send_otp_sms, normalize_phone, sms_otp_enabled
+from routes import whatsapp as wa
 from routes.orders import _apply_recipes, _with_service_charge
 from payments import _get_client as _get_razorpay_client
 from tax import collects_gst, resolve_effective_rate, compute_line_tax, compute_order_tax
@@ -35,11 +44,16 @@ from scheduling import resolve_item_schedule_state, apply_schedule_pricing
 from ._shared import PROJECTION, NOT_DELETED, clean, menu_doc_to_response, next_order_number, table_doc_to_response
 import razorpay
 
+logger = logging.getLogger("kanda.storefront")
 router = APIRouter(prefix="/storefront")
 
 STOREFRONT_ISSUER = "storefront"
 OTP_TTL_MINUTES = 5
+OTP_RESEND_SECONDS = 30
+OTP_MAX_PER_HOUR = 5
+OTP_MAX_ATTEMPTS = 5
 SESSION_TTL_HOURS = 2
+DUPLICATE_WINDOW_SECONDS = 60
 SIZE_LABEL = {"sm": "Small", "md": "Medium", "lg": "Large"}
 
 
@@ -52,6 +66,14 @@ async def _tenant_by_slug(slug: str, db) -> dict:
     if (tenant.get("features") or {}).get("qr_ordering") is False:
         raise HTTPException(status_code=404, detail="Online ordering isn't available for this store")
     return tenant
+
+
+def qr_otp_required(tenant: dict) -> bool:
+    """QR table orders need a verified phone unless QR_OTP_REQUIRED=0. The
+    demo store never sends codes (no paid channels), so it never asks."""
+    if os.environ.get("QR_OTP_REQUIRED", "1").strip() == "0":
+        return False
+    return tenant.get("id") not in DEMO_TENANT_IDS
 
 
 # ===================================================================
@@ -79,6 +101,7 @@ async def public_menu(slug: str):
             "onlinePayments": (tenant.get("features") or {}).get("online_payments", True),
             "logoUrl": store.get("logo_url"),
             "backgroundImageUrl": store.get("background_image_url"),
+            "qrOtpRequired": qr_otp_required(tenant),
         },
         "categories": cats,
         "items": [menu_doc_to_response(i) for i in visible],
@@ -92,7 +115,8 @@ async def public_table(slug: str, number: int):
     table = await db.tables.find_one({"tenant_id": tenant["id"], "number": number}, PROJECTION)
     if not table:
         raise HTTPException(status_code=404, detail="Table not found")
-    return {"tenant": {"name": tenant.get("name"), "slug": slug}, "table": {"number": table["number"], "seats": table["seats"]}}
+    return {"tenant": {"name": tenant.get("name"), "slug": slug}, "table": {"number": table["number"], "seats": table["seats"]},
+            "otpRequired": qr_otp_required(tenant)}
 
 
 @router.get("/{slug}/table/{number}/bill")
@@ -248,7 +272,7 @@ def _order_doc(tenant_id: str, number: int, order_type: str, customer: dict, tab
 
 
 # ===================================================================
-# Table ordering — no identity check, customer is physically present
+# Table ordering — verified phone (QR_OTP_REQUIRED), one running bill
 # ===================================================================
 class TableOrderRequest(BaseModel):
     items: List[CartLine]
@@ -257,8 +281,8 @@ class TableOrderRequest(BaseModel):
 
 async def _optional_storefront_session(request: Request, slug: str, db) -> Optional[dict]:
     """Like _storefront_session, but returns None instead of raising when no
-    (or an invalid) Bearer token is present — table ordering doesn't require
-    sign-in, but attaches the verified identity when the customer chose to."""
+    (or an invalid) Bearer token is present — for pickup, and table orders
+    while QR_OTP_REQUIRED=0, sign-in is optional but attached when present."""
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
         return None
@@ -268,7 +292,8 @@ async def _optional_storefront_session(request: Request, slug: str, db) -> Optio
         return None
 
 
-async def _add_to_open_table_bill(db, tenant_id: str, table: dict, items: list[dict], business_type: str):
+async def _add_to_open_table_bill(db, tenant_id: str, table: dict, items: list[dict], business_type: str,
+                                  qr_round: Optional[dict] = None):
     """A table has one running bill. If the table's current order is still
     open (unpaid, not voided or completed), add this round to it, as staff
     do with an occupied table, and return the updated order; else None."""
@@ -295,11 +320,48 @@ async def _add_to_open_table_bill(db, tenant_id: str, table: dict, items: list[d
         float(existing.get("serviceChargePct") or 0),
     )
     # Same open filter on the write: if the bill was settled in between, start a new one.
+    push = {"items": {"$each": items}}
+    if qr_round:
+        push["qr_rounds"] = qr_round
     return await db.orders.find_one_and_update(
         open_filter,
-        {"$push": {"items": {"$each": items}}, "$set": {**totals, "status": "new"}},
+        {"$push": push, "$set": {**totals, "status": "new"}},
         projection=PROJECTION, return_document=True,
     )
+
+
+def _cart_fingerprint(lines: List[CartLine]) -> str:
+    """Same items, quantities, options and notes → same fingerprint,
+    whatever order the lines are in."""
+    rows = sorted(json.dumps([ln.item_id, ln.qty, ln.size, ln.variant, sorted(ln.mods), (ln.note or "").strip()])
+                  for ln in lines)
+    return hashlib.sha256("|".join(rows).encode()).hexdigest()[:32]
+
+
+async def _claim_table_order(db, key: str):
+    """Claim the right to place this exact order. Returns None when claimed,
+    else the order a recent identical request already placed (or raises
+    409 while that one is still being placed)."""
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(seconds=DUPLICATE_WINDOW_SECONDS)
+    try:
+        await db.qr_order_dedupe.insert_one({"_id": key, "created": now, "order_id": None})
+        return None
+    except DuplicateKeyError:
+        pass
+    # An old claim (outside the window) is taken over atomically.
+    taken = await db.qr_order_dedupe.find_one_and_update(
+        {"_id": key, "created": {"$lt": cutoff}}, {"$set": {"created": now, "order_id": None}})
+    if taken:
+        return None
+    for _ in range(20):  # the first request may still be placing it
+        rec = await db.qr_order_dedupe.find_one({"_id": key})
+        if rec is None:  # the first attempt failed and released it
+            return await _claim_table_order(db, key)
+        if rec.get("order_id"):
+            return rec["order_id"]
+        await asyncio.sleep(0.1)
+    raise HTTPException(status_code=409, detail="This order is already being placed")
 
 
 @router.post("/{slug}/table/{number}/order")
@@ -310,12 +372,37 @@ async def place_table_order(slug: str, number: int, payload: TableOrderRequest, 
     if not table:
         raise HTTPException(status_code=404, detail="Table not found")
 
+    if not qr_otp_required(tenant):
+        return await _place_table_order(db, slug, tenant, table, number, payload, request, None)
+
+    session = await _storefront_session(request, slug, db)
+    key = f"{tenant['id']}:{number}:{session['phone']}:{_cart_fingerprint(payload.items)}"
+    existing_id = await _claim_table_order(db, key)
+    if existing_id:
+        order = await db.orders.find_one({"tenant_id": tenant["id"], "id": existing_id}, PROJECTION)
+        if order:
+            return {"orderId": order["id"], "orderNumber": order["number"], "total": order["total"], "duplicate": True}
+    try:
+        result = await _place_table_order(db, slug, tenant, table, number, payload, request, session)
+    except BaseException:
+        await db.qr_order_dedupe.delete_one({"_id": key})
+        raise
+    await db.qr_order_dedupe.update_one({"_id": key}, {"$set": {"order_id": result["orderId"]}})
+    return result
+
+
+async def _place_table_order(db, slug: str, tenant: dict, table: dict, number: int, payload: TableOrderRequest,
+                             request: Request, session: Optional[dict]):
     business_type = tenant.get("business_type", "restaurant")
-    session = await _optional_storefront_session(request, slug, db)
+    if session is None:
+        session = await _optional_storefront_session(request, slug, db)
+        qr_round = None
+    else:
+        qr_round = {"phone": session["phone"], "name": session["name"], "at": now_ist().isoformat()}
     raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type, collects_gst(tenant))
     items = await annotate_order_items_for_kds(db, tenant["id"], raw_items)
 
-    running = await _add_to_open_table_bill(db, tenant["id"], table, items, business_type)
+    running = await _add_to_open_table_bill(db, tenant["id"], table, items, business_type, qr_round)
     if running:
         await _apply_recipes(db, tenant["id"], raw_items)
         cleaned = clean(running)
@@ -330,6 +417,8 @@ async def place_table_order(slug: str, number: int, payload: TableOrderRequest, 
         customer_name = (payload.customer_name or "").strip() or f"Table {number}"
         customer = {"id": None, "name": customer_name, "phone": None, "address": None, "postcode": None}
     doc = _order_doc(tenant["id"], numbr, "dine-in", customer, number, items, business_type=business_type)
+    if qr_round:
+        doc["qr_rounds"] = [qr_round]
     await db.orders.insert_one(doc)
     await _apply_recipes(db, tenant["id"], raw_items)
 
@@ -345,60 +434,125 @@ async def place_table_order(slug: str, number: int, payload: TableOrderRequest, 
 
 
 # ===================================================================
-# Pickup OTP — name + phone, SMS-verified
+# Sign-in codes — WhatsApp first, SMS (OTP only) as the fallback
 # ===================================================================
 class OtpRequestPayload(BaseModel):
-    name: str
-    phone: str
+    name: str = Field(..., max_length=80)
+    phone: str = Field(..., max_length=20)
 
 
 class OtpVerifyPayload(BaseModel):
-    phone: str
-    code: str
+    phone: str = Field(..., max_length=20)
+    code: str = Field(..., max_length=10)
+
+
+def _wa_otp_sid() -> str:
+    return os.environ.get("WA_OTP_CONTENT_SID", "").strip()
+
+
+def _otp_channel_available() -> bool:
+    return bool(_wa_otp_sid() and wa._twilio_client() is not None) or sms_otp_enabled()
+
+
+async def _deliver_otp(phone: str, code: str, store_name: str) -> Optional[str]:
+    """Send the code; returns the channel used ("whatsapp" | "sms") or None."""
+    sid = _wa_otp_sid()
+    client = wa._twilio_client() if sid else None
+    if client is not None:
+        try:
+            # Authentication template on Kanda's main number: variable 1 = code.
+            await wa._send_wa_template(client, f"whatsapp:{phone}", sid, {"1": code})
+            return "whatsapp"
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("WhatsApp OTP to %s failed: %s", phone, getattr(exc, "msg", None) or exc)
+    if sms_otp_enabled():
+        body = f"{code} is your {store_name} verification code. Valid for {OTP_TTL_MINUTES} minutes."
+        if await send_otp_sms(phone, body):
+            return "sms"
+    return None
 
 
 @router.post("/{slug}/otp/request")
 async def request_otp(slug: str, payload: OtpRequestPayload):
-    # Sign-in codes go by SMS; with SMS off there's no safe way to deliver one
-    # (the old fallback returned the code in this response).
-    if not sms_enabled():
-        raise HTTPException(status_code=410, detail="Sign-in by SMS is turned off")
     db = get_db()
     tenant = await _tenant_by_slug(slug, db)
-    phone = normalize_phone(payload.phone)
+    # Never fall back to handing the code back in this response.
+    if not _otp_channel_available():
+        raise HTTPException(status_code=410, detail="Phone sign-in isn't available right now")
+    if tenant["id"] in DEMO_TENANT_IDS:
+        raise HTTPException(status_code=403, detail="Not available in the demo store")
+    phone = _indian_mobile(payload.phone)
     name = payload.name.strip()[:80]
-    if not phone or not name:
-        raise HTTPException(status_code=400, detail="Name and phone are required")
-    code = f"{secrets.randbelow(1000000):06d}"
-    doc = {
-        "tenant_id": tenant["id"], "phone": phone, "name": name, "code": code,
-        "expires_at": (now_ist() + timedelta(minutes=OTP_TTL_MINUTES)).isoformat(),
-        "created_at": now_ist().isoformat(),
-    }
-    await db.customer_otps.replace_one({"tenant_id": tenant["id"], "phone": phone}, doc, upsert=True)
-    sent = await send_sms(phone, f"Your {tenant.get('name','Kanda POS')} verification code is {code}. Valid for {OTP_TTL_MINUTES} minutes.")
+    if not name:
+        raise HTTPException(status_code=400, detail="Please enter your name")
+    if not phone:
+        raise HTTPException(status_code=400, detail="Please enter a valid 10-digit mobile number")
 
-    if not sent:
+    now = now_ist()
+    rec = await db.customer_otps.find_one({"tenant_id": tenant["id"], "phone": phone}) or {}
+    hour_ago = (now - timedelta(hours=1)).isoformat()
+    recent = sorted(t for t in (rec.get("sent_at") or []) if t > hour_ago)
+    if recent:
+        wait = OTP_RESEND_SECONDS - int((now - datetime.fromisoformat(recent[-1])).total_seconds())
+        if wait > 0:
+            raise HTTPException(status_code=429, detail=f"Please wait {wait} seconds before asking for a new code")
+    if len(recent) >= OTP_MAX_PER_HOUR:
+        raise HTTPException(status_code=429, detail="Too many codes requested. Please try again later.")
+
+    code = f"{secrets.randbelow(1000000):06d}"
+    update = {"$set": {
+        "tenant_id": tenant["id"], "phone": phone, "name": name, "code": code, "attempts": 0,
+        "expires_at": (now + timedelta(minutes=OTP_TTL_MINUTES)).isoformat(),
+        "created_at": now.isoformat(), "sent_at": recent + [now.isoformat()],
+    }}
+    if rec:
+        # Same sent_at as we read: a concurrent request that got in first wins.
+        res = await db.customer_otps.update_one({"_id": rec["_id"], "sent_at": rec.get("sent_at")}, update)
+        if res.matched_count == 0:
+            raise HTTPException(status_code=429, detail="Please wait a moment before asking for a new code")
+    else:
+        await db.customer_otps.update_one({"tenant_id": tenant["id"], "phone": phone}, update, upsert=True)
+
+    channel = await _deliver_otp(phone, code, tenant.get("name") or "Kanda POS")
+    if not channel:
         raise HTTPException(status_code=502, detail="Could not send the code, please try again")
-    return {"ok": True, "phone": phone}
+    return {"ok": True, "phone": phone, "channel": channel, "resendIn": OTP_RESEND_SECONDS}
 
 
 @router.post("/{slug}/otp/verify")
 async def verify_otp(slug: str, payload: OtpVerifyPayload):
     db = get_db()
     tenant = await _tenant_by_slug(slug, db)
-    phone = normalize_phone(payload.phone)
-    rec = await db.customer_otps.find_one({"tenant_id": tenant["id"], "phone": phone})
-    if not rec or rec.get("code") != payload.code.strip():
+    phone = _indian_mobile(payload.phone)
+    if not phone:
+        raise HTTPException(status_code=401, detail="Incorrect code")
+    # Count the try before comparing, atomically, so parallel guesses can't
+    # get past the cap.
+    rec = await db.customer_otps.find_one_and_update(
+        {"tenant_id": tenant["id"], "phone": phone, "code": {"$type": "string"},
+         "attempts": {"$not": {"$gte": OTP_MAX_ATTEMPTS}}},
+        {"$inc": {"attempts": 1}}, return_document=True,
+    )
+    if not rec:
+        if await db.customer_otps.find_one({"tenant_id": tenant["id"], "phone": phone, "code": {"$type": "string"}}):
+            raise HTTPException(status_code=401, detail="Too many wrong tries. Please request a new code.")
         raise HTTPException(status_code=401, detail="Incorrect code")
     if rec.get("expires_at", "") < now_ist().isoformat():
-        raise HTTPException(status_code=401, detail="Code expired — request a new one")
-    await db.customer_otps.delete_one({"_id": rec["_id"]})
+        raise HTTPException(status_code=401, detail="Code expired. Please request a new code.")
+    if not secrets.compare_digest(str(rec["code"]).encode(), payload.code.strip().encode()):
+        if rec.get("attempts", 0) >= OTP_MAX_ATTEMPTS:  # void: the filter above now skips it
+            raise HTTPException(status_code=401, detail="Too many wrong tries. Please request a new code.")
+        raise HTTPException(status_code=401, detail="Incorrect code")
+    # Use the code up (keeping the send history for the rate limit); only
+    # one of two simultaneous correct tries gets a session.
+    used = await db.customer_otps.update_one({"_id": rec["_id"], "code": rec["code"]}, {"$unset": {"code": ""}})
+    if used.modified_count != 1:
+        raise HTTPException(status_code=401, detail="Incorrect code")
+    exp = now_ist() + timedelta(hours=SESSION_TTL_HOURS)
     token = jwt.encode({
-        "sub": phone, "name": rec["name"], "tenant_id": tenant["id"], "iss": STOREFRONT_ISSUER,
-        "exp": now_ist() + timedelta(hours=SESSION_TTL_HOURS),
+        "sub": phone, "name": rec["name"], "tenant_id": tenant["id"], "iss": STOREFRONT_ISSUER, "exp": exp,
     }, _secret(), algorithm=JWT_ALG)
-    return {"token": token, "name": rec["name"], "phone": phone}
+    return {"token": token, "name": rec["name"], "phone": phone, "expiresAt": exp.isoformat()}
 
 
 async def _storefront_session(request: Request, slug: str, db) -> dict:
