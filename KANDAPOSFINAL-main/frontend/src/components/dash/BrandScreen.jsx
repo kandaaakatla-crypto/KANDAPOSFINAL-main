@@ -561,9 +561,6 @@ function NewStoreForm({ brand, onDone }) {
           style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
           Back to store details
         </button>
-        <div className="text-[10px] text-center" style={{ color: "var(--pos-muted)" }}>
-          Test card <code>4111 1111 1111 1111</code> · any future date · any CVC · OTP <code>1234</code>
-        </div>
       </div>
     );
   }

@@ -143,9 +143,6 @@ export default function PlanUpgradeDialog({ open, onClose, onUpgraded }) {
               {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening Razorpay…</>
                 : <><ShieldCheck className="w-4 h-4" /> Pay ₹{slots.price_per_location.toFixed(0)} & add location</>}
             </button>
-            <div className="text-[10px] text-center" style={{ color: "var(--pos-muted)" }}>
-              Test card <code>4111 1111 1111 1111</code> · any future date · any CVC · OTP <code>1234</code>
-            </div>
           </div>
         )}
       </DialogContent>

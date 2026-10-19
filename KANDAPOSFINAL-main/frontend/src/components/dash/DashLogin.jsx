@@ -52,12 +52,6 @@ export default function DashLogin() {
             Owners see every store. Area managers see the ones they cover. Store managers see theirs.
           </p>
         </div>
-        <div className="text-xs" style={{ color: "#93805f" }}>
-          Demo accounts:<br />
-          <span style={{ color: "#251d13" }}>owner@demo.com</span> / OwnerPass#2025<br />
-          <span style={{ color: "#251d13" }}>manager@demo.com</span> / DemoMgr#2025<br />
-          <span style={{ color: "#251d13" }}>area@demo.com</span> / DemoArea#2025
-        </div>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-8">

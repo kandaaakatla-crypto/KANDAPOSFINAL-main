@@ -281,9 +281,6 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
                 <span className="text-sm font-bold" style={{ color: "#dc2626" }}>PAYMENT FAILED</span>
               </div>
             )}
-            <div className="text-[11px] text-center" style={{ color: "var(--pos-muted)" }}>
-              Test card: <span className="font-mono" style={{ color: "var(--pos-text)" }}>4111 1111 1111 1111</span> · any future expiry · CVV 123
-            </div>
           </div>
         )}
 
