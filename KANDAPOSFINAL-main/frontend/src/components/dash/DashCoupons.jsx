@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { couponsApi } from "../../api/client";
-import { Tag, Plus, Trash2, Loader2, Percent, IndianRupee } from "lucide-react";
+import { Tag, Plus, Trash2, Loader2, Percent, IndianRupee, Pencil, Save, X } from "lucide-react";
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
@@ -20,6 +20,21 @@ export default function DashCoupons() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY);
   const [creating, setCreating] = useState(false);
+  // id of the coupon being edited; null = the form creates a new one.
+  const [editingId, setEditingId] = useState(null);
+
+  const startEdit = (c) => {
+    setEditingId(c.id);
+    setForm({
+      code: c.code, kind: c.kind, value: String(c.value ?? ""),
+      valid_from: c.valid_from ? c.valid_from.slice(0, 10) : "",
+      valid_to: c.valid_to ? c.valid_to.slice(0, 10) : "",
+      max_uses: c.max_uses ? String(c.max_uses) : "",
+      min_subtotal: c.min_subtotal ? String(c.min_subtotal) : "",
+    });
+  };
+  const cancelEdit = () => { setEditingId(null); setForm(EMPTY); };
+  const isExpired = (c) => !!c.valid_to && c.valid_to.slice(0, 10) < new Date().toISOString().slice(0, 10);
 
   const load = () => {
     setLoading(true);
@@ -33,8 +48,22 @@ export default function DashCoupons() {
     if (!code) { toast.error("Code is required"); return; }
     if (!(value > 0)) { toast.error("Value must be positive"); return; }
     if (form.kind === "percent" && value > 100) { toast.error("Percent value cannot exceed 100"); return; }
+    if (form.valid_from && form.valid_to && form.valid_to < form.valid_from) { toast.error("End date cannot be before the start date"); return; }
     setCreating(true);
     try {
+      if (editingId) {
+        await couponsApi.update(editingId, {
+          kind: form.kind, value,
+          valid_from: form.valid_from ? `${form.valid_from}T00:00:00` : null,
+          valid_to: form.valid_to ? `${form.valid_to}T23:59:59` : null,
+          max_uses: form.max_uses ? Math.round(Number(form.max_uses)) : null,
+          min_subtotal: form.min_subtotal ? Number(form.min_subtotal) : 0,
+        });
+        toast.success(`Coupon ${code} updated`);
+        cancelEdit();
+        load();
+        return;
+      }
       await couponsApi.create({
         code, kind: form.kind, value,
         valid_from: form.valid_from ? `${form.valid_from}T00:00:00` : null,
@@ -105,6 +134,7 @@ export default function DashCoupons() {
                       <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "var(--pos-panel)", color: "var(--pos-muted)" }}>
                         {c.kind === "percent" ? `${c.value}%` : `₹${c.value}`} off
                       </span>
+                      {isExpired(c) && <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#33260e", color: "#fbbf24" }}>Expired</span>}
                       {!c.active && <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ background: "#3a1515", color: "#f87171" }}>Inactive</span>}
                     </div>
                     <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
@@ -118,6 +148,10 @@ export default function DashCoupons() {
                       className="pos-btn h-7 px-2.5 rounded-md text-[11px] font-bold"
                       style={{ background: c.active ? "var(--pos-panel)" : "var(--pos-accent)", color: c.active ? "var(--pos-muted)" : "#fff", border: "1px solid var(--pos-border)" }}>
                       {c.active ? "Deactivate" : "Activate"}
+                    </button>
+                    <button data-testid={`coupon-edit-${c.id}`} onClick={() => startEdit(c)} aria-label={`Edit coupon ${c.code}`}
+                      className="pos-btn w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)", color: "var(--pos-muted)" }}>
+                      <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -147,11 +181,11 @@ export default function DashCoupons() {
         {/* Create */}
         <div className="rounded-xl overflow-hidden h-fit" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
           <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>New coupon</div>
+            <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>{editingId ? `Edit coupon ${form.code}` : "New coupon"}</div>
           </div>
           <div className="p-5 space-y-3">
             <Field label="Code">
-              <input data-testid="coupon-form-code" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
+              <input data-testid="coupon-form-code" value={form.code} disabled={!!editingId} aria-label="Coupon code" onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
                 placeholder="SAVE20" className="w-full rounded px-2 py-1.5 text-sm tracking-wider outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
             </Field>
 
@@ -193,8 +227,15 @@ export default function DashCoupons() {
             <button data-testid="coupon-create-btn" onClick={create} disabled={creating}
               className="pos-btn w-full mt-1 px-3 py-2 rounded-lg text-xs text-white flex items-center justify-center gap-1.5 disabled:opacity-40"
               style={{ background: "var(--pos-accent)" }}>
-              {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Create coupon
+              {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : editingId ? <Save className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />} {editingId ? "Save changes" : "Create coupon"}
             </button>
+            {editingId && (
+              <button data-testid="coupon-edit-cancel" onClick={cancelEdit}
+                className="pos-btn w-full px-3 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5"
+                style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)", border: "1px solid var(--pos-border)" }}>
+                <X className="w-3.5 h-3.5" /> Cancel
+              </button>
+            )}
           </div>
         </div>
       </div>

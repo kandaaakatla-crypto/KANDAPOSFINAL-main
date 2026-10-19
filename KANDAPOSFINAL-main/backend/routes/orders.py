@@ -19,7 +19,7 @@ from models import (
     Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload,
     OrderCustomer, ServiceChargePayload,
 )
-from tax import resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst
+from tax import resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst, apply_taxable_discount
 from . import loyalty as loyalty_mod
 from . import store_credit as credit_mod
 from . import gift_cards as gift_card_mod
@@ -207,12 +207,21 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     # these numbers are computed here, not merely trusted from the client.
     line_amounts, sync_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
     tax = compute_order_tax(line_amounts)
+    # GST is on the discounted value, not the sticker price (test report P0-2).
+    discount_total = float(payload.discount or 0)
+    taxable_disc = discount_total if payload.taxable_discount is None else float(payload.taxable_discount)
+    taxable_disc = max(0.0, min(taxable_disc, discount_total))
+    d_sub, d_tax, d_items_total = apply_taxable_discount(
+        tax["subtotal"], tax["tax_total"], taxable_disc, business_type == "retail",
+    )
+    tax = {**tax, "subtotal": d_sub, "tax_total": d_tax, "items_total": d_items_total}
     # Service charge is opt-in only (0 unless the customer asked for it).
     sc_pct = float(payload.service_charge_pct or 0)
     sc, sc_tax = compute_service_charge(tax["subtotal"], tax["tax_total"], sc_pct)
     tax_total = round(tax["tax_total"] + sc_tax, 2)
     cgst, sgst = split_cgst_sgst(tax_total)
-    grand_total = round(tax["items_total"] + sc + sc_tax - float(payload.discount or 0) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
+    # Only the non-taxable remainder (gift card / store credit) comes off the total here.
+    grand_total = round(tax["items_total"] + sc + sc_tax - (discount_total - taxable_disc) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
 
     # Validate splits if provided — must sum (±1¢) to the server-computed total.
     splits_payload = None
@@ -383,7 +392,7 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
         raise HTTPException(status_code=400, detail="Cannot add to a voided order")
     if existing.get("status") == "completed":
         raise HTTPException(status_code=400, detail="Cannot add to a completed order")
-    if existing.get("payment") in ("cash", "card"):
+    if existing.get("payment") in ("cash", "card", "split"):
         raise HTTPException(status_code=400, detail="Order already paid — start a new order")
 
     tenant_doc = await get_tenant(user, db)
@@ -475,6 +484,15 @@ async def set_order_customer(order_id: str, payload: OrderCustomer, user: dict =
 @router.patch("/orders/{order_id}/status", response_model=Order)
 async def set_order_status(order_id: str, payload: OrderStatusPayload, user: dict = Depends(get_current_user)):
     db = get_db()
+    if payload.status == "completed":
+        # An unpaid order must not be closed: Completed hides the Bill button
+        # and blocks void, leaving the money uncollectable (test report P0-4).
+        # Delivery is exempt — cash-on-delivery is legitimately completed by
+        # the driver before/while the cash is taken.
+        current = await db.orders.find_one(tenant_filter(user, {"id": order_id}), {"_id": 0, "payment": 1, "type": 1, "voided": 1})
+        if (current and not current.get("voided") and (current.get("payment") or "unpaid") == "unpaid"
+                and current.get("type") != "delivery"):
+            raise HTTPException(status_code=409, detail="Collect payment before completing this order.")
     res = await db.orders.find_one_and_update(
         tenant_filter(user, {"id": order_id}), {"$set": {"status": payload.status}}, return_document=True,
     )

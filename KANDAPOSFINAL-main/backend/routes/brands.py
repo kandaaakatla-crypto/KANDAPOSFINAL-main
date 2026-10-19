@@ -29,7 +29,7 @@ from db import get_db
 from routes.dash_auth import get_dash_user, provision_tenant_dashboard
 from routes.sms import _log_and_send
 from routes._shared import clean, NOT_DELETED
-from auth import hash_pin
+from auth import hash_pin, pin_lookup
 from models import (
     Brand, BrandCreate, BrandUpdate, BrandAsset, BrandAssetCreate,
     BrandStoreCreate, BrandSmsBroadcast, default_features,
@@ -555,6 +555,7 @@ async def create_store(brand_id: str, payload: BrandStoreCreate, u: dict = Depen
         "role": "Manager",
         "initials": initials,
         "pin_hash": hash_pin(payload.manager_pin),
+        "pin_lookup": pin_lookup(tenant_id, payload.manager_pin),
         "created_at": now_iso,
     })
     await db.counters.update_one(

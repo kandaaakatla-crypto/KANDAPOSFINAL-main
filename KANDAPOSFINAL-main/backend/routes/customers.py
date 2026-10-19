@@ -34,6 +34,19 @@ def _active_filter(user: dict, extra: dict | None = None) -> dict:
     return f
 
 
+def _phone_key(phone: str) -> str:
+    """Digits-only form used to spot the same number typed two ways."""
+    return "".join(ch for ch in (phone or "") if ch.isdigit())
+
+
+async def _phone_taken(db, user: dict, phone: str, exclude_id: str | None = None) -> bool:
+    key = _phone_key(phone)
+    async for c in db.customers.find(_active_filter(user), {"_id": 0, "id": 1, "phone": 1}):
+        if c["id"] != exclude_id and _phone_key(c.get("phone")) == key:
+            return True
+    return False
+
+
 @router.get("/customers", response_model=List[Customer])
 async def list_customers(since: Optional[str] = Query(None), user: dict = Depends(get_current_user)):
     db = get_db()
@@ -73,6 +86,8 @@ async def search_customer(phone: str, user: dict = Depends(get_current_user)):
 @router.post("/customers", response_model=Customer)
 async def create_customer(payload: CustomerCreate, user: dict = Depends(get_current_user)):
     db = get_db()
+    if await _phone_taken(db, user, payload.phone):
+        raise HTTPException(status_code=409, detail="A customer with this phone number already exists")
     doc = {
         "id": f"cu_{uuid.uuid4().hex[:8]}",
         "tenant_id": user["tenant_id"],
@@ -118,6 +133,8 @@ async def update_customer(customer_id: str, payload: CustomerUpdate, user: dict 
     update = payload.model_dump(exclude_none=True)
     if not update:
         raise HTTPException(status_code=400, detail="Nothing to update")
+    if "phone" in update and await _phone_taken(db, user, update["phone"], exclude_id=customer_id):
+        raise HTTPException(status_code=409, detail="A customer with this phone number already exists")
     update["updated_at"] = now_ist().isoformat()
     res = await db.customers.find_one_and_update(
         _active_filter(user, {"id": customer_id}), {"$set": update}, return_document=True,

@@ -32,6 +32,20 @@ async def list_coupons(user: dict = Depends(require_role("Manager"))):
     return docs
 
 
+def check_coupon_dates(valid_from, valid_to):
+    """Dates are ISO strings (a bare date or a full timestamp); blank = open-ended."""
+    def parse(v, label):
+        if not v:
+            return None
+        try:
+            return datetime.fromisoformat(str(v)[:10]).date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"{label} is not a valid date")
+    start, end = parse(valid_from, "Start date"), parse(valid_to, "End date")
+    if start and end and end < start:
+        raise HTTPException(status_code=400, detail="End date cannot be before the start date")
+
+
 @router.post("/coupons", response_model=Coupon)
 async def create_coupon(payload: CouponCreate, user: dict = Depends(require_role("Manager"))):
     code = _normalize(payload.code)
@@ -41,6 +55,7 @@ async def create_coupon(payload: CouponCreate, user: dict = Depends(require_role
         raise HTTPException(status_code=400, detail="Value must be positive")
     if payload.kind == "percent" and payload.value > 100:
         raise HTTPException(status_code=400, detail="Percent value cannot exceed 100")
+    check_coupon_dates(payload.valid_from, payload.valid_to)
     db = get_db()
     if await db.coupons.find_one(tenant_filter(user, {"code": code})):
         raise HTTPException(status_code=409, detail="Coupon code already exists")
@@ -69,10 +84,19 @@ async def update_coupon(coupon_id: str, payload: CouponUpdate, user: dict = Depe
     if not existing:
         raise HTTPException(status_code=404, detail="Coupon not found")
     updates = {k: v for k, v in payload.model_dump(exclude_none=True).items()}
-    if "kind" in updates and updates["kind"] == "percent":
-        v = updates.get("value", existing.get("value", 0))
-        if v is not None and v > 100:
-            raise HTTPException(status_code=400, detail="Percent value cannot exceed 100")
+    # An explicit null clears an optional limit (the edit form does this when
+    # a date / max-uses box is emptied); exclude_none above would drop it.
+    for field in ("valid_from", "valid_to", "max_uses"):
+        if field in payload.model_fields_set and getattr(payload, field) is None:
+            updates[field] = None
+    kind = updates.get("kind", existing.get("kind"))
+    value = updates.get("value", existing.get("value", 0))
+    if "value" in updates and value <= 0:
+        raise HTTPException(status_code=400, detail="Value must be positive")
+    if kind == "percent" and value is not None and value > 100:
+        raise HTTPException(status_code=400, detail="Percent value cannot exceed 100")
+    if "valid_from" in updates or "valid_to" in updates:
+        check_coupon_dates(updates.get("valid_from", existing.get("valid_from")), updates.get("valid_to", existing.get("valid_to")))
     if updates:
         await db.coupons.update_one(tenant_filter(user, {"id": coupon_id}), {"$set": updates})
     fresh = await db.coupons.find_one(tenant_filter(user, {"id": coupon_id}), {"_id": 0})

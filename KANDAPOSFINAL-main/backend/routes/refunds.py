@@ -109,7 +109,10 @@ async def void_order(order_id: str, payload: VoidRequest,
         raise HTTPException(status_code=404, detail="Order not found")
     if order.get("voided"):
         raise HTTPException(status_code=400, detail="Order already voided")
-    if order.get("status") in ("served", "completed"):
+    # A served/completed order that took money must be refunded, not voided —
+    # but an unpaid one has nothing to refund, and voiding is the only way to
+    # clear it (test report P0-4).
+    if order.get("status") in ("served", "completed") and (order.get("payment") or "unpaid") != "unpaid":
         raise HTTPException(status_code=400, detail="Cannot void a served/completed order — use refund instead")
 
     # Restore inventory: re-add the recipes that orders.py debited at create.

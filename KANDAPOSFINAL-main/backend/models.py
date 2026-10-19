@@ -1,12 +1,12 @@
 """Pydantic models for Kanda POS."""
 from __future__ import annotations
 from typing import List, Literal, Optional
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 OrderType = Literal["delivery", "collection", "dine-in", "sale"]
 OrderStatus = Literal["new", "in-kitchen", "ready", "out-for-delivery", "completed"]
-OrderPayment = Literal["cash", "card", "unpaid"]
+OrderPayment = Literal["cash", "card", "split", "unpaid"]
 TableStatus = Literal["available", "occupied", "reserved"]
 OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr", "website"]
 TableShape = Literal["round", "square", "rect"]
@@ -300,6 +300,18 @@ class MenuItem(BaseModel):
     deleted_at: Optional[str] = None  # soft-delete tombstone; None while active
 
 
+GST_SLABS = (0, 5, 12, 18, 28)
+
+
+def _check_item_fields(price, tax_rate, name=None):
+    if price is not None and not price > 0:
+        raise ValueError("Price must be greater than 0")
+    if tax_rate is not None and tax_rate not in GST_SLABS:
+        raise ValueError("GST rate must be one of 0, 5, 12, 18 or 28")
+    if name is not None and not name.strip():
+        raise ValueError("Name is required")
+
+
 class MenuItemCreate(BaseModel):
     catId: str
     name: str
@@ -313,6 +325,11 @@ class MenuItemCreate(BaseModel):
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
     tax_rate: Optional[float] = None
+
+    @model_validator(mode="after")
+    def _validate(self):
+        _check_item_fields(self.price, self.tax_rate, self.name)
+        return self
 
 
 class MenuItemUpdate(BaseModel):
@@ -328,6 +345,11 @@ class MenuItemUpdate(BaseModel):
     barcode: Optional[str] = None
     variants: Optional[List[ProductVariant]] = None
     tax_rate: Optional[float] = None
+
+    @model_validator(mode="after")
+    def _validate(self):
+        _check_item_fields(self.price, self.tax_rate, self.name)
+        return self
 
 
 class AvailabilityPayload(BaseModel):
@@ -484,6 +506,13 @@ class CustomerCreate(BaseModel):
     email: Optional[str] = ""
     birthday: Optional[str] = None
 
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Phone is required")
+        return check_phone(v)
+
 
 class CustomerUpdate(BaseModel):
     name: Optional[str] = None
@@ -493,6 +522,13 @@ class CustomerUpdate(BaseModel):
     notes: Optional[str] = None
     email: Optional[str] = None
     birthday: Optional[str] = None
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        if v is not None and not v.strip():
+            raise ValueError("Phone is required")
+        return check_phone(v)
 
 
 # ---------- Tables + Layout ----------
@@ -624,12 +660,12 @@ class InventoryItem(BaseModel):
 
 
 class InventoryItemCreate(BaseModel):
-    name: str
-    unit: str
-    stock: float = 0
-    reorder: float = 0
+    name: str = Field(min_length=1, pattern=r"\S")
+    unit: str = Field(min_length=1)
+    stock: float = Field(0, ge=0)
+    reorder: float = Field(0, ge=0)
     supplier: str = ""
-    cost_per_unit: float = 0.0
+    cost_per_unit: float = Field(0.0, ge=0)
     expiry_date: Optional[str] = None
     location_id: Optional[str] = None
 
@@ -637,9 +673,9 @@ class InventoryItemCreate(BaseModel):
 class InventoryItemUpdate(BaseModel):
     name: Optional[str] = None
     unit: Optional[str] = None
-    reorder: Optional[float] = None
+    reorder: Optional[float] = Field(None, ge=0)
     supplier: Optional[str] = None
-    cost_per_unit: Optional[float] = None
+    cost_per_unit: Optional[float] = Field(None, ge=0)
     expiry_date: Optional[str] = None  # explicit null clears it; omitted leaves it unchanged
     location_id: Optional[str] = None  # explicit null clears it (moves to shared pool); omitted leaves it unchanged
 
@@ -759,6 +795,11 @@ class OrderCreate(BaseModel):
     items: List[OrderItem]
     deliveryFee: float = 0
     discount: float = 0
+    # The part of `discount` that lowers the taxable value (bill discount,
+    # coupon, loyalty). Gift cards and store credit are tenders, not price
+    # reductions, so they're in `discount` but not here. Absent (older
+    # clients) means the whole discount is taxable-reducing.
+    taxable_discount: Optional[float] = None
     total: float
     payment: OrderPayment = "unpaid"
     driver: Optional[str] = None
@@ -903,15 +944,33 @@ class StaffPublic(BaseModel):
     active: bool = True
 
 
+def check_phone(v):
+    """Blank is allowed (phone is optional); otherwise 10-15 digits with an
+    optional leading + and spaces/dashes, e.g. 9876543210 or +91 98765 43210."""
+    if v is None or not str(v).strip():
+        return v
+    digits = str(v).strip()
+    body = digits[1:] if digits.startswith("+") else digits
+    body = body.replace(" ", "").replace("-", "")
+    if not body.isdigit() or not 10 <= len(body) <= 15:
+        raise ValueError("Enter a valid phone number, e.g. +91 98765 43210")
+    return v
+
+
 class StaffCreate(BaseModel):
     name: str
     role: StaffRole
     pin: str  # 4-digit numeric PIN
     phone: Optional[str] = ""
     pay_type: PayType = "monthly"
-    monthly_pay: float = 0.0
-    hourly_rate: float = 0.0
+    monthly_pay: float = Field(0.0, ge=0)
+    hourly_rate: float = Field(0.0, ge=0)
     active: bool = True
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        return check_phone(v)
 
 
 class StaffUpdate(BaseModel):
@@ -920,9 +979,14 @@ class StaffUpdate(BaseModel):
     pin: Optional[str] = None  # only set when manager rotates PIN
     phone: Optional[str] = None
     pay_type: Optional[PayType] = None
-    monthly_pay: Optional[float] = None
-    hourly_rate: Optional[float] = None
+    monthly_pay: Optional[float] = Field(None, ge=0)
+    hourly_rate: Optional[float] = Field(None, ge=0)
     active: Optional[bool] = None
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        return check_phone(v)
 
 
 def effective_hourly_rate(user_doc: dict) -> float:
@@ -1175,6 +1239,11 @@ class LocationCreate(BaseModel):
     active: bool = True
     is_default: bool = False
 
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        return check_phone(v)
+
 
 class LocationUpdate(BaseModel):
     name: Optional[str] = None
@@ -1183,6 +1252,11 @@ class LocationUpdate(BaseModel):
     store_number: Optional[str] = None
     active: Optional[bool] = None
     is_default: Optional[bool] = None
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        return check_phone(v)
 
 
 # ---------- Prep list ----------

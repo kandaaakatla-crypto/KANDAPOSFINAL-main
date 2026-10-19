@@ -7,7 +7,7 @@ import { Input } from "../ui/input";
 import PaymentModal from "./PaymentModal";
 import { ScanLine, Minus, Plus, X, ShoppingCart, Package } from "lucide-react";
 import { toast } from "sonner";
-import { effectiveTaxRate, computeLineTax, computeOrderTax } from "../../utils/tax";
+import { effectiveTaxRate, computeLineTax, computeOrderTax, applyTaxableDiscount } from "../../utils/tax";
 import { findByCode, isEditableTarget } from "../../utils/barcode";
 
 /** Retail checkout — basket + barcode/SKU lookup. No order type, no tables,
@@ -43,8 +43,9 @@ export default function RetailSaleScreen() {
       const rate = effectiveTaxRate({ tax_rate: l.taxRate }, cat);
       return computeLineTax(l.price, l.qty, rate, true);
     });
-    return computeOrderTax(lineAmounts);
-  }, [cart, categories]);
+    // The discount lowers the gross, so the GST inside it drops too.
+    return applyTaxableDiscount(computeOrderTax(lineAmounts), discountAmt, true);
+  }, [cart, categories, discountAmt]);
 
   const addLine = (name, price, sku, catId, taxRate) => {
     setCart((prev) => {
