@@ -54,6 +54,12 @@ jobs:
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
+      # Every deploy REPLACES the service's whole environment with the two
+      # lists below, so anything set by hand in the Cloud Run console is wiped
+      # on the next merge. All settings live here. The --set-secrets names must
+      # exist in Secret Manager (and be readable by the runtime service
+      # account) or the deploy fails; the vars.* settings may be left unset.
+      #
       # Concurrency/max-instances are tuned per region now that ws.py's Redis
       # pub/sub makes it safe for either region to run more than one
       # instance — before that, extra instances would have silently dropped
@@ -81,8 +87,8 @@ jobs:
             --max-instances 8 \
             --concurrency 40 \
             --allow-unauthenticated \
-            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-api" \
-            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"
+            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-api,PUBLIC_BACKEND_URL=${{ vars.PUBLIC_BACKEND_URL }},TWILIO_WHATSAPP_FROM=${{ vars.TWILIO_WHATSAPP_FROM }},TWILIO_FROM_NUMBER=${{ vars.TWILIO_FROM_NUMBER }},WA_BILL_CONTENT_SID=${{ vars.WA_BILL_CONTENT_SID }},WA_REVIEW_CONTENT_SID=${{ vars.WA_REVIEW_CONTENT_SID }},SUPPORT_FROM_EMAIL=${{ vars.SUPPORT_FROM_EMAIL }},SUPPORT_TO_EMAIL=${{ vars.SUPPORT_TO_EMAIL }}" \
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest,RAZORPAY_KEY_ID=kanda-razorpay-key-id:latest,RAZORPAY_KEY_SECRET=kanda-razorpay-key-secret:latest,RAZORPAY_WEBHOOK_SECRET=kanda-razorpay-webhook-secret:latest,TWILIO_ACCOUNT_SID=kanda-twilio-account-sid:latest,TWILIO_AUTH_TOKEN=kanda-twilio-auth-token:latest,RESEND_API_KEY=kanda-resend-api-key:latest"
 
       # us-central1 (WebSocket): concurrency raised well above the default —
       # an open WebSocket holds a concurrency slot for its entire connected
@@ -104,5 +110,5 @@ jobs:
             --concurrency 250 \
             --timeout 3600 \
             --allow-unauthenticated \
-            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-ws" \
-            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"
+            --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-ws,PUBLIC_BACKEND_URL=${{ vars.PUBLIC_BACKEND_URL }},TWILIO_WHATSAPP_FROM=${{ vars.TWILIO_WHATSAPP_FROM }},TWILIO_FROM_NUMBER=${{ vars.TWILIO_FROM_NUMBER }},WA_BILL_CONTENT_SID=${{ vars.WA_BILL_CONTENT_SID }},WA_REVIEW_CONTENT_SID=${{ vars.WA_REVIEW_CONTENT_SID }},SUPPORT_FROM_EMAIL=${{ vars.SUPPORT_FROM_EMAIL }},SUPPORT_TO_EMAIL=${{ vars.SUPPORT_TO_EMAIL }}" \
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest,RAZORPAY_KEY_ID=kanda-razorpay-key-id:latest,RAZORPAY_KEY_SECRET=kanda-razorpay-key-secret:latest,RAZORPAY_WEBHOOK_SECRET=kanda-razorpay-webhook-secret:latest,TWILIO_ACCOUNT_SID=kanda-twilio-account-sid:latest,TWILIO_AUTH_TOKEN=kanda-twilio-auth-token:latest,RESEND_API_KEY=kanda-resend-api-key:latest"
