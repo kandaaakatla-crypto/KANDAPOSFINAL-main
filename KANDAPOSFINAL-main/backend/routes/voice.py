@@ -217,6 +217,11 @@ async def update_voice_config(payload: VoiceConfigPayload, user: dict = Depends(
     for k, v in src.items():
         if k == "twilio_number":
             v = _normalize_number(v)
+            # Calls are routed by this number: one store can't take another's.
+            if v and await db.tenants.find_one(
+                {"voice.twilio_number": v, "id": {"$ne": user["tenant_id"]}}, {"_id": 0, "id": 1},
+            ):
+                raise HTTPException(status_code=409, detail="That number is already used by another store")
         updates[f"voice.{k}"] = v
     if not updates:
         return await get_voice_config(user)
@@ -322,13 +327,12 @@ async def list_owned_numbers(user: dict = Depends(get_current_user)):
     db = get_db()
     try:
         nums = await asyncio.to_thread(client.incoming_phone_numbers.list, limit=100)
-        # Look up which tenants claim these numbers.
+        # Which numbers are taken. Other stores are never named here.
         claimed = {}
         async for t in db.tenants.find({"voice.twilio_number": {"$exists": True, "$ne": ""}},
-                                       {"_id": 0, "id": 1, "name": 1, "slug": 1, "voice.twilio_number": 1}):
-            claimed[(t.get("voice") or {}).get("twilio_number", "")] = {
-                "tenant_id": t["id"], "tenant_name": t.get("name"), "tenant_slug": t.get("slug"),
-            }
+                                       {"_id": 0, "id": 1, "voice.twilio_number": 1}):
+            claimed[(t.get("voice") or {}).get("twilio_number", "")] = (
+                {"this_store": True} if t["id"] == user["tenant_id"] else {"other_store": True})
         out = []
         for n in nums:
             caps = getattr(n, "capabilities", {}) or {}
