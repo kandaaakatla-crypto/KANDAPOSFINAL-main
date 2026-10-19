@@ -8,7 +8,6 @@ import {
   ShoppingBag, CheckCircle2, Instagram, ArrowUpRight, Coffee, Sun, Moon, Bike,
 } from "lucide-react";
 import useSeo, { useStructuredData } from "../hooks/useSeo";
-import AlphaWaitlist from "./landing/AlphaWaitlist";
 import { WordReveal, Rise, ScrollWords, Marquee, HoverList, ServiceRows, ScaleCta } from "./landing/motion";
 import { useSmoothScroll, CursorFollower, Magnetic, CountUp, StackCards, HorizontalScroll } from "./landing/immersive";
 import HeroOrderPanel from "./landing/HeroOrderPanel";
@@ -53,7 +52,6 @@ const DAY = [
 const NAV_LINKS = [
   { href: "#live", label: "Live view" },
   { href: "#features", label: "Features" },
-  { href: "#waitlist", label: "Alpha waitlist" },
   { href: "#contact", label: "Contact" },
 ];
 
@@ -100,7 +98,7 @@ const STRUCTURED_DATA = {
       "name": "Kanda POS",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web, Android, Windows",
-      "description": "GST-ready point of sale software for restaurants and retail stores in India: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one system. Launching soon.",
+      "description": "GST-ready point of sale software for restaurants and retail stores in India: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one system. Available now.",
       "url": "https://kandapos.com",
       "areaServed": "IN",
     },
@@ -109,8 +107,8 @@ const STRUCTURED_DATA = {
 
 export default function LandingPage() {
   useSeo({
-    title: "Point of sale for restaurants & retail — coming soon",
-    description: "Kanda POS is a GST-ready point of sale for Indian restaurants and retail stores: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one connected system. Launching soon — book a demo or join the alpha waitlist.",
+    title: "Point of sale for restaurants & retail in India",
+    description: "Kanda POS is a GST-ready point of sale for Indian restaurants and retail stores: dine-in, collection, delivery and in-store sales, kitchen tickets, barcode checkout, staff, inventory and reporting in one connected system. Available now — book a demo and we'll set up your store.",
     path: "/",
   });
   useStructuredData("ld-landing", STRUCTURED_DATA);
@@ -180,6 +178,9 @@ export default function LandingPage() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <Link to="/dashboard/login" className="hidden sm:inline-block rounded-full px-4 py-2.5 text-sm font-bold hover:opacity-70 transition-opacity" style={{ color: "var(--pos-text)" }} data-testid="landing-sign-in">
+              Sign in
+            </Link>
             <a href="#contact" className="pos-btn land-pos-btn rounded-full px-5 py-2.5 text-sm font-bold text-white" style={{ background: "var(--pos-accent)" }}>
               Book a demo
             </a>
@@ -217,6 +218,14 @@ export default function LandingPage() {
                     {l.label}
                   </a>
                 ))}
+                <Link
+                  to="/dashboard/login"
+                  onClick={() => setMobileNavOpen(false)}
+                  className="py-3 text-sm font-bold"
+                  style={{ color: "var(--pos-text)" }}
+                >
+                  Sign in
+                </Link>
               </div>
             </m.nav>
           )}
@@ -227,7 +236,7 @@ export default function LandingPage() {
       <section className="relative max-w-7xl mx-auto px-6 pt-12 md:pt-20">
         <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
           className="relative z-10 flex items-center justify-between text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
-          <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Alpha opening in waves</span>
+          <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Available now</span>
           <span>Hyderabad, India</span>
         </m.div>
         <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[6.2vw] max-w-[14ch] lg:max-w-[16ch]" />
@@ -235,8 +244,8 @@ export default function LandingPage() {
           <Rise delay={0.5}>
             <p className="text-lg md:text-xl max-w-xl leading-relaxed" style={{ color: "var(--pos-muted)" }}>
               One system for restaurants and retail: GST ready billing, kitchen sync,
-              delivery and stock, all on one screen. We are putting the finishing
-              touches on Kanda POS before opening the doors.
+              delivery and stock, all on one screen. Available now for restaurants
+              and stores across India.
             </p>
           </Rise>
           <Rise delay={0.65} className="flex flex-wrap items-center gap-3">
@@ -249,8 +258,8 @@ export default function LandingPage() {
               </a>
             </Magnetic>
             <Magnetic>
-              <a href="#waitlist" className="inline-block rounded-full px-6 py-3 font-bold" style={{ border: "1.5px solid var(--pos-text)", color: "var(--pos-text)", background: "var(--pos-bg)" }}>
-                Join the alpha waitlist
+              <a href="#live" className="inline-block rounded-full px-6 py-3 font-bold" style={{ border: "1.5px solid var(--pos-text)", color: "var(--pos-text)", background: "var(--pos-bg)" }}>
+                See it live
               </a>
             </Magnetic>
           </Rise>
@@ -391,8 +400,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-
-      <AlphaWaitlist submitLead={submitLead} />
 
       <ScaleCta
         eyebrow="Small team, built in Hyderabad"
