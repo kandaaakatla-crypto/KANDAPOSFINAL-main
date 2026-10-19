@@ -484,6 +484,15 @@ async def set_order_customer(order_id: str, payload: OrderCustomer, user: dict =
 @router.patch("/orders/{order_id}/status", response_model=Order)
 async def set_order_status(order_id: str, payload: OrderStatusPayload, user: dict = Depends(get_current_user)):
     db = get_db()
+    if payload.status == "completed":
+        # An unpaid order must not be closed: Completed hides the Bill button
+        # and blocks void, leaving the money uncollectable (test report P0-4).
+        # Delivery is exempt — cash-on-delivery is legitimately completed by
+        # the driver before/while the cash is taken.
+        current = await db.orders.find_one(tenant_filter(user, {"id": order_id}), {"_id": 0, "payment": 1, "type": 1, "voided": 1})
+        if (current and not current.get("voided") and (current.get("payment") or "unpaid") == "unpaid"
+                and current.get("type") != "delivery"):
+            raise HTTPException(status_code=409, detail="Collect payment before completing this order.")
     res = await db.orders.find_one_and_update(
         tenant_filter(user, {"id": order_id}), {"$set": {"status": payload.status}}, return_document=True,
     )

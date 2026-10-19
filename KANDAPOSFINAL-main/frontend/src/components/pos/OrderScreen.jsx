@@ -133,7 +133,7 @@ export default function OrderScreen() {
     const oid = searchParams.get("order");
     if (oid) {
       const existing = orders.find((o) => o.id === oid);
-      if (existing && existing.payment === "unpaid" && !existing.voided && existing.status !== "completed") {
+      if (existing && existing.payment === "unpaid" && !existing.voided) {
         setEditingOrderId(existing.id);
         setOrderType(existing.type);
         setOrderSource(existing.source || "in-store");
