@@ -39,7 +39,7 @@ from db import get_db
 from auth import get_current_user, require_role, forbid_demo_tenant
 from tenants import tenant_filter, get_tenant
 from ws import schedule_broadcast
-from ._shared import next_order_number
+from ._shared import next_order_number, NOT_DELETED
 
 logger = logging.getLogger("kanda.voice")
 router = APIRouter()
@@ -690,7 +690,7 @@ async def _build_tenant_context(db, tenant: dict) -> str:
     phone = store.get("phone") or ""
 
     items = await db.menu_items.find(
-        {"tenant_id": tenant["id"], "available": {"$ne": False}},
+        {"tenant_id": tenant["id"], "available": {"$ne": False}, **NOT_DELETED},
         {"_id": 0, "name": 1, "price": 1, "sizes": 1, "is_pizza": 1, "cat_id": 1, "desc": 1},
     ).to_list(200)
     categories = await db.categories.find(
@@ -954,31 +954,41 @@ async def _tool_place_order(db, tenant: dict, args: dict, ctx: dict) -> dict:
     """Resolve item names against the menu, build an Order doc, insert it,
     broadcast to KDS — mirrors the logic in routes.orders but minimal."""
     tenant_id = tenant["id"]
+    # Deleted items aren't on the menu at all. Sold-out ones (available:
+    # False, the same flag the POS toggle and storefront use) are loaded so
+    # a caller who names one is told it's sold out instead of being matched
+    # to something else or silently dropped.
     menu = await db.menu_items.find(
-        {"tenant_id": tenant_id}, {"_id": 0, "id": 1, "name": 1, "price": 1, "sizes": 1, "is_pizza": 1}
+        {"tenant_id": tenant_id, **NOT_DELETED},
+        {"_id": 0, "id": 1, "name": 1, "price": 1, "sizes": 1, "is_pizza": 1, "available": 1},
     ).to_list(2000)
 
     def _match(name: str) -> Optional[dict]:
         if not name:
             return None
         target = name.strip().lower()
+        exact = [m for m in menu if m["name"].strip().lower() == target]
+        if exact:
+            # Two rows can share a name; take an orderable one if there is one.
+            return next((m for m in exact if m.get("available", True)), exact[0])
+        # loose contains-match fallback, only ever onto something orderable
         for m in menu:
-            if m["name"].strip().lower() == target:
-                return m
-        # loose contains-match fallback
-        for m in menu:
-            if target in m["name"].strip().lower():
+            if m.get("available", True) and target in m["name"].strip().lower():
                 return m
         return None
 
     items_out: list[dict] = []
     unmatched: list[str] = []
+    unavailable: list[str] = []
     for it in (args.get("items") or []):
         m = _match(it.get("name", ""))
         qty = int(it.get("qty") or 1)
         size = it.get("size")
         if not m:
             unmatched.append(it.get("name", ""))
+            continue
+        if not m.get("available", True):
+            unavailable.append(m["name"])
             continue
         if isinstance(m.get("sizes"), dict) and m["sizes"]:
             if size and size in m["sizes"]:
@@ -992,6 +1002,16 @@ async def _tool_place_order(db, tenant: dict, args: dict, ctx: dict) -> dict:
             price = float(m.get("price") or 0)
         items_out.append({"id": m["id"], "name": m["name"], "qty": qty, "size": size, "price": price})
 
+    if unavailable:
+        # Don't place the rest of the order without it: the caller confirmed
+        # the whole order, so the agent has to ask them for a replacement.
+        return {
+            "ok": False,
+            "error": f"Sold out, not available today: {', '.join(unavailable)}. "
+                     "Tell the caller and ask if they'd like something else instead. No order was placed.",
+            "unavailable": unavailable,
+            "unmatched": unmatched,
+        }
     if not items_out:
         return {"ok": False, "error": f"None of the requested items matched the menu: {unmatched}"}
 
