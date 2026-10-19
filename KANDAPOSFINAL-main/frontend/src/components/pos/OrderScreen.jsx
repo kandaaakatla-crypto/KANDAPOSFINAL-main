@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { usePos } from "../../store/PosContext";
 import { pressableSmall, liftable } from "../../lib/motion";
-import { CATEGORIES, DELIVERY_FEE } from "../../data/mock";
+import { DELIVERY_FEE } from "../../data/mock";
+import { sortCategories, pickActiveCategory, visibleMenuItems } from "../../utils/menuCategories";
 import ItemModal from "./ItemModal";
 import CartPanel from "./CartPanel";
 import PaymentModal from "./PaymentModal";
@@ -44,7 +45,10 @@ export default function OrderScreen() {
   const { slug } = useParams();
   const [orderType, setOrderType] = useState("delivery");
   const [orderSource, setOrderSource] = useState("in-store");
-  const [activeCat, setActiveCat] = useState("pizzas");
+  const [catPick, setCatPick] = useState(null);
+  const [menuQuery, setMenuQuery] = useState("");
+  const sortedCats = useMemo(() => sortCategories(categories), [categories]);
+  const activeCat = pickActiveCategory(sortedCats, catPick);
   const [cart, setCart] = useState([]);
   const [discount, setDiscount] = useState(0); // percent
   const [modalItem, setModalItem] = useState(null);
@@ -168,7 +172,7 @@ export default function OrderScreen() {
     }
   }, [searchParams, orders.length]);
 
-  const items = useMemo(() => effectiveMenuItems.filter((m) => m.catId === activeCat), [effectiveMenuItems, activeCat]);
+  const items = useMemo(() => visibleMenuItems(effectiveMenuItems, activeCat, menuQuery), [effectiveMenuItems, activeCat, menuQuery]);
 
   const lookupCustomer = () => {
     if (phoneQuery.trim().length < 5) { toast.error("Enter a phone number to search"); return; }
@@ -618,32 +622,51 @@ export default function OrderScreen() {
             )}
           </div>
         )}
-
-        {/* Categories — horizontal chip scroll on mobile, vertical list on desktop */}
-        <div className="rounded-xl p-3 md:flex-1" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-          <div className="text-xs uppercase tracking-wider mb-2 font-semibold" style={{ color: "var(--pos-muted)" }}>Categories</div>
-          <div className="flex gap-1.5 overflow-x-auto pos-scroll pb-1 -mx-1 px-1 md:mx-0 md:px-0 md:flex-col md:gap-0 md:space-y-1.5 md:overflow-visible md:pb-0">
-            {CATEGORIES.map((c) => (
-              <motion.button key={c.id} data-testid={`cat-${c.id}`} onClick={() => setActiveCat(c.id)} {...pressableSmall}
-                className="cat-btn relative shrink-0 md:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm font-semibold text-left whitespace-nowrap md:whitespace-normal"
-                style={{ border: `1px solid ${activeCat === c.id ? c.color : "var(--pos-border)"}` }}>
-                {activeCat === c.id && (
-                  <motion.div layoutId="order-cat-active-pill" className="absolute inset-0 rounded-lg" style={{ background: "var(--pos-panel-2)" }}
-                    transition={{ type: "spring", stiffness: 420, damping: 34 }} />
-                )}
-                <span className="relative w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
-                <span className="relative" style={{ color: activeCat === c.id ? "var(--pos-text)" : "var(--pos-muted)" }}>{c.name}</span>
-              </motion.button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Center: item grid */}
-      <div className="w-full md:flex-1 md:min-w-0 p-3 overflow-visible md:overflow-y-auto pos-scroll">
+      <div className="w-full md:flex-1 md:min-w-0 p-3 pt-0 overflow-visible md:overflow-y-auto pos-scroll">
+        {/* Categories — one scrollable row above the items, with search */}
+        <div className="sticky top-0 z-10 -mx-3 px-3 pt-3 pb-2 mb-1" style={{ background: "var(--pos-bg)" }}>
+          <div className="relative mb-2">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
+            <Input data-testid="menu-search" placeholder="Search menu" value={menuQuery} onChange={(e) => setMenuQuery(e.target.value)}
+              aria-label="Search menu" className="h-10 pl-9 pr-9" style={{ background: "var(--pos-panel)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            {menuQuery && (
+              <button type="button" data-testid="menu-search-clear" aria-label="Clear search" onClick={() => setMenuQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded" style={{ color: "var(--pos-muted)" }}>
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto pos-scroll pb-1" data-testid="category-row">
+            {sortedCats.map((c) => {
+              const on = !menuQuery && activeCat === c.id;
+              return (
+                <motion.button key={c.id} data-testid={`cat-${c.id}`} onClick={() => { setCatPick(c.id); setMenuQuery(""); }} {...pressableSmall}
+                  aria-pressed={on}
+                  className="cat-btn relative shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
+                  style={{ border: `1px solid ${on ? c.color : "var(--pos-border)"}`, background: on ? "var(--pos-panel-2)" : "var(--pos-panel)" }}>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.color }} />
+                  <span style={{ color: on ? "var(--pos-text)" : "var(--pos-muted)" }}>{c.name}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+        {sortedCats.length === 0 && (
+          <div className="text-sm py-10 text-center" style={{ color: "var(--pos-muted)" }} data-testid="menu-empty">
+            No menu yet. Add categories and items from Menu in the dashboard.
+          </div>
+        )}
+        {sortedCats.length > 0 && items.length === 0 && (
+          <div className="text-sm py-10 text-center" style={{ color: "var(--pos-muted)" }} data-testid="menu-no-match">
+            {menuQuery ? `No items match "${menuQuery}".` : "No items in this category yet."}
+          </div>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3" data-testid="item-grid">
           {items.map((item) => {
-            const cat = CATEGORIES.find((c) => c.id === item.catId);
+            const cat = sortedCats.find((c) => c.id === item.catId);
             // Show what the customer will be charged: the cart applies the
             // active aggregator surge, so the menu cards must too.
             const shown = (p) => applySurge(p, surge.pct).toFixed(2);
