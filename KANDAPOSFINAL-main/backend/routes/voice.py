@@ -956,7 +956,6 @@ async def _tool_place_order(db, tenant: dict, args: dict, ctx: dict) -> dict:
         return None
 
     items_out: list[dict] = []
-    subtotal = 0.0
     unmatched: list[str] = []
     for it in (args.get("items") or []):
         m = _match(it.get("name", ""))
@@ -976,10 +975,17 @@ async def _tool_place_order(db, tenant: dict, args: dict, ctx: dict) -> dict:
         else:
             price = float(m.get("price") or 0)
         items_out.append({"id": m["id"], "name": m["name"], "qty": qty, "size": size, "price": price})
-        subtotal += price * qty
 
     if not items_out:
         return {"ok": False, "error": f"None of the requested items matched the menu: {unmatched}"}
+
+    # GST exactly as on the POS: per-item rate from the menu/category, none
+    # for composition or unregistered stores.
+    from routes.orders import _stamp_item_tax
+    from tax import collects_gst, compute_order_tax
+    business_type = tenant.get("business_type", "restaurant")
+    line_amounts, _warnings = await _stamp_item_tax(db, tenant_id, business_type, items_out, collects_gst(tenant))
+    tax = compute_order_tax(line_amounts)
 
     number = await next_order_number(db, tenant_id)
     placed_at = now_ist().isoformat()
@@ -1000,7 +1006,12 @@ async def _tool_place_order(db, tenant: dict, args: dict, ctx: dict) -> dict:
         "items": await annotate_order_items_for_kds(db, tenant_id, items_out),
         "deliveryFee": 0,
         "discount": 0,
-        "total": round(subtotal, 2),
+        "total": tax["items_total"],
+        "subtotal": tax["subtotal"],
+        "taxTotal": tax["tax_total"],
+        "cgst": tax["cgst"],
+        "sgst": tax["sgst"],
+        "taxInclusive": business_type == "retail",
         "payment": "unpaid",
         "placedAt": placed_at,
         "driver": None,
