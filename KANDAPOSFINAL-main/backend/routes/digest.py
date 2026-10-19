@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from db import get_db
 from routes.dash_auth import get_dash_user
 from email_service import send_email
+from sales import PAID_NOT_VOIDED, NET_EXPR
 from sms_service import send_sms
 from report_tools import (
     _tool_todays_sales,
@@ -68,9 +69,9 @@ async def _yesterday_sales(db, tenant_id: str) -> dict:
         {"$match": {
             "tenant_id": tenant_id,
             "placedAt": {"$gte": yesterday.isoformat(), "$lt": today.isoformat()},
-            "voided": {"$ne": True},
+            **PAID_NOT_VOIDED,
         }},
-        {"$group": {"_id": None, "count": {"$sum": 1}, "revenue": {"$sum": "$total"}}},
+        {"$group": {"_id": None, "count": {"$sum": 1}, "revenue": {"$sum": NET_EXPR}}},
     ]
     r = await db.orders.aggregate(pipe).to_list(1)
     if not r:
@@ -82,7 +83,7 @@ async def _gather_digest_data(db, tenant_id: str) -> dict:
     today_sales, yesterday_sales, top_items, low_stock, expiring_stock, active_orders, on_duty = await asyncio.gather(
         _tool_todays_sales(db, tenant_id),
         _yesterday_sales(db, tenant_id),
-        _tool_top_items(db, tenant_id, days=1, limit=5),
+        _tool_top_items(db, tenant_id, limit=5, today_only=True),
         _tool_low_stock(db, tenant_id),
         _tool_expiring_stock(db, tenant_id, days=7),
         _tool_active_orders(db, tenant_id),
@@ -137,6 +138,20 @@ async def _ai_digest_text(tenant_name: str, data: dict) -> str:
         return _template_digest_text(tenant_name, data)
 
 
+def orders_label(n: int) -> str:
+    return f"{n} order" if n == 1 else f"{n} orders"
+
+
+def greeting_for_hour(hour: int) -> str:
+    """The digest goes out at whatever hour the owner picked, so don't say
+    "Good morning" at 22:00."""
+    if 5 <= hour < 12:
+        return "Good morning"
+    if 12 <= hour < 17:
+        return "Good afternoon"
+    return "Good evening"
+
+
 def _template_digest_text(tenant_name: str, data: dict) -> str:
     t = data["today"]
     y = data["yesterday"]
@@ -146,11 +161,11 @@ def _template_digest_text(tenant_name: str, data: dict) -> str:
         arrow = "▲" if delta >= 0 else "▼"
         delta_line = f" ({arrow} {abs(delta):.1f}% vs yesterday)"
     lines = [
-        f"Good morning from {tenant_name} 👋",
+        f"{greeting_for_hour(now_ist().hour)} from {tenant_name} 👋",
         "",
-        f"Revenue today: ₹{t['revenue']:.2f} across {t['count']} orders{delta_line}",
+        f"Revenue today: ₹{t['revenue']:.2f} across {orders_label(t['count'])}{delta_line}",
         f"Average ticket: ₹{data['avg_ticket']:.2f}",
-        f"Yesterday: ₹{y['revenue']:.2f} / {y['count']} orders",
+        f"Yesterday: ₹{y['revenue']:.2f} / {orders_label(y['count'])}",
         "",
     ]
     if data["top_items"]:
@@ -169,7 +184,7 @@ def _template_digest_text(tenant_name: str, data: dict) -> str:
             when = "expired" if it.get("expired") else f"expires {it.get('expiry_date','?')}"
             lines.append(f"  • {it.get('name','?')} — {it.get('stock','?')} {it.get('unit','')} · {when}")
         lines.append("")
-    lines.append(f"Currently active: {len(data['active_orders'])} orders · {data['staff_on_duty']} staff on duty")
+    lines.append(f"Open orders right now: {len(data['active_orders'])} · {data['staff_on_duty']} staff on duty")
     return "\n".join(lines)
 
 
@@ -185,7 +200,7 @@ def _digest_html(tenant_name: str, ai_text: str, data: dict) -> str:
         f'<div style="background:#22222d;border-radius:10px;padding:12px;margin-bottom:16px">'
         f'<div style="color:#c9c9d5;font-size:12px;margin-bottom:4px">Revenue today</div>'
         f'<div style="color:#fff;font-size:28px;font-weight:700">₹{t["revenue"]:.2f}</div>'
-        f'<div style="color:#8a8aa0;font-size:12px">{t["count"]} orders · avg ₹{data["avg_ticket"]:.2f}</div>'
+        f'<div style="color:#8a8aa0;font-size:12px">{orders_label(t["count"])} · avg ₹{data["avg_ticket"]:.2f}</div>'
         f'</div>'
         f'<div style="color:#d0d0dc;font-size:14px;line-height:1.65">{body}</div>'
         f'<p style="color:#666680;font-size:11px;margin-top:24px">Sent by Kanda POS AI · Reply STOP in Voice Agent settings to unsubscribe.</p>'
@@ -201,9 +216,9 @@ def _sms_body(tenant_name: str, data: dict) -> str:
     top = data["top_items"][0]["name"] if data["top_items"] else "—"
     return (
         f"Kanda · {tenant_name}\n"
-        f"Today: ₹{t['revenue']:.0f} / {t['count']} orders{delta_txt}\n"
+        f"Today: ₹{t['revenue']:.0f} / {orders_label(t['count'])}{delta_txt}\n"
         f"Top: {top} · Low stock: {len(data['low_stock'])} · Expiring: {len(data.get('expiring_stock') or [])}\n"
-        f"Yesterday: ₹{y['revenue']:.0f} / {y['count']} orders"
+        f"Yesterday: ₹{y['revenue']:.0f} / {orders_label(y['count'])}"
     )
 
 

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { MessageSquare, Send, Loader2 } from "lucide-react";
 import { smsApi } from "../api/client";
+import SmsNotSetUp, { useSmsStatus } from "./SmsNotSetUp";
 
 /**
  * Modal that lets a Manager send a one-off SMS to a phone number
@@ -24,6 +25,7 @@ const TEMPLATES = [
 export default function SmsComposer({ open, onClose, to, name, customerId = null }) {
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const sms = useSmsStatus();
   const first = (name || "").split(" ")[0] || "there";
   const rendered = body.replaceAll("{name}", first);
 
@@ -85,9 +87,10 @@ export default function SmsComposer({ open, onClose, to, name, customerId = null
             <span>{body.length}/1000</span>
           </div>
 
-          <button data-testid="sms-send" onClick={send} disabled={sending || !body.trim() || !to}
+          {!sms.configured && <SmsNotSetUp reason={sms.reason} />}
+          <button data-testid="sms-send" onClick={send} disabled={sending || !body.trim() || !to || !sms.configured}
             className="pos-btn w-full h-10 rounded-lg text-sm font-bold text-white flex items-center justify-center gap-2"
-            style={{ background: "var(--pos-accent)", opacity: (sending || !body.trim() || !to) ? 0.5 : 1 }}>
+            style={{ background: "var(--pos-accent)", opacity: (sending || !body.trim() || !to || !sms.configured) ? 0.5 : 1 }}>
             {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : <><Send className="w-4 h-4" /> Send SMS</>}
           </button>
         </div>

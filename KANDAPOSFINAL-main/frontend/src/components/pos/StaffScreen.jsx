@@ -27,6 +27,10 @@ export default function StaffScreen() {
   };
   useEffect(() => { load(); }, []);
 
+  // The server blanks salaries for dashboard users without the Payroll
+  // permission; hide the pay UI and never send pay fields back in that case.
+  const payHidden = staff.some((s) => s.pay_visible === false);
+
   const visible = staff.filter((s) => showInactive || s.active);
   const inactiveCount = staff.filter((s) => !s.active).length;
 
@@ -42,11 +46,13 @@ export default function StaffScreen() {
         name: editing.name.trim(),
         role: editing.role,
         phone: editing.phone || "",
-        pay_type: editing.pay_type || "monthly",
-        monthly_pay: parseFloat(editing.monthly_pay || 0) || 0,
-        hourly_rate: parseFloat(editing.hourly_rate || 0) || 0,
         active: editing.active !== false,
       };
+      if (!payHidden) {
+        payload.pay_type = editing.pay_type || "monthly";
+        payload.monthly_pay = parseFloat(editing.monthly_pay || 0) || 0;
+        payload.hourly_rate = parseFloat(editing.hourly_rate || 0) || 0;
+      }
       if (isNew || editing.pin) payload.pin = editing.pin;
       if (isNew) {
         await staffApi.create(payload);
@@ -102,7 +108,7 @@ export default function StaffScreen() {
               <th className="text-left py-2 px-3 uppercase text-[11px] tracking-wider">Name</th>
               <th className="text-left py-2 px-3 uppercase text-[11px] tracking-wider">Role</th>
               <th className="text-left py-2 px-3 uppercase text-[11px] tracking-wider">Phone</th>
-              <th className="text-right py-2 px-3 uppercase text-[11px] tracking-wider">Compensation</th>
+              {!payHidden && <th className="text-right py-2 px-3 uppercase text-[11px] tracking-wider">Compensation</th>}
               <th className="text-center py-2 px-3 uppercase text-[11px] tracking-wider">Active</th>
               <th className="w-32 py-2 px-3"></th>
             </tr>
@@ -120,11 +126,13 @@ export default function StaffScreen() {
                 </td>
                 <td className="py-3 px-3" style={{ color: "var(--pos-muted)" }}>{s.role}</td>
                 <td className="py-3 px-3" style={{ color: "var(--pos-muted)" }}>{s.phone || "—"}</td>
+              {!payHidden && (
               <td className="py-3 px-3 text-right tabular-nums">
                 {s.pay_type === "monthly"
                   ? (s.monthly_pay ? `₹${s.monthly_pay.toLocaleString("en-IN")}/mo` : "—")
                   : (s.hourly_rate ? `₹${s.hourly_rate.toFixed(2)}/hr` : "—")}
               </td>
+              )}
                 <td className="py-3 px-3 text-center">
                   <span className="text-[11px] px-2 py-0.5 rounded-full" style={{
                     background: s.active ? "#0e2515" : "#2b1212",
@@ -186,7 +194,7 @@ export default function StaffScreen() {
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-sm tabular-nums" style={{ color: "var(--pos-muted)" }}>
-                    {s.pay_type === "monthly"
+                    {payHidden ? "" : s.pay_type === "monthly"
                       ? (s.monthly_pay ? `₹${s.monthly_pay.toLocaleString("en-IN")}/mo` : "—")
                       : (s.hourly_rate ? `₹${s.hourly_rate.toFixed(2)}/hr` : "—")}
                   </div>
@@ -259,7 +267,7 @@ export default function StaffScreen() {
                   <Input data-testid="staff-phone-input" value={editing.phone || ""} onChange={(e) => setEditing({ ...editing, phone: e.target.value })}
                     style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 </div>
-                <div>
+                {!payHidden && (<div>
                   <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Pay type</label>
                   <Select value={editing.pay_type || "monthly"} onValueChange={(v) => setEditing({ ...editing, pay_type: v })}>
                     <SelectTrigger data-testid="staff-paytype-select" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
@@ -270,9 +278,9 @@ export default function StaffScreen() {
                       <SelectItem value="hourly">Hourly rate</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </div>)}
               </div>
-              {(editing.pay_type || "monthly") === "monthly" ? (
+              {payHidden ? null : (editing.pay_type || "monthly") === "monthly" ? (
                 <div>
                   <label className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Monthly salary (₹)</label>
                   <Input data-testid="staff-monthly-input" type="number" step="500" value={editing.monthly_pay}

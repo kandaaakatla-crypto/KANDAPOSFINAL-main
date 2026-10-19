@@ -253,7 +253,7 @@ function App() {
                 </Routes>
               </Suspense>
             </BrowserRouter>
-            <Toaster position="top-center" richColors />
+            <Toaster position="bottom-center" richColors />
           </PosProvider>
         </DashProvider>
       </OwnerProvider>

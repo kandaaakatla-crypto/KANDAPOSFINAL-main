@@ -57,6 +57,10 @@ export default function DashLoyalty() {
       toast.error("Gold threshold must be at or above the Silver threshold");
       return;
     }
+    if (Number(cfg.silver_multiplier) < 1 || Number(cfg.gold_multiplier) < 1) {
+      toast.error("Earn multipliers must be at least 1");
+      return;
+    }
     setSaving(true);
     try {
       const saved = await loyaltyApi.saveConfig({
@@ -230,8 +234,8 @@ export default function DashLoyalty() {
                   <Award className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: "#d97706" }} />
                   <span>
                     A ₹{Number(cfg.earn_rate) * 5 || 500} order earns <b style={{ color: "var(--pos-text)" }}>5 points</b> at Bronze,{" "}
-                    <b style={{ color: "var(--pos-text)" }}>{Math.floor(5 * (Number(cfg.silver_multiplier) || 1))} at Silver</b>, or{" "}
-                    <b style={{ color: "var(--pos-text)" }}>{Math.floor(5 * (Number(cfg.gold_multiplier) || 1))} at Gold</b> — worth{" "}
+                    <b style={{ color: "var(--pos-text)" }}>{Math.floor(5 * Math.max(1, Number(cfg.silver_multiplier) || 1))} at Silver</b>, or{" "}
+                    <b style={{ color: "var(--pos-text)" }}>{Math.floor(5 * Math.max(1, Number(cfg.gold_multiplier) || 1))} at Gold</b> — worth{" "}
                     <b style={{ color: "var(--pos-text)" }}>₹{(5 * (Number(cfg.redeem_value) || 1)).toFixed(0)}</b>+ off a future order.
                     New customers start with <b style={{ color: "var(--pos-text)" }}>{cfg.welcome_bonus_points || 0} pts</b>, and everyone
                     gets <b style={{ color: "var(--pos-text)" }}>{cfg.birthday_bonus_points || 0} pts</b> on their birthday.
@@ -274,6 +278,7 @@ function TierChip({ label, count, color }) {
 }
 
 function NumField({ label, suffix, value, min, step, onChange, testid }) {
+  const below = min !== undefined && value !== "" && Number(value) < min;
   return (
     <div>
       <label className="text-[11px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{label}</label>
@@ -281,8 +286,9 @@ function NumField({ label, suffix, value, min, step, onChange, testid }) {
         <input data-testid={testid} type="number" min={min} step={step} value={value}
           onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
           className="w-24 rounded px-2 py-1.5 text-sm outline-none"
-          style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-        <span className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{suffix}</span>
+          aria-invalid={below || undefined}
+          style={{ background: "var(--pos-panel-2)", border: `1px solid ${below ? "#dc2626" : "var(--pos-border)"}`, color: "var(--pos-text)" }} />
+        <span className="text-[11px]" style={{ color: below ? "#dc2626" : "var(--pos-muted)" }}>{below ? `Minimum ${min}` : suffix}</span>
       </div>
     </div>
   );

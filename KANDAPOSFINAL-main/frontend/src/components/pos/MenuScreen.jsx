@@ -11,6 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Pencil, PlusCircle, ChefHat, LayoutGrid, Download, Upload, FileText, Eye, Trash2, ScanLine, Layers } from "lucide-react";
 import { toast } from "sonner";
 import RecipeModal from "./RecipeModal";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 import CategoryManagerModal from "./CategoryManagerModal";
 
 export default function MenuScreen() {
@@ -35,6 +39,17 @@ export default function MenuScreen() {
   useEffect(() => { loadCats(); /* eslint-disable-next-line */ }, []);
 
   const items = menuItems.filter((m) => m.catId === activeCat);
+
+  const deleteItem = async (item) => {
+    try {
+      await menuApi.remove(item.id);
+      toast.success(`${item.name} deleted`);
+      setEditing(null);
+      await refreshMenu();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not delete item");
+    }
+  };
 
   const save = () => {
     if (!editing.name) { toast.error("Item name is required"); return; }
@@ -416,6 +431,29 @@ export default function MenuScreen() {
                     style={{ background: "var(--pos-panel-2)", color: "var(--pos-accent)", border: "1px solid var(--pos-border)" }}>
                     <ChefHat className="w-4 h-4" /> Recipe
                   </button>
+                )}
+                {editing.id && isManager && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button type="button" data-testid="delete-menu-item-btn" aria-label={`Delete ${editing.name}`}
+                        className="pos-btn h-11 px-3 rounded-lg font-bold flex items-center gap-1.5"
+                        style={{ background: "var(--pos-panel-2)", color: "#fca5a5", border: "1px solid #7d2e2e" }}>
+                        <Trash2 className="w-4 h-4" /> Delete
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          &quot;{editing.name}&quot; is removed from the menu and its recipe is dropped. Past orders keep their history. To just hide it for now, switch it to unavailable instead.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction data-testid="delete-menu-item-confirm" onClick={() => deleteItem(editing)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
                 <button data-testid="save-menu-item-btn" onClick={save} className="pos-btn flex-1 h-11 rounded-lg font-bold text-white" style={{ background: "var(--pos-accent)" }}>Save Item</button>
               </div>

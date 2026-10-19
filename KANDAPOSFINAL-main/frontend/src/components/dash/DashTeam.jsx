@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ShieldCheck, Plus, KeyRound, Loader2, Copy } from "lucide-react";
+import { ShieldCheck, Plus, KeyRound, Loader2, Copy, Trash2 } from "lucide-react";
 import { useDash, canManageTeam } from "../../store/DashContext";
 import { teamApi } from "../../api/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Switch } from "../ui/switch";
 import { Checkbox } from "../ui/checkbox";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "../ui/alert-dialog";
 
 const ROLE_LABEL = { manager: "Store Manager", area_manager: "Area Manager" };
 const INPUT_STYLE = { background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" };
@@ -91,6 +95,16 @@ export default function DashTeam() {
     }
   };
 
+  const removeMember = async (m) => {
+    try {
+      await teamApi.remove(m.id);
+      toast.success(`${m.name} removed`);
+      load();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not remove");
+    }
+  };
+
   const resetPassword = async (m) => {
     try {
       const r = await teamApi.resetPassword(m.id);
@@ -150,6 +164,24 @@ export default function DashTeam() {
                   <label className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--pos-muted)" }}>
                     <Switch data-testid={`team-active-${m.id}`} checked={m.active} onCheckedChange={(v) => setActive(m, v)} /> Active
                   </label>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button data-testid={`team-delete-${m.id}`} title="Remove manager" aria-label={`Remove ${m.name}`}
+                        className="pos-btn h-8 w-8 rounded-md flex items-center justify-center" style={{ ...INPUT_STYLE, color: "#f87171" }}><Trash2 className="w-3.5 h-3.5" /></button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remove {m.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Their dashboard login is deleted and any open session ends immediately. To keep the account but stop them signing in, turn off Active instead.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction data-testid={`team-delete-confirm-${m.id}`} onClick={() => removeMember(m)}>Remove</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             );

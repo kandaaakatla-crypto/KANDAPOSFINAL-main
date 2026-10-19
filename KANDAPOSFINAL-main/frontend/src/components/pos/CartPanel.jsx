@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, Trash2, Percent, Send, CreditCard, Bike, ShoppingBag, UtensilsCrossed, Tag, Gift, Mail, Coins, X, Wallet, Loader2, HandPlatter } from "lucide-react";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { couponsApi, loyaltyApi } from "../../api/client";
 import { toast } from "sonner";
+import { orderNo } from "../../utils/orderNumber";
 
 const TYPE_ICON = { delivery: Bike, collection: ShoppingBag, "dine-in": UtensilsCrossed };
 
@@ -45,14 +46,20 @@ export default function CartPanel({
   const newRoundTotal = +Math.max(0, subtotal + scAmt + gstTotal - discountAmt - couponDiscount - loyaltyDiscount - creditDiscount - giftDiscount + deliveryFee + tipAmt).toFixed(2);
   const total = +(newRoundTotal + (runningBill?.total || 0)).toFixed(2);
 
+  // Controlled so an invalid code can be wiped and an Apply button can read it.
+  const [couponText, setCouponText] = useState(coupon?.code || "");
+  useEffect(() => { setCouponText(coupon?.code || ""); }, [coupon]);
+
   const applyCoupon = async (code) => {
     if (!code) { onCoupon(null); return; }
+    if (coupon?.code === code) return; // already applied; blur must not re-fire it
     try {
       const res = await couponsApi.apply(code, subtotal);
       onCoupon({ code: res.code, kind: res.kind, value: res.value, discount: res.discount });
       toast.success(`Coupon ${res.code} applied — ₹${res.discount.toFixed(2)} off`);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Invalid coupon");
+      setCouponText("");
       onCoupon(null);
     }
   };
@@ -94,7 +101,7 @@ export default function CartPanel({
         {runningBill && runningBill.items?.length > 0 && (
           <div className="rounded-lg p-2.5 mb-3" style={{ background: "var(--pos-panel-2)", border: "1px dashed var(--pos-border)" }} data-testid="running-bill-items">
             <div className="text-[10px] uppercase tracking-wider mb-1.5 flex items-center justify-between" style={{ color: "var(--pos-muted)" }}>
-              <span>Already sent to kitchen · #{runningBill.number}</span>
+              <span>Already sent to kitchen · {orderNo(runningBill)}</span>
               <span className="tabular-nums font-bold">₹{runningBill.total.toFixed(2)}</span>
             </div>
             <div className="space-y-0.5">
@@ -181,12 +188,20 @@ export default function CartPanel({
           <div className="flex items-center gap-2">
             <Tag className="w-3 h-3" style={{ color: coupon ? "#16a34a" : "var(--pos-muted)" }} />
             <Input data-testid="coupon-input" placeholder="Coupon code"
-              defaultValue={coupon?.code || ""}
-              onBlur={(e) => applyCoupon(e.target.value.trim().toUpperCase())}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(e.target.value.trim().toUpperCase()); } }}
+              aria-label="Coupon code" value={couponText}
+              onChange={(e) => setCouponText(e.target.value.toUpperCase())}
+              onBlur={() => { if (couponText.trim() && !coupon) applyCoupon(couponText.trim()); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyCoupon(couponText.trim()); } }}
               className="h-7 text-xs tracking-wider" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            {!coupon && (
+              <button data-testid="coupon-apply" onClick={() => applyCoupon(couponText.trim())} disabled={!couponText.trim()}
+                className="pos-btn text-[10px] px-2 py-1 rounded font-bold disabled:opacity-40"
+                style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)", border: "1px solid var(--pos-border)" }}>
+                Apply
+              </button>
+            )}
             {coupon && (
-              <button data-testid="coupon-clear" onClick={() => onCoupon(null)} className="pos-btn text-[10px] px-1" style={{ color: "#dc2626" }}>×</button>
+              <button data-testid="coupon-clear" aria-label="Remove coupon" onClick={() => { setCouponText(""); onCoupon(null); }} className="pos-btn text-[10px] px-1" style={{ color: "#dc2626" }}>×</button>
             )}
           </div>
 
@@ -228,7 +243,7 @@ export default function CartPanel({
             <Input data-testid="gift-card-code-input" placeholder="Gift card code" value={giftCardCode || ""}
               onChange={(e) => onGiftCardCode(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onCheckGiftCard(); } }}
-              className="h-6 w-28 text-xs tracking-wider" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+              aria-label="Gift card code" className="h-6 w-36 text-xs tracking-wider" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <button data-testid="gift-card-check-btn" onClick={onCheckGiftCard} disabled={!giftCardCode || giftCardChecking}
               className="pos-btn text-[10px] px-2 py-0.5 rounded flex items-center gap-1 disabled:opacity-40" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
               {giftCardChecking ? <Loader2 className="w-3 h-3 animate-spin" /> : "Check"}

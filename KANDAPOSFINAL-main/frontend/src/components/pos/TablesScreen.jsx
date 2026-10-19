@@ -9,6 +9,7 @@ import TableLayoutEditor from "./TableLayoutEditor";
 import ReservationModal from "./ReservationModal";
 import QrCodesModal from "./QrCodesModal";
 import { withDefaultLayout } from "../../utils/tableLayout";
+import { orderNo } from "../../utils/orderNumber";
 
 const STATUS_STYLE = {
   available: { color: "#22c55e", bg: "#13271a", border: "#2e7d4f", label: "Available" },
@@ -129,7 +130,7 @@ export default function TablesScreen() {
                 rotate: t.rotation || 0,
                 boxShadow: `0 4px 14px ${s.color}22`,
               }}
-              title={`Table ${t.number} · ${s.label}${order ? ` · Order #${order.number}` : ""}`}>
+              title={`Table ${t.number} · ${s.label}${order ? ` · Order ${orderNo(order)}` : ""}`}>
               <div className="text-lg font-bold leading-none">T{t.number}</div>
               <div className="text-[9px] mt-1 flex items-center gap-0.5 opacity-90">
                 <Users className="w-2.5 h-2.5" /> {t.seats}

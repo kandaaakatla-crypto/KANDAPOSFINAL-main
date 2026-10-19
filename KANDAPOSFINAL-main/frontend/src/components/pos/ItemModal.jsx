@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { PIZZA_SIZES, TOPPINGS, TOPPING_PRICE } from "../../data/mock";
 import { Minus, Plus, Check } from "lucide-react";
 import { Input } from "../ui/input";
+import { applySurge } from "../../utils/surge";
 
-export default function ItemModal({ item, menuItems = [], onClose, onAdd }) {
+export default function ItemModal({ item, menuItems = [], surgePct = 0, onClose, onAdd }) {
   const [size, setSize] = useState("md");
   const [toppings, setToppings] = useState([]);
   const [qty, setQty] = useState(1);
@@ -22,6 +23,8 @@ export default function ItemModal({ item, menuItems = [], onClose, onAdd }) {
   const basePrice = isPizza ? item.sizes[size] : item.price;
   const toppingCost = isPizza ? toppings.length * TOPPING_PRICE[size] : 0;
   const unitPrice = isDeal ? item.price : basePrice + toppingCost;
+  // The cart charges the surged unit price; show the same number here.
+  const shownUnit = (p) => applySurge(p, surgePct);
 
   const toggleTopping = (t) => {
     setToppings((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -118,7 +121,7 @@ export default function ItemModal({ item, menuItems = [], onClose, onAdd }) {
                   <button key={s.id} data-testid={`size-${s.id}`} aria-pressed={size === s.id} onClick={() => setSize(s.id)}
                     className="pos-btn rounded-lg py-2.5 text-sm font-semibold"
                     style={{ background: size === s.id ? "var(--pos-accent)" : "var(--pos-panel-2)", color: size === s.id ? "#fff" : "var(--pos-muted)", border: `1px solid ${size === s.id ? "var(--pos-accent)" : "var(--pos-border)"}` }}>
-                    {s.label}<div className="text-xs font-normal mt-0.5">₹{item.sizes[s.id].toFixed(2)}</div>
+                    {s.label}<div className="text-xs font-normal mt-0.5">₹{shownUnit(item.sizes[s.id]).toFixed(2)}</div>
                   </button>
                 ))}
               </div>
@@ -159,7 +162,7 @@ export default function ItemModal({ item, menuItems = [], onClose, onAdd }) {
           <button data-testid="add-to-order-btn" onClick={add} disabled={!dealComplete}
             className="pos-btn px-6 h-12 rounded-xl font-bold text-white text-base disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: "var(--pos-accent)" }}>
-            {dealComplete ? `Add ₹${(unitPrice * qty).toFixed(2)}` : "Pick all items"}
+            {dealComplete ? `Add ₹${(shownUnit(unitPrice) * qty).toFixed(2)}` : "Pick all items"}
           </button>
         </div>
       </DialogContent>

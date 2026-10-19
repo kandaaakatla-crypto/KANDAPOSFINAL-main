@@ -15,7 +15,7 @@ import qrcode
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, EmailStr
 
-from auth import hash_pin
+from auth import hash_pin, pin_lookup
 from db import get_db
 from owners import (
     create_owner_access_token, create_pre2fa_token, create_impersonation_token,
@@ -314,6 +314,7 @@ async def create_tenant(payload: TenantCreateRequest, owner: dict = Depends(get_
         "role": "Manager",
         "initials": initials,
         "pin_hash": hash_pin(payload.manager_pin),
+        "pin_lookup": pin_lookup(tenant_id, payload.manager_pin),
         "created_at": now_iso,
     })
     await db.counters.update_one(

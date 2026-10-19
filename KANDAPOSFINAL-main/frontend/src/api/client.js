@@ -88,8 +88,22 @@ export const isStaffDeactivated = (err) =>
 // terminal always has a POS token once signed in, so this never overrides
 // genuine staff-PIN auth — it only fires in the gap a POS-only session
 // leaves empty.
+// Which session a request should carry. On /dashboard/* the dashboard session
+// always wins: a cashier signing in to the POS on the same device must not
+// hijack the owner's dashboard calls (they'd 403 as "insufficient role").
+// Everywhere else the POS session wins, with the dashboard session only as
+// the fallback described above.
+function pickSession() {
+  const pos = tokenStore.get();
+  const dash = localStorage.getItem(DASH_TOKEN_KEY);
+  const onDashboard = typeof window !== "undefined" && window.location.pathname.startsWith("/dashboard");
+  if (onDashboard && dash) return { token: dash, isDash: true };
+  if (pos) return { token: pos, isDash: false };
+  if (dash) return { token: dash, isDash: true };
+  return { token: null, isDash: false };
+}
 function resolveAuthToken() {
-  return tokenStore.get() || localStorage.getItem(DASH_TOKEN_KEY);
+  return pickSession().token;
 }
 export { resolveAuthToken as authToken };
 
@@ -121,15 +135,8 @@ api.interceptors.request.use((cfg) => {
     const device = deviceStore.get(slug);
     if (device) cfg.headers["X-Device-Token"] = device;
   }
-  const t = tokenStore.get();
-  if (t) {
-    cfg.headers.Authorization = `Bearer ${t}`;
-  } else {
-    // No POS session in this browser — fall back to a dashboard session if
-    // one exists (see resolveAuthToken above).
-    const dashToken = localStorage.getItem(DASH_TOKEN_KEY);
-    if (dashToken) cfg.headers.Authorization = `Bearer ${dashToken}`;
-  }
+  const { token } = pickSession();
+  if (token) cfg.headers.Authorization = `Bearer ${token}`;
   return cfg;
 });
 
@@ -143,7 +150,7 @@ api.interceptors.response.use(
     const url = err?.config?.url || "";
     const isPinCheck = ["/auth/login", "/timeclock/punch", "/pos-devices/register"].some((p) => url.endsWith(p));
     if (err?.response?.status === 401 && !isPinCheck) {
-      const usedDashFallback = !tokenStore.get() && !!localStorage.getItem(DASH_TOKEN_KEY);
+      const usedDashFallback = pickSession().isDash;
       if (usedDashFallback) {
         // The dash session itself is what's invalid here (POS token was
         // already absent) — bounce to the dashboard's own login, not the
@@ -203,6 +210,7 @@ export const teamApi = {
   create: (payload) => dashApi.post("/dash/team", payload).then((r) => r.data),
   update: (id, payload) => dashApi.patch(`/dash/team/${id}`, payload).then((r) => r.data),
   resetPassword: (id) => dashApi.post(`/dash/team/${id}/reset-password`).then((r) => r.data),
+  remove: (id) => dashApi.delete(`/dash/team/${id}`).then((r) => r.data),
   myStores: () => dashApi.get("/dash/stores").then((r) => r.data),
 };
 
@@ -342,6 +350,7 @@ export const customersApi = {
   update: (id, payload) => api.put(`/customers/${id}`, payload).then((r) => r.data),
   remove: (id) => api.delete(`/customers/${id}`).then((r) => r.data),
   restore: (id) => api.post(`/customers/${id}/restore`).then((r) => r.data),
+  erase: (id) => api.delete(`/customers/${id}/permanent`).then((r) => r.data),
 };
 
 export const inventoryApi = {
@@ -578,6 +587,7 @@ export const digestApi = {
 };
 
 export const smsApi = {
+  status: () => api.get("/sms/status").then((r) => r.data),
   send: (to, body, customer_id = null) =>
     api.post("/sms/send", { to, body, customer_id }).then((r) => r.data),
   broadcast: (body, { customer_ids = [], phones = [] } = {}) =>

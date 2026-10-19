@@ -16,6 +16,8 @@ const STATIONS = ["", "kitchen", "pizza", "grill", "drinks", "desserts"];
 export default function CategoryManagerModal({ open, onClose, onChanged }) {
   const [cats, setCats] = useState([]);
   const [busy, setBusy] = useState(false);
+  // null = the "add" row is closed; a string (even empty) = it is open.
+  const [newName, setNewName] = useState(null);
 
   const load = () => menuApi.categories().then(setCats).catch(() => {});
   useEffect(() => { if (open) load(); }, [open]);
@@ -43,12 +45,13 @@ export default function CategoryManagerModal({ open, onClose, onChanged }) {
   };
 
   const add = async () => {
-    const name = window.prompt("New category name?");
-    if (!name) return;
+    const name = (newName || "").trim();
+    if (!name) { toast.error("Enter a category name"); return; }
     setBusy(true);
     try {
       await menuApi.createCategory({ name, color: COLORS[cats.length % COLORS.length], sort_order: (cats.length + 1) * 10 });
       toast.success("Category added");
+      setNewName(null);
       load();
       onChanged && onChanged();
     } catch (e) { toast.error(e?.response?.data?.detail || "Could not add"); }
@@ -118,11 +121,29 @@ export default function CategoryManagerModal({ open, onClose, onChanged }) {
             </div>
           ))}
         </div>
-        <button data-testid="category-add" onClick={add} disabled={busy}
-          className="pos-btn w-full h-10 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 text-white"
-          style={{ background: "var(--pos-accent)" }}>
-          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add category
-        </button>
+        {newName === null ? (
+          <button data-testid="category-add" onClick={() => setNewName("")}
+            className="pos-btn w-full h-10 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 text-white"
+            style={{ background: "var(--pos-accent)" }}>
+            <Plus className="w-3.5 h-3.5" /> Add category
+          </button>
+        ) : (
+          <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); add(); }}>
+            <Input data-testid="category-new-name" autoFocus value={newName} onChange={(e) => setNewName(e.target.value)}
+              aria-label="New category name" placeholder="New category name"
+              className="flex-1 h-10" style={{ background: "var(--pos-bg)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+            <button type="button" onClick={() => setNewName(null)} disabled={busy}
+              className="pos-btn h-10 px-3 rounded-md text-xs font-bold"
+              style={{ background: "var(--pos-panel-2)", color: "var(--pos-text)", border: "1px solid var(--pos-border)" }}>
+              Cancel
+            </button>
+            <button data-testid="category-add" type="submit" disabled={busy}
+              className="pos-btn h-10 px-4 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 text-white"
+              style={{ background: "var(--pos-accent)" }}>
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Add
+            </button>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

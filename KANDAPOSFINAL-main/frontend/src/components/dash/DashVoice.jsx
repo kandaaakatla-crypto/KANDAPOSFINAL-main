@@ -91,6 +91,8 @@ export default function DashVoice() {
   const copy = (txt) => { navigator.clipboard.writeText(txt); toast.success("Copied"); };
   const greetingDirty = greetingDraft !== (cfg.greeting || "");
   const personaDirty = personaDraft !== (cfg.persona || "");
+  // "Enabled" with no number is not live: nobody can dial it.
+  const live = !!cfg.enabled && !!cfg.twilio_number;
 
   return (
     <div className="p-6 max-w-5xl space-y-6" data-testid="dash-voice">
@@ -104,25 +106,27 @@ export default function DashVoice() {
 
       {/* Status banner */}
       <div className="rounded-xl p-4 flex items-center justify-between"
-        style={{ background: cfg.enabled ? "rgba(22,163,74,0.14)" : "var(--pos-panel)",
-                 border: `1px solid ${cfg.enabled ? "rgba(22,163,74,0.4)" : "var(--pos-border)"}` }}>
+        style={{ background: live ? "rgba(22,163,74,0.14)" : "var(--pos-panel)",
+                 border: `1px solid ${live ? "rgba(22,163,74,0.4)" : "var(--pos-border)"}` }}>
         <div className="flex items-center gap-3">
-          {cfg.enabled
+          {live
             ? <CheckCircle2 className="w-6 h-6" style={{ color: "#16a34a" }} />
             : <AlertTriangle className="w-6 h-6" style={{ color: "#d97706" }} />}
           <div>
             <div className="text-base font-bold" style={{ color: "var(--pos-text)" }}>
-              {cfg.enabled ? "Agent is LIVE" : "Agent is OFF"}
+              {live ? "Agent is LIVE" : cfg.enabled ? "Not set up" : "Agent is OFF"}
             </div>
             <div className="text-xs" style={{ color: "var(--pos-muted)" }}>
-              {cfg.enabled
-                ? <>Customers dialing <strong>{cfg.twilio_number || "(no number)"}</strong> will reach the AI assistant.</>
-                : "Toggle on after you've configured your Twilio number below."}
+              {live
+                ? <>Customers dialing <strong>{cfg.twilio_number}</strong> will reach the AI assistant.</>
+                : cfg.enabled
+                  ? "The agent is switched on but has no phone number, so no calls can reach it. Add your Twilio number below."
+                  : "Toggle on after you've configured your Twilio number below."}
             </div>
           </div>
         </div>
-        <Switch data-testid="voice-enable-toggle" checked={cfg.enabled}
-          disabled={busy}
+        <Switch data-testid="voice-enable-toggle" checked={cfg.enabled} aria-label="Voice agent on or off"
+          disabled={busy || (!cfg.enabled && !cfg.twilio_number)}
           onCheckedChange={(v) => save({ enabled: v })} />
       </div>
 

@@ -8,13 +8,14 @@ from __future__ import annotations
 
 from datetime import timedelta
 from tz import now_ist
+from sales import PAID_NOT_VOIDED, NET_EXPR
 
 
 async def _tool_todays_sales(db, tenant_id: str) -> dict:
     start = now_ist().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     pipe = [
-        {"$match": {"tenant_id": tenant_id, "placedAt": {"$gte": start}, "voided": {"$ne": True}}},
-        {"$group": {"_id": None, "count": {"$sum": 1}, "revenue": {"$sum": "$total"}}},
+        {"$match": {"tenant_id": tenant_id, "placedAt": {"$gte": start}, **PAID_NOT_VOIDED}},
+        {"$group": {"_id": None, "count": {"$sum": 1}, "revenue": {"$sum": NET_EXPR}}},
     ]
     r = await db.orders.aggregate(pipe).to_list(1)
     if not r:
@@ -22,10 +23,15 @@ async def _tool_todays_sales(db, tenant_id: str) -> dict:
     return {"count": r[0]["count"], "revenue": round(r[0]["revenue"], 2), "since": start}
 
 
-async def _tool_top_items(db, tenant_id: str, days: int = 7, limit: int = 5) -> list:
-    since = (now_ist() - timedelta(days=days)).isoformat()
+async def _tool_top_items(db, tenant_id: str, days: int = 7, limit: int = 5, today_only: bool = False) -> list:
+    if today_only:
+        # Since midnight IST — `days=1` is a rolling 24h window, which pulled in
+        # yesterday evening's items under a "Top sellers today" heading.
+        since = now_ist().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    else:
+        since = (now_ist() - timedelta(days=days)).isoformat()
     pipe = [
-        {"$match": {"tenant_id": tenant_id, "placedAt": {"$gte": since}, "voided": {"$ne": True}}},
+        {"$match": {"tenant_id": tenant_id, "placedAt": {"$gte": since}, **PAID_NOT_VOIDED}},
         {"$unwind": "$items"},
         {"$group": {"_id": "$items.name", "qty": {"$sum": "$items.qty"},
                     "revenue": {"$sum": {"$multiply": ["$items.qty", "$items.price"]}}}},

@@ -4,6 +4,7 @@ import { usersApi } from "../../api/client";
 import { Bike, Clock, ExternalLink, MapPin, CheckCircle2, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
+import { orderNo } from "../../utils/orderNumber";
 
 // Naive ETA: target = placedAt + 30 min (15 prep + 15 ride). Display delta from now.
 function etaMinutes(o) {
@@ -57,13 +58,13 @@ export default function DispatchScreen() {
     if (!current) return;
     if (!current.driver) { toast.error("Assign a driver first"); return; }
     await updateOrderStatus(current.id, "out-for-delivery");
-    toast.success(`Order #${current.number} dispatched`);
+    toast.success(`Order ${orderNo(current)} dispatched`);
   };
 
   const handleDelivered = async () => {
     if (!current) return;
     await updateOrderStatus(current.id, "completed");
-    toast.success(`Order #${current.number} delivered`);
+    toast.success(`Order ${orderNo(current)} delivered`);
   };
 
   return (
@@ -90,7 +91,7 @@ export default function DispatchScreen() {
                 className="pos-btn w-full text-left rounded-lg p-3"
                 style={{ background: active ? "var(--pos-panel-2)" : "transparent", border: `1px solid ${active ? "var(--pos-accent)" : "var(--pos-border)"}` }}>
                 <div className="flex items-center justify-between">
-                  <span className="font-bold" style={{ color: "var(--pos-text)" }}>#{o.number}</span>
+                  <span className="font-bold" style={{ color: "var(--pos-text)" }}>{orderNo(o)}</span>
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide" style={{ background: o.status === "ready" ? "#13271a" : "#14233f", color: o.status === "ready" ? "#22c55e" : "#3b82f6" }}>
                     {o.status === "ready" ? "Ready" : "Out"}
                   </span>
@@ -123,7 +124,7 @@ export default function DispatchScreen() {
                   <div>
                     <div className="flex items-center gap-2">
                       <Bike className="w-5 h-5" style={{ color: "var(--pos-accent)" }} />
-                      <span className="text-lg font-bold" style={{ color: "var(--pos-text)" }}>Order #{current.number}</span>
+                      <span className="text-lg font-bold" style={{ color: "var(--pos-text)" }}>Order {orderNo(current)}</span>
                       <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full" style={{ background: current.status === "ready" ? "#13271a" : "#14233f", color: current.status === "ready" ? "#22c55e" : "#3b82f6" }}>
                         {current.status}
                       </span>

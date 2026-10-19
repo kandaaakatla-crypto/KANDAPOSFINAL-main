@@ -13,11 +13,12 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
 import { loyaltyApi, ordersApi, storeCreditApi, giftCardsApi } from "../../api/client";
-import { effectiveTaxRate, computeLineTax, computeOrderTax, computeServiceCharge } from "../../utils/tax";
+import { effectiveTaxRate, computeLineTax, computeOrderTax, computeServiceCharge, applyTaxableDiscount } from "../../utils/tax";
 import { applyScheduleToItem } from "../../utils/scheduling";
 import { activeSurge, applySurge } from "../../utils/surge";
 
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
+import { orderNo } from "../../utils/orderNumber";
 
 const ORDER_TYPES = [
   { id: "delivery", label: "Delivery", icon: Bike },
@@ -133,7 +134,7 @@ export default function OrderScreen() {
     const oid = searchParams.get("order");
     if (oid) {
       const existing = orders.find((o) => o.id === oid);
-      if (existing && existing.payment === "unpaid" && !existing.voided && existing.status !== "completed") {
+      if (existing && existing.payment === "unpaid" && !existing.voided) {
         setEditingOrderId(existing.id);
         setOrderType(existing.type);
         setOrderSource(existing.source || "in-store");
@@ -150,7 +151,7 @@ export default function OrderScreen() {
           setCollectionName(existing.customer.name?.replace(/^Walk-in — /, "") || "");
           setPhoneQuery(existing.customer.phone || "");
         }
-        toast.info(`Reopened bill #${existing.number}`);
+        toast.info(`Reopened bill ${orderNo(existing)}`);
       } else if (existing) {
         toast.error("Order is already settled or voided");
       }
@@ -222,7 +223,7 @@ export default function OrderScreen() {
   const subtotal = pricedCart.reduce((s, l) => s + l.price * l.qty, 0);
   // GST is added on top of restaurant menu pricing (exclusive) — mirrors the
   // authoritative calculation the backend performs at order creation.
-  const gst = useMemo(() => {
+  const grossGst = useMemo(() => {
     const lineAmounts = pricedCart.map((l) => {
       const cat = categories.find((c) => c.id === l.catId);
       const rate = effectiveTaxRate({ tax_rate: l.taxRate }, cat);
@@ -233,16 +234,20 @@ export default function OrderScreen() {
   // In edit mode, delivery fee was already captured on the original order — don't double it.
   const deliveryFee = !editingOrderId && orderType === "delivery" && cart.length > 0 ? DELIVERY_FEE : 0;
   const discountAmt = (subtotal * discount) / 100;
+  // GST is charged on the discounted value (bill discount, coupon, loyalty —
+  // not gift card / store credit, which are tenders). Mirrors the server.
   const tipAmt = +(subtotal * tipPct / 100).toFixed(2);
   const couponDisc = coupon?.discount || 0;
   const loyaltyDisc = Math.min((redeemPoints || 0) * redeemValue, subtotal);
   const creditDisc = Math.min(redeemCredit || 0, subtotal);
   const giftDisc = Math.min(redeemGiftCard || 0, subtotal);
+  const taxableDisc = discountAmt + couponDisc + loyaltyDisc;
+  const gst = useMemo(() => applyTaxableDiscount(grossGst, taxableDisc, false), [grossGst, taxableDisc]);
   // A reopened bill keeps whatever service charge it already has (changed via
   // the toggle, server-side); a new order uses the cashier's toggle.
   const effectiveScPct = editingOrder ? (editingOrder.serviceChargePct || 0) : (serviceChargeOn ? serviceChargePct : 0);
   const [scAmt, scTax] = computeServiceCharge(gst.subtotal, gst.taxTotal, effectiveScPct);
-  const newRoundTotal = Math.max(0, subtotal + scAmt + gst.taxTotal + scTax - discountAmt - couponDisc - loyaltyDisc - creditDisc - giftDisc + deliveryFee + tipAmt);
+  const newRoundTotal = Math.max(0, gst.itemsTotal + scAmt + scTax - creditDisc - giftDisc + deliveryFee + tipAmt);
   const total = editingOrder ? +(newRoundTotal + editingOrder.total).toFixed(2) : newRoundTotal;
 
   const orderCustomer = () => {
@@ -260,7 +265,7 @@ export default function OrderScreen() {
   const onServiceCharge = async (on, pct) => {
     if (editingOrderId) {
       const updated = await setOrderServiceCharge(editingOrderId, on ? pct : 0);
-      if (updated) toast.success(on ? `${pct}% service charge added to bill #${updated.number}` : "Service charge removed");
+      if (updated) toast.success(on ? `${pct}% service charge added to bill ${orderNo(updated)}` : "Service charge removed");
       if (on) setServiceChargePct(pct);
       return;
     }
@@ -304,15 +309,16 @@ export default function OrderScreen() {
       try {
         const items = toOrderItems(pricedCart);
         const updated = await appendToOrder(editingOrderId, items);
-        toast.success(`Added ${cart.length} item(s) to #${updated.number}`);
+        toast.success(`Added ${cart.length} item(s) to ${orderNo(updated)}`);
         setCart([]);
       } catch { /* error already toasted by appendToOrder */ }
       return;
     }
     if (!validateOrder()) return;
     const order = buildOrder("unpaid");
-    placeOrder(order);
-    toast.success(`Order #sent to kitchen — ₹${total.toFixed(2)}`);
+    let placed = null;
+    try { placed = await placeOrder(order); } catch { return; }
+    toast.success(`Order ${orderNo(placed)} sent to kitchen — ₹${total.toFixed(2)}`);
     resetAll();
   };
 
@@ -322,7 +328,7 @@ export default function OrderScreen() {
     customer: orderCustomer(),
     table: orderType === "dine-in" ? Number(tableNo) : undefined,
     items: toOrderItems(pricedCart),
-    deliveryFee, discount: discountAmt + couponDisc + loyaltyDisc + creditDisc + giftDisc, total, payment,
+    deliveryFee, discount: discountAmt + couponDisc + loyaltyDisc + creditDisc + giftDisc, taxable_discount: taxableDisc, total, payment,
     source: orderSource,
     tip: tipAmt,
     coupon_code: coupon?.code || null,
@@ -363,8 +369,10 @@ export default function OrderScreen() {
         return null;
       }
     }
-    // For card path the backend will flip payment to "card" after Razorpay verify.
-    const initialPayment = method === "card" ? "unpaid" : method;
+    // Card and split orders are created unpaid; the backend flips them to
+    // "card"/"split" only after Razorpay verifies the card payment. A split
+    // order marked "split" up front looked paid even when the card half failed.
+    const initialPayment = method === "card" || method === "split" ? "unpaid" : method;
     const order = buildOrder(initialPayment, splits);
     try {
       return await placeOrder(order);
@@ -378,12 +386,12 @@ export default function OrderScreen() {
     if (editingOrderId) {
       // Finalise the running-tab order: mark completed so the table is released.
       try { await updateOrderStatus(editingOrderId, "completed"); } catch { /* best-effort */ }
-      toast.success(`Bill #${placed.number} settled by ${method} — ₹${total.toFixed(2)}`);
+      toast.success(`Bill ${orderNo(placed)} settled by ${method} — ₹${total.toFixed(2)}`);
       resetAll();
       navigate(`/${slug}/tables`);
       return;
     }
-    toast.success(`Order #${placed.number} paid by ${method} — ₹${total.toFixed(2)}`);
+    toast.success(`Order ${orderNo(placed)} paid by ${method} — ₹${total.toFixed(2)}`);
     resetAll();
   };
 
@@ -398,7 +406,7 @@ export default function OrderScreen() {
             style={{ background: "rgba(37,99,235,0.14)", border: "1px solid rgba(37,99,235,0.4)" }}>
             <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--pos-blue)" }} />
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold" style={{ color: "var(--pos-text)" }}>Reopened Bill #{editingOrder.number}</div>
+              <div className="text-xs font-bold" style={{ color: "var(--pos-text)" }}>Reopened Bill {orderNo(editingOrder)}</div>
               <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-text)" }}>
                 {editingOrder.type === "dine-in" && editingOrder.table != null ? `Table ${editingOrder.table} · ` : ""}
                 {editingOrder.items?.length} sent · ₹{editingOrder.total.toFixed(2)}
@@ -476,7 +484,7 @@ export default function OrderScreen() {
                 <Input data-testid="phone-input" value={phoneQuery}
                   onChange={(e) => { setPhoneQuery(e.target.value); setSuggestOpen(true); }}
                   onFocus={() => setSuggestOpen(true)}
-                  placeholder="Name or phone number..."
+                  placeholder="Name or phone"
                   onKeyDown={(e) => e.key === "Enter" && lookupCustomer()}
                   className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
                 <button data-testid="phone-search-btn" aria-label="Search customer" onClick={lookupCustomer} className="pos-btn h-10 w-10 shrink-0 rounded-lg flex items-center justify-center" style={{ background: "var(--pos-blue)" }}>
@@ -636,7 +644,10 @@ export default function OrderScreen() {
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3" data-testid="item-grid">
           {items.map((item) => {
             const cat = CATEGORIES.find((c) => c.id === item.catId);
-            const priceLabel = item.isPizza ? `₹${item.sizes.sm.toFixed(2)} – ₹${item.sizes.lg.toFixed(2)}` : `₹${item.price.toFixed(2)}`;
+            // Show what the customer will be charged: the cart applies the
+            // active aggregator surge, so the menu cards must too.
+            const shown = (p) => applySurge(p, surge.pct).toFixed(2);
+            const priceLabel = item.isPizza ? `from ₹${shown(item.sizes.sm)}` : `₹${shown(item.price)}`;
             return (
               <div key={item.id} data-testid={`menu-item-${item.id}`} onClick={() => handleItemClick(item)}
                 role="button" tabIndex={0} aria-label={`${item.name}, ${priceLabel}${item.available ? "" : ", sold out"}`}
@@ -652,7 +663,7 @@ export default function OrderScreen() {
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm font-bold" style={{ color: "var(--pos-accent)" }}>{priceLabel}</span>
-                  {!item.available && <span className="text-[10px] uppercase font-bold text-red-400">86&apos;d</span>}
+                  {!item.available && <span className="text-[10px] uppercase font-bold text-red-400">Sold out</span>}
                   {item.available && item._onSchedule && (
                     <span className="text-[10px] uppercase font-bold" style={{ color: "#d97706" }}>
                       {item._pricingMode === "fixed" ? `₹${item._pricingValue}` : `-${item._pricingValue}%`}
@@ -702,7 +713,7 @@ export default function OrderScreen() {
         onServiceCharge={onServiceCharge}
       />
 
-      <ItemModal item={modalItem} menuItems={effectiveMenuItems} onClose={() => setModalItem(null)} onAdd={addLine} />
+      <ItemModal item={modalItem} menuItems={effectiveMenuItems} surgePct={surge.pct} onClose={() => setModalItem(null)} onAdd={addLine} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName={orderCustomer()?.name} onCreateOrder={onCreateOrder} onPaid={onPaid} />
 
       <Dialog open={zReportOpen} onOpenChange={setZReportOpen}>
