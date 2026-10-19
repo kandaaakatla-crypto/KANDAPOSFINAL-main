@@ -6,7 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 OrderType = Literal["delivery", "collection", "dine-in", "sale"]
 OrderStatus = Literal["new", "in-kitchen", "ready", "out-for-delivery", "completed"]
-OrderPayment = Literal["cash", "card", "split", "unpaid"]
+# card = Razorpay card; upi / card_machine / other are recorded by the cashier
+# (the restaurant's own UPI QR or card machine) and settle immediately.
+TenderMethod = Literal["cash", "card", "upi", "card_machine", "other"]
+OrderPayment = Literal["cash", "card", "upi", "card_machine", "other", "split", "unpaid"]
 TableStatus = Literal["available", "occupied", "reserved"]
 OrderSource = Literal["in-store", "phone", "swiggy", "zomato", "other", "qr", "website"]
 TableShape = Literal["round", "square", "rect"]
@@ -823,7 +826,7 @@ class OrderCreate(BaseModel):
 
 
 class OrderSplit(BaseModel):
-    method: Literal["cash", "card"]
+    method: TenderMethod
     amount: float
 
 
@@ -917,7 +920,9 @@ class ReportSummary(BaseModel):
     avgOrder: float
     deliveriesToday: int
     cashTotal: float
-    cardTotal: float
+    cardTotal: float  # Razorpay card + own card machine
+    upiTotal: float = 0
+    otherTotal: float = 0
     unpaidTotal: float
     weeklySales: List[WeeklyPoint]
     topItems: List[TopItem]

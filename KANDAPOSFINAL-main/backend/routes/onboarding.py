@@ -38,7 +38,7 @@ async def status(user: dict = Depends(require_role("Manager"))):
     has_extra_staff = any(u["id"] not in SEEDED_STAFF_IDS for u in users)
 
     has_real_orders = await db.orders.count_documents(
-        tenant_filter(user, {"payment": {"$in": ["cash", "card"]}})
+        tenant_filter(user, {"payment": {"$nin": ["unpaid", None]}})
     ) > 0
 
     has_menu = await db.menu_items.count_documents(tenant_filter(user)) > 0

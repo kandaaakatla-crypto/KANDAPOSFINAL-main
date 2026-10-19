@@ -17,7 +17,7 @@ from kds import annotate_order_items_for_kds
 from email_service import send_email, order_receipt_email
 from models import (
     Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload,
-    OrderCustomer, ServiceChargePayload,
+    OrderCustomer, ServiceChargePayload, OrderSplit,
 )
 from tax import resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst, apply_taxable_discount
 from . import loyalty as loyalty_mod
@@ -308,7 +308,7 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         except HTTPException:
             redeemed = 0  # surfaces in toast at frontend; don't fail the order
     earned = 0
-    if loyalty_on and payload.payment in ("cash", "card"):
+    if loyalty_on and payload.payment != "unpaid":
         earned = await loyalty_mod.credit_for_order(db, user, doc)
     if earned or redeemed:
         await db.orders.update_one(
@@ -392,7 +392,7 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
         raise HTTPException(status_code=400, detail="Cannot add to a voided order")
     if existing.get("status") == "completed":
         raise HTTPException(status_code=400, detail="Cannot add to a completed order")
-    if existing.get("payment") in ("cash", "card", "split"):
+    if (existing.get("payment") or "unpaid") != "unpaid":
         raise HTTPException(status_code=400, detail="Order already paid — start a new order")
 
     tenant_doc = await get_tenant(user, db)
@@ -543,11 +543,26 @@ async def update_payment(order_id: str, payload: dict, user: dict = Depends(get_
     """Drivers use this to mark cash-on-delivery as collected."""
     db = get_db()
     new_payment = payload.get("payment")
-    if new_payment not in ("cash", "card", "unpaid"):
+    if new_payment not in ("cash", "card", "upi", "card_machine", "other", "split", "unpaid"):
         raise HTTPException(status_code=422, detail="Invalid payment")
+    update = {"payment": new_payment}
+    if new_payment == "split":
+        # Settling a running tab in parts: record every part so the cash half
+        # reaches the drawer. Parts must add up to the order total.
+        try:
+            parts = [OrderSplit(**s) for s in (payload.get("splits") or [])]
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="Invalid splits")
+        current = await db.orders.find_one(tenant_filter(user, {"id": order_id}), {"_id": 0, "total": 1})
+        if not current:
+            raise HTTPException(status_code=404, detail="Order not found")
+        if len(parts) < 2 or any(p.amount <= 0 for p in parts) or \
+                abs(round(sum(p.amount for p in parts), 2) - round(float(current.get("total") or 0), 2)) > 0.01:
+            raise HTTPException(status_code=400, detail="Split amounts must add up to the order total")
+        update["splits"] = [{"method": p.method, "amount": float(p.amount)} for p in parts]
     res = await db.orders.find_one_and_update(
         tenant_filter(user, {"id": order_id}),
-        {"$set": {"payment": new_payment}},
+        {"$set": update},
         return_document=True,
     )
     if not res:
