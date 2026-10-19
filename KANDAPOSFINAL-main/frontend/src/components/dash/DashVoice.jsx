@@ -166,15 +166,15 @@ export default function DashVoice() {
         </Field>
 
         <Field label="Default language" hint="Which language the agent speaks first. It will switch if the caller responds in a different language.">
-          <Select value={cfg.default_language || "te"} onValueChange={(v) => save({ default_language: v })}>
+          <Select value={cfg.default_language || "en"} onValueChange={(v) => save({ default_language: v })}>
             <SelectTrigger data-testid="voice-lang-select" className="max-w-xs" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="te">Telugu (Telangana) — default</SelectItem>
+              <SelectItem value="en">English — default</SelectItem>
+              <SelectItem value="te">Telugu (Telangana)</SelectItem>
               <SelectItem value="hi">Hindi</SelectItem>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="auto">Auto-detect (start Telugu, switch on caller)</SelectItem>
+              <SelectItem value="auto">Auto-detect (start English, switch on caller)</SelectItem>
             </SelectContent>
           </Select>
         </Field>

@@ -78,7 +78,7 @@ DEFAULT_VOICE = "marin"  # warmer than 'alloy', less robotic
 DEFAULT_VOICE_CONFIG = {
     "enabled": False,
     "twilio_number": "",
-    "default_language": "te",  # Telugu (Telangana) — default for our target market
+    "default_language": "en",  # English unless the store picks Telugu / Hindi / auto
     "voice": DEFAULT_VOICE,
     "greeting": "",
     "persona": "",
@@ -724,7 +724,7 @@ def _system_instructions(tenant: dict, menu_context: str, outbound_ctx: Optional
     NEVER announce as an AI, greet in ONE language only (Telugu unless
     caller switches). Human warmth over robotic scripting."""
     cfg = tenant.get("voice") or {}
-    lang_pref = cfg.get("default_language") or "te"  # Telugu default now
+    lang_pref = cfg.get("default_language") or DEFAULT_VOICE_CONFIG["default_language"]
     lang_clause = {
         "en": (
             "Speak natural, everyday Indian English. Warm, friendly, unhurried. "
@@ -741,8 +741,8 @@ def _system_instructions(tenant: dict, menu_context: str, outbound_ctx: Optional
             "పూర్తిగా సంభాషణ శైలిలో, రోబోటిక్‌గా కాదు."
         ),
         "auto": (
-            "Start speaking in TELUGU (Telangana dialect). If the caller replies in Hindi or "
-            "English, switch to their language and stay in it. Never mix scripts mid-sentence."
+            "Start speaking in ENGLISH. If the caller replies in Telugu or Hindi, switch to "
+            "their language and stay in it. Never mix scripts mid-sentence."
         ),
     }.get(lang_pref, "")
 
@@ -750,8 +750,11 @@ def _system_instructions(tenant: dict, menu_context: str, outbound_ctx: Optional
     greeting = (cfg.get("greeting") or "").strip()
     store_name = (tenant.get("store") or {}).get("name") or tenant.get("name", "మా రెస్టారెంట్")
     if not greeting:
-        # Simple, warm Telugu greeting — one language, no AI mention.
-        greeting = f"హలో! {store_name}కి కాల్ చేసినందుకు ధన్యవాదాలు. చెప్పండి, ఏం కావాలి?"
+        # Simple, warm greeting in the store's chosen language.
+        greeting = {
+            "te": f"హలో! {store_name}కి కాల్ చేసినందుకు ధన్యవాదాలు. చెప్పండి, ఏం కావాలి?",
+            "hi": f"नमस्ते! {store_name} में कॉल करने के लिए धन्यवाद। बताइए, क्या चाहिए?",
+        }.get(lang_pref, f"Hello! Thanks for calling {store_name}. What can I get you today?")
 
     # Known-caller context — inject customer name + last address if we found them.
     caller_block = ""
@@ -792,7 +795,7 @@ def _system_instructions(tenant: dict, menu_context: str, outbound_ctx: Optional
 
     return (
         f"You are a warm, friendly staff member answering the phone at {store_name}, "
-        "a restaurant in Telangana, India. You take takeaway/delivery orders, book table "
+        "a restaurant in India. You take takeaway/delivery orders, book table "
         "reservations, and answer questions about menu, hours, and location.\n\n"
         "TONE — CRITICAL:\n"
         "- You are a HUMAN team member, not an AI. NEVER mention you are an AI, virtual, "
@@ -823,7 +826,7 @@ def _system_instructions(tenant: dict, menu_context: str, outbound_ctx: Optional
         "4. Call `place_order` only after the customer has said something like 'yes, confirm', "
         "   'that's it', 'go ahead' — a clear final YES. Same for `book_reservation`.\n"
         "5. Call `end_call` ONLY when the customer clearly says goodbye / 'no thanks' / 'that's "
-        "   all'. Do NOT end the call after a single silence — always ask 'ఇంకేమైనా కావాలా?' first.\n\n"
+        "   all'. Do NOT end the call after a single silence — always ask if they need anything else first.\n\n"
         f"--- RESTAURANT CONTEXT ---\n{menu_context}\n--- END CONTEXT ---\n"
         + caller_block
         + outbound_block
