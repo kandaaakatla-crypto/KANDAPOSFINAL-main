@@ -85,6 +85,9 @@ DEFAULT_VOICE_CONFIG = {
 }
 
 
+RECORDING_NOTICE = "This call may be recorded to make sure we get your order right."
+
+
 def _twilio_client() -> Optional[TwilioClient]:
     sid = os.environ.get("TWILIO_ACCOUNT_SID", "").strip()
     tok = os.environ.get("TWILIO_AUTH_TOKEN", "").strip()
@@ -662,6 +665,9 @@ async def twilio_incoming(request: Request):
         tenant_id=tenant["id"], direction="inbound", call_sid=call_sid,
         from_number=from_number, to_number=to_number,
     )
+    # Calls are recorded (see the stream bridge), so say so before the agent
+    # picks up.
+    response.say(RECORDING_NOTICE, voice="alice", language="en-IN")
     connect = Connect()
     stream = Stream(url=wss_url)
     # The token is the ONLY source of truth on the WS side. We still pass the
@@ -721,7 +727,7 @@ def _system_instructions(tenant: dict, menu_context: str, outbound_ctx: Optional
                          customer: Optional[dict] = None) -> str:
     """Build the system prompt for the OpenAI Realtime session.
     Key goals: Telugu-first (Telangana dialect), natural conversational style,
-    NEVER announce as an AI, greet in ONE language only (Telugu unless
+    honest if asked whether it is automated, greet in ONE language only (Telugu unless
     caller switches). Human warmth over robotic scripting."""
     cfg = tenant.get("voice") or {}
     lang_pref = cfg.get("default_language") or "te"  # Telugu default now
@@ -779,8 +785,9 @@ def _system_instructions(tenant: dict, menu_context: str, outbound_ctx: Optional
             "\n--- OUTBOUND CALL CONTEXT ---\n"
             f"YOU are calling the customer from {store_name}. Speak first — wait ~0.5s after "
             "the callee says 'hello', then start.\n"
-            "Opening: brief, natural, in Telugu (Telangana). Do NOT mention that you are an AI. "
-            f"Say who you are calling FROM ({store_name}), and get to the point.\n"
+            "Opening: brief, natural, in the caller's language. "
+            f"Say who you are calling FROM ({store_name}), mention that the call is recorded, "
+            "and get to the point. If asked, say honestly that you're an automated assistant.\n"
             f"Purpose: {purpose or 'follow-up call'}\n"
             + (f"Specific message to deliver: {message}\n" if message else "")
             + "--- END OUTBOUND CONTEXT ---\n"
@@ -795,8 +802,10 @@ def _system_instructions(tenant: dict, menu_context: str, outbound_ctx: Optional
         "a restaurant in Telangana, India. You take takeaway/delivery orders, book table "
         "reservations, and answer questions about menu, hours, and location.\n\n"
         "TONE — CRITICAL:\n"
-        "- You are a HUMAN team member, not an AI. NEVER mention you are an AI, virtual, "
-        "assistant, bot, or automated. If asked, say you're the staff on duty and move on.\n"
+        "- Sound like a friendly team member, not a robot. You don't need to announce that "
+        "you're automated, but if a caller asks whether they're talking to a person or a "
+        "machine, tell them honestly that you're the restaurant's automated phone assistant, "
+        "and offer to carry on with their order or have the staff call them back.\n"
         "- Speak like a real person — pauses, filler words (\"సరే\", \"acha\", \"ok ok\"), "
         "  natural intonation. Not a robotic reader.\n"
         "- Keep every reply SHORT — 1 sentence, occasionally 2. This is a phone call.\n"
