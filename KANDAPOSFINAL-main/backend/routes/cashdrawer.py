@@ -1,6 +1,6 @@
 """Cash drawer / Z-Report — open with float, close with counted cash, variance recorded."""
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from tz import now_ist
 from typing import List, Optional
 
@@ -20,6 +20,33 @@ def _now_iso() -> str:
 
 def _today() -> str:
     return now_ist().date().isoformat()
+
+
+def _when(value: str) -> datetime:
+    """Parse an ISO timestamp (browser "...Z" or IST "+05:30") to an aware
+    datetime. Comparing these as strings is wrong across offsets."""
+    dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def expected_cash_sales(orders: list, opened_at: str) -> float:
+    """Cash taken since the drawer opened: cash orders (net of cash refunds)
+    plus the cash portion of split payments; voided orders never count."""
+    opened = _when(opened_at)
+    total = 0.0
+    for o in orders:
+        if o.get("voided"):
+            continue
+        try:
+            if _when(o.get("placedAt")) < opened:
+                continue
+        except (TypeError, ValueError):
+            continue
+        if o.get("payment") == "cash":
+            total += float(o.get("total", 0)) - float(o.get("refunded_amount") or 0)
+        elif o.get("payment") == "split":
+            total += sum(float(s.get("amount", 0)) for s in (o.get("splits") or []) if s.get("method") == "cash")
+    return round(total, 2)
 
 
 def _doc(d: dict) -> dict:
@@ -71,11 +98,15 @@ async def close_drawer(payload: CashDrawerClose, user: dict = Depends(require_ro
     if not drawer:
         raise HTTPException(status_code=404, detail="No open drawer")
     # Expected cash = opening float + cash sales since drawer opened.
+    # placedAt strings can be UTC or IST, so the DB filter is only a coarse
+    # day-level prefilter (opened date minus a day); the exact cut-off is
+    # applied on parsed datetimes.
+    day_floor = (_when(drawer["opened_at"]) - timedelta(days=1)).date().isoformat()
     cash_orders = await db.orders.find(
-        tenant_filter(user, {"payment": "cash", "placedAt": {"$gte": drawer["opened_at"]}}),
-        {"_id": 0, "total": 1},
+        tenant_filter(user, {"payment": {"$in": ["cash", "split"]}, "placedAt": {"$gte": day_floor}}),
+        {"_id": 0, "total": 1, "placedAt": 1, "payment": 1, "voided": 1, "refunded_amount": 1, "splits": 1},
     ).to_list(5000)
-    cash_sales = sum(float(o.get("total", 0)) for o in cash_orders)
+    cash_sales = expected_cash_sales(cash_orders, drawer["opened_at"])
     expected = round(float(drawer["opening_float"]) + cash_sales, 2)
     variance = round(float(payload.counted_cash) - expected, 2)
     updates = {
