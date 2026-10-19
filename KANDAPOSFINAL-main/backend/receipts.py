@@ -43,6 +43,17 @@ LF = b"\n"
 CUT = GS + b"V\x42\x00"
 
 
+_TENDER_LABELS = {"cash": "CASH", "card": "CARD", "card_machine": "CARD", "upi": "UPI", "other": "OTHER", "unpaid": "UNPAID"}
+
+
+def paid_by_label(order: dict) -> str:
+    pay = order.get("payment") or "?"
+    if pay == "split" and order.get("splits"):
+        return " + ".join(f"{_TENDER_LABELS.get(p.get('method'), str(p.get('method')).upper())} {float(p.get('amount') or 0):.2f}"
+                          for p in order["splits"])
+    return _TENDER_LABELS.get(pay, str(pay).upper())
+
+
 def _line(s: str) -> bytes:
     return s.encode("cp437", errors="replace") + LF
 
@@ -178,7 +189,7 @@ def _build_escpos(order: dict, store: dict, kind: str) -> bytes:
             text = "Net paid" if label == "NET PAID" else label
             out += _row(text, _signed(amount, _money))
         out += _line("-" * 32)
-        out += _row("Paid by", str(order.get("payment", "?")).upper())
+        out += _row("Paid by", paid_by_label(order))
         if order.get("razorpayPaymentId"):
             out += _line("Ref " + order["razorpayPaymentId"])
         out += LF
@@ -368,7 +379,7 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
     story.append(summary)
     story.append(Spacer(1, 8 * mm))
 
-    story.append(Paragraph(f"Paid by: <b>{e(str(order.get('payment', '?')).upper())}</b>" + (f" · Ref: {e(order['razorpayPaymentId'])}" if order.get("razorpayPaymentId") else ""), label_st))
+    story.append(Paragraph(f"Paid by: <b>{e(paid_by_label(order))}</b>" + (f" · Ref: {e(order['razorpayPaymentId'])}" if order.get("razorpayPaymentId") else ""), label_st))
     if cashier:
         story.append(Paragraph(f"Served by: {e(cashier)}", label_st))
     story.append(Spacer(1, 6 * mm))

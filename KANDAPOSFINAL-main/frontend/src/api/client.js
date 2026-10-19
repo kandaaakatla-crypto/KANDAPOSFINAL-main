@@ -386,7 +386,7 @@ export const ordersApi = {
   appendItems: (id, items) => api.post(`/orders/${id}/append`, { items }).then((r) => r.data),
   setStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }).then((r) => r.data),
   assignDriver: (id, driver) => api.patch(`/orders/${id}/driver`, { driver }).then((r) => r.data),
-  setPayment: (id, payment) => api.patch(`/orders/${id}/payment`, { payment }).then((r) => r.data),
+  setPayment: (id, payment, splits) => api.patch(`/orders/${id}/payment`, splits ? { payment, splits } : { payment }).then((r) => r.data),
   claim: (id) => api.post(`/orders/${id}/claim`).then((r) => r.data),
   setPacked: (id, packed) => api.patch(`/orders/${id}/pack`, { packed }).then((r) => r.data),
   setCustomer: (id, customer) => api.patch(`/orders/${id}/customer`, customer).then((r) => r.data),

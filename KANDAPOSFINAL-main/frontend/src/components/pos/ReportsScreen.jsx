@@ -50,12 +50,14 @@ export default function ReportsScreen() {
   const deliveries = summary?.deliveriesToday ?? 0;
   const cashTotal = summary?.cashTotal ?? 0;
   const cardTotal = summary?.cardTotal ?? 0;
+  const upiTotal = summary?.upiTotal ?? 0;
+  const otherTotal = summary?.otherTotal ?? 0;
   const unpaidTotal = summary?.unpaidTotal ?? 0;
   const topItems = summary?.topItems ?? [];
 
   const refundedInRange = rollups.reduce((s, r) => s + (r.refunded || 0), 0);
   const maxSales = rollups.length ? Math.max(...rollups.map((d) => d.net_sales || 0), 1) : 1;
-  const payTotal = cashTotal + cardTotal + unpaidTotal || 1;
+  const payTotal = cashTotal + upiTotal + cardTotal + otherTotal + unpaidTotal || 1;
   const fmtLabel = (dateStr) => {
     const d = new Date(dateStr + "T00:00:00Z");
     return range <= 7
@@ -173,7 +175,7 @@ export default function ReportsScreen() {
         <div className="space-y-4">
           <div className="rounded-xl p-5" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }} data-testid="payment-split">
             <div className="font-semibold mb-3" style={{ color: "var(--pos-text)" }}>Payment Methods (today)</div>
-            {[{ label: "Card", val: cardTotal, color: "#3b82f6" }, { label: "Cash", val: cashTotal, color: "#22c55e" }, { label: "Unpaid / Open", val: unpaidTotal, color: "#f59e0b" }].map((p) => (
+            {[{ label: "Cash", val: cashTotal, color: "#22c55e" }, { label: "UPI", val: upiTotal, color: "#8b5cf6" }, { label: "Card", val: cardTotal, color: "#3b82f6" }, { label: "Other", val: otherTotal, color: "#64748b" }, { label: "Unpaid / Open", val: unpaidTotal, color: "#f59e0b" }].map((p) => (
               <div key={p.label} className="mb-3">
                 <div className="flex justify-between text-xs mb-1">
                   <span style={{ color: "var(--pos-muted)" }}>{p.label}</span>

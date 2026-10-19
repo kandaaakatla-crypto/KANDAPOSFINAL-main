@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Banknote, CreditCard, CheckCircle2, Loader2, XCircle, Split } from "lucide-react";
+import { Banknote, CreditCard, CheckCircle2, Loader2, XCircle, Split, QrCode, Wallet } from "lucide-react";
 import { Input } from "../ui/input";
 import { paymentsApi } from "../../api/client";
 import { usePos } from "../../store/PosContext";
 import { toast } from "sonner";
+import { ONLINE_CARD_ENABLED, tenderLabel } from "../../utils/tenders";
 
 /**
  * @param {object} props
@@ -12,8 +13,8 @@ import { toast } from "sonner";
  * @param {() => void} props.onClose
  * @param {number} props.total
  * @param {string} props.customerName
- * @param {(method:"cash"|"card", splits?:Array) => Promise<{ id: string } | null>} props.onCreateOrder
- * @param {(method:"cash"|"card"|"split", order:object) => void} props.onPaid
+ * @param {(method:"cash"|"upi"|"card_machine"|"other"|"card"|"split", splits?:Array) => Promise<{ id: string } | null>} props.onCreateOrder
+ * @param {(method:string, order:object) => void} props.onPaid
  */
 export default function PaymentModal({ open, onClose, total, customerName, onCreateOrder, onPaid }) {
   const { waitForServerOrder } = usePos();
@@ -22,9 +23,10 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
   const [cardState, setCardState] = useState("idle");
   const [splitCash, setSplitCash] = useState("");
   const [splitCard, setSplitCard] = useState("");
+  const [splitOther, setSplitOther] = useState("upi");
 
   useEffect(() => {
-    if (open) { setMethod("cash"); setTendered(""); setCardState("idle"); setSplitCash(""); setSplitCard(""); }
+    if (open) { setMethod("cash"); setTendered(""); setCardState("idle"); setSplitCash(""); setSplitCard(""); setSplitOther("upi"); }
   }, [open]);
 
   const tenderedNum = parseFloat(tendered) || 0;
@@ -44,15 +46,25 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
     onPaid("cash", placed);
   };
 
+  // UPI to the restaurant's own QR, its own card machine, or anything else:
+  // the cashier checks the money arrived, then records it.
+  const confirmRecorded = async (m) => {
+    setCardState("creating");
+    const placed = await onCreateOrder(m);
+    if (!placed) { setCardState("idle"); return; }
+    onPaid(m, placed);
+  };
+
   const confirmSplit = async () => {
-    if (!splitValid) { toast.error("Cash + Card must equal total"); return; }
+    if (!splitValid) { toast.error(`Cash + ${tenderLabel(splitOther)} must equal total`); return; }
     setCardState("creating");
     const splits = [
       { method: "cash", amount: splitCashNum },
-      { method: "card", amount: splitCardNum },
+      { method: splitOther, amount: splitCardNum },
     ];
     const placed = await onCreateOrder("split", splits);
     if (!placed) { setCardState("idle"); return; }
+    if (splitOther !== "card") { onPaid("split", placed); return; }
 
     // For split with a card component, drive Razorpay for the card portion only.
     if (typeof window.Razorpay !== "function") {
@@ -186,23 +198,44 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
           <div className="text-4xl font-bold tabular-nums mt-1" style={{ color: "var(--pos-accent)" }} data-testid="payment-total">₹{total.toFixed(2)}</div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          <button data-testid="method-cash" onClick={() => setMethod("cash")} disabled={busy}
-            className="pos-btn h-14 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-xs disabled:opacity-50"
-            style={{ background: method === "cash" ? "var(--pos-accent)" : "var(--pos-panel-2)", color: method === "cash" ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
-            <Banknote className="w-5 h-5" /> Cash
-          </button>
-          <button data-testid="method-card" onClick={() => setMethod("card")} disabled={busy}
-            className="pos-btn h-14 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-xs disabled:opacity-50"
-            style={{ background: method === "card" ? "var(--pos-accent)" : "var(--pos-panel-2)", color: method === "card" ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
-            <CreditCard className="w-5 h-5" /> Card
-          </button>
-          <button data-testid="method-split" onClick={() => setMethod("split")} disabled={busy}
-            className="pos-btn h-14 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-xs disabled:opacity-50"
-            style={{ background: method === "split" ? "var(--pos-accent)" : "var(--pos-panel-2)", color: method === "split" ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
-            <Split className="w-5 h-5" /> Split
-          </button>
+        <div className="grid grid-cols-5 gap-1.5">
+          {[
+            { id: "cash", label: "Cash", Icon: Banknote },
+            { id: "upi", label: "UPI", Icon: QrCode },
+            { id: "card_machine", label: "Card", Icon: CreditCard },
+            { id: "split", label: "Split", Icon: Split },
+            { id: "other", label: "Other", Icon: Wallet },
+          ].map(({ id, label, Icon }) => {
+            const on = method === id || (id === "card_machine" && method === "card");
+            return (
+              <button key={id} data-testid={`method-${id}`} onClick={() => setMethod(id)} disabled={busy} aria-pressed={on}
+                className="pos-btn h-14 rounded-xl flex flex-col items-center justify-center gap-1 font-bold text-xs disabled:opacity-50"
+                style={{ background: on ? "var(--pos-accent)" : "var(--pos-panel-2)", color: on ? "#fff" : "var(--pos-muted)", border: "1px solid var(--pos-border)" }}>
+                <Icon className="w-5 h-5" /> {label}
+              </button>
+            );
+          })}
         </div>
+
+        {["upi", "card_machine", "other"].includes(method) && (
+          <div className="space-y-3 fade-in">
+            <div className="text-xs text-center" style={{ color: "var(--pos-muted)" }}>
+              {method === "upi" && "Ask the customer to scan your UPI QR. Confirm once the payment shows on your UPI app."}
+              {method === "card_machine" && "Charge the card on your card machine. Confirm once it's approved."}
+              {method === "other" && "For any other payment (wallet, voucher, bank transfer). Confirm once received."}
+            </div>
+            <button data-testid="confirm-recorded-btn" onClick={() => confirmRecorded(method)} disabled={busy}
+              className="pos-btn w-full h-14 rounded-xl font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "var(--pos-accent)" }}>
+              {cardState === "creating" ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving order...</> : `Confirm ₹${total.toFixed(2)} received by ${tenderLabel(method)}`}
+            </button>
+            {method === "card_machine" && ONLINE_CARD_ENABLED && (
+              <button data-testid="method-card-online" onClick={() => setMethod("card")} disabled={busy}
+                className="pos-btn w-full h-9 rounded-lg text-xs font-bold" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>
+                Charge an online card instead
+              </button>
+            )}
+          </div>
+        )}
 
         {method === "cash" && (
           <div className="space-y-3 fade-in">
@@ -286,6 +319,15 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
 
         {method === "split" && (
           <div className="space-y-3 fade-in">
+            <div className="flex gap-1.5" role="group" aria-label="Pay the rest by">
+              {["upi", "card_machine", ...(ONLINE_CARD_ENABLED ? ["card"] : [])].map((m) => (
+                <button key={m} data-testid={`split-other-${m}`} onClick={() => setSplitOther(m)} disabled={busy} aria-pressed={splitOther === m}
+                  className="pos-btn flex-1 h-9 rounded-md text-xs font-bold"
+                  style={{ background: splitOther === m ? "var(--pos-accent)" : "var(--pos-panel-2)", color: splitOther === m ? "#fff" : "var(--pos-text)", border: "1px solid var(--pos-border)" }}>
+                  Cash + {tenderLabel(m)}
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[11px] uppercase tracking-wider flex items-center gap-1" style={{ color: "var(--pos-muted)" }}>
@@ -297,7 +339,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
               </div>
               <div>
                 <label className="text-[11px] uppercase tracking-wider flex items-center gap-1" style={{ color: "var(--pos-muted)" }}>
-                  <CreditCard className="w-3 h-3" /> Card
+                  {splitOther === "upi" ? <QrCode className="w-3 h-3" /> : <CreditCard className="w-3 h-3" />} {tenderLabel(splitOther)}
                 </label>
                 <Input data-testid="split-card-input" type="number" step="0.5" placeholder="0.00"
                   value={splitCard} onChange={(e) => setSplitCard(e.target.value)}
@@ -308,13 +350,13 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
               <button data-testid="split-half" onClick={() => { const h = +(total / 2).toFixed(2); setSplitCash(String(h)); setSplitCard(String(+(total - h).toFixed(2))); }}
                 className="pos-btn h-9 rounded-md text-xs font-bold" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>50/50</button>
               <button data-testid="split-remainder-card" onClick={() => setSplitCard(String(Math.max(0, +(total - splitCashNum).toFixed(2))))}
-                className="pos-btn h-9 rounded-md text-xs font-bold" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>Card = remainder</button>
+                className="pos-btn h-9 rounded-md text-xs font-bold" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}>{tenderLabel(splitOther)} = remainder</button>
             </div>
             <div className="flex justify-between rounded-lg px-3 py-2 text-sm"
               style={{ background: splitValid ? "rgba(22,163,74,0.14)" : Math.abs(splitDelta) < 0.01 ? "var(--pos-panel-2)" : "rgba(220,38,38,0.14)",
                        border: `1px solid ${splitValid ? "rgba(22,163,74,0.4)" : Math.abs(splitDelta) < 0.01 ? "var(--pos-border)" : "rgba(220,38,38,0.4)"}` }}
               data-testid="split-summary">
-              <span style={{ color: "var(--pos-muted)" }}>Cash + Card</span>
+              <span style={{ color: "var(--pos-muted)" }}>Cash + {tenderLabel(splitOther)}</span>
               <span className="tabular-nums font-bold" style={{ color: splitValid || Math.abs(splitDelta) >= 0.01 ? "#fff" : "var(--pos-text)" }}>₹{splitSum.toFixed(2)} <span style={{ color: "var(--pos-muted)", fontWeight: 400 }}>/ ₹{total.toFixed(2)}</span></span>
             </div>
             <button data-testid="confirm-split-btn" onClick={confirmSplit} disabled={!splitValid || busy}

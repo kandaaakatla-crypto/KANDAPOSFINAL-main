@@ -4,6 +4,7 @@ import { usePos } from "../../store/PosContext";
 import { pressableSmall, liftable } from "../../lib/motion";
 import { DELIVERY_FEE } from "../../data/mock";
 import { sortCategories, pickActiveCategory, visibleMenuItems } from "../../utils/menuCategories";
+import { initialPaymentFor, tenderLabel } from "../../utils/tenders";
 import ItemModal from "./ItemModal";
 import CartPanel from "./CartPanel";
 import PaymentModal from "./PaymentModal";
@@ -359,10 +360,12 @@ export default function OrderScreen() {
           const items = toOrderItems(pricedCart);
           current = await appendToOrder(editingOrderId, items);
         }
-        // For non-card methods, mark payment now. Card is set by the Razorpay verify step.
-        if (method === "cash") {
+        // Record the payment now unless an online card is involved; that one is
+        // set by the Razorpay verify step.
+        const settleAs = initialPaymentFor(method, splits);
+        if (settleAs !== "unpaid") {
           try {
-            current = await ordersApi.setPayment(editingOrderId, "cash");
+            current = await ordersApi.setPayment(editingOrderId, settleAs, splits);
           } catch (e) {
             toast.error(e?.response?.data?.detail || "Could not mark order paid");
             return null;
@@ -373,10 +376,10 @@ export default function OrderScreen() {
         return null;
       }
     }
-    // Card and split orders are created unpaid; the backend flips them to
-    // "card"/"split" only after Razorpay verifies the card payment. A split
-    // order marked "split" up front looked paid even when the card half failed.
-    const initialPayment = method === "card" || method === "split" ? "unpaid" : method;
+    // Online-card orders (alone or in a split) are created unpaid; the backend
+    // flips them only after Razorpay verifies. Cash, UPI, card machine and
+    // other are recorded by the cashier and settle at once.
+    const initialPayment = initialPaymentFor(method, splits);
     const order = buildOrder(initialPayment, splits);
     try {
       return await placeOrder(order);
@@ -390,12 +393,12 @@ export default function OrderScreen() {
     if (editingOrderId) {
       // Finalise the running-tab order: mark completed so the table is released.
       try { await updateOrderStatus(editingOrderId, "completed"); } catch { /* best-effort */ }
-      toast.success(`Bill ${orderNo(placed)} settled by ${method} — ₹${total.toFixed(2)}`);
+      toast.success(`Bill ${orderNo(placed)} settled by ${tenderLabel(method)} — ₹${total.toFixed(2)}`);
       resetAll();
       navigate(`/${slug}/tables`);
       return;
     }
-    toast.success(`Order ${orderNo(placed)} paid by ${method} — ₹${total.toFixed(2)}`);
+    toast.success(`Order ${orderNo(placed)} paid by ${tenderLabel(method)} — ₹${total.toFixed(2)}`);
     resetAll();
   };
 

@@ -29,6 +29,28 @@ def _parse_iso(s: str | None) -> datetime | None:
         return None
 
 
+
+_TENDER_BUCKET = {"cash": "cash", "card": "card", "card_machine": "card", "upi": "upi", "other": "other"}
+
+
+def _tender_totals(orders) -> dict:
+    """Net sales per tender. A split order is shared out by its parts, scaled
+    to the order's net (after refunds) so the buckets still add up."""
+    out = {"cash": 0.0, "card": 0.0, "upi": 0.0, "other": 0.0}
+    for o in orders:
+        pay = o.get("payment")
+        net = net_sales(o)
+        if pay == "split":
+            parts = o.get("splits") or []
+            gross = sum(float(p.get("amount") or 0) for p in parts)
+            for p in parts:
+                bucket = _TENDER_BUCKET.get(p.get("method"))
+                if bucket and gross:
+                    out[bucket] += net * float(p.get("amount") or 0) / gross
+        elif pay in _TENDER_BUCKET:
+            out[_TENDER_BUCKET[pay]] += net
+    return out
+
 @router.get("/reports/labour", response_model=LabourCostResponse)
 async def labour_cost(user: dict = Depends(require_role("Manager"))):
     """Today's labour spend so far + a 30-day run-rate projection.
@@ -328,8 +350,8 @@ async def report_summary(user: dict = Depends(get_current_user)):
     paid_count = sum(1 for o in today_orders if is_paid(o))
     avg = (today_sales / paid_count) if paid_count else 0
     deliveries = sum(1 for o in today_orders if o.get("type") == "delivery")
-    cash = sum(net_sales(o) for o in today_orders if o.get("payment") == "cash")
-    card = sum(net_sales(o) for o in today_orders if o.get("payment") == "card")
+    tenders = _tender_totals(today_orders)
+    cash, card = tenders["cash"], tenders["card"]
     unpaid = sum(o["total"] for o in today_orders if not is_paid(o))
 
     weekly: List[WeeklyPoint] = []
@@ -361,6 +383,8 @@ async def report_summary(user: dict = Depends(get_current_user)):
         deliveriesToday=deliveries,
         cashTotal=round(cash, 2),
         cardTotal=round(card, 2),
+        upiTotal=round(tenders["upi"], 2),
+        otherTotal=round(tenders["other"], 2),
         unpaidTotal=round(unpaid, 2),
         weeklySales=weekly,
         topItems=[TopItem(**t) for t in top],
