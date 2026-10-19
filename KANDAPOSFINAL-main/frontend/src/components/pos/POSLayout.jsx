@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon, Lock } from "lucide-react";
+import { ArrowLeft, Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon, Lock } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
@@ -12,12 +12,15 @@ import useSeo from "../../hooks/useSeo";
 import { getTheme, toggleTheme } from "../../lib/theme";
 import { posDevicesApi, deviceStore } from "../../api/client";
 import { toast } from "sonner";
+import { backActionFor } from "../../utils/backNavigation";
 
 export default function POSLayout() {
   const { staffUser, logout, orders, businessType, features, isOffline, pendingSyncCount } = usePos();
   const navigate = useNavigate();
   const location = useLocation();
   const { slug } = useParams();
+  const backAction = backActionFor(location.pathname);
+  const backTo = backAction.type === "navigate" ? backAction.to : null;
   // Resets the tab title once staff are past /login — otherwise it would
   // keep reading "Staff sign in" for the rest of the session.
   useSeo({ title: "Point of sale", noindex: true });
@@ -155,8 +158,14 @@ export default function POSLayout() {
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-14 flex items-center justify-between px-3 md:px-5 shrink-0 gap-2" style={{ background: "var(--pos-panel)", borderBottom: "1px solid var(--pos-border)" }}>
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
-              {/* Mobile brand mark */}
-              {businessType === "retail" ? (
+              {/* Mobile: a back arrow to the till off the till, else the brand mark */}
+              {backTo ? (
+                <button data-testid="header-back" aria-label="Back to till" onClick={() => navigate(backTo, { replace: true })}
+                  className="pos-btn md:hidden w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
+                  <ArrowLeft className="w-4 h-4" style={{ color: "var(--pos-text)" }} />
+                </button>
+              ) : businessType === "retail" ? (
                 <div className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--pos-accent)" }}>
                   <Store className="w-4 h-4 text-white" />
                 </div>
