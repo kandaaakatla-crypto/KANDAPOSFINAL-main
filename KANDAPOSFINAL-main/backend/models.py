@@ -1,7 +1,7 @@
 """Pydantic models for Kanda POS."""
 from __future__ import annotations
 from typing import List, Literal, Optional
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 OrderType = Literal["delivery", "collection", "dine-in", "sale"]
@@ -917,15 +917,33 @@ class StaffPublic(BaseModel):
     active: bool = True
 
 
+def check_phone(v):
+    """Blank is allowed (phone is optional); otherwise 10-15 digits with an
+    optional leading + and spaces/dashes, e.g. 9876543210 or +91 98765 43210."""
+    if v is None or not str(v).strip():
+        return v
+    digits = str(v).strip()
+    body = digits[1:] if digits.startswith("+") else digits
+    body = body.replace(" ", "").replace("-", "")
+    if not body.isdigit() or not 10 <= len(body) <= 15:
+        raise ValueError("Enter a valid phone number, e.g. +91 98765 43210")
+    return v
+
+
 class StaffCreate(BaseModel):
     name: str
     role: StaffRole
     pin: str  # 4-digit numeric PIN
     phone: Optional[str] = ""
     pay_type: PayType = "monthly"
-    monthly_pay: float = 0.0
-    hourly_rate: float = 0.0
+    monthly_pay: float = Field(0.0, ge=0)
+    hourly_rate: float = Field(0.0, ge=0)
     active: bool = True
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        return check_phone(v)
 
 
 class StaffUpdate(BaseModel):
@@ -934,9 +952,14 @@ class StaffUpdate(BaseModel):
     pin: Optional[str] = None  # only set when manager rotates PIN
     phone: Optional[str] = None
     pay_type: Optional[PayType] = None
-    monthly_pay: Optional[float] = None
-    hourly_rate: Optional[float] = None
+    monthly_pay: Optional[float] = Field(None, ge=0)
+    hourly_rate: Optional[float] = Field(None, ge=0)
     active: Optional[bool] = None
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, v):
+        return check_phone(v)
 
 
 def effective_hourly_rate(user_doc: dict) -> float:
