@@ -209,12 +209,12 @@ function App() {
                       <Route path="devices" element={<KioskDevicesPage />} />
                       <Route path="branding" element={<DashBranding />} />
                       <Route path="website-orders" element={<WebsiteOrdersPage />} />
+                      <Route path="voice" element={<DashVoice />} />
                     </Route>
                     <Route path="brand" element={<BrandScreen />} />
                     <Route path="central-supply" element={<DashCentralSupply />} />
                     {/* Not in the sidebar for launch; URLs still work. */}
                     <Route path="locations" element={<DashLocations />} />
-                    <Route path="voice" element={<DashVoice />} />
                   </Route>
 
                   {/* Kitchen Display — no auth, long-lived ?token= */}

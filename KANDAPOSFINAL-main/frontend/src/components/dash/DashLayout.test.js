@@ -117,3 +117,14 @@ test("tabs the user can't open are left out", async () => {
   const labels = Array.from(container.querySelectorAll('[data-testid="dash-tabs"] a')).map((a) => a.textContent.trim());
   expect(labels).toEqual(["Happy hours & schedules", "Swiggy/Zomato markups"]);
 });
+
+test("owners can reach the AI phone agent from Settings", async () => {
+  setUser({ name: "Ravi Kumar", dash_role: "owner" });
+  mockPath = "/dashboard/business";
+  const DashTabGroup = require("./DashTabGroup").default;
+  await act(async () => { root.render(<DashTabGroup section="settings" />); });
+  const tabs = Array.from(container.querySelectorAll('[data-testid="dash-tabs"] a'));
+  expect(tabs.map((a) => [a.textContent.trim(), a.getAttribute("href")])).toContainEqual(
+    ["AI phone agent", "/dashboard/voice"],
+  );
+});

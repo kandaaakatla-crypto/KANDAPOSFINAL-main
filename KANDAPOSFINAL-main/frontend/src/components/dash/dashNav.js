@@ -47,6 +47,7 @@ export const NAV_SECTIONS = [
     { to: "/dashboard/devices", label: "Devices & screens", allow: all },
     { to: "/dashboard/branding", label: "QR branding", allow: (u) => canManageSettings(u), feature: "qr_ordering" },
     { to: "/dashboard/website-orders", label: "Website orders", allow: (u) => canManageSettings(u) },
+    { to: "/dashboard/voice", label: "AI phone agent", allow: (u) => canManageSettings(u), feature: "voice_agent" },
   ] },
   // Brand owners only.
   { key: "brand", label: "Brand", icon: Store, tabs: [
@@ -61,7 +62,6 @@ export const NAV_SECTIONS = [
 // on Overview) but not shown in the sidebar for launch.
 export const HIDDEN_PAGES = [
   { to: "/dashboard/locations", label: "Locations", allow: all },
-  { to: "/dashboard/voice", label: "Voice Agent", allow: (u) => canManageSettings(u), feature: "voice_agent" },
 ];
 
 // Every gated page, for the "not allowed / feature off" redirect.
