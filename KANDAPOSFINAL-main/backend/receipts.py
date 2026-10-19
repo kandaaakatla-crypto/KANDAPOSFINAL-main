@@ -18,8 +18,13 @@ from fastapi import APIRouter, HTTPException, Depends, Response
 from fastapi.responses import StreamingResponse
 from typing import Literal
 
-from auth import get_current_user
+from datetime import timedelta
+
+import jwt
+
+from auth import get_current_user, _secret, JWT_ALG
 from db import get_db
+from tz import now_ist
 from tenants import tenant_filter, get_tenant
 
 
@@ -410,6 +415,42 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
 
     doc.build(story)
     return buf.getvalue()
+
+
+# ---------- Shareable bill link (WhatsApp bills) ----------
+# A signed, login-free link to one order's bill. The token names the order;
+# it can't be guessed or pointed at another order without the server secret.
+BILL_LINK_DAYS = 180
+
+
+def bill_link_token(tenant_id: str, order_id: str) -> str:
+    exp = now_ist() + timedelta(days=BILL_LINK_DAYS)
+    return jwt.encode({"purpose": "bill", "tid": tenant_id, "oid": order_id, "exp": exp}, _secret(), algorithm=JWT_ALG)
+
+
+def bill_link_url(tenant_id: str, order_id: str) -> str:
+    base = (os.environ.get("PUBLIC_BASE_URL") or "").rstrip("/")
+    return f"{base}/api/bill/{bill_link_token(tenant_id, order_id)}.pdf"
+
+
+@receipts_router.get("/bill/{token}.pdf")
+async def public_bill_pdf(token: str):
+    try:
+        claims = jwt.decode(token, _secret(), algorithms=[JWT_ALG])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    if claims.get("purpose") != "bill":
+        raise HTTPException(status_code=404, detail="Bill not found")
+    db = get_db()
+    order = await db.orders.find_one({"tenant_id": claims["tid"], "id": claims["oid"]}, {"_id": 0})
+    tenant = await db.tenants.find_one({"id": claims["tid"]}, {"_id": 0})
+    if not order or not tenant:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    store = {**FALLBACK_STORE, "name": tenant.get("name", ""),
+             **{k: v for k, v in (tenant.get("store") or {}).items() if v is not None}}
+    pdf_bytes = _render_invoice_pdf(order, store, "")
+    return Response(content=pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="bill_{order.get("number", "")}.pdf"'})
 
 
 @receipts_router.get("/orders/{order_id}/invoice.pdf")

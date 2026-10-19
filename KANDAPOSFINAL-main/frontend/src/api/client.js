@@ -624,6 +624,8 @@ export const labourApi = {
 
 export const receiptsApi = {
   json: (orderId) => api.get(`/orders/${orderId}/receipt`).then((r) => r.data),
+  whatsapp: (orderId, phone, review = false) =>
+    api.post(`/orders/${orderId}/whatsapp`, { phone, review }).then((r) => r.data),
   escposUrl: (orderId, kind = "customer") => {
     const t = tokenStore.get();
     // browser navigation download URL — backend allows query token fallback via interceptor not in scope,

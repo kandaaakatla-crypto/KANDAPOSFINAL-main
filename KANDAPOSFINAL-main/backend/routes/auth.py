@@ -142,6 +142,13 @@ class StoreDetailsUpdate(BaseModel):
     # regular = charges GST, tax invoice; composition / unregistered = no GST,
     # Bill of Supply.
     gst_scheme: Literal["regular", "composition", "unregistered"] = "regular"
+    # Where WhatsApp review requests send the customer (the store's Google review link).
+    google_review_url: Optional[str] = Field(None, max_length=300, pattern=r"^https://\S+$")
+
+    @field_validator("google_review_url", mode="before")
+    @classmethod
+    def _blank_url_is_none(cls, v):
+        return (v.strip() or None) if isinstance(v, str) else v
 
     @field_validator("gstin", "fssai", mode="before")
     @classmethod
@@ -162,7 +169,7 @@ async def update_store_details(payload: StoreDetailsUpdate, user: dict = Depends
     store = {**(tenant.get("store") or {}),
              "name": payload.name.strip(), "address": payload.address.strip(), "phone": payload.phone.strip(),
              "tax_id": payload.gstin or "", "fssai": payload.fssai or "", "footer": payload.footer.strip(),
-             "gst_scheme": payload.gst_scheme}
+             "gst_scheme": payload.gst_scheme, "google_review_url": payload.google_review_url or ""}
     await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"store": store}})
     return store
 
