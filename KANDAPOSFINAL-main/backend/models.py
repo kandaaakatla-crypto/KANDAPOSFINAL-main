@@ -746,6 +746,11 @@ class OrderCreate(BaseModel):
     items: List[OrderItem]
     deliveryFee: float = 0
     discount: float = 0
+    # The part of `discount` that lowers the taxable value (bill discount,
+    # coupon, loyalty). Gift cards and store credit are tenders, not price
+    # reductions, so they're in `discount` but not here. Absent (older
+    # clients) means the whole discount is taxable-reducing.
+    taxable_discount: Optional[float] = None
     total: float
     payment: OrderPayment = "unpaid"
     driver: Optional[str] = None

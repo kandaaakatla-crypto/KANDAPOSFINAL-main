@@ -19,7 +19,7 @@ from models import (
     Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload,
     OrderCustomer, ServiceChargePayload,
 )
-from tax import resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst
+from tax import resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst, apply_taxable_discount
 from . import loyalty as loyalty_mod
 from . import store_credit as credit_mod
 from . import gift_cards as gift_card_mod
@@ -207,12 +207,21 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     # these numbers are computed here, not merely trusted from the client.
     line_amounts, sync_warnings = await _stamp_item_tax(db, user["tenant_id"], business_type, raw_items)
     tax = compute_order_tax(line_amounts)
+    # GST is on the discounted value, not the sticker price (test report P0-2).
+    discount_total = float(payload.discount or 0)
+    taxable_disc = discount_total if payload.taxable_discount is None else float(payload.taxable_discount)
+    taxable_disc = max(0.0, min(taxable_disc, discount_total))
+    d_sub, d_tax, d_items_total = apply_taxable_discount(
+        tax["subtotal"], tax["tax_total"], taxable_disc, business_type == "retail",
+    )
+    tax = {**tax, "subtotal": d_sub, "tax_total": d_tax, "items_total": d_items_total}
     # Service charge is opt-in only (0 unless the customer asked for it).
     sc_pct = float(payload.service_charge_pct or 0)
     sc, sc_tax = compute_service_charge(tax["subtotal"], tax["tax_total"], sc_pct)
     tax_total = round(tax["tax_total"] + sc_tax, 2)
     cgst, sgst = split_cgst_sgst(tax_total)
-    grand_total = round(tax["items_total"] + sc + sc_tax - float(payload.discount or 0) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
+    # Only the non-taxable remainder (gift card / store credit) comes off the total here.
+    grand_total = round(tax["items_total"] + sc + sc_tax - (discount_total - taxable_disc) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
 
     # Validate splits if provided — must sum (±1¢) to the server-computed total.
     splits_payload = None
