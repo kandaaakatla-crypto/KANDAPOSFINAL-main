@@ -100,6 +100,7 @@ export default function LoginScreen({ isDemo = false }) {
   const submit = async (value) => {
     if (busy) return;
     setBusy(true);
+    setError(false);
     let user;
     try {
       user = await login(value);
@@ -215,7 +216,7 @@ export default function LoginScreen({ isDemo = false }) {
                 {n}
               </motion.button>
             ))}
-            <motion.button data-testid="pin-key-clear" onClick={() => setPin("")} {...pressableSmall}
+            <motion.button data-testid="pin-key-clear" onClick={() => { setPin(""); setError(false); }} {...pressableSmall}
               className="pin-key h-16 rounded-xl flex items-center justify-center"
               style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
               <Delete className="w-6 h-6" style={{ color: "var(--pos-muted)" }} />
