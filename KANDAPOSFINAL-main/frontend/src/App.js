@@ -58,6 +58,7 @@ const KDSBoard = lazy(() => import("./components/kds/KDSBoard"));
 
 const DashLogin = lazy(() => import("./components/dash/DashLogin"));
 const DashLayout = lazy(() => import("./components/dash/DashLayout"));
+const DashTabGroup = lazy(() => import("./components/dash/DashTabGroup"));
 const DashHome = lazy(() => import("./components/dash/DashHome"));
 const DashChangePassword = lazy(() => import("./components/dash/DashChangePassword"));
 const DashLocations = lazy(() => import("./components/dash/DashLocations"));
@@ -176,31 +177,44 @@ function App() {
                   <Route path="/dashboard/login" element={<DashLogin />} />
                   <Route path="/dashboard/account/password" element={<DashChangePassword />} />
                   <Route path="/dashboard" element={<DashLayout />}>
+                    {/* Sidebar sections (see dash/dashNav.js). Each tab keeps
+                    its page's original URL; DashTabGroup adds the tab strip. */}
                     <Route index element={<DashHome />} />
+                    <Route element={<DashTabGroup section="reports" />}>
+                      <Route path="reports" element={<ReportsScreen />} />
+                      <Route path="digest" element={<DashDigest />} />
+                    </Route>
                     <Route path="menu" element={<MenuScreen />} />
-                    <Route path="schedules" element={<DashSchedules />} />
-                    <Route path="surge" element={<DashSurge />} />
-                    <Route path="staff" element={<StaffScreen />} />
+                    <Route element={<DashTabGroup section="promotions" />}>
+                      <Route path="coupons" element={<DashCoupons />} />
+                      <Route path="schedules" element={<DashSchedules />} />
+                      <Route path="surge" element={<DashSurge />} />
+                    </Route>
+                    <Route path="inventory" element={<InventoryScreen />} />
+                    <Route element={<DashTabGroup section="customers" />}>
+                      <Route path="customers" element={<CustomersScreen />} />
+                      <Route path="loyalty" element={<DashLoyalty />} />
+                      <Route path="gift-cards" element={<DashGiftCards />} />
+                      <Route path="sms" element={<DashSms />} />
+                      <Route path="whatsapp" element={<DashWhatsApp />} />
+                    </Route>
+                    <Route element={<DashTabGroup section="staff" />}>
+                      <Route path="staff" element={<StaffScreen />} />
+                      <Route path="team" element={<DashTeam />} />
+                      <Route path="workforce" element={<WorkforceScreen />} />
+                      <Route path="payroll" element={<PayrollScreen />} />
+                    </Route>
+                    <Route element={<DashTabGroup section="settings" />}>
+                      <Route path="business" element={<DashBusiness />} />
+                      <Route path="devices" element={<KioskDevicesPage />} />
+                      <Route path="branding" element={<DashBranding />} />
+                      <Route path="website-orders" element={<WebsiteOrdersPage />} />
+                      <Route path="voice" element={<DashVoice />} />
+                    </Route>
                     <Route path="brand" element={<BrandScreen />} />
                     <Route path="central-supply" element={<DashCentralSupply />} />
-                    <Route path="payroll" element={<PayrollScreen />} />
-                    <Route path="workforce" element={<WorkforceScreen />} />
-                    <Route path="customers" element={<CustomersScreen />} />
-                    <Route path="reports" element={<ReportsScreen />} />
-                    <Route path="inventory" element={<InventoryScreen />} />
-                    <Route path="devices" element={<KioskDevicesPage />} />
-                    <Route path="website-orders" element={<WebsiteOrdersPage />} />
-                    <Route path="voice" element={<DashVoice />} />
-                    <Route path="digest" element={<DashDigest />} />
-                    <Route path="loyalty" element={<DashLoyalty />} />
-                    <Route path="coupons" element={<DashCoupons />} />
-                    <Route path="gift-cards" element={<DashGiftCards />} />
-                    <Route path="sms" element={<DashSms />} />
-                    <Route path="whatsapp" element={<DashWhatsApp />} />
+                    {/* Not in the sidebar for launch; URLs still work. */}
                     <Route path="locations" element={<DashLocations />} />
-                    <Route path="branding" element={<DashBranding />} />
-                    <Route path="business" element={<DashBusiness />} />
-                    <Route path="team" element={<DashTeam />} />
                   </Route>
 
                   {/* Kitchen Display — no auth, long-lived ?token= */}
