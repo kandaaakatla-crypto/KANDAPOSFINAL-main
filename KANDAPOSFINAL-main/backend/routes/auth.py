@@ -139,6 +139,9 @@ class StoreDetailsUpdate(BaseModel):
     gstin: Optional[str] = Field(None, pattern=r"^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
     fssai: Optional[str] = Field(None, pattern=r"^\d{14}$")
     footer: str = Field("", max_length=200)
+    # regular = charges GST, tax invoice; composition / unregistered = no GST,
+    # Bill of Supply.
+    gst_scheme: Literal["regular", "composition", "unregistered"] = "regular"
 
     @field_validator("gstin", "fssai", mode="before")
     @classmethod
@@ -158,7 +161,8 @@ async def update_store_details(payload: StoreDetailsUpdate, user: dict = Depends
         raise HTTPException(status_code=404, detail="Tenant not found")
     store = {**(tenant.get("store") or {}),
              "name": payload.name.strip(), "address": payload.address.strip(), "phone": payload.phone.strip(),
-             "tax_id": payload.gstin or "", "fssai": payload.fssai or "", "footer": payload.footer.strip()}
+             "tax_id": payload.gstin or "", "fssai": payload.fssai or "", "footer": payload.footer.strip(),
+             "gst_scheme": payload.gst_scheme}
     await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"store": store}})
     return store
 

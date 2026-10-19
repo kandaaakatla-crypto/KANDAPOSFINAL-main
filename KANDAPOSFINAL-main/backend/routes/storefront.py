@@ -29,7 +29,7 @@ from kds import annotate_order_items_for_kds
 from sms_service import send_sms, normalize_phone
 from routes.orders import _apply_recipes
 from payments import _get_client as _get_razorpay_client
-from tax import resolve_effective_rate, compute_line_tax, compute_order_tax
+from tax import collects_gst, resolve_effective_rate, compute_line_tax, compute_order_tax
 from scheduling import resolve_item_schedule_state, apply_schedule_pricing
 from ._shared import PROJECTION, NOT_DELETED, clean, menu_doc_to_response, next_order_number, table_doc_to_response
 import razorpay
@@ -106,7 +106,8 @@ class CartLine(BaseModel):
     note: Optional[str] = None
 
 
-async def _resolve_lines(db, tenant_id: str, lines: List[CartLine], business_type: str = "restaurant") -> list[dict]:
+async def _resolve_lines(db, tenant_id: str, lines: List[CartLine], business_type: str = "restaurant",
+                         charge_gst: bool = True) -> list[dict]:
     if not lines:
         raise HTTPException(status_code=400, detail="Cart is empty")
     ids = list({ln.item_id for ln in lines})
@@ -157,6 +158,8 @@ async def _resolve_lines(db, tenant_id: str, lines: List[CartLine], business_typ
             item.get("tax_rate"), cat.get("tax_rate") if cat else None,
             cat["name"] if cat else "", business_type, out[-1]["price"],
         )
+        if not charge_gst:
+            rate = 0.0
         _, tax_amt = compute_line_tax(out[-1]["price"], out[-1]["qty"], rate, inclusive)
         out[-1]["tax_rate"] = rate
         out[-1]["tax_amount"] = tax_amt
@@ -237,7 +240,7 @@ async def place_table_order(slug: str, number: int, payload: TableOrderRequest, 
 
     business_type = tenant.get("business_type", "restaurant")
     session = await _optional_storefront_session(request, slug, db)
-    raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type)
+    raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type, collects_gst(tenant))
     items = await annotate_order_items_for_kds(db, tenant["id"], raw_items)
     numbr = await next_order_number(db, tenant["id"])
     if session:
@@ -345,7 +348,7 @@ async def place_pickup_order(slug: str, payload: PickupOrderRequest, request: Re
     tenant = session["tenant"]
     business_type = tenant.get("business_type", "restaurant")
 
-    raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type)
+    raw_items = await _resolve_lines(db, tenant["id"], payload.items, business_type, collects_gst(tenant))
     items = await annotate_order_items_for_kds(db, tenant["id"], raw_items)
     numbr = await next_order_number(db, tenant["id"])
     customer = {"id": None, "name": session["name"], "phone": session["phone"], "address": None, "postcode": None}

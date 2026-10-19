@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from "../ui/dialog";
 import { Printer, Download, Loader2, FileText, UserPlus } from "lucide-react";
 import { receiptsApi } from "../../api/client";
 import { usePos } from "../../store/PosContext";
-import { sendEscposReceipt } from "../../utils/escpos";
+import { sendEscposReceipt, billTitleLines } from "../../utils/escpos";
 import { billToLines, summaryRows, signedMoney, gstinLine } from "../../utils/receiptSummary";
 import { Input } from "../ui/input";
 import { toast } from "sonner";
@@ -156,6 +156,9 @@ export default function ReceiptModal({ orderId, open, onClose }) {
                 {data.store.phone && <div>Tel {data.store.phone}</div>}
                 {data.store.tax_id && <div>{gstinLine(data.store.tax_id)}</div>}
                 {data.store.fssai && <div data-testid="receipt-fssai">FSSAI Lic. No. {data.store.fssai}</div>}
+                {billTitleLines(data.store).map((l, i) => (
+                  <div key={l} className={i === 0 ? "font-bold mt-1" : "text-[10px]"} data-testid={i === 0 ? "receipt-title" : undefined}>{l}</div>
+                ))}
               </div>
               <div className="border-t border-dashed border-black my-2" />
               {data.order.voided && <div className="text-center font-bold" data-testid="receipt-void">*** VOID ***</div>}
@@ -221,7 +224,7 @@ export default function ReceiptModal({ orderId, open, onClose }) {
               <button data-testid="download-invoice-btn" disabled={downloading} onClick={downloadInvoice}
                 className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-xs text-white disabled:opacity-40"
                 style={{ background: "var(--pos-blue)" }}>
-                <FileText className="w-3.5 h-3.5" /> Tax Invoice (PDF)
+                <FileText className="w-3.5 h-3.5" /> {billTitleLines(data.store)[0] === "TAX INVOICE" ? "Tax Invoice" : "Bill of Supply"} (PDF)
               </button>
               <button data-testid="escpos-customer-btn" disabled={downloading} onClick={() => downloadEscpos("customer")}
                 className="pos-btn h-11 rounded-lg flex items-center justify-center gap-2 font-bold text-xs disabled:opacity-40"

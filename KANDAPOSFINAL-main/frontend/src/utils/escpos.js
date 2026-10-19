@@ -51,6 +51,14 @@ function money(v) {
 // order: the Order shape from the API (see api/client.js ordersApi).
 // store: tenant.store (or a fallback with name/address/phone/tax_id/footer).
 // kind: "customer" | "kitchen"
+// Regular GST stores issue a tax invoice; composition and unregistered stores
+// issue a Bill of Supply (composition adds the mandatory declaration).
+export function billTitleLines(store = {}) {
+  const scheme = store.gst_scheme || "regular";
+  if (scheme === "regular") return ["TAX INVOICE"];
+  return ["BILL OF SUPPLY", ...(scheme === "composition" ? ["Composition taxable person, not eligible to collect tax on supplies"] : [])];
+}
+
 export function buildEscposReceipt(order, store, kind = "customer") {
   const b = new ByteBuilder();
   b.push(INIT, ALIGN_CENTER);
@@ -62,6 +70,9 @@ export function buildEscposReceipt(order, store, kind = "customer") {
     if (store.phone) b.line("Tel " + store.phone);
     if (store.tax_id) b.line(gstinLine(store.tax_id));
     if (store.fssai) b.line("FSSAI Lic. No. " + store.fssai);
+    const [title, ...notes] = billTitleLines(store);
+    b.push(BOLD_ON).line(title).push(BOLD_OFF);
+    notes.forEach((n) => { b.line(n.slice(0, 32)); if (n.length > 32) b.line(n.slice(32, 64)); });
   }
   b.line("-".repeat(32));
 

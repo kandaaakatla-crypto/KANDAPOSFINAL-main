@@ -88,6 +88,18 @@ def _header_lines(store: dict) -> list[str]:
     return [l for l in lines if l]
 
 
+COMPOSITION_DECLARATION = "Composition taxable person, not eligible to collect tax on supplies"
+
+
+def bill_title_lines(store: dict) -> list[str]:
+    """A regular GST store issues a tax invoice; composition and unregistered
+    stores issue a Bill of Supply (composition adds the mandatory line)."""
+    scheme = (store or {}).get("gst_scheme") or "regular"
+    if scheme == "regular":
+        return ["TAX INVOICE"]
+    return ["BILL OF SUPPLY"] + ([COMPOSITION_DECLARATION] if scheme == "composition" else [])
+
+
 def _bill_to_lines(order: dict) -> list[str]:
     """Customer details worth printing on a receipt/invoice, one per line.
 
@@ -156,6 +168,12 @@ def _build_escpos(order: dict, store: dict, kind: str) -> bytes:
     else:
         for hl in _header_lines(store):
             out += _line(hl)
+        title, *notes = bill_title_lines(store)
+        out += BOLD_ON + _line(title) + BOLD_OFF
+        for n in notes:
+            out += _line(n[:32])
+            if len(n) > 32:
+                out += _line(n[32:64])
     out += _line("-" * 32)
 
     out += ALIGN_LEFT
@@ -306,9 +324,13 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
 
     story = []
     right_lines = [
-        "<b>TAX INVOICE</b>" + ("  <font color='#dc2626'><b>VOID</b></font>" if order.get("voided") else ""),
+        f"<b>{bill_title_lines(store)[0]}</b>" + ("  <font color='#dc2626'><b>VOID</b></font>" if order.get("voided") else ""),
         f"Invoice No: {invoice_no}", f"Order #{e(order.get('number'))}", f"Date: {placed}",
     ]
+    title_lines = bill_title_lines(store)
+    if title_lines[0] == "TAX INVOICE":
+        right_lines.append("SAC 996331 (restaurant service)")
+    right_lines += [f"<font size='8'>{e(n)}</font>" for n in title_lines[1:]]
     if order.get("type") == "dine-in" and order.get("table") is not None:
         right_lines.append(f"Table {e(order.get('table'))}")
     header = Table([[
@@ -384,7 +406,7 @@ def _render_invoice_pdf(order: dict, store: dict, cashier: str) -> bytes:
         story.append(Paragraph(f"Served by: {e(cashier)}", label_st))
     story.append(Spacer(1, 6 * mm))
     story.append(Paragraph(e(store.get("footer") or "Thank you for your business."), sub_st))
-    story.append(Paragraph("This is a computer-generated tax invoice.", sub_st))
+    story.append(Paragraph(f"This is a computer-generated {bill_title_lines(store)[0].lower()}.", sub_st))
 
     doc.build(story)
     return buf.getvalue()

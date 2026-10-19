@@ -11,7 +11,14 @@ const FSSAI_RE = /^\d{14}$/;
 const fromStore = (s = {}, fallbackName = "") => ({
   name: s.name || fallbackName, address: s.address || "", phone: s.phone || "",
   gstin: (s.tax_id || "").replace(/^GSTIN\s*/i, ""), fssai: s.fssai || "", footer: s.footer || "",
+  gst_scheme: s.gst_scheme || "regular",
 });
+
+const SCHEMES = [
+  { id: "regular", label: "GST registered", hint: "Charges GST. Bills are tax invoices." },
+  { id: "composition", label: "Composition scheme", hint: "No GST on bills. Bills of Supply with the composition line." },
+  { id: "unregistered", label: "Not registered", hint: "No GST on bills. Bills of Supply." },
+];
 
 export default function DashBusiness() {
   const { tenantInfo } = useDash();
@@ -64,6 +71,20 @@ export default function DashBusiness() {
         {field("name", "Restaurant name", { maxLength: 80, required: true })}
         {field("address", "Address", { maxLength: 300 })}
         {field("phone", "Phone", { maxLength: 20, inputMode: "tel" })}
+        <div role="radiogroup" aria-label="GST registration" className="space-y-2">
+          <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>GST registration</div>
+          {SCHEMES.map((sc) => (
+            <label key={sc.id} className="flex items-start gap-3 rounded-lg px-3 py-2 cursor-pointer" data-testid={`biz-scheme-${sc.id}`}
+              style={{ background: "var(--pos-panel-2)", border: `1px solid ${form.gst_scheme === sc.id ? "var(--pos-accent)" : "var(--pos-border)"}` }}>
+              <input type="radio" name="gst_scheme" value={sc.id} checked={form.gst_scheme === sc.id}
+                onChange={() => setForm({ ...form, gst_scheme: sc.id })} className="mt-1" />
+              <span>
+                <span className="block text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{sc.label}</span>
+                <span className="block text-xs" style={{ color: "var(--pos-muted)" }}>{sc.hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {field("gstin", "GSTIN (if registered)", { maxLength: 15, placeholder: "e.g. 37AAPFU0939F1ZV", autoCapitalize: "characters" },
             gstinBad ? "A GSTIN is 15 characters, like 37AAPFU0939F1ZV." : null)}
