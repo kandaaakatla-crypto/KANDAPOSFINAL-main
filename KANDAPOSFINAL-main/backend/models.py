@@ -939,8 +939,10 @@ class StaffPublic(BaseModel):
     initials: str
     phone: Optional[str] = ""
     pay_type: PayType = "monthly"
-    monthly_pay: float = 0.0
-    hourly_rate: float = 0.0
+    # None when the caller lacks payroll access (see routes/staff.can_see_pay).
+    monthly_pay: Optional[float] = 0.0
+    hourly_rate: Optional[float] = 0.0
+    pay_visible: bool = True
     active: bool = True
 
 
