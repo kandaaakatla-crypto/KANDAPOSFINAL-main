@@ -392,7 +392,7 @@ async def append_items_to_order(order_id: str, payload: OrderAppendPayload, user
         raise HTTPException(status_code=400, detail="Cannot add to a voided order")
     if existing.get("status") == "completed":
         raise HTTPException(status_code=400, detail="Cannot add to a completed order")
-    if existing.get("payment") in ("cash", "card"):
+    if existing.get("payment") in ("cash", "card", "split"):
         raise HTTPException(status_code=400, detail="Order already paid — start a new order")
 
     tenant_doc = await get_tenant(user, db)
