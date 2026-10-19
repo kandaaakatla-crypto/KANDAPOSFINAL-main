@@ -16,6 +16,7 @@ import {
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
 } from "../ui/alert-dialog";
 import CategoryManagerModal from "./CategoryManagerModal";
+import { FOOD_TYPES } from "../../utils/foodType";
 
 export default function MenuScreen() {
   const { menuItems, upsertMenuItem, toggleItemAvailability, refreshMenu, staffUser, features } = usePos();
@@ -74,6 +75,7 @@ export default function MenuScreen() {
     item.barcode = (item.barcode || "").trim() || null;
     item.tax_rate = item.tax_rate === "" || item.tax_rate == null ? null : parseFloat(item.tax_rate);
     if (Number.isNaN(item.tax_rate)) item.tax_rate = null;
+    item.foodType = item.foodType || null;
     upsertMenuItem(item);
     toast.success(editing.id ? "Item updated" : "Item added to menu");
     setEditing(null);
@@ -86,11 +88,12 @@ export default function MenuScreen() {
     e.variants = item.variants || [];
     e.barcode = item.barcode || "";
     e.tax_rate = item.tax_rate ?? "";
+    e.foodType = item.foodType || "";
     setEditing(e);
   };
 
   const openNew = () => {
-    setEditing({ name: "", desc: "", catId: activeCat, price: "", available: true, isPizza: false, sm: "", md: "", lg: "", dealGroups: [], imageUrl: "", barcode: "", variants: [], tax_rate: "" });
+    setEditing({ name: "", desc: "", catId: activeCat, price: "", available: true, isPizza: false, sm: "", md: "", lg: "", dealGroups: [], imageUrl: "", barcode: "", variants: [], tax_rate: "", foodType: "" });
   };
 
   const isDealsCat = editing?.catId === "deals";
@@ -353,6 +356,22 @@ export default function MenuScreen() {
                   onChange={(e) => setEditing({ ...editing, tax_rate: e.target.value })}
                   className="h-10" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
               </label>
+
+              <div>
+                <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: "var(--pos-muted)" }}>Veg / non-veg mark (shown on the QR menu)</div>
+                <div className="grid grid-cols-3 gap-1.5" data-testid="menu-field-food-type">
+                  {Object.entries(FOOD_TYPES).map(([key, meta]) => (
+                    <button type="button" key={key} data-testid={`menu-food-type-${key}`}
+                      onClick={() => setEditing({ ...editing, foodType: editing.foodType === key ? "" : key })}
+                      className="pos-btn h-9 rounded-lg text-xs font-semibold"
+                      style={editing.foodType === key
+                        ? { background: meta.color, color: "#fff", border: `1px solid ${meta.color}` }
+                        : { background: "var(--pos-panel-2)", color: "var(--pos-text)", border: "1px solid var(--pos-border)" }}>
+                      {meta.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {!editing.isPizza && (
                 <div className="rounded-lg p-3 space-y-2" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>

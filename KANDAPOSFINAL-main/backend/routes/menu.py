@@ -158,6 +158,7 @@ async def create_menu_item(payload: MenuItemCreate, user: dict = Depends(require
         "barcode": payload.barcode,
         "variants": [v.model_dump() for v in payload.variants] if payload.variants else None,
         "tax_rate": payload.tax_rate,
+        "food_type": payload.foodType,
         "updated_at": now_ist().isoformat(),
         "deleted_at": None,
     }
@@ -171,10 +172,13 @@ async def update_menu_item(item_id: str, payload: MenuItemUpdate, user: dict = D
     db = get_db()
     update = {}
     raw = payload.model_dump(exclude_none=True)
-    mapping = {"catId": "cat_id", "isPizza": "is_pizza", "dealGroups": "deal_groups", "imageUrl": "image_url"}
+    mapping = {"catId": "cat_id", "isPizza": "is_pizza", "dealGroups": "deal_groups", "imageUrl": "image_url", "foodType": "food_type"}
     for k, v in raw.items():
         key = mapping.get(k, k)
         update[key] = v.model_dump() if hasattr(v, "model_dump") else v
+    # exclude_none drops an explicit null, but clearing the veg mark is a real edit.
+    if "foodType" in payload.model_fields_set and payload.foodType is None:
+        update["food_type"] = None
     if not update:
         raise HTTPException(status_code=400, detail="Nothing to update")
     update["updated_at"] = now_ist().isoformat()
