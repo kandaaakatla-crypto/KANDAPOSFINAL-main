@@ -551,6 +551,17 @@ async def update_team_member(member_id: str, payload: TeamMemberUpdate, owner: d
     return _member_public(fresh)
 
 
+@router.delete("/dash/team/{member_id}")
+async def delete_team_member(member_id: str, owner: dict = Depends(_team_owner)):
+    """Remove a manager's dashboard login for good. Their token stops working
+    at once (get_current_user looks the row up on every request). Owners can
+    never be deleted this way and members outside the owner's stores 404."""
+    db = get_db()
+    await _member_in_scope(db, owner, member_id)
+    await db.dashboard_users.delete_one({"id": member_id})
+    return {"ok": True}
+
+
 @router.post("/dash/team/{member_id}/reset-password")
 async def reset_team_member_password(member_id: str, owner: dict = Depends(_team_owner)):
     db = get_db()
