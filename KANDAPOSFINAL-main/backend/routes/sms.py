@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from db import get_db
 from auth import get_current_user, require_role
 from tenants import tenant_filter
-from sms_service import send_sms_detailed, normalize_phone
+from sms_service import send_sms_detailed, normalize_phone, sms_configured
 
 logger = logging.getLogger("kanda.sms_routes")
 router = APIRouter()
@@ -75,6 +75,12 @@ async def _log_and_send(db, *, tenant_id: str, sent_by: str, to: str, body: str,
 # ===================================================================
 # Endpoints
 # ===================================================================
+@router.get("/sms/status")
+async def status(user: dict = Depends(get_current_user)):
+    ok, reason = sms_configured()
+    return {"configured": ok, "reason": reason}
+
+
 @router.post("/sms/send")
 async def send_one(payload: SendSmsPayload, user: dict = Depends(require_role("Manager"))):
     if not payload.to.strip():

@@ -587,6 +587,7 @@ export const digestApi = {
 };
 
 export const smsApi = {
+  status: () => api.get("/sms/status").then((r) => r.data),
   send: (to, body, customer_id = null) =>
     api.post("/sms/send", { to, body, customer_id }).then((r) => r.data),
   broadcast: (body, { customer_ids = [], phones = [] } = {}) =>

@@ -191,6 +191,14 @@ export default function DashDigest() {
                   onRemove={(i) => setCfg({ ...cfg, sms_recipients: cfg.sms_recipients.filter((_, idx) => idx !== i) })}
                   newValue={newSms} setNewValue={setNewSms} placeholder="+91…" />
 
+                {cfg.enabled && !(
+                  (cfg.channels_email && cfg.email_recipients.length) || (cfg.channels_sms && cfg.sms_recipients.length)
+                ) && (
+                  <div data-testid="digest-not-set-up" role="status" className="text-xs p-3 rounded"
+                    style={{ background: "rgba(217,119,6,0.14)", border: "1px solid rgba(217,119,6,0.4)", color: "var(--pos-text)" }}>
+                    <b>Not set up.</b> The digest is on, but no one will receive it: turn on Email or SMS and add at least one recipient.
+                  </div>
+                )}
                 <button data-testid="digest-save"
                   onClick={save} disabled={saving}
                   className="pos-btn w-full mt-2 px-3 py-2 rounded-lg text-xs text-white flex items-center justify-center gap-1.5"
