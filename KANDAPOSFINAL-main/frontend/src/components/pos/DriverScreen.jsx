@@ -12,7 +12,7 @@ const Card = ({ order, mine, busy, onClaim, onOnTheWay, onCash, onDelivered }) =
   const c = order.customer || {};
   const mapsHref = c.address ? `https://www.google.com/maps?q=${encodeURIComponent((c.address || "") + " " + (c.postcode || ""))}` : null;
   const telHref = c.phone ? `tel:${c.phone}` : null;
-  const isPaid = order.payment === "cash" || order.payment === "card";
+  const isPaid = (order.payment || "unpaid") !== "unpaid";
   return (
     <div data-testid={`driver-order-${order.id}`} className="rounded-xl p-4 mb-3"
       style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>

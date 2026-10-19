@@ -40,7 +40,7 @@ async def list_tables(since: Optional[str] = Query(None), user: dict = Depends(g
             tenant_filter(user, {"id": t["order_id"]}),
             {"_id": 0, "status": 1, "payment": 1, "voided": 1},
         )
-        if not o or o.get("status") == "completed" or o.get("voided") or o.get("payment") in ("cash", "card", "split"):
+        if not o or o.get("status") == "completed" or o.get("voided") or (o.get("payment") or "unpaid") != "unpaid":
             await db.tables.update_one(
                 tenant_filter(user, {"id": t["id"]}),
                 {"$set": {"status": "available", "order_id": None, "updated_at": now_ist().isoformat()}},
