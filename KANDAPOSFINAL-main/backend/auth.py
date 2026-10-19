@@ -1,4 +1,7 @@
 """JWT + bcrypt auth utilities for staff PIN login."""
+import asyncio
+import hashlib
+import hmac
 import os
 from datetime import datetime, timezone, timedelta
 from tz import now_ist
@@ -21,6 +24,30 @@ def verify_pin(pin: str, pin_hash: str) -> bool:
 
 def _secret() -> str:
     return os.environ["JWT_SECRET"]
+
+
+def pin_lookup(tenant_id: str, pin: str) -> str:
+    """Keyed, store-scoped fingerprint of a PIN, kept next to pin_hash so a
+    login can go straight to the one staff member it could belong to instead
+    of bcrypt-checking everyone (P0-7). HMAC with the server secret, so the
+    database alone doesn't reveal PINs; bcrypt still does the real check."""
+    return hmac.new(_secret().encode(), f"pin:{tenant_id}:{pin}".encode(), hashlib.sha256).hexdigest()
+
+
+async def find_pin_matches(db, tenant_id: str, users: list, pin: str) -> list:
+    """Every user in `users` whose PIN is `pin`. Candidates are the rows whose
+    pin_lookup matches plus legacy rows that don't have one yet; bcrypt runs
+    in a worker thread (it's ~0.25s of CPU and used to freeze the event loop)
+    and legacy rows are backfilled when they match."""
+    lookup = pin_lookup(tenant_id, pin)
+    candidates = [u for u in users if u.get("pin_lookup") == lookup] + [u for u in users if not u.get("pin_lookup")]
+    matches = []
+    for u in candidates:
+        if await asyncio.to_thread(verify_pin, pin, u["pin_hash"]):
+            matches.append(u)
+            if not u.get("pin_lookup"):
+                await db.users.update_one({"tenant_id": tenant_id, "id": u["id"]}, {"$set": {"pin_lookup": lookup}})
+    return matches
 
 
 def create_access_token(user_id: str, role: str, tenant_id: str, device_id: Optional[str] = None) -> str:

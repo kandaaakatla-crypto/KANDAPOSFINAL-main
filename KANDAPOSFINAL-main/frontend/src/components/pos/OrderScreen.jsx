@@ -13,7 +13,7 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { toast } from "sonner";
 import { loyaltyApi, ordersApi, storeCreditApi, giftCardsApi } from "../../api/client";
-import { effectiveTaxRate, computeLineTax, computeOrderTax, computeServiceCharge } from "../../utils/tax";
+import { effectiveTaxRate, computeLineTax, computeOrderTax, computeServiceCharge, applyTaxableDiscount } from "../../utils/tax";
 import { applyScheduleToItem } from "../../utils/scheduling";
 import { activeSurge, applySurge } from "../../utils/surge";
 
@@ -133,7 +133,7 @@ export default function OrderScreen() {
     const oid = searchParams.get("order");
     if (oid) {
       const existing = orders.find((o) => o.id === oid);
-      if (existing && existing.payment === "unpaid" && !existing.voided && existing.status !== "completed") {
+      if (existing && existing.payment === "unpaid" && !existing.voided) {
         setEditingOrderId(existing.id);
         setOrderType(existing.type);
         setOrderSource(existing.source || "in-store");
@@ -222,7 +222,7 @@ export default function OrderScreen() {
   const subtotal = pricedCart.reduce((s, l) => s + l.price * l.qty, 0);
   // GST is added on top of restaurant menu pricing (exclusive) — mirrors the
   // authoritative calculation the backend performs at order creation.
-  const gst = useMemo(() => {
+  const grossGst = useMemo(() => {
     const lineAmounts = pricedCart.map((l) => {
       const cat = categories.find((c) => c.id === l.catId);
       const rate = effectiveTaxRate({ tax_rate: l.taxRate }, cat);
@@ -233,16 +233,20 @@ export default function OrderScreen() {
   // In edit mode, delivery fee was already captured on the original order — don't double it.
   const deliveryFee = !editingOrderId && orderType === "delivery" && cart.length > 0 ? DELIVERY_FEE : 0;
   const discountAmt = (subtotal * discount) / 100;
+  // GST is charged on the discounted value (bill discount, coupon, loyalty —
+  // not gift card / store credit, which are tenders). Mirrors the server.
   const tipAmt = +(subtotal * tipPct / 100).toFixed(2);
   const couponDisc = coupon?.discount || 0;
   const loyaltyDisc = Math.min((redeemPoints || 0) * redeemValue, subtotal);
   const creditDisc = Math.min(redeemCredit || 0, subtotal);
   const giftDisc = Math.min(redeemGiftCard || 0, subtotal);
+  const taxableDisc = discountAmt + couponDisc + loyaltyDisc;
+  const gst = useMemo(() => applyTaxableDiscount(grossGst, taxableDisc, false), [grossGst, taxableDisc]);
   // A reopened bill keeps whatever service charge it already has (changed via
   // the toggle, server-side); a new order uses the cashier's toggle.
   const effectiveScPct = editingOrder ? (editingOrder.serviceChargePct || 0) : (serviceChargeOn ? serviceChargePct : 0);
   const [scAmt, scTax] = computeServiceCharge(gst.subtotal, gst.taxTotal, effectiveScPct);
-  const newRoundTotal = Math.max(0, subtotal + scAmt + gst.taxTotal + scTax - discountAmt - couponDisc - loyaltyDisc - creditDisc - giftDisc + deliveryFee + tipAmt);
+  const newRoundTotal = Math.max(0, gst.itemsTotal + scAmt + scTax - creditDisc - giftDisc + deliveryFee + tipAmt);
   const total = editingOrder ? +(newRoundTotal + editingOrder.total).toFixed(2) : newRoundTotal;
 
   const orderCustomer = () => {
@@ -322,7 +326,7 @@ export default function OrderScreen() {
     customer: orderCustomer(),
     table: orderType === "dine-in" ? Number(tableNo) : undefined,
     items: toOrderItems(pricedCart),
-    deliveryFee, discount: discountAmt + couponDisc + loyaltyDisc + creditDisc + giftDisc, total, payment,
+    deliveryFee, discount: discountAmt + couponDisc + loyaltyDisc + creditDisc + giftDisc, taxable_discount: taxableDisc, total, payment,
     source: orderSource,
     tip: tipAmt,
     coupon_code: coupon?.code || null,
@@ -363,8 +367,10 @@ export default function OrderScreen() {
         return null;
       }
     }
-    // For card path the backend will flip payment to "card" after Razorpay verify.
-    const initialPayment = method === "card" ? "unpaid" : method;
+    // Card and split orders are created unpaid; the backend flips them to
+    // "card"/"split" only after Razorpay verifies the card payment. A split
+    // order marked "split" up front looked paid even when the card half failed.
+    const initialPayment = method === "card" || method === "split" ? "unpaid" : method;
     const order = buildOrder(initialPayment, splits);
     try {
       return await placeOrder(order);

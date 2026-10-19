@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from PIL import Image, UnidentifiedImageError
 
 from db import get_db
-from auth import verify_pin, create_access_token, get_current_user, require_role
+from auth import verify_pin, find_pin_matches, create_access_token, get_current_user, require_role
 from tenants import resolve_tenant_from_request, tenant_filter
 from subscriptions import grace_state
 from ratelimit import peek as rate_limit_peek, hit as rate_limit_hit, client_ip
@@ -58,20 +58,19 @@ async def login(payload: LoginRequest, request: Request):
         )
     users = await db.users.find({"tenant_id": tenant["id"]}, {"_id": 0}).to_list(50)
     matched_inactive = False
-    for u in users:
-        if verify_pin(pin, u["pin_hash"]):
-            # Absent `active` means active (legacy rows) — only an explicit
-            # False is deactivated. Keep scanning in case an active user
-            # shares the PIN, but never issue a token for an inactive one:
-            # get_current_user would 401 it on the very next request.
-            if u.get("active") is False:
-                matched_inactive = True
-                continue
-            token = create_access_token(u["id"], u["role"], tenant["id"], device_id=device_id)
-            return LoginResponse(
-                token=token,
-                user=UserPublic(id=u["id"], name=u["name"], role=u["role"], initials=u["initials"]),
-            )
+    for u in await find_pin_matches(db, tenant["id"], users, pin):
+        # Absent `active` means active (legacy rows) — only an explicit
+        # False is deactivated. Keep scanning in case an active user
+        # shares the PIN, but never issue a token for an inactive one:
+        # get_current_user would 401 it on the very next request.
+        if u.get("active") is False:
+            matched_inactive = True
+            continue
+        token = create_access_token(u["id"], u["role"], tenant["id"], device_id=device_id)
+        return LoginResponse(
+            token=token,
+            user=UserPublic(id=u["id"], name=u["name"], role=u["role"], initials=u["initials"]),
+        )
     if matched_inactive:
         # Not a failed guess — the PIN was right — so it doesn't count
         # against the brute-force limiter.

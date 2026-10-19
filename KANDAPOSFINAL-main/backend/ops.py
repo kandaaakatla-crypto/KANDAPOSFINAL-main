@@ -277,10 +277,15 @@ def install_ops_middleware(app):
                 logger.exception("Failed to persist audit_log")
 
         # Persist 4xx/5xx responses to error_logs too (without traceback).
-        if response.status_code >= 500 or response.status_code == 401:
+        # 5xx is recorded whoever the caller is, like the raised-exception
+        # branch above; 4xx only for authenticated callers, and 401 never.
+        if response.status_code == 401:
             # 401 noise — skip
             pass
-        elif response.status_code >= 400 and path.startswith("/api/") and actor.get("actor_id"):
+        elif path.startswith("/api/") and (
+            response.status_code >= 500
+            or (response.status_code >= 400 and actor.get("actor_id"))
+        ):
             try:
                 db = get_db()
                 await db.error_logs.insert_one({
