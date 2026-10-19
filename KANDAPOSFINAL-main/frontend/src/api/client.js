@@ -406,7 +406,7 @@ export const paymentsApi = {
 export const plansApi = {
   list: () => api.get("/plans").then((r) => r.data),
   purchaseLocation: () => api.post("/payments/purchase-location").then((r) => r.data),
-  verify: (payload) => api.post("/payments/verify", payload).then((r) => r.data),
+  verify: (payload) => api.post("/payments/location/verify", payload).then((r) => r.data),
   status: (order_id) => api.get(`/payments/status/${order_id}`).then((r) => r.data),
 };
 
