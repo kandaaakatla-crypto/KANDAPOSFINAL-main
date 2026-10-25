@@ -71,7 +71,7 @@ export default function DashHome() {
       </div>
 
       {/* Top-line KPIs across the user's scope */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         <Kpi label="Today's sales" value={summary ? `₹${summary.todaySales.toFixed(0)}` : "—"} icon={IndianRupee} accent="#22c55e" testid="kpi-sales" />
         <Kpi label="Orders today" value={summary?.ordersToday ?? "—"} icon={ShoppingBag} accent="#7dd3fc" testid="kpi-orders" />
         <Kpi label="Avg order value" value={summary ? `₹${(summary.avgOrder ?? 0).toFixed(0)}` : "—"} icon={Receipt} accent="#fb923c" testid="kpi-aov" />
@@ -140,9 +140,9 @@ export default function DashHome() {
               <div key={l.id} data-testid={`dash-store-${l.id}`} className="rounded-xl p-4"
                 style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
                 <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
-                      <MapPin className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> {l.name}
+                  <div className="min-w-0">
+                    <div className="font-bold flex items-center gap-2 flex-wrap" style={{ color: "var(--pos-text)" }}>
+                      <MapPin className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> <span className="break-words min-w-0">{l.name}</span>
                       {l.is_default && <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: "#0e2515", color: "#86efac" }}>Default</span>}
                     </div>
                     <div className="text-xs mt-1" style={{ color: "var(--pos-muted)" }}>{l.address || "—"}</div>
@@ -170,7 +170,7 @@ function Kpi({ label, value, icon: Icon, accent, testid }) {
       </div>
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{label}</div>
-        <div className="text-lg font-bold tabular-nums truncate" style={{ color: "var(--pos-text)" }}>{value}</div>
+        <div className="text-base xl:text-lg font-bold tabular-nums break-words" title={String(value)} style={{ color: "var(--pos-text)" }}>{value}</div>
       </div>
     </div>
   );
