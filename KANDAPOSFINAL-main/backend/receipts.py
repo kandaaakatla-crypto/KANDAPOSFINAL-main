@@ -150,6 +150,8 @@ def _summary_rows(order: dict) -> list[tuple[str, float]]:
         rows.append(("Delivery", float(order["deliveryFee"])))
     if order.get("discount"):
         rows.append(("Discount", -float(order["discount"])))
+    if order.get("roundOff"):
+        rows.append(("Round off", float(order["roundOff"])))
     total = float(order.get("total", 0) or 0)
     rows.append(("TOTAL", total))
     refunded = float(order.get("refunded_amount") or 0)

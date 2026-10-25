@@ -60,6 +60,7 @@ class TenantInfo(BaseModel):
     businessType: BusinessType = "restaurant"
     features: TenantFeatures = TenantFeatures()
     brandId: Optional[str] = None
+    cashRoundOff: bool = False  # round all-cash bills to the nearest rupee
     # Receipt branding (name/address/phone/tax_id/footer/logo_url) — exposed
     # here so the POS can cache it and build a receipt fully offline
     # (see frontend/src/utils/escpos.js) instead of needing a network round
@@ -898,6 +899,7 @@ class Order(BaseModel):
     serviceChargePct: float = 0
     serviceCharge: float = 0
     serviceChargeTax: float = 0
+    roundOff: float = 0  # ₹ cash round-off applied to `total` (+/-), 0 when off
     surgeAmount: float = 0  # ₹ aggregator surge added to line prices (sum of (price - base_price) * qty)
     client_ref: Optional[str] = None  # idempotency key, set when this order was created offline and later synced
     sync_warnings: List[str] = []  # non-fatal issues found when replaying an offline-queued order (e.g. item since deleted)
