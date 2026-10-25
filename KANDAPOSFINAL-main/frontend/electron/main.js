@@ -2,6 +2,10 @@ const { app, BrowserWindow, ipcMain, Menu } = require("electron");
 const path = require("path");
 const { autoUpdater } = require("electron-updater");
 const { printEscposOverNetwork } = require("./printer");
+const { discoverPrinters } = require("./discovery");
+
+// Scans this machine's own private subnets for raw-print (port 9100) devices.
+ipcMain.handle("kanda:discover-printers", async () => discoverPrinters());
 
 ipcMain.handle("kanda:print-escpos", async (_evt, { host, port, bytes }) => {
   await printEscposOverNetwork({ host, port, bytes });

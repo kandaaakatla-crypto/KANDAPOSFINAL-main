@@ -7,6 +7,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 // process's raw TCP socket (electron/printer.js) — no server round trip.
 contextBridge.exposeInMainWorld("kandaDesktop", {
   isElectron: true,
+  discoverPrinters: () => ipcRenderer.invoke("kanda:discover-printers"),
   printEscpos: (host, port, bytes) =>
     ipcRenderer.invoke("kanda:print-escpos", { host, port, bytes: Array.from(bytes) }),
 });
