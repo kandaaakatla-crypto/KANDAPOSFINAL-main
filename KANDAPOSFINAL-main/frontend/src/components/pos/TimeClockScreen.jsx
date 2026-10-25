@@ -5,6 +5,7 @@ import { Camera, Delete, LogIn, LogOut, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { api, timeclockApi, tenantStore, deviceStore, isDeviceLocked } from "../../api/client";
 import { pressableSmall } from "../../lib/motion";
+import { fmtDateTime } from "../../utils/formatDate";
 
 /**
  * Public-ish "Time Clock" terminal. Anyone can walk up, type their 4-digit PIN,
@@ -245,7 +246,7 @@ export default function TimeClockScreen() {
             {lastPunch.type === "in" ? <LogIn className="w-6 h-6" style={{ color: "#86efac" }} /> : <LogOut className="w-6 h-6" style={{ color: "#fcd34d" }} />}
             <div>
               <div className="font-bold text-white">{lastPunch.user_name} — Clocked {lastPunch.type === "in" ? "IN" : "OUT"}</div>
-              <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{new Date(lastPunch.at).toLocaleString()}</div>
+              <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{fmtDateTime(lastPunch.at)}</div>
             </div>
           </div>
         )}

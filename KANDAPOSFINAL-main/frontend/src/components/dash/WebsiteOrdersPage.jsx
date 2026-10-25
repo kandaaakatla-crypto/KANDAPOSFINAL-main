@@ -6,6 +6,7 @@ import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
 } from "../ui/alert-dialog";
+import { fmtDateTime } from "../../utils/formatDate";
 
 function CopyRow({ testid, value }) {
   return (
@@ -158,7 +159,7 @@ export default function WebsiteOrdersPage() {
             Send the key in the <code>{data.header}</code> header from your website's server, never from browser code.
             Each line uses your POS <code>item_id</code> or a <code>sku</code> that matches the item's barcode.
             Prices and GST come from your POS menu. Re-sending the same <code>external_id</code> never creates a duplicate.
-            {data.lastOrderAt && <> Last order received {new Date(data.lastOrderAt).toLocaleString()}.</>}
+            {data.lastOrderAt && <> Last order received {fmtDateTime(data.lastOrderAt)}.</>}
           </p>
         </div>
       </div>

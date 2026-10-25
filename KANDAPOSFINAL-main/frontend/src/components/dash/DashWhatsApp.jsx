@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { whatsappApi } from "../../api/client";
 import { MessageCircle, Send, Search, Plus, Loader2, ArrowLeft, Info, Copy, Check as CheckIcon, CheckCheck, FileText } from "lucide-react";
 import WhatsappTemplateDialog from "../WhatsappTemplateDialog";
+import { fmtDateTime } from "../../utils/formatDate";
 
 /**
  * Restaurant Dashboard → WhatsApp.
@@ -291,7 +292,7 @@ export default function DashWhatsApp() {
                     {c.last_direction === "out" && "You: "}{c.last_body || "(no messages)"}
                   </div>
                   <div className="text-[9px]" style={{ color: "var(--pos-muted)" }}>
-                    {c.last_at ? new Date(c.last_at).toLocaleString() : ""}
+                    {c.last_at ? fmtDateTime(c.last_at) : ""}
                   </div>
                 </div>
               </button>

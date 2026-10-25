@@ -6,6 +6,7 @@ import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
 } from "../ui/alert-dialog";
+import { fmtDateTime } from "../../utils/formatDate";
 
 function TokenUrlRow({ testid, url }) {
   return (
@@ -44,7 +45,7 @@ function UnlockedTillsCard() {
     }
   };
 
-  const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : "never");
+  const fmt = (iso) => (iso ? fmtDateTime(iso) : "never");
 
   return (
     <div data-testid="pos-tills-card" className="rounded-xl mb-5" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
