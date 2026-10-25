@@ -6,6 +6,7 @@ import { DELIVERY_FEE } from "../../data/mock";
 import { sortCategories, pickActiveCategory, visibleMenuItems } from "../../utils/menuCategories";
 import { initialPaymentFor, tenderLabel } from "../../utils/tenders";
 import ItemModal from "./ItemModal";
+import PaidDialog from "./PaidDialog";
 import CartPanel from "./CartPanel";
 import PaymentModal from "./PaymentModal";
 import { CashDrawerPanel, TipPoolPanel } from "./OpsPanels";
@@ -54,6 +55,7 @@ export default function OrderScreen() {
   const [discount, setDiscount] = useState(0); // percent
   const [modalItem, setModalItem] = useState(null);
   const [payOpen, setPayOpen] = useState(false);
+  const [paidInfo, setPaidInfo] = useState(null);
   const [zReportOpen, setZReportOpen] = useState(false);
   const [tipPoolOpen, setTipPoolOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -399,6 +401,7 @@ export default function OrderScreen() {
       return;
     }
     toast.success(`Order ${orderNo(placed)} paid by ${tenderLabel(method)} — ₹${total.toFixed(2)}`);
+    setPaidInfo({ order: placed, method: tenderLabel(method), total });
     resetAll();
   };
 
@@ -740,6 +743,7 @@ export default function OrderScreen() {
       />
 
       <ItemModal item={modalItem} menuItems={effectiveMenuItems} surgePct={surge.pct} onClose={() => setModalItem(null)} onAdd={addLine} />
+      <PaidDialog info={paidInfo} onClose={() => setPaidInfo(null)} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName={orderCustomer()?.name} onCreateOrder={onCreateOrder} onPaid={onPaid} />
 
       <Dialog open={zReportOpen} onOpenChange={setZReportOpen}>
