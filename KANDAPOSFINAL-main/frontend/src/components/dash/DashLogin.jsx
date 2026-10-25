@@ -77,6 +77,13 @@ export default function DashLogin() {
               </button>
             </div>
           </div>
+          <details className="text-xs" data-testid="dash-forgot">
+            <summary className="cursor-pointer" style={{ color: "var(--pos-muted)" }}>Forgot password?</summary>
+            <p className="mt-1.5 leading-relaxed" style={{ color: "var(--pos-muted)" }}>
+              Store and area managers: ask your owner to choose <b>Reset password</b> on the Team screen. They get a new temporary password to share with you.
+              Owners: email <a href="mailto:connect@kandapos.com" className="underline">connect@kandapos.com</a> from the address on your account.
+            </p>
+          </details>
           <button data-testid="dash-submit-btn" type="submit" disabled={busy || !email || !password}
             className="pos-btn w-full h-12 rounded-lg font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50"
             style={{ background: "var(--pos-accent)" }}>
