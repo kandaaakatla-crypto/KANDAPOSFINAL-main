@@ -253,7 +253,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
                 </button>
               ))}
             </div>
-            <Input data-testid="tendered-input" type="number" min={0} aria-label="Amount tendered" placeholder="Amount tendered" value={tendered} onChange={(e) => setTendered(e.target.value)}
+            <Input data-testid="tendered-input" type="number" min={0} max={1000000} aria-label="Amount tendered" placeholder="Amount tendered" value={tendered} onChange={(e) => setTendered(e.target.value)}
               className="h-12 text-lg" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             {tendered !== "" && tenderedNum < 0 && (
               <div className="text-xs font-semibold" role="alert" style={{ color: "#f87171" }}>Amount can&apos;t be negative.</div>

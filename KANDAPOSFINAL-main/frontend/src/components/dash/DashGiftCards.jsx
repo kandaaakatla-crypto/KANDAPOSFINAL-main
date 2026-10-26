@@ -162,19 +162,19 @@ function GiftCardsTab() {
         </div>
         <div className="p-5 space-y-3">
           <Field label="Value (₹)">
-            <input data-testid="gift-card-form-value" type="number" min={1} value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })}
+            <input data-testid="gift-card-form-value" aria-label="Gift card value (₹)" type="number" min={1} value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })}
               placeholder="500" className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           </Field>
           <Field label="Recipient name (optional)">
-            <input data-testid="gift-card-form-name" value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })}
+            <input data-testid="gift-card-form-name" aria-label="Recipient name" value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })}
               className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           </Field>
           <Field label="Recipient phone (optional — texts the code)">
-            <input data-testid="gift-card-form-phone" value={form.recipient_phone} onChange={(e) => setForm({ ...form, recipient_phone: e.target.value })}
+            <input data-testid="gift-card-form-phone" aria-label="Recipient phone" value={form.recipient_phone} onChange={(e) => setForm({ ...form, recipient_phone: e.target.value })}
               className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           </Field>
           <Field label="Recipient email (optional — emails the code)">
-            <input data-testid="gift-card-form-email" type="email" value={form.recipient_email} onChange={(e) => setForm({ ...form, recipient_email: e.target.value })}
+            <input data-testid="gift-card-form-email" aria-label="Recipient email" type="email" value={form.recipient_email} onChange={(e) => setForm({ ...form, recipient_email: e.target.value })}
               className="w-full rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           </Field>
           <button data-testid="gift-card-issue-btn" onClick={issue} disabled={issuing}
@@ -239,7 +239,7 @@ function StoreCreditTab() {
       </div>
       <div className="p-5 space-y-4">
         <div className="flex gap-2">
-          <input data-testid="credit-search-phone" value={phone} onChange={(e) => setPhone(e.target.value)}
+          <input data-testid="credit-search-phone" aria-label="Customer phone" value={phone} onChange={(e) => setPhone(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && search()}
             placeholder="Phone number" className="flex-1 rounded px-3 py-2 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
           <button data-testid="credit-search-btn" onClick={search} disabled={searching}
@@ -259,11 +259,11 @@ function StoreCreditTab() {
 
             <div className="flex gap-2 items-end flex-wrap">
               <Field label="Adjustment (₹, can be negative)">
-                <input data-testid="credit-adjust-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+                <input data-testid="credit-adjust-amount" aria-label="Adjustment amount (₹)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
                   placeholder="100" className="w-32 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               </Field>
               <Field label="Reason">
-                <input data-testid="credit-adjust-note" value={note} onChange={(e) => setNote(e.target.value)}
+                <input data-testid="credit-adjust-note" aria-label="Adjustment note" value={note} onChange={(e) => setNote(e.target.value)}
                   placeholder="Goodwill gesture" className="w-56 rounded px-2 py-1.5 text-sm outline-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
               </Field>
               <button data-testid="credit-adjust-btn" onClick={adjust} disabled={saving}

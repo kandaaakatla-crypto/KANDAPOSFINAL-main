@@ -195,11 +195,11 @@ export default function DashTeam() {
           {editing && (
             <div className="space-y-4">
               {editing.isNew && (
-                <input data-testid="team-form-email" value={editing.email} placeholder="Email"
+                <input data-testid="team-form-email" aria-label="Email" value={editing.email} placeholder="Email"
                   onChange={(e) => setEditing({ ...editing, email: e.target.value })}
                   className="w-full rounded px-2 py-1.5 text-sm outline-none" style={INPUT_STYLE} />
               )}
-              <input data-testid="team-form-name" value={editing.name} placeholder="Name"
+              <input data-testid="team-form-name" aria-label="Name" value={editing.name} placeholder="Name"
                 onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                 className="w-full rounded px-2 py-1.5 text-sm outline-none" style={INPUT_STYLE} />
 
