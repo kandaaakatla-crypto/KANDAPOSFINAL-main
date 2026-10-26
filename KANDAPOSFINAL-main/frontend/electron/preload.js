@@ -8,6 +8,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("kandaDesktop", {
   isElectron: true,
   discoverPrinters: () => ipcRenderer.invoke("kanda:discover-printers"),
+  listDevices: () => ipcRenderer.invoke("kanda:list-devices"),
+  printRaw: (target, bytes) => ipcRenderer.invoke("kanda:print-raw", { ...target, bytes: Array.from(bytes) }),
   printEscpos: (host, port, bytes) =>
     ipcRenderer.invoke("kanda:print-escpos", { host, port, bytes: Array.from(bytes) }),
 });
