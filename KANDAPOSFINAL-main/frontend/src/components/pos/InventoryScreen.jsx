@@ -256,7 +256,7 @@ export default function InventoryScreen() {
       )}
 
       <div className="flex-1 min-h-0 overflow-y-auto pos-scroll rounded-xl" style={{ border: "1px solid var(--pos-border)" }}>
-        <table className="w-full text-sm hidden md:table">
+        <table className="w-full text-sm hidden lg:table">
           <thead>
             <tr style={{ background: "var(--pos-panel)" }}>
               {["Item", "In Stock", "Reorder Level", "Value", "Supplier", "Status", "Adjust"].map((h) => (
@@ -357,7 +357,7 @@ export default function InventoryScreen() {
         </table>
 
         {/* Mobile card list */}
-        <div className="md:hidden divide-y" style={{ borderColor: "var(--pos-border)" }}>
+        <div className="lg:hidden divide-y" style={{ borderColor: "var(--pos-border)" }}>
           {filtered.length === 0 && (
             <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>No items match.</div>
           )}

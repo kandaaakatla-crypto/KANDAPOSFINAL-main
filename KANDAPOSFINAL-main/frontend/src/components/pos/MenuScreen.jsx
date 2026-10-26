@@ -19,7 +19,7 @@ import CategoryManagerModal from "./CategoryManagerModal";
 import { FOOD_TYPES } from "../../utils/foodType";
 
 export default function MenuScreen() {
-  const { menuItems, upsertMenuItem, toggleItemAvailability, refreshMenu, staffUser, features } = usePos();
+  const { menuItems, upsertMenuItem, toggleItemAvailability, refreshMenu, staffUser, features, bootState } = usePos();
   const location = useLocation();
   // Edit affordances live in the Restaurant Dashboard at /dashboard/menu. The
   // /menu route inside the POS is intentionally read-only — managers go to
@@ -263,6 +263,12 @@ export default function MenuScreen() {
             ))}
           </tbody>
         </table>
+
+        {items.length === 0 && (
+          <div role="status" className="px-4 py-10 text-center text-sm" data-testid="menu-empty" style={{ color: "var(--pos-muted)" }}>
+            {bootState === "loading" ? "Loading menu…" : "No items in this category yet."}
+          </div>
+        )}
 
         {/* Mobile card list */}
         <div className="md:hidden divide-y" style={{ borderColor: "var(--pos-border)" }}>
