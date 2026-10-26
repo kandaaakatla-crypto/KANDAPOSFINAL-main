@@ -167,9 +167,9 @@ export default function DashDigest() {
                     <Clock className="w-3 h-3 inline mr-1" /> Send at (IST)
                   </label>
                   <div className="flex gap-2 mt-1.5">
-                    <NumInput testid="digest-hour" value={cfg.send_hour_ist} min={0} max={23} onChange={(v) => setCfg({ ...cfg, send_hour_ist: v })} />
+                    <NumInput testid="digest-hour" label="Send hour (IST)" value={cfg.send_hour_ist} min={0} max={23} onChange={(v) => setCfg({ ...cfg, send_hour_ist: v })} />
                     <span className="self-center" style={{ color: "var(--pos-text)" }}>:</span>
-                    <NumInput testid="digest-minute" value={cfg.send_minute} min={0} max={59} onChange={(v) => setCfg({ ...cfg, send_minute: v })} />
+                    <NumInput testid="digest-minute" label="Send minute" value={cfg.send_minute} min={0} max={59} onChange={(v) => setCfg({ ...cfg, send_minute: v })} />
                   </div>
                 </div>
 
@@ -296,11 +296,13 @@ function Toggle({ label, checked, onChange, testid }) {
   );
 }
 
-function NumInput({ value, min, max, onChange, testid }) {
+function NumInput({ value, min, max, onChange, testid, label }) {
+  // Shown zero-padded ("00", "07") so a send time reads 22:00, not 22:0.
   return (
-    <input type="number" min={min} max={max} value={value}
+    <input type="text" inputMode="numeric" maxLength={2} aria-label={label}
+      value={String(value ?? 0).padStart(2, "0")}
       data-testid={testid}
-      onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value) || 0)))}
+      onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value.replace(/\D/g, "")) || 0)))}
       className="w-16 rounded px-2 py-1 text-sm outline-none"
       style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
   );
@@ -326,10 +328,10 @@ function RecipientList({ label, items, onAdd, onRemove, newValue, setNewValue, p
           value={newValue} onChange={(e) => setNewValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), onAdd())}
           placeholder={placeholder}
-          className="flex-1 rounded px-2 py-1 text-xs outline-none"
+          className="flex-1 min-w-0 rounded px-2 py-1 text-xs outline-none"
           style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
         <button data-testid={`${testidPrefix}-add`} onClick={onAdd}
-          className="pos-btn px-2 rounded text-white"
+          aria-label={`Add ${label}`} className="pos-btn px-2 rounded text-white shrink-0"
           style={{ background: "var(--pos-accent)" }}>
           <Plus className="w-3 h-3" />
         </button>
