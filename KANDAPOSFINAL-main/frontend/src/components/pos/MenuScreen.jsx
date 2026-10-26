@@ -19,7 +19,7 @@ import CategoryManagerModal from "./CategoryManagerModal";
 import { FOOD_TYPES } from "../../utils/foodType";
 
 export default function MenuScreen() {
-  const { menuItems, upsertMenuItem, toggleItemAvailability, refreshMenu, staffUser, features } = usePos();
+  const { menuItems, upsertMenuItem, toggleItemAvailability, refreshMenu, staffUser, features, bootState } = usePos();
   const location = useLocation();
   // Edit affordances live in the Restaurant Dashboard at /dashboard/menu. The
   // /menu route inside the POS is intentionally read-only — managers go to
@@ -243,7 +243,7 @@ export default function MenuScreen() {
                   {taxLabel(m)}
                 </td>
                 <td className="px-4 py-3">
-                  <Switch data-testid={`toggle-${m.id}`} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} />
+                  <Switch data-testid={`toggle-${m.id}`} aria-label={`${m.name} available`} disabled={!isManager} title={isManager ? undefined : "Only a manager can change availability"} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} />
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1.5">
@@ -264,6 +264,12 @@ export default function MenuScreen() {
           </tbody>
         </table>
 
+        {items.length === 0 && (
+          <div role="status" className="px-4 py-10 text-center text-sm" data-testid="menu-empty" style={{ color: "var(--pos-muted)" }}>
+            {bootState === "loading" ? "Loading menu…" : "No items in this category yet."}
+          </div>
+        )}
+
         {/* Mobile card list */}
         <div className="md:hidden divide-y" style={{ borderColor: "var(--pos-border)" }}>
           {items.map((m) => (
@@ -273,7 +279,7 @@ export default function MenuScreen() {
                   <div className="font-medium text-sm" style={{ color: "var(--pos-text)" }}>{m.name}</div>
                   {m.desc && <div className="text-xs truncate mt-0.5" style={{ color: "var(--pos-muted)" }}>{m.desc}</div>}
                 </div>
-                <Switch data-testid={`toggle-${m.id}`} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} className="shrink-0" />
+                <Switch data-testid={`toggle-${m.id}`} aria-label={`${m.name} available`} disabled={!isManager} title={isManager ? undefined : "Only a manager can change availability"} checked={m.available} onCheckedChange={() => { toggleItemAvailability(m.id); toast.info(`${m.name} ${m.available ? "marked unavailable" : "back on sale"}`); }} className="shrink-0" />
               </div>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">

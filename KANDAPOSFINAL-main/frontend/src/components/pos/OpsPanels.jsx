@@ -9,6 +9,7 @@ import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { fmtDateTime } from "../../utils/formatDate";
 
 /**
  * Reusable panels previously housed under the now-removed "Operations" tab.
@@ -61,7 +62,7 @@ export function WastePanel({ presetItemId, presetReason }) {
           {list.length === 0 && <tr><td colSpan={5} className="text-center py-8" style={{ color: "var(--pos-muted)" }}>No waste logged yet.</td></tr>}
           {list.map((w) => (
             <tr key={w.id} data-testid={`waste-row-${w.id}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
-              <td className="py-2 px-3" style={{ color: "var(--pos-muted)" }}>{new Date(w.at).toLocaleString()}</td>
+              <td className="py-2 px-3" style={{ color: "var(--pos-muted)" }}>{fmtDateTime(w.at)}</td>
               <td className="py-2 px-3">{w.inventory_name}</td>
               <td className="py-2 px-3 text-right tabular-nums">{w.qty} {w.unit}</td>
               <td className="py-2 px-3">{w.reason}</td>
@@ -119,7 +120,7 @@ export function CashDrawerPanel() {
         {current ? (
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Drawer open since {new Date(current.opened_at).toLocaleString()}</div>
+              <div className="text-xs uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Drawer open since {fmtDateTime(current.opened_at)}</div>
               <div className="text-2xl font-bold" style={{ color: "var(--pos-text)" }}>Opening float: ₹{current.opening_float.toFixed(2)}</div>
               <div className="text-xs" style={{ color: "var(--pos-muted)" }}>Opened by {current.opened_by}</div>
             </div>
@@ -220,7 +221,7 @@ export function TipPoolPanel() {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <div className="text-sm font-bold" style={{ color: "var(--pos-text)" }}>{t.shift_date} · ₹{t.total_pool.toFixed(2)}</div>
-                <div className="text-xs" style={{ color: "var(--pos-muted)" }}>By {t.created_by} · {new Date(t.at).toLocaleString()}</div>
+                <div className="text-xs" style={{ color: "var(--pos-muted)" }}>By {t.created_by} · {fmtDateTime(t.at)}</div>
               </div>
               <AlertDialog>
                 <AlertDialogTrigger asChild>

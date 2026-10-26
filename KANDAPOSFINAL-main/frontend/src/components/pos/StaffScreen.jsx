@@ -102,7 +102,7 @@ export default function StaffScreen() {
       </div>
 
       <div className="flex-1 overflow-auto px-5 pb-5">
-        <table className="w-full text-sm hidden md:table">
+        <table className="w-full text-sm hidden lg:table">
           <thead style={{ color: "var(--pos-muted)" }}>
             <tr style={{ borderBottom: "1px solid var(--pos-border)" }}>
               <th className="text-left py-2 px-3 uppercase text-[11px] tracking-wider">Name</th>
@@ -171,7 +171,7 @@ export default function StaffScreen() {
         </table>
 
         {/* Mobile card list */}
-        <div className="md:hidden">
+        <div className="lg:hidden">
           {loading && <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>Loading…</div>}
           {!loading && visible.length === 0 && (
             <div className="text-center py-8 text-sm" style={{ color: "var(--pos-muted)" }}>No employees yet — tap Add to create one.</div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ownerData } from "../../api/ownerClient";
 import { LifeBuoy, Loader2, MessageSquare, RefreshCw, Send } from "lucide-react";
 import { toast } from "sonner";
+import { fmtDateTime } from "../../utils/formatDate";
 
 const STATUS_LABEL = {
   open: { label: "Open", color: "#ef4444" },
@@ -95,7 +96,7 @@ export default function SupportInbox() {
                 <span>{t.tenant_name || t.tenant_id} · {t.opened_by_name}</span>
                 <span style={{ color: STATUS_LABEL[t.status]?.color }}>{STATUS_LABEL[t.status]?.label}</span>
               </div>
-              <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>{new Date(t.at).toLocaleString()}{t.replies?.length ? ` · ${t.replies.length} repl${t.replies.length === 1 ? "y" : "ies"}` : ""}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>{fmtDateTime(t.at)}{t.replies?.length ? ` · ${t.replies.length} repl${t.replies.length === 1 ? "y" : "ies"}` : ""}</div>
             </button>
           ))}
         </div>
@@ -110,7 +111,7 @@ export default function SupportInbox() {
               <div>
                 <div className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>{active.subject}</div>
                 <div className="text-[11px] mt-1" style={{ color: "var(--pos-muted)" }}>
-                  {active.tenant_name} · {active.opened_by_name} ({active.opened_by_role}) · {new Date(active.at).toLocaleString()}
+                  {active.tenant_name} · {active.opened_by_name} ({active.opened_by_role}) · {fmtDateTime(active.at)}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
@@ -123,7 +124,7 @@ export default function SupportInbox() {
                 <div key={r.id} className="rounded-lg p-3 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)" }}>
                   <div className="text-[11px] mb-1" style={{ color: "var(--pos-muted)" }}>
                     <MessageSquare className="w-3 h-3 inline mr-1" />
-                    {r.by_name} · {new Date(r.at).toLocaleString()}
+                    {r.by_name} · {fmtDateTime(r.at)}
                   </div>
                   <div className="whitespace-pre-wrap" style={{ color: "var(--pos-text)" }}>{r.body}</div>
                 </div>

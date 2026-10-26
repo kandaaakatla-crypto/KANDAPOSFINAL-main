@@ -10,6 +10,7 @@ import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
 } from "../ui/alert-dialog";
+import { fmtDateTime } from "../../utils/formatDate";
 
 const EMPTY = { name: "", phone: "", address: "", postcode: "", notes: "", birthday: "" };
 
@@ -211,7 +212,7 @@ export default function CustomersScreen() {
                       {c.phone}{c.address ? ` · ${c.address}` : ""}
                     </div>
                     <div className="text-[10px] mt-0.5" style={{ color: "var(--pos-muted)" }}>
-                      Deleted {c.deleted_at ? new Date(c.deleted_at).toLocaleString() : "—"}
+                      Deleted {c.deleted_at ? fmtDateTime(c.deleted_at) : "—"}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

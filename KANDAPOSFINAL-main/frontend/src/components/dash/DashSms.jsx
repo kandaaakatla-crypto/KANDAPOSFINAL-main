@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { customersApi, smsApi } from "../../api/client";
 import SmsNotSetUp, { useSmsStatus } from "../SmsNotSetUp";
 import { MessageSquare, Send, Search, Users, History, Loader2, Check, X } from "lucide-react";
+import { fmtDateTime } from "../../utils/formatDate";
 
 /**
  * Restaurant Dashboard → SMS.
@@ -197,7 +198,7 @@ export default function DashSms() {
                 <div className="mt-1 line-clamp-2" style={{ color: "var(--pos-text)" }}>{s.body}</div>
                 {s.error && <div className="mt-1 text-[10px] text-red-400">{s.error}</div>}
                 <div className="mt-1 text-[10px]" style={{ color: "var(--pos-muted)" }}>
-                  {s.sent_by} · {new Date(s.sent_at).toLocaleString()}
+                  {s.sent_by} · {fmtDateTime(s.sent_at)}
                 </div>
               </div>
             ))}

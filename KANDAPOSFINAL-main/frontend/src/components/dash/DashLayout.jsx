@@ -72,7 +72,13 @@ export default function DashLayout() {
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1"; } catch { return false; }
+    // First visit on a tablet-width screen starts collapsed so tables get the room;
+    // after that the person's own choice wins.
+    try {
+      const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+      if (saved === null) return window.innerWidth < 1100;
+      return saved === "1";
+    } catch { return false; }
   });
   const [theme, setTheme] = useState(getTheme);
 

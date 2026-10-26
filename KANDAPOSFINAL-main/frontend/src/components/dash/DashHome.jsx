@@ -30,7 +30,9 @@ export default function DashHome() {
   const navigate = useNavigate();
   const [locations, setLocations] = useState([]);
   const [summary, setSummary] = useState(null);
-  const [staffCount, setStaffCount] = useState(0);
+  // null until the first response, so the page shows "—" instead of a false "0 stores / 0 staff".
+  const [staffCount, setStaffCount] = useState(null);
+  const [locationsLoaded, setLocationsLoaded] = useState(false);
   const [tenantInfo, setTenantInfo] = useState(null);
   const [savingFeature, setSavingFeature] = useState(null);
 
@@ -42,7 +44,7 @@ export default function DashHome() {
         ? r.data.filter((l) => user.location_ids.includes(l.id))
         : r.data;
       setLocations(allowed);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setLocationsLoaded(true));
     if (showReports) api.get("/reports/summary").then((r) => setSummary(r.data)).catch(() => {});
     api.get("/staff").then((r) => setStaffCount(r.data.filter((s) => s.active).length)).catch(() => {});
     api.get("/tenant/info").then((r) => setTenantInfo(r.data)).catch(() => {});
@@ -69,26 +71,32 @@ export default function DashHome() {
     } finally { setSavingFeature(null); }
   };
 
+  // Accounts named "Restaurant Owner" / "Store Manager" would greet as "Restaurant";
+  // for those, use the whole name.
+  const GENERIC_FIRST = ["restaurant", "store", "area", "demo", "owner", "manager"];
+  const first = (user.name || "").split(" ")[0];
+  const greetName = GENERIC_FIRST.includes(first.toLowerCase()) ? user.name : first;
+
   const roleLabel = { owner: "Owner", area_manager: "Area Manager", manager: "Manager" }[user.dash_role];
 
   return (
     <div className="p-4 space-y-4" data-testid="dash-home">
       <PendingBrandInviteBanner />
       <div>
-        <h1 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Welcome back, {user.name.split(" ")[0]}</h1>
+        <h1 className="text-xl font-bold" style={{ color: "var(--pos-text)" }}>Welcome back, {greetName}</h1>
         <p className="text-sm" style={{ color: "var(--pos-muted)" }}>
-          {roleLabel} · {locations.length} {locations.length === 1 ? "store" : "stores"} in your scope.
+          {roleLabel}{locationsLoaded ? ` · ${locations.length} ${locations.length === 1 ? "store" : "stores"} in your scope.` : ""}
         </p>
       </div>
 
       {/* Top-line KPIs across the user's scope */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         <Kpi label="Today's sales" value={summary ? `₹${summary.todaySales.toFixed(0)}` : "—"} icon={IndianRupee} accent="#22c55e" testid="kpi-sales" />
         <Kpi label="Orders today" value={summary?.ordersToday ?? "—"} icon={ShoppingBag} accent="#7dd3fc" testid="kpi-orders" />
         <Kpi label="Avg order value" value={summary ? `₹${(summary.avgOrder ?? 0).toFixed(0)}` : "—"} icon={Receipt} accent="#fb923c" testid="kpi-aov" />
-        <Kpi label="Active staff" value={staffCount} icon={Users} accent="#fcd34d" testid="kpi-staff" />
+        <Kpi label="Active staff" value={staffCount ?? "—"} icon={Users} accent="#fcd34d" testid="kpi-staff" />
         <Kpi label="Low-stock items" value={lowStockCount} icon={Boxes} accent={lowStockCount > 0 ? "#fca5a5" : "#86efac"} testid="kpi-low" />
-        <Kpi label="Stores in scope" value={locations.length} icon={Store} accent="#5eead4" testid="kpi-outlets" />
+        <Kpi label="Stores in scope" value={locationsLoaded ? locations.length : "—"} icon={Store} accent="#5eead4" testid="kpi-outlets" />
       </div>
 
       {/* Sales trend — at-a-glance companion to the interactive chart on Reports */}
@@ -160,9 +168,9 @@ export default function DashHome() {
               <div key={l.id} data-testid={`dash-store-${l.id}`} className="rounded-xl p-4"
                 style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
                 <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}>
-                      <MapPin className="w-4 h-4" style={{ color: "var(--pos-accent)" }} /> {l.name}
+                  <div className="min-w-0">
+                    <div className="font-bold flex items-center gap-2 flex-wrap" style={{ color: "var(--pos-text)" }}>
+                      <MapPin className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> <span className="break-words min-w-0">{l.name}</span>
                       {l.is_default && <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: "#0e2515", color: "#86efac" }}>Default</span>}
                     </div>
                     <div className="text-xs mt-1" style={{ color: "var(--pos-muted)" }}>{l.address || "—"}</div>
@@ -190,7 +198,7 @@ function Kpi({ label, value, icon: Icon, accent, testid }) {
       </div>
       <div className="min-w-0">
         <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>{label}</div>
-        <div className="text-lg font-bold tabular-nums truncate" style={{ color: "var(--pos-text)" }}>{value}</div>
+        <div className="text-base xl:text-lg font-bold tabular-nums break-words" title={String(value)} style={{ color: "var(--pos-text)" }}>{value}</div>
       </div>
     </div>
   );

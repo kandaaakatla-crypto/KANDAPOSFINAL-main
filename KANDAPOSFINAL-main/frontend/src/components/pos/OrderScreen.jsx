@@ -6,6 +6,7 @@ import { DELIVERY_FEE } from "../../data/mock";
 import { sortCategories, pickActiveCategory, visibleMenuItems } from "../../utils/menuCategories";
 import { initialPaymentFor, tenderLabel } from "../../utils/tenders";
 import ItemModal from "./ItemModal";
+import PaidDialog from "./PaidDialog";
 import CartPanel from "./CartPanel";
 import PaymentModal from "./PaymentModal";
 import { CashDrawerPanel, TipPoolPanel } from "./OpsPanels";
@@ -54,6 +55,7 @@ export default function OrderScreen() {
   const [discount, setDiscount] = useState(0); // percent
   const [modalItem, setModalItem] = useState(null);
   const [payOpen, setPayOpen] = useState(false);
+  const [paidInfo, setPaidInfo] = useState(null);
   const [zReportOpen, setZReportOpen] = useState(false);
   const [tipPoolOpen, setTipPoolOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -399,15 +401,16 @@ export default function OrderScreen() {
       return;
     }
     toast.success(`Order ${orderNo(placed)} paid by ${tenderLabel(method)} — ₹${total.toFixed(2)}`);
+    setPaidInfo({ order: placed, method: tenderLabel(method), total });
     resetAll();
   };
 
   const availableTables = tables.filter((t) => t.status === "available");
 
   return (
-    <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden pos-scroll pb-24 md:pb-0" data-testid="order-screen">
+    <div className="flex flex-col lg:flex-row h-full overflow-y-auto lg:overflow-hidden pos-scroll pb-24 lg:pb-0" data-testid="order-screen">
       {/* Left: order type + customer */}
-      <div className="w-full md:w-[270px] md:shrink-0 flex flex-col gap-3 p-3 overflow-visible md:overflow-y-auto pos-scroll border-b md:border-b-0 md:border-r" style={{ borderColor: "var(--pos-border)" }}>
+      <div className="w-full lg:w-[270px] lg:shrink-0 flex flex-col gap-3 p-3 overflow-visible lg:overflow-y-auto pos-scroll border-b lg:border-b-0 lg:border-r" style={{ borderColor: "var(--pos-border)" }}>
         {editingOrder && (
           <div className="rounded-xl p-3 flex items-start gap-2 fade-in" data-testid="reopen-banner"
             style={{ background: "rgba(37,99,235,0.14)", border: "1px solid rgba(37,99,235,0.4)" }}>
@@ -628,7 +631,7 @@ export default function OrderScreen() {
       </div>
 
       {/* Center: item grid */}
-      <div className="w-full md:flex-1 md:min-w-0 p-3 pt-0 overflow-visible md:overflow-y-auto pos-scroll">
+      <div className="w-full lg:flex-1 lg:min-w-0 p-3 pt-0 overflow-visible lg:overflow-y-auto pos-scroll">
         {/* Categories — one scrollable row above the items, with search */}
         <div className="sticky top-0 z-10 -mx-3 px-3 pt-3 pb-2 mb-1" style={{ background: "var(--pos-bg)" }}>
           <div className="relative mb-2">
@@ -705,7 +708,7 @@ export default function OrderScreen() {
       {/* Mobile-only: persistent bar to open the cart sheet */}
       {(cart.length > 0 || editingOrder) && !cartOpen && (
         <button data-testid="open-cart-bar" onClick={() => setCartOpen(true)}
-          className="md:hidden fixed bottom-16 inset-x-0 z-40 h-14 flex items-center justify-between px-5 font-bold text-white"
+          className="lg:hidden fixed bottom-16 inset-x-0 z-40 h-14 flex items-center justify-between px-5 font-bold text-white"
           style={{ background: "var(--pos-accent)" }}>
           <span className="flex items-center gap-2"><ShoppingCart className="w-4 h-4" /> {cart.length} item{cart.length === 1 ? "" : "s"}</span>
           <span>₹{total.toFixed(2)} · View Cart</span>
@@ -740,6 +743,7 @@ export default function OrderScreen() {
       />
 
       <ItemModal item={modalItem} menuItems={effectiveMenuItems} surgePct={surge.pct} onClose={() => setModalItem(null)} onAdd={addLine} />
+      <PaidDialog info={paidInfo} onClose={() => setPaidInfo(null)} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName={orderCustomer()?.name} onCreateOrder={onCreateOrder} onPaid={onPaid} />
 
       <Dialog open={zReportOpen} onOpenChange={setZReportOpen}>
