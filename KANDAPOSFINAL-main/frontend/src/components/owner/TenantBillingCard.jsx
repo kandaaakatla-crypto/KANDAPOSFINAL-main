@@ -6,6 +6,7 @@ import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
 } from "../ui/alert-dialog";
+import { fmtDate } from "../../utils/formatDate";
 
 const STATUS_COLOR = {
   active: "#22c55e",
@@ -78,15 +79,15 @@ export default function TenantBillingCard({ tenantId }) {
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Renews</div>
-          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.current_period_end ? new Date(billing.current_period_end).toLocaleDateString() : "—"}</div>
+          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.current_period_end ? fmtDate(billing.current_period_end) : "—"}</div>
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Grace until</div>
-          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.grace_until ? new Date(billing.grace_until).toLocaleDateString() : "—"}</div>
+          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.grace_until ? fmtDate(billing.grace_until) : "—"}</div>
         </div>
         <div>
           <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--pos-muted)" }}>Last paid</div>
-          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.last_payment_at ? new Date(billing.last_payment_at).toLocaleDateString() : "—"}</div>
+          <div className="tabular-nums mt-0.5" style={{ color: "var(--pos-text)" }}>{billing.last_payment_at ? fmtDate(billing.last_payment_at) : "—"}</div>
         </div>
       </div>
 

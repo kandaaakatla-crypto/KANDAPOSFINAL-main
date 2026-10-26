@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ownerData } from "../../api/ownerClient";
 import { AlertOctagon, Loader2, RefreshCw } from "lucide-react";
+import { fmtDateTime } from "../../utils/formatDate";
 
 const STATUS_COLOR = (s) => (s >= 500 ? "#ef4444" : s >= 400 ? "#f59e0b" : "#a3a3a3");
 
@@ -58,7 +59,7 @@ export default function ErrorLog() {
               {rows.map((r) => (
                 <tr key={r.id} data-testid={`error-row-${r.id}`} onClick={() => setOpen(r)}
                   className="cursor-pointer hover:bg-white/[0.02]" style={{ borderTop: "1px solid var(--pos-border)" }}>
-                  <td className="px-3 py-2 text-[11px] tabular-nums" style={{ color: "var(--pos-muted)" }}>{new Date(r.at).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-[11px] tabular-nums" style={{ color: "var(--pos-muted)" }}>{fmtDateTime(r.at)}</td>
                   <td className="px-3 py-2" style={{ color: "var(--pos-text)" }}>{r.tenant_id || "—"}</td>
                   <td className="px-3 py-2" style={{ color: "var(--pos-text)" }}>{r.actor_id || "—"} <span className="text-[10px]" style={{ color: "var(--pos-muted)" }}>{r.actor_type}</span></td>
                   <td className="px-3 py-2 font-mono text-[11px]" style={{ color: "var(--pos-text)" }}>{r.method} {r.route}</td>
@@ -78,7 +79,7 @@ export default function ErrorLog() {
               <div className="font-bold" style={{ color: "var(--pos-text)" }}>{open.method} {open.route}</div>
               <button onClick={() => setOpen(null)} className="text-xs" style={{ color: "var(--pos-muted)" }}>Close</button>
             </div>
-            <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{new Date(open.at).toLocaleString()} · status {open.status} · tenant {open.tenant_id || "—"} · actor {open.actor_id || "—"}</div>
+            <div className="text-xs" style={{ color: "var(--pos-muted)" }}>{fmtDateTime(open.at)} · status {open.status} · tenant {open.tenant_id || "—"} · actor {open.actor_id || "—"}</div>
             <div className="mt-3 text-sm" style={{ color: "var(--pos-text)" }}>{open.message}</div>
             {open.traceback && (
               <pre className="mt-3 max-h-[55vh] overflow-auto p-3 text-[11px] font-mono rounded-lg whitespace-pre-wrap"

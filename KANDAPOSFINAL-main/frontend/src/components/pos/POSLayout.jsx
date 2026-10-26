@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { backActionFor } from "../../utils/backNavigation";
 
 export default function POSLayout() {
-  const { staffUser, logout, orders, businessType, features, isOffline, pendingSyncCount } = usePos();
+  const { staffUser, logout, orders, businessType, features, isOffline, pendingSyncCount, tenantInfo } = usePos();
   const navigate = useNavigate();
   const location = useLocation();
   const { slug } = useParams();
@@ -191,7 +191,7 @@ export default function POSLayout() {
                 <img src="/icon-192.png" alt="Kanda POS" className="md:hidden w-8 h-8 rounded-lg shrink-0" />
               )}
               <span className="hidden md:inline font-bold tracking-tight" style={{ color: "var(--pos-text)" }}>KANDA POS</span>
-              <LocationSwitcher storeName="Store" isManager={staffUser?.role === "Manager"} />
+              <LocationSwitcher storeName={tenantInfo?.name || ""} isManager={staffUser?.role === "Manager"} />
             </div>
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
               {(isOffline || pendingSyncCount > 0) && (

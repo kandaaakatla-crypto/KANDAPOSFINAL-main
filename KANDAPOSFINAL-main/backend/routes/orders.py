@@ -19,7 +19,7 @@ from models import (
     Order, OrderCreate, OrderStatusPayload, AssignDriverPayload, OrderAppendPayload, OrderPackedPayload,
     OrderCustomer, ServiceChargePayload, OrderSplit,
 )
-from tax import collects_gst, resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst, apply_taxable_discount
+from tax import collects_gst, apply_cash_round_off, resolve_effective_rate, compute_line_tax, compute_order_tax, compute_service_charge, split_cgst_sgst, apply_taxable_discount
 from . import loyalty as loyalty_mod
 from . import store_credit as credit_mod
 from . import gift_cards as gift_card_mod
@@ -226,6 +226,8 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
     # Only the non-taxable remainder (gift card / store credit) comes off the total here.
     grand_total = round(tax["items_total"] + sc + sc_tax - (discount_total - taxable_disc) + float(payload.deliveryFee or 0) + float(payload.tip or 0), 2)
 
+    grand_total, round_off = apply_cash_round_off(grand_total, payload.payment, bool(tenant_doc.get("cash_round_off")))
+
     # Validate splits if provided — must sum (±1¢) to the server-computed total.
     splits_payload = None
     if payload.splits:
@@ -249,6 +251,7 @@ async def create_order(payload: OrderCreate, user: dict = Depends(get_current_us
         "deliveryFee": payload.deliveryFee,
         "discount": payload.discount,
         "total": grand_total,
+        "roundOff": round_off,
         "subtotal": tax["subtotal"],
         "taxTotal": tax_total,
         "cgst": cgst,

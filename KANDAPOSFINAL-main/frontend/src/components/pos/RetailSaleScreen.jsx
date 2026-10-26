@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { effectiveTaxRate, computeLineTax, computeOrderTax, applyTaxableDiscount } from "../../utils/tax";
 import { findByCode, isEditableTarget } from "../../utils/barcode";
 import { orderNo } from "../../utils/orderNumber";
+import PaidDialog from "./PaidDialog";
 
 /** Retail checkout — basket + barcode/SKU lookup. No order type, no tables,
  *  no kitchen routing. Products with variants (e.g. size/colour) get a quick
@@ -22,6 +23,7 @@ export default function RetailSaleScreen() {
   const [variantItem, setVariantItem] = useState(null);
   const [discountPct, setDiscountPct] = useState(0);
   const [payOpen, setPayOpen] = useState(false);
+  const [paidInfo, setPaidInfo] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
   const barcodeRef = useRef(null);
 
@@ -161,13 +163,14 @@ export default function RetailSaleScreen() {
   const onPaid = (method, placed) => {
     setPayOpen(false);
     toast.success(`Sale ${orderNo(placed)} paid by ${method} — ₹${total.toFixed(2)}`);
+    setPaidInfo({ order: placed, method, total });
     resetAll();
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden pos-scroll pb-24 md:pb-0" data-testid="retail-sale-screen">
+    <div className="flex flex-col lg:flex-row h-full overflow-y-auto lg:overflow-hidden pos-scroll pb-24 lg:pb-0" data-testid="retail-sale-screen">
       {/* Left: barcode + categories + product grid */}
-      <div className="w-full md:flex-1 md:min-w-0 flex flex-col gap-3 p-3 overflow-visible md:overflow-y-auto pos-scroll">
+      <div className="w-full lg:flex-1 lg:min-w-0 flex flex-col gap-3 p-3 overflow-visible lg:overflow-y-auto pos-scroll">
         <form onSubmit={handleBarcodeSubmit} className="flex gap-2">
           <div className="relative flex-1">
             <ScanLine className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--pos-muted)" }} />
@@ -216,7 +219,7 @@ export default function RetailSaleScreen() {
       {/* Mobile floating "View Cart" bar */}
       {cart.length > 0 && !cartOpen && (
         <button data-testid="retail-open-cart-bar" onClick={() => setCartOpen(true)}
-          className="md:hidden fixed bottom-16 inset-x-0 z-40 h-14 flex items-center justify-between px-5 font-bold text-white"
+          className="lg:hidden fixed bottom-16 inset-x-0 z-40 h-14 flex items-center justify-between px-5 font-bold text-white"
           style={{ background: "var(--pos-accent)" }}>
           <span className="flex items-center gap-2"><ShoppingCart className="w-4 h-4" /> {cart.length} item{cart.length === 1 ? "" : "s"}</span>
           <span>₹{total.toFixed(2)} · View Basket</span>
@@ -224,14 +227,14 @@ export default function RetailSaleScreen() {
       )}
 
       {/* Basket panel */}
-      <div className={`${cartOpen ? "fixed inset-0 z-50 flex" : "hidden"} md:static md:z-auto md:flex md:w-[340px] md:shrink-0 flex-col h-full`} data-testid="retail-basket-panel">
+      <div className={`${cartOpen ? "fixed inset-0 z-50 flex" : "hidden"} lg:static lg:z-auto lg:flex lg:w-[340px] lg:shrink-0 flex-col h-full`} data-testid="retail-basket-panel">
         <div className="flex flex-col h-full w-full" style={{ background: "var(--pos-panel)", borderLeft: "1px solid var(--pos-border)" }}>
           <div className="flex items-center justify-between p-4 shrink-0" style={{ borderBottom: "1px solid var(--pos-border)" }}>
-            <button data-testid="retail-cart-close-btn" onClick={() => setCartOpen(false)} className="pos-btn -ml-2 w-11 h-11 flex items-center justify-center rounded-lg md:hidden">
+            <button data-testid="retail-cart-close-btn" onClick={() => setCartOpen(false)} className="pos-btn -ml-2 w-11 h-11 flex items-center justify-center rounded-lg lg:hidden">
               <X className="w-5 h-5" style={{ color: "var(--pos-text)" }} />
             </button>
             <div className="font-bold flex items-center gap-2" style={{ color: "var(--pos-text)" }}><ShoppingCart className="w-4 h-4" /> Basket</div>
-            <div className="w-11 md:hidden" />
+            <div className="w-11 lg:hidden" />
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto pos-scroll p-4 space-y-3">
@@ -285,6 +288,7 @@ export default function RetailSaleScreen() {
         </div>
       </div>
 
+      <PaidDialog info={paidInfo} onClose={() => setPaidInfo(null)} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName="Walk-in" onCreateOrder={onCreateOrder} onPaid={onPaid} />
 
       <Dialog open={!!variantItem} onOpenChange={(o) => !o && setVariantItem(null)}>

@@ -90,7 +90,7 @@ export default function LocationSwitcher({ storeName, isManager }) {
             {single ? "Store" : "Active location"}
           </div>
           <div className="text-sm font-bold leading-tight" style={{ color: "var(--pos-text)" }} data-testid="location-active-name">
-            {activeLoc?.name || storeName || "Store"}
+            {activeLoc?.name || storeName || " "}
           </div>
         </div>
         {!single && <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--pos-muted)" }} />}

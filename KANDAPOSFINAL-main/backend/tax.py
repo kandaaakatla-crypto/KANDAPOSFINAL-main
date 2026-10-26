@@ -16,6 +16,7 @@ GST is always split 50/50 into CGST + SGST (the standard intra-state split
 for a single-location small business); inter-state IGST isn't modelled since
 this app doesn't collect a customer's billing state.
 """
+import math
 from typing import Optional, List, Tuple, TypedDict
 
 # Standalone restaurants (non-AC, no liquor licence, not part of a >Rs.7,500
@@ -186,3 +187,12 @@ def compute_service_charge(subtotal: float, tax_total: float, pct: float) -> Tup
         return 0.0, 0.0
     charge = round(subtotal * pct / 100, 2)
     return charge, round(charge * tax_total / subtotal, 2)
+
+
+def apply_cash_round_off(total: float, payment: str, enabled: bool):
+    """(total, round_off). Only an all-cash bill is rounded, to the nearest
+    rupee (half up); card/UPI/split amounts must match the processor exactly."""
+    if not enabled or payment != "cash":
+        return total, 0.0
+    rounded = float(math.floor(total + 0.5 + 1e-9))
+    return rounded, round(rounded - total, 2)
