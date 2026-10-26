@@ -60,6 +60,17 @@ export default function DashHome() {
     } finally { setSavingFeature(null); }
   };
 
+  const toggleRounding = async (enabled) => {
+    setSavingFeature("cash_round_off");
+    try {
+      await api.patch("/tenant/cash-rounding", { enabled });
+      setTenantInfo((t) => ({ ...t, cashRoundOff: enabled }));
+      toast.success(enabled ? "Cash bills will round to the nearest rupee" : "Cash round-off turned off");
+    } catch {
+      toast.error("Could not update that setting");
+    } finally { setSavingFeature(null); }
+  };
+
   // Accounts named "Restaurant Owner" / "Store Manager" would greet as "Restaurant";
   // for those, use the whole name.
   const GENERIC_FIRST = ["restaurant", "store", "area", "demo", "owner", "manager"];
@@ -118,6 +129,15 @@ export default function DashHome() {
                   onCheckedChange={(v) => toggleFeature(key, v)} className="shrink-0" />
               </div>
             ))}
+            <div data-testid="feature-row-cash-round-off" className="flex items-center justify-between gap-3 rounded-lg p-3" style={{ background: "var(--pos-panel-2)" }}>
+              <div className="min-w-0">
+                <div className="text-sm font-medium" style={{ color: "var(--pos-text)" }}>Round cash bills</div>
+                <div className="text-[11px]" style={{ color: "var(--pos-muted)" }}>Round all-cash bills to the nearest rupee; the difference shows as "Round off" on the receipt. Card and UPI are never rounded.</div>
+              </div>
+              <Switch data-testid="feature-toggle-cash-round-off" aria-label="Round cash bills" checked={!!tenantInfo.cashRoundOff}
+                disabled={savingFeature === "cash_round_off" || !canManageSettings(user)}
+                onCheckedChange={toggleRounding} className="shrink-0" />
+            </div>
           </div>
         </div>
       )}

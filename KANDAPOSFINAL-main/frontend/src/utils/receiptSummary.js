@@ -40,6 +40,7 @@ export function summaryRows(order) {
   }
   if (order.deliveryFee) rows.push({ label: "Delivery", amount: order.deliveryFee });
   if (order.discount) rows.push({ label: "Discount", amount: -order.discount });
+  if (order.roundOff) rows.push({ label: "Round off", amount: Number(order.roundOff) });
   const total = Number(order.total || 0);
   rows.push({ label: "TOTAL", amount: total, kind: "total" });
   const refunded = Number(order.refunded_amount || 0);

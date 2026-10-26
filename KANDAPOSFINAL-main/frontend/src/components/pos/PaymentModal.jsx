@@ -17,7 +17,7 @@ import { ONLINE_CARD_ENABLED, tenderLabel } from "../../utils/tenders";
  * @param {(method:string, order:object) => void} props.onPaid
  */
 export default function PaymentModal({ open, onClose, total, customerName, onCreateOrder, onPaid }) {
-  const { waitForServerOrder } = usePos();
+  const { waitForServerOrder, tenantInfo } = usePos();
   const [method, setMethod] = useState("cash");
   const [tendered, setTendered] = useState("");
   const [cardState, setCardState] = useState("idle");
@@ -30,8 +30,11 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
   }, [open]);
 
   const tenderedNum = parseFloat(tendered) || 0;
-  const change = tenderedNum - total;
-  const quickAmounts = [Math.ceil(total), Math.ceil(total / 5) * 5, Math.ceil(total / 10) * 10, Math.ceil(total / 10) * 10 + 10].filter((v, i, a) => a.indexOf(v) === i);
+  // Stores can round an all-cash bill to the nearest rupee (half up, same rule as the server).
+  const cashTotal = tenantInfo?.cashRoundOff ? Math.floor(total + 0.5 + 1e-9) : total;
+  const cashRoundOff = +(cashTotal - total).toFixed(2);
+  const change = tenderedNum - cashTotal;
+  const quickAmounts = [Math.ceil(cashTotal), Math.ceil(cashTotal / 5) * 5, Math.ceil(cashTotal / 10) * 10, Math.ceil(cashTotal / 10) * 10 + 10].filter((v, i, a) => a.indexOf(v) === i);
 
   const splitCashNum = parseFloat(splitCash) || 0;
   const splitCardNum = parseFloat(splitCard) || 0;
@@ -239,8 +242,14 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
 
         {method === "cash" && (
           <div className="space-y-3 fade-in">
+            {cashRoundOff !== 0 && (
+              <div className="flex justify-between text-xs rounded-lg px-3 py-2" data-testid="cash-round-off" style={{ background: "var(--pos-panel-2)", color: "var(--pos-muted)" }}>
+                <span>Round-off {cashRoundOff > 0 ? "+" : "-"}₹{Math.abs(cashRoundOff).toFixed(2)}</span>
+                <span className="font-bold" style={{ color: "var(--pos-text)" }}>Cash to collect ₹{cashTotal.toFixed(2)}</span>
+              </div>
+            )}
             <div className="grid grid-cols-5 gap-2">
-              <button data-testid="tender-exact" onClick={() => setTendered(total.toFixed(2))}
+              <button data-testid="tender-exact" onClick={() => setTendered(cashTotal.toFixed(2))}
                 className="pos-btn h-11 rounded-lg font-bold text-sm"
                 style={{ background: "var(--pos-accent)", color: "#fff", border: "1px solid var(--pos-accent)" }}>
                 Exact
@@ -258,18 +267,18 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
             {tendered !== "" && tenderedNum < 0 && (
               <div className="text-xs font-semibold" role="alert" style={{ color: "#f87171" }}>Amount can&apos;t be negative.</div>
             )}
-            {tenderedNum > 0 && tenderedNum < total && (
+            {tenderedNum > 0 && tenderedNum < cashTotal && (
               <div className="text-xs font-semibold" role="alert" data-testid="tender-short" style={{ color: "#f87171" }}>
-                Short by ₹{(total - tenderedNum).toFixed(2)}
+                Short by ₹{(cashTotal - tenderedNum).toFixed(2)}
               </div>
             )}
-            {tenderedNum >= total && (
+            {tenderedNum >= cashTotal && (
               <div className="flex justify-between items-center rounded-lg px-4 py-3" style={{ background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.4)" }} data-testid="change-due">
                 <span className="text-sm font-semibold" style={{ color: "#16a34a" }}>Change due</span>
                 <span className="text-xl font-bold tabular-nums" style={{ color: "#16a34a" }}>₹{change.toFixed(2)}</span>
               </div>
             )}
-            <button data-testid="confirm-cash-btn" onClick={confirmCash} disabled={tenderedNum < total || busy}
+            <button data-testid="confirm-cash-btn" onClick={confirmCash} disabled={tenderedNum < cashTotal || busy}
               className="pos-btn w-full h-14 rounded-xl font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "var(--pos-accent)" }}>
               {cardState === "creating" ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving order...</> : "Confirm Cash Payment"}
             </button>

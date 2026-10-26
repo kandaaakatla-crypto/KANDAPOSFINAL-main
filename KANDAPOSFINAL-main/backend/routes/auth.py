@@ -116,7 +116,7 @@ async def tenant_info(user: dict = Depends(get_current_user)):
     features = {**default_features(business_type), **(tenant.get("features") or {})}
     return TenantInfo(id=tenant["id"], slug=tenant.get("slug", tenant["id"]), name=tenant.get("name", ""),
                        businessType=business_type, features=features, brandId=tenant.get("brand_id"),
-                       store=tenant.get("store"))
+                       store=tenant.get("store"), cashRoundOff=bool(tenant.get("cash_round_off")))
 
 
 @router.patch("/tenant/features", response_model=TenantInfo)
@@ -135,6 +135,20 @@ async def update_tenant_features(payload: TenantFeaturesUpdate, user: dict = Dep
     await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"features": merged}})
     return TenantInfo(id=tenant["id"], slug=tenant.get("slug", tenant["id"]), name=tenant.get("name", ""),
                        businessType=business_type, features=merged)
+
+
+class CashRoundingUpdate(BaseModel):
+    enabled: bool
+
+
+@router.patch("/tenant/cash-rounding")
+async def set_cash_rounding(payload: CashRoundingUpdate, user: dict = Depends(require_role("Manager"))):
+    """Turn rounding of all-cash bills to the nearest rupee on or off."""
+    db = get_db()
+    res = await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"cash_round_off": payload.enabled}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return {"cashRoundOff": payload.enabled}
 
 
 class StoreDetailsUpdate(BaseModel):
