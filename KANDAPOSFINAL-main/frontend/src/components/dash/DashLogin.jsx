@@ -4,6 +4,7 @@ import { useDash } from "../../store/DashContext";
 import { LogIn, Eye, EyeOff } from "lucide-react";
 import { Input } from "../ui/input";
 import { toast } from "sonner";
+import { dashAuthApi } from "../../api/client";
 
 export default function DashLogin() {
   const { user, login } = useDash();
@@ -12,6 +13,20 @@ export default function DashLogin() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotBusy, setForgotBusy] = useState(false);
+
+  const sendReset = async () => {
+    setForgotBusy(true);
+    try {
+      await dashAuthApi.forgot(forgotEmail.trim());
+      toast.success("If that is an owner account, a reset link is on its way. It expires in 30 minutes.");
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Could not send the link");
+    } finally {
+      setForgotBusy(false);
+    }
+  };
 
   useEffect(() => { if (user) navigate("/dashboard", { replace: true }); }, [user, navigate]);
 
@@ -77,6 +92,24 @@ export default function DashLogin() {
               </button>
             </div>
           </div>
+          <details className="text-xs" data-testid="dash-forgot">
+            <summary className="cursor-pointer" style={{ color: "var(--pos-muted)" }}>Forgot password?</summary>
+            <div className="mt-2 space-y-2" style={{ color: "var(--pos-muted)" }}>
+              <p className="leading-relaxed">
+                Owners: enter your email and we will send you a link to choose a new password.
+                Store and area managers: ask your owner to use <b>Reset password</b> on the Team screen.
+              </p>
+              <div className="flex gap-2">
+                <Input aria-label="Owner email for password reset" data-testid="forgot-email" type="email" value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)} placeholder="Owner email" className="h-9 text-xs"
+                  style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
+                <button type="button" data-testid="forgot-send" onClick={sendReset} disabled={!forgotEmail.trim() || forgotBusy}
+                  className="pos-btn h-9 px-3 rounded-md text-xs font-bold text-white shrink-0 disabled:opacity-50" style={{ background: "var(--pos-accent)" }}>
+                  {forgotBusy ? "Sending…" : "Send link"}
+                </button>
+              </div>
+            </div>
+          </details>
           <button data-testid="dash-submit-btn" type="submit" disabled={busy || !email || !password}
             className="pos-btn w-full h-12 rounded-lg font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50"
             style={{ background: "var(--pos-accent)" }}>
