@@ -7,6 +7,7 @@
 // reprint/audit, not as the primary print path anymore.
 
 import { billToLines, summaryRows, signedMoney, gstinLine } from "./receiptSummary";
+import { resolvePrinter, canSendTo, sendBytes } from "./hardware";
 
 const ESC = 0x1b;
 const GS = 0x1d;
@@ -140,10 +141,10 @@ export function downloadEscposReceipt(order, store, kind, filenameOrderId) {
 // downloading a file. Everywhere else — web, Android, or Electron with no
 // printer configured yet — falls back to the existing file download.
 export async function sendEscposReceipt(order, store, kind, filenameOrderId) {
-  const bridge = typeof window !== "undefined" ? window.kandaDesktop : null;
-  if (bridge?.isElectron && bridge.printEscpos && store?.printer_host) {
+  const printer = resolvePrinter(store);
+  if (canSendTo(printer)) {
     const bytes = buildEscposReceipt(order, store, kind);
-    await bridge.printEscpos(store.printer_host, store.printer_port || 9100, bytes);
+    await sendBytes(printer, bytes);
     return "printed";
   }
   downloadEscposReceipt(order, store, kind, filenameOrderId);

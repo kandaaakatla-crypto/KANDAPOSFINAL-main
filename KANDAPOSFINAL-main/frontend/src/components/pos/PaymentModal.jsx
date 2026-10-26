@@ -6,6 +6,7 @@ import { paymentsApi } from "../../api/client";
 import { usePos } from "../../store/PosContext";
 import { toast } from "sonner";
 import { ONLINE_CARD_ENABLED, tenderLabel } from "../../utils/tenders";
+import { kickDrawerForCash } from "../../utils/hardware";
 
 /**
  * @param {object} props
@@ -46,6 +47,7 @@ export default function PaymentModal({ open, onClose, total, customerName, onCre
     setCardState("creating");
     const placed = await onCreateOrder("cash");
     if (!placed) { setCardState("idle"); return; }
+    kickDrawerForCash(tenantInfo?.store); // fire and forget: never blocks the sale
     onPaid("cash", placed);
   };
 

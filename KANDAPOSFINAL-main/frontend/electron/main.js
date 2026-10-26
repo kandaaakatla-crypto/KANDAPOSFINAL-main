@@ -2,6 +2,17 @@ const { app, BrowserWindow, ipcMain, Menu } = require("electron");
 const path = require("path");
 const { autoUpdater } = require("electron-updater");
 const { printEscposOverNetwork } = require("./printer");
+const { discoverPrinters } = require("./discovery");
+const { listSystemDevices, printRaw } = require("./devices");
+
+// Scans this machine's own private subnets for raw-print (port 9100) devices.
+ipcMain.handle("kanda:discover-printers", async () => discoverPrinters());
+
+// Everything plugged in or paired (printers, COM/Bluetooth ports, scanners, USB devices).
+ipcMain.handle("kanda:list-devices", async () => listSystemDevices());
+
+// Raw bytes to a network, USB/Bluetooth (Windows queue) or serial printer.
+ipcMain.handle("kanda:print-raw", async (_evt, args) => printRaw(args));
 
 ipcMain.handle("kanda:print-escpos", async (_evt, { host, port, bytes }) => {
   await printEscposOverNetwork({ host, port, bytes });

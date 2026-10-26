@@ -53,6 +53,7 @@ beforeAll(() => { global.IS_REACT_ACT_ENVIRONMENT = true; });
 
 beforeEach(() => {
   mockPath = "/dashboard";
+  window.innerWidth = 1440; // desktop: narrower windows start with the sidebar collapsed
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);

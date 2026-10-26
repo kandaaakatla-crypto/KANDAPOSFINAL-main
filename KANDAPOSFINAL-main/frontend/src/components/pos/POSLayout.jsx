@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation, useParams } from "react-router-dom";
 import { usePos } from "../../store/PosContext";
-import { ArrowLeft, Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon, Lock } from "lucide-react";
+import { ArrowLeft, Store, ShoppingCart, ClipboardList, LayoutGrid, BookOpen, Bike, LogOut, LifeBuoy, CalendarDays, MoreHorizontal, X, WifiOff, RefreshCw, Sun, Moon, Lock, Cable } from "lucide-react";
 import ImpersonationBanner from "../owner/ImpersonationBanner";
 import BillingBanner from "./BillingBanner";
 import ContactSupportModal from "./ContactSupportModal";
+import DevicesPanel from "./DevicesPanel";
+import useScannerWatch from "../../hooks/useScannerWatch";
 import OnboardingBanner from "./OnboardingBanner";
 import LocationSwitcher from "./LocationSwitcher";
 import { Sheet, SheetContent } from "../ui/sheet";
@@ -26,6 +28,14 @@ export default function POSLayout() {
   useSeo({ title: "Point of sale", noindex: true });
   const [time, setTime] = useState(new Date());
   const [supportOpen, setSupportOpen] = useState(false);
+  const [devicesOpen, setDevicesOpen] = useState(false);
+  // First time a scanner is used this session, say so: that is the whole "detection".
+  const scannerSeen = React.useRef(false);
+  useScannerWatch(() => {
+    if (scannerSeen.current) return;
+    scannerSeen.current = true;
+    toast.success("Barcode scanner detected");
+  });
   const [moreOpen, setMoreOpen] = useState(false);
   const [theme, setTheme] = useState(getTheme);
 
@@ -104,6 +114,7 @@ export default function POSLayout() {
       <ImpersonationBanner />
       <BillingBanner />
       <ContactSupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
+      <DevicesPanel open={devicesOpen} onClose={() => setDevicesOpen(false)} />
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Desktop sidebar — hidden on mobile in favour of the bottom nav. */}
@@ -127,6 +138,13 @@ export default function POSLayout() {
               </>
             )}
           </nav>
+          {staffUser?.role === "Manager" && (
+            <button data-testid="devices-btn" onClick={() => setDevicesOpen(true)}
+              className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2 mb-1" style={{ color: "var(--pos-muted)" }}>
+              <Cable className="w-5 h-5" />
+              Devices
+            </button>
+          )}
           <button data-testid="help-btn" onClick={() => setSupportOpen(true)}
             className="pos-btn flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] w-full mx-2 mb-1" style={{ color: "var(--pos-muted)" }}>
             <LifeBuoy className="w-5 h-5" />
