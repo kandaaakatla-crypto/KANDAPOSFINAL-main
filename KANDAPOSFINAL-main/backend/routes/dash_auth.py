@@ -7,6 +7,7 @@ POS endpoints (which all gate on `require_role("Manager")`) accept dashboard
 tokens transparently — no widespread route changes needed.
 """
 import os
+import hashlib
 import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -19,6 +20,8 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, ConfigDict
 
 from models import BrandInvite
+from email_service import send_email
+from ratelimit import peek as rate_peek, hit as rate_hit, client_ip
 from routes._shared import clean
 from dash_access import (
     OWNER, AREA_MANAGER, MANAGER, PERMISSIONS,
@@ -269,6 +272,81 @@ async def decline_brand_invite(invite_id: str, u: dict = Depends(get_dash_user))
         return_document=True,
     )
     return clean(res) if res else invite
+
+
+# ---------- Self-service password reset (owners) ----------
+RESET_TOKEN_MINUTES = 30
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+@router.post("/dash/auth/forgot")
+async def dash_forgot_password(payload: ForgotPasswordRequest, request: Request):
+    """Emails a single-use reset link to a restaurant OWNER. Always answers
+    the same way so it can't be used to discover which emails have accounts.
+    Store / area managers are reset by their owner on the Team screen, so they
+    never get an email here."""
+    email = (payload.email or "").strip().lower()
+    key = f"dashforgot:{client_ip(request)}"
+    if await rate_peek(key) >= 5:
+        raise HTTPException(status_code=429, detail="Too many requests. Please wait a while and try again.")
+    await rate_hit(key, 3600)
+    db = get_db()
+    du = await db.dashboard_users.find_one({"email": email}, {"_id": 0, "id": 1, "dash_role": 1, "active": 1, "name": 1})
+    if du and du.get("dash_role") == OWNER and du.get("active") is not False:
+        token = secrets.token_urlsafe(32)
+        await db.password_resets.delete_many({"user_id": du["id"]})
+        await db.password_resets.insert_one({
+            "token_hash": _hash_token(token),
+            "user_id": du["id"],
+            "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_MINUTES)).isoformat(),
+        })
+        base = os.environ.get("APP_BASE_URL", "https://kandapos.com").rstrip("/")
+        link = f"{base}/dashboard/reset-password?token={token}"
+        await send_email(
+            email, "Reset your Kanda POS password",
+            f'<div style="font-family:sans-serif"><p>Hi {du.get("name") or "there"},</p>'
+            f"<p>Use this link to choose a new password. It works once and expires in {RESET_TOKEN_MINUTES} minutes.</p>"
+            f'<p><a href="{link}">Reset password</a></p>'
+            "<p>If you did not ask for this, ignore this email; your password has not changed.</p></div>",
+        )
+    return {"ok": True}
+
+
+@router.post("/dash/auth/reset")
+async def dash_reset_password(payload: ResetPasswordRequest, request: Request):
+    if len(payload.new_password or "") < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    key = f"dashreset:{client_ip(request)}"
+    if await rate_peek(key) >= 10:
+        raise HTTPException(status_code=429, detail="Too many attempts. Please wait a while and try again.")
+    await rate_hit(key, 3600)
+    db = get_db()
+    row = await db.password_resets.find_one({"token_hash": _hash_token(payload.token or "")}, {"_id": 0})
+    bad = HTTPException(status_code=400, detail="This reset link is invalid or has expired. Ask for a new one.")
+    if not row:
+        raise bad
+    if datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
+        await db.password_resets.delete_many({"user_id": row["user_id"]})
+        raise bad
+    await db.dashboard_users.update_one(
+        {"id": row["user_id"]},
+        {"$set": {"password_hash": _hash_pw(payload.new_password), "must_change_password": False,
+                  "password_changed_at": now_ist().isoformat()}},
+    )
+    await db.password_resets.delete_many({"user_id": row["user_id"]})
+    return {"ok": True}
 
 
 @router.post("/dash/auth/change-password")

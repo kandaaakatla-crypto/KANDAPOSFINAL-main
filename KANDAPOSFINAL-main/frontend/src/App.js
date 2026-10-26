@@ -57,6 +57,7 @@ const LeadsInbox = lazy(() => import("./components/owner/LeadsInbox"));
 const KDSBoard = lazy(() => import("./components/kds/KDSBoard"));
 
 const DashLogin = lazy(() => import("./components/dash/DashLogin"));
+const DashResetPassword = lazy(() => import("./components/dash/DashResetPassword"));
 const DashLayout = lazy(() => import("./components/dash/DashLayout"));
 const DashTabGroup = lazy(() => import("./components/dash/DashTabGroup"));
 const DashHome = lazy(() => import("./components/dash/DashHome"));
@@ -175,6 +176,7 @@ function App() {
 
                   {/* Restaurant Owner / Area Manager / Store Manager dashboard */}
                   <Route path="/dashboard/login" element={<DashLogin />} />
+                  <Route path="/dashboard/reset-password" element={<DashResetPassword />} />
                   <Route path="/dashboard/account/password" element={<DashChangePassword />} />
                   <Route path="/dashboard" element={<DashLayout />}>
                     {/* Sidebar sections (see dash/dashNav.js). Each tab keeps

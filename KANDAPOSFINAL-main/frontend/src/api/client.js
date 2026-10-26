@@ -205,6 +205,11 @@ dashApi.interceptors.response.use(
 // every /brand/* route requires the strict dash JWT (get_dash_user).
 // Owner-only: who has a dashboard login, which stores and sections each
 // manager / area manager can use. Enforced by the API (backend/dash_access.py).
+export const dashAuthApi = {
+  forgot: (email) => dashApi.post("/dash/auth/forgot", { email }).then((r) => r.data),
+  reset: (token, new_password) => dashApi.post("/dash/auth/reset", { token, new_password }).then((r) => r.data),
+};
+
 export const teamApi = {
   list: () => dashApi.get("/dash/team").then((r) => r.data),
   create: (payload) => dashApi.post("/dash/team", payload).then((r) => r.data),
