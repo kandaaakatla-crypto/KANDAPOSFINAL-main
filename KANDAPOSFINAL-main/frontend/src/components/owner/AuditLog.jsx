@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ownerData } from "../../api/ownerClient";
 import { ClipboardCheck, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
+import { fmtDateTime } from "../../utils/formatDate";
 
 const ACTOR_COLOR = { staff: "#22c55e", owner: "#3b82f6", impersonator: "#f59e0b", anon: "#a3a3a3" };
 const METHOD_COLOR = { POST: "#22c55e", PUT: "#3b82f6", PATCH: "#a855f7", DELETE: "#ef4444" };
@@ -58,7 +59,7 @@ export default function AuditLog() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} data-testid={`audit-row-${r.id}`} style={{ borderTop: "1px solid var(--pos-border)" }}>
-                  <td className="px-3 py-2 text-[11px] tabular-nums" style={{ color: "var(--pos-muted)" }}>{new Date(r.at).toLocaleString()}</td>
+                  <td className="px-3 py-2 text-[11px] tabular-nums" style={{ color: "var(--pos-muted)" }}>{fmtDateTime(r.at)}</td>
                   <td className="px-3 py-2" style={{ color: "var(--pos-text)" }}>{r.tenant_id || "—"}</td>
                   <td className="px-3 py-2 text-[11px]" style={{ color: "var(--pos-text)" }}>
                     <span className="font-mono">{r.actor_id}</span>

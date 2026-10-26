@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ownerData } from "../../api/ownerClient";
 import { Inbox, Loader2, Mail, MapPin, Phone, RefreshCw, Store } from "lucide-react";
+import { fmtDateTime } from "../../utils/formatDate";
 
 const TYPE_LABEL = {
   demo: { label: "Demo request", color: "#f97316" },
@@ -61,7 +62,7 @@ export default function LeadsInbox() {
                 <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>{l.name || l.email}</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.05)", color: TYPE_LABEL[l.type]?.color }}>{TYPE_LABEL[l.type]?.label || l.type}</span>
               </div>
-              <span className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{new Date(l.at).toLocaleString()}</span>
+              <span className="text-[11px]" style={{ color: "var(--pos-muted)" }}>{fmtDateTime(l.at)}</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs" style={{ color: "var(--pos-muted)" }}>
               <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {l.email}</span>
