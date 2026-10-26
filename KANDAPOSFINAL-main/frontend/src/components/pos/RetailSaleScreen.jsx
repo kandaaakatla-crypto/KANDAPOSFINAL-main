@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { effectiveTaxRate, computeLineTax, computeOrderTax, applyTaxableDiscount } from "../../utils/tax";
 import { findByCode, isEditableTarget } from "../../utils/barcode";
 import { orderNo } from "../../utils/orderNumber";
+import PaidDialog from "./PaidDialog";
 
 /** Retail checkout — basket + barcode/SKU lookup. No order type, no tables,
  *  no kitchen routing. Products with variants (e.g. size/colour) get a quick
@@ -22,6 +23,7 @@ export default function RetailSaleScreen() {
   const [variantItem, setVariantItem] = useState(null);
   const [discountPct, setDiscountPct] = useState(0);
   const [payOpen, setPayOpen] = useState(false);
+  const [paidInfo, setPaidInfo] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
   const barcodeRef = useRef(null);
 
@@ -161,6 +163,7 @@ export default function RetailSaleScreen() {
   const onPaid = (method, placed) => {
     setPayOpen(false);
     toast.success(`Sale ${orderNo(placed)} paid by ${method} — ₹${total.toFixed(2)}`);
+    setPaidInfo({ order: placed, method, total });
     resetAll();
   };
 
@@ -285,6 +288,7 @@ export default function RetailSaleScreen() {
         </div>
       </div>
 
+      <PaidDialog info={paidInfo} onClose={() => setPaidInfo(null)} />
       <PaymentModal open={payOpen} onClose={() => setPayOpen(false)} total={total} customerName="Walk-in" onCreateOrder={onCreateOrder} onPaid={onPaid} />
 
       <Dialog open={!!variantItem} onOpenChange={(o) => !o && setVariantItem(null)}>
