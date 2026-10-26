@@ -47,6 +47,10 @@ export default function CartPanel({
   const total = +(newRoundTotal + (runningBill?.total || 0)).toFixed(2);
 
   // Controlled so an invalid code can be wiped and an Apply button can read it.
+  // Tip, coupon, loyalty, credit, gift card and email live behind one fold-out so
+  // the line items keep the space on a short screen.
+  const [extrasOpen, setExtrasOpen] = useState(false);
+  const extrasActive = [tipPct > 0, !!coupon, redeemPoints > 0, redeemCredit > 0, redeemGiftCard > 0, !!customerEmail].filter(Boolean).length;
   const [couponText, setCouponText] = useState(coupon?.code || "");
   useEffect(() => { setCouponText(coupon?.code || ""); }, [coupon]);
 
@@ -66,14 +70,14 @@ export default function CartPanel({
 
   return (
     <div
-      className={`${open ? "fixed inset-0 z-50 flex" : "hidden"} md:static md:z-auto md:flex md:w-[340px] md:shrink-0 flex-col h-full`}
+      className={`${open ? "fixed inset-0 z-50 flex" : "hidden"} lg:static lg:z-auto lg:flex lg:w-[340px] lg:shrink-0 flex-col h-full`}
       style={{ background: "var(--pos-panel)", borderLeft: "1px solid var(--pos-border)" }}
       data-testid="cart-panel"
     >
       {/* Header */}
       <div className="px-4 py-3 flex items-center justify-between shrink-0" style={{ borderBottom: "1px solid var(--pos-border)" }}>
         <div className="flex items-center gap-2">
-          <button data-testid="cart-close-btn" onClick={onClose} className="pos-btn -ml-2 w-11 h-11 flex items-center justify-center rounded-lg md:hidden">
+          <button data-testid="cart-close-btn" onClick={onClose} className="pos-btn -ml-2 w-11 h-11 flex items-center justify-center rounded-lg lg:hidden">
             <X className="w-5 h-5" style={{ color: "var(--pos-text)" }} />
           </button>
           <TypeIcon className="w-4 h-4" style={{ color: "var(--pos-accent)" }} />
@@ -169,6 +173,12 @@ export default function CartPanel({
       {/* Tip + coupon + email + loyalty */}
       {cart.length > 0 && (
         <div className="px-3 py-1.5 space-y-1" style={{ borderTop: "1px solid var(--pos-border)" }}>
+          <button type="button" data-testid="cart-more-options" aria-expanded={extrasOpen} onClick={() => setExtrasOpen((v) => !v)}
+            className="pos-btn w-full flex items-center justify-between text-[11px] font-semibold py-1" style={{ color: "var(--pos-muted)" }}>
+            <span>More options{extrasActive > 0 ? ` · ${extrasActive} applied` : ""}</span>
+            <span aria-hidden="true">{extrasOpen ? "▲" : "▼"}</span>
+          </button>
+          {extrasOpen && (<>
           {/* Tip */}
           <div className="flex items-center gap-2 text-[11px]">
             <span className="flex items-center gap-1" style={{ color: "var(--pos-muted)" }}><Gift className="w-3 h-3" /> Tip</span>
@@ -270,6 +280,7 @@ export default function CartPanel({
               className="h-7 text-xs" style={{ background: "var(--pos-panel-2)", borderColor: "var(--pos-border)", color: "var(--pos-text)" }} />
             <Switch data-testid="send-receipt-toggle" checked={!!sendReceipt} onCheckedChange={onSendReceiptToggle} />
           </div>
+          </>)}
         </div>
       )}
 
