@@ -82,7 +82,7 @@ jobs:
             --concurrency 40 \
             --allow-unauthenticated \
             --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-api,QR_OTP_REQUIRED=${{ vars.QR_OTP_REQUIRED || '0' }},WA_OTP_CONTENT_SID=${{ vars.WA_OTP_CONTENT_SID }},SMS_OTP_ENABLED=${{ vars.SMS_OTP_ENABLED }},SUPPORT_FROM_EMAIL=${{ vars.SUPPORT_FROM_EMAIL }},SUPPORT_TO_EMAIL=${{ vars.SUPPORT_TO_EMAIL }},APP_BASE_URL=${{ vars.PUBLIC_BASE_URL }}" \
-            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest,RESEND_API_KEY=kanda-resend-key:latest"
 
       # us-central1 (WebSocket): concurrency raised well above the default —
       # an open WebSocket holds a concurrency slot for its entire connected
@@ -105,4 +105,4 @@ jobs:
             --timeout 3600 \
             --allow-unauthenticated \
             --set-env-vars "DB_NAME=kanda_pos,CORS_ORIGINS=${{ vars.CORS_ORIGINS }},PUBLIC_BASE_URL=${{ vars.PUBLIC_BASE_URL }},SENTRY_DSN=${{ vars.SENTRY_DSN_BACKEND }},SENTRY_ENVIRONMENT=production-ws,QR_OTP_REQUIRED=${{ vars.QR_OTP_REQUIRED || '0' }},WA_OTP_CONTENT_SID=${{ vars.WA_OTP_CONTENT_SID }},SMS_OTP_ENABLED=${{ vars.SMS_OTP_ENABLED }},SUPPORT_FROM_EMAIL=${{ vars.SUPPORT_FROM_EMAIL }},SUPPORT_TO_EMAIL=${{ vars.SUPPORT_TO_EMAIL }},APP_BASE_URL=${{ vars.PUBLIC_BASE_URL }}" \
-            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest"
+            --set-secrets "MONGO_URL=kanda-mongo-url:latest,JWT_SECRET=kanda-jwt-secret:latest,REDIS_URL=kanda-redis-url:latest,ANTHROPIC_API_KEY=kanda-anthropic-key:latest,OPENAI_API_KEY=kanda-openai-key:latest,RESEND_API_KEY=kanda-resend-key:latest"
