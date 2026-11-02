@@ -1,85 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { m, AnimatePresence, MotionConfig, LazyMotion, domAnimation } from "framer-motion";
 import { toast } from "sonner";
-import {
-  ShoppingCart, LayoutGrid, ChefHat, Truck, Boxes, Users, BarChart3,
-  MessageCircle, Mic, MapPin, Mail, Menu, X, Plus,
-  ShoppingBag, CheckCircle2, Instagram, ArrowUpRight, Coffee, Sun, Moon, Bike,
-} from "lucide-react";
+import "@fontsource/outfit/900.css";
 import useSeo, { useStructuredData } from "../hooks/useSeo";
-import { WordReveal, Rise, ScrollWords, Marquee, HoverList, ServiceRows, ScaleCta } from "./landing/motion";
-import { useSmoothScroll, CursorFollower, Magnetic, CountUp, StackCards, HorizontalScroll } from "./landing/immersive";
-import HeroOrderPanel from "./landing/HeroOrderPanel";
-import { OrderScreenMock, KdsMock, DispatchMock, ReportsMock, PulseRings } from "./landing/visuals";
-
-
-const FEATURES = [
-  { icon: ShoppingCart, title: "Order Management", tag: "All", desc: "Delivery, collection and dine in orders on one fast screen, built for busy shifts.", big: true, from: "#EA580C", to: "#2A0D02", note: "Order #142 ready for table 4", noteColor: "#F97316" },
-  { icon: ShoppingBag, title: "Retail Checkout", tag: "Retail", desc: "Barcode scanning, product variants and quick checkout for shops.", from: "#7C3AED", to: "#0B0620" },
-  { icon: ChefHat, title: "Kitchen Display", tag: "Restaurants", desc: "Tickets routed to the right station in real time, with prep timers.", from: "#1D4ED8", to: "#050A1F", note: "Synced to KDS · Grill", noteColor: "#1D4ED8" },
-  { icon: LayoutGrid, title: "Tables & Floor Plan", tag: "Restaurants", desc: "Move tables into your own layout, with live status and reservations.", from: "#0891B2", to: "#03181D" },
-  { icon: Truck, title: "Dispatch & Delivery", tag: "Restaurants", desc: "Driver assignment and live order tracking.", from: "#B91C1C", to: "#170403" },
-  { icon: Boxes, title: "Inventory & Waste", tag: "All", desc: "Stock levels, low stock alerts and reorder points.", big: true, from: "#B45309", to: "#1C0D02", note: "3 items below reorder point", noteColor: "#F59E0B" },
-  { icon: Users, title: "Staff & Workforce", tag: "All", desc: "PIN login, time clock, shift scheduling and tips.", from: "#166534", to: "#03140A", note: "Shift clocked in — Aarav Reddy", noteColor: "#22C55E" },
-  { icon: BarChart3, title: "Reports & Analytics", tag: "All", desc: "Daily rollups and heatmaps for your peak hours.", from: "#0E7490", to: "#031015" },
-  { icon: MessageCircle, title: "SMS & WhatsApp", tag: "All", desc: "Order updates and broadcast messaging.", from: "#4D7C0F", to: "#0B1503" },
-  { icon: Mic, title: "Voice & AI Assistant", tag: "All", desc: "Phone orders and AI help, answered automatically.", from: "#4338CA", to: "#080720" },
-];
-
-const LIVE_CHANNELS = [
-  { icon: LayoutGrid, title: "Dine in", points: ["Floor plan", "Reservations", "Kitchen tickets"], note: "Tables update live as guests are seated", from: "#EA580C", to: "#3B1206" },
-  { icon: Truck, title: "Delivery", points: ["Driver assignment", "Live tracking", "Dispatch board"], note: "Drivers tracked from dispatch to the door", from: "#1D4ED8", to: "#0B1230" },
-  { icon: ShoppingBag, title: "Collection", points: ["Pickup queue", "Ready alerts", "SMS updates"], note: "Pickup orders marked ready in real time", from: "#166534", to: "#06210F" },
-  { icon: ShoppingCart, title: "Retail", points: ["Barcode scanning", "Variants", "Quick checkout"], note: "Barcode checkout at the counter", from: "#7C2D12", to: "#1E0A03" },
-];
-
-const STACK = [
-  { title: "Ring it up", body: "Big, fast tiles built for a packed counter. Dine in, takeaway and delivery from one screen, with GST worked out as you tap.", from: "#EA580C", to: "#431407", visual: <OrderScreenMock /> },
-  { title: "Fire to the kitchen", body: "Tickets land on the right station the moment you send them, with timers that turn red before a guest has to ask.", from: "#1D4ED8", to: "#0B1230", visual: <KdsMock /> },
-  { title: "Out the door", body: "Assign a rider, watch them on the map, and let the customer track it too. Pickup orders flag themselves ready.", from: "#B91C1C", to: "#2A0606", visual: <DispatchMock /> },
-  { title: "Close the day", body: "Sales, peak hours and best sellers roll up by themselves. You see tonight's numbers before you lock the shutter.", from: "#0E7490", to: "#03161C", visual: <ReportsMock /> },
-];
-
-const DAY = [
-  { time: "07:00", icon: Coffee, title: "Chai rush", body: "Fifty Irani chais before nine. Quick keys and saved favourites keep the queue moving.", from: "#B45309", to: "#2A1503" },
-  { time: "13:30", icon: Sun, title: "Lunch, every table", body: "The floor plan fills up live. Orders split by station, bills split by guest.", from: "#EA580C", to: "#431407" },
-  { time: "17:00", icon: ShoppingBag, title: "Retail restock", body: "Low stock alerts and reorder points tell you what to buy before you run out.", from: "#7C3AED", to: "#1E0B3A" },
-  { time: "20:45", icon: Bike, title: "Delivery peak", body: "Online orders, riders and pickup all on one board, so nothing gets lost in the rush.", from: "#B91C1C", to: "#2A0606" },
-  { time: "23:30", icon: Moon, title: "Lights out", body: "Cash drawer closed, GST report ready, tomorrow's prep list waiting.", from: "#1D4ED8", to: "#0B1230" },
-];
-
-const NAV_LINKS = [
-  { href: "#live", label: "Live view" },
-  { href: "#features", label: "Features" },
-  { href: "#contact", label: "Contact" },
-];
-
-// Thin rule + uppercase label — echoes the logo's own ledger-line mark.
-function Kicker({ children }) {
-  return (
-    <div className="flex items-center gap-2.5 mb-3.5">
-      <span className="block w-5 h-[2px] shrink-0" style={{ background: "var(--pos-accent)" }} />
-      <span className="text-xs font-bold tracking-[0.16em] uppercase" style={{ color: "var(--pos-muted)" }}>{children}</span>
-    </div>
-  );
-}
-
-// Reveals children once, on scroll-in — used only for the GST receipt's
-// line items (the page's one deliberate scroll moment).
-function RevealRows({ children }) {
-  return (
-    <m.div
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-60px" }}
-      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.09 } } }}
-    >
-      {children}
-    </m.div>
-  );
-}
-const rowVariant = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } } };
+import initShop from "./landing/shopBehaviour";
+import "./landing/landing-shop.css";
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
@@ -112,13 +37,14 @@ export default function LandingPage() {
     path: "/",
   });
   useStructuredData("ld-landing", STRUCTURED_DATA);
-  useSmoothScroll();
+
+  const rootRef = useRef(null);
+  useEffect(() => initShop(rootRef.current), []);
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", business: "", city: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
-  const [demoBusy, setDemoBusy] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [fabOpen, setFabOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const update = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -143,431 +69,243 @@ export default function LandingPage() {
 
   const submitDemo = async (e) => {
     e.preventDefault();
-    if (demoBusy) return;
+    if (busy) return;
+    setError("");
     if (!form.name.trim() || !form.email.trim()) {
-      toast.error("Please fill in your name and email.");
+      setError("Please fill in your name and email.");
       return;
     }
-    setDemoBusy(true);
+    setBusy(true);
     try {
       await submitLead({ type: "demo", ...form });
       setSubmitted(true);
       toast.success("Thanks! Our team will reach out to schedule your demo.");
     } catch (err) {
-      toast.error(err.message);
+      setError(err.message);
     } finally {
-      setDemoBusy(false);
+      setBusy(false);
     }
   };
 
   return (
-    // LazyMotion + `m` components load only the animation features this page
-    // uses, keeping most of framer-motion out of the homepage bundle.
-    <LazyMotion features={domAnimation}>
-    <MotionConfig reducedMotion="user">
-    <div style={{ background: "var(--pos-bg)", color: "var(--pos-text)", overflowX: "clip" }} className="land-page" data-testid="landing-page">
-      <CursorFollower />
-
-      {/* Nav */}
-      <header className="sticky top-0 z-20" style={{ background: "rgba(253,250,244,0.85)", backdropFilter: "blur(10px)", borderBottom: "1px solid var(--pos-border)" }}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-3.5">
-          <img src="/kanda-logo.png" alt="Kanda POS" width={127} height={36} className="h-9 w-auto" />
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium" style={{ color: "var(--pos-muted)" }}>
-            {NAV_LINKS.map((l) => (
-              <a key={l.href} href={l.href} className="hover:opacity-70 transition-opacity" style={{ color: "var(--pos-text)" }}>{l.label}</a>
-            ))}
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link to="/dashboard/login" className="hidden sm:inline-block rounded-full px-4 py-2.5 text-sm font-bold hover:opacity-70 transition-opacity" style={{ color: "var(--pos-text)" }} data-testid="landing-sign-in">
-              Sign in
-            </Link>
-            <a href="#contact" className="pos-btn land-pos-btn rounded-full px-5 py-2.5 text-sm font-bold text-white" style={{ background: "var(--pos-accent)" }}>
-              Book a demo
-            </a>
-            <button
-              type="button"
-              className="md:hidden rounded-full p-2"
-              style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }}
-              onClick={() => setMobileNavOpen((v) => !v)}
-              aria-label="Toggle navigation menu"
-              aria-expanded={mobileNavOpen}
-            >
-              {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+    <div className="kshop" ref={rootRef} data-testid="landing-page">
+      <div className="shutter" id="shutter" role="button" tabIndex="0" aria-label="Roll up the shutter and open the shop">
+        <div className="board" aria-label="Kanda, point of sale">
+          <img className="bm" src="/kanda-mark.png" alt="" aria-hidden="true" />
+          <div><div className="t">KANDA<span>.</span></div><div className="s">POINT OF SALE</div></div>
         </div>
-        <AnimatePresence>
-          {mobileNavOpen && (
-            <m.nav
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden overflow-hidden"
-              style={{ borderTop: "1px solid var(--pos-border)" }}
-            >
-              <div className="flex flex-col px-6 py-2">
-                {NAV_LINKS.map((l) => (
-                  <a
-                    key={l.href}
-                    href={l.href}
-                    onClick={() => setMobileNavOpen(false)}
-                    className="py-3 text-sm font-medium"
-                    style={{ color: "var(--pos-text)", borderBottom: "1px solid var(--pos-border)" }}
-                  >
-                    {l.label}
-                  </a>
-                ))}
-                <Link
-                  to="/dashboard/login"
-                  onClick={() => setMobileNavOpen(false)}
-                  className="py-3 text-sm font-bold"
-                  style={{ color: "var(--pos-text)" }}
-                >
-                  Sign in
-                </Link>
-              </div>
-            </m.nav>
-          )}
-        </AnimatePresence>
+        <div className="graffiti">Shutter's going up. Your counter's about to get faster.</div>
+        <div className="lock"><i></i><b></b><i></i></div>
+      </div>
+
+
+      <header>
+        <nav className="wrap nav" aria-label="Main">
+          <a className="logo" href="#top"><img src="/kanda-logo.png" alt="Kanda, point of sale" width="127" height="36" style={{ height: "36px", width: "auto", display: "block" }} /></a>
+          <div className="links"><a href="#till">Try the till</a><a href="#kitchen">Kitchen</a><a href="#day">A day</a><a href="#menu">Features</a><a href="#contact">Contact</a></div>
+          <div className="acts">
+            <Link className="signin" to="/dashboard/login">Sign in</Link>
+            <a className="pill o" href="#contact">Book a demo</a>
+          </div>
+        </nav>
       </header>
 
-      {/* Hero */}
-      <section className="relative max-w-7xl mx-auto px-6 pt-12 md:pt-20">
-        <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
-          className="relative z-10 flex items-center justify-between text-xs font-semibold mb-8 md:mb-12" style={{ color: "var(--pos-muted)" }}>
-          <span className="flex items-center gap-2"><span className="live-dot w-2 h-2 rounded-full" style={{ background: "var(--pos-accent)" }} /> Available now</span>
-          <span>Hyderabad, India</span>
-        </m.div>
-        <WordReveal as="h1" text="Point of sale, built for India's busiest counters." className="relative z-10 land-display text-[13vw] md:text-[7.4vw] lg:text-[6.2vw] max-w-[14ch] lg:max-w-[16ch]" />
-        <div className="relative z-10 grid md:grid-cols-[1fr_auto] gap-8 items-end mt-6 md:mt-12">
-          <Rise delay={0.5}>
-            <p className="text-lg md:text-xl max-w-xl leading-relaxed" style={{ color: "var(--pos-muted)" }}>
-              One system for restaurants and retail: GST ready billing, kitchen sync,
-              delivery and stock, all on one screen. Available now for restaurants
-              and stores across India.
-            </p>
-          </Rise>
-          <Rise delay={0.65} className="flex flex-wrap items-center gap-3">
-            <Magnetic>
-              <a href="#contact" className="group inline-flex items-center gap-3 rounded-full pl-6 pr-1.5 py-1.5 font-bold text-white" style={{ background: "var(--pos-text)" }}>
-                Book a demo
-                <span className="w-9 h-9 rounded-full flex items-center justify-center transition-transform duration-500 group-hover:rotate-45" style={{ background: "var(--pos-accent)" }}>
-                  <ArrowUpRight className="w-4 h-4" />
-                </span>
-              </a>
-            </Magnetic>
-            <Magnetic>
-              <a href="#live" className="inline-block rounded-full px-6 py-3 font-bold" style={{ border: "1.5px solid var(--pos-text)", color: "var(--pos-text)", background: "var(--pos-bg)" }}>
-                See it live
-              </a>
-            </Magnetic>
-          </Rise>
-        </div>
-        {/* The order screen, playing out a live counter order. */}
-        <div className="relative mt-14 md:mt-20 pb-16 md:pb-24">
-          <HeroOrderPanel />
-        </div>
-      </section>
+      <main id="top">
+  
+        <section className="hero" id="till">
+          <div className="wrap">
+            <div className="hero-top">
+              <div>
+                <h1>Point of sale, built for India's <em>busiest</em> counters.</h1>
+              </div>
+              <div>
+                <p className="lead">Billing, kitchen, delivery and stock on one screen, with GST worked out on every bill. Available now, made in Hyderabad.</p>
+                <div className="ctas"><a className="pill k" href="#contact">Book a demo</a><a className="pill l" href="#kitchen">See the kitchen</a></div>
+              </div>
+            </div>
 
-      {/* Module strip — the hero's moving "carousel" */}
-      <Rise delay={0.8} className="mt-14 md:mt-20" y={40}>
-        <Marquee speed={55}>
-          {FEATURES.map((f) => (
-            <div key={f.title} className="relative w-[260px] md:w-[340px] h-[200px] md:h-[250px] rounded-3xl overflow-hidden p-5 flex flex-col justify-end text-white shrink-0"
-              style={{ background: `linear-gradient(160deg, ${f.from} 0%, ${f.to} 78%)` }}>
-              {f.note && (
-                <div className="absolute top-4 left-4 right-4 bg-white rounded-lg px-3 py-2 text-xs font-semibold flex items-center gap-2 shadow-lg" style={{ color: "#161311" }}>
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.noteColor }} />
-                  {f.note}
+            <div className="tryme" aria-hidden="true">
+              <svg width="46" height="40" viewBox="0 0 46 40"><path d="M4 6 C 20 4, 34 12, 36 32" fill="none" stroke="#C2410C" strokeWidth="2.4" strokeLinecap="round"/><path d="M28 26 L36 34 L42 24" fill="none" stroke="#C2410C" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Go on, ring up an order. It's the real flow.
+            </div>
+
+            <div className="counter">
+              <div className="till">
+                <div className="till-bar">
+                  <div className="store"><b>Demo Restaurant, Banjara Hills</b></div>
+                  <div className="seg" role="group" aria-label="Order type">
+                    <button type="button" data-ot="Dine in" aria-pressed="true">Dine in</button>
+                    <button type="button" data-ot="Takeaway" aria-pressed="false">Takeaway</button>
+                    <button type="button" data-ot="Delivery" aria-pressed="false">Delivery</button>
+                  </div>
+                </div>
+                <div className="till-body">
+                  <div className="menu">
+                    <div className="cats" id="cats" role="group" aria-label="Menu category"></div>
+                    <div className="tiles" id="tiles"></div>
+                  </div>
+                  <div className="bill">
+                    <div className="bill-h"><b id="billTitle">Table 4 · #142</b><span id="itemCount" style={{ color: "var(--muted)", fontSize: "14px" }}>0 items</span></div>
+                    <div className="lines" id="lines"></div>
+                    <div className="sums">
+                      <div><span>Subtotal</span><span id="sSub">₹0.00</span></div>
+                      <div><span>CGST 2.5%</span><span id="sC">₹0.00</span></div>
+                      <div><span>SGST 2.5%</span><span id="sS">₹0.00</span></div>
+                      <div><span>Round off</span><span id="sR">₹0.00</span></div>
+                      <div className="tot"><span>Total</span><span id="sT">₹0</span></div>
+                    </div>
+                    <div className="bill-acts">
+                      <button type="button" className="b-kot" id="bKot">Send KOT</button>
+                      <button type="button" className="b-pay" id="bPay">Print bill</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="printer" aria-live="polite">
+                <div className="pr-body"><div className="led"><i id="led" className="on"></i><span id="ledTxt">READY</span></div><div className="brandp">KANDA</div><div className="slot"></div></div>
+                <div className="paper" id="paper"><div className="rcpt" id="rcpt"></div></div>
+                <div className="pr-hint" id="prHint">Hit “Print bill” and watch this.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+  
+        <section className="kitchen" id="kitchen">
+          <div className="wrap">
+            <div className="sec-h">
+              <h2>Fire to the kitchen.</h2>
+              <p>Orders land on the right station the second they're sent. Timers go amber, then red, before a guest has to ask. Tap Bump once it's out of the pass. Anything you sent from the till above is up here too.</p>
+            </div>
+            <div className="rail-wrap"><div className="rail" id="rail"></div></div>
+            <div className="rail-foot">
+              <div><b id="kOpen">0</b>on the rail</div>
+              <div><b id="kDone">0</b>sent out</div>
+              <div><b id="kAvg">—</b>average wait</div>
+            </div>
+          </div>
+        </section>
+
+  
+        <section className="day" id="day" aria-label="A day at the counter">
+          <div className="stick">
+            <div className="sky" id="sky"></div>
+            <canvas className="stars" id="stars" aria-hidden="true"></canvas>
+            <div className="orb" id="orb" aria-hidden="true"></div>
+            <svg className="city" id="city" viewBox="0 0 1440 260" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+              <g id="cityFill" fill="#2a2018">
+                <rect x="0" y="190" width="1440" height="70"/>
+                <rect x="30" y="150" width="90" height="110"/><rect x="130" y="120" width="70" height="140"/><rect x="210" y="160" width="110" height="100"/>
+                <rect x="330" y="135" width="60" height="125"/><rect x="400" y="170" width="90" height="90"/>
+          
+                <rect x="560" y="120" width="240" height="140"/>
+                <rect x="560" y="100" width="240" height="22"/>
+                <rect x="548" y="40" width="22" height="220"/><rect x="790" y="40" width="22" height="220"/>
+                <rect x="544" y="70" width="30" height="6"/><rect x="786" y="70" width="30" height="6"/>
+                <rect x="544" y="110" width="30" height="6"/><rect x="786" y="110" width="30" height="6"/>
+                <ellipse cx="559" cy="40" rx="13" ry="16"/><ellipse cx="801" cy="40" rx="13" ry="16"/>
+                <rect x="557" y="14" width="4" height="14"/><rect x="799" y="14" width="4" height="14"/>
+                <ellipse cx="680" cy="102" rx="26" ry="18"/>
+                <rect x="840" y="150" width="80" height="110"/><rect x="930" y="125" width="70" height="135"/><rect x="1010" y="165" width="120" height="95"/>
+                <rect x="1140" y="140" width="70" height="120"/><rect x="1220" y="115" width="80" height="145"/><rect x="1310" y="160" width="130" height="100"/>
+              </g>
+              <path id="arch" d="M640 260 V190 Q680 140 720 190 V260 Z" fill="#FFCF7A" opacity="0"/>
+              <g id="windows" fill="#FFD27A" opacity="0">
+                <rect x="50" y="170" width="12" height="16"/><rect x="85" y="200" width="12" height="16"/><rect x="150" y="140" width="10" height="14"/><rect x="172" y="180" width="10" height="14"/>
+                <rect x="240" y="180" width="14" height="16"/><rect x="280" y="210" width="14" height="16"/><rect x="350" y="155" width="10" height="14"/><rect x="430" y="190" width="14" height="16"/>
+                <rect x="860" y="170" width="12" height="16"/><rect x="950" y="150" width="10" height="14"/><rect x="972" y="200" width="10" height="14"/><rect x="1040" y="185" width="14" height="16"/>
+                <rect x="1090" y="215" width="14" height="16"/><rect x="1160" y="160" width="10" height="14"/><rect x="1240" y="140" width="12" height="16"/><rect x="1270" y="200" width="12" height="16"/><rect x="1350" y="185" width="14" height="16"/>
+              </g>
+            </svg>
+            <div className="wrap inner">
+              <div>
+                <p className="intro">Keep scrolling and watch a whole day go past.</p>
+                <div className="clock" id="clock">07:00</div>
+              </div>
+              <div className="moment" id="moment">
+                <div className="when" id="mWhen">07:00 – 09:00</div>
+                <h3 id="mTitle">Chai rush</h3>
+                <p id="mBody">Fifty Irani chais before nine. Quick keys and saved favourites keep the queue moving.</p>
+                <div className="stats">
+                  <div><b id="stO">0</b><span>orders so far</span></div>
+                  <div><b id="stS">₹0</b><span>taken so far</span></div>
+                </div>
+              </div>
+            </div>
+            <div className="wrap scrub">
+              <div className="bar"><i id="scrubBar" style={{ width: "0%" }}></i></div>
+              <div className="ticks"><span>07:00</span><span>13:30</span><span>17:00</span><span>20:45</span><span>23:30</span></div>
+            </div>
+          </div>
+        </section>
+
+  
+        <section className="board-sec" id="menu">
+          <div className="wrap">
+            <div className="chalk">
+              <div className="stamp">All in<br />one plan</div>
+              <h2>Today's specials</h2>
+              <div className="sub">Everything your counter needs, on one plan</div>
+              <div className="cols" id="dishes"></div>
+            </div>
+          </div>
+        </section>
+
+  
+        <section className="contact" id="contact">
+          <div className="wrap contact-grid">
+            <div>
+              <h2>Let's open your counter.</h2>
+              <p className="lead">We're a small team in Hyderabad. Tell us about your restaurant or shop and one of us will set up a walkthrough on your own menu.</p>
+              <div className="reach">
+                <div className="it"><b>connect@kandapos.com</b><button type="button" data-copy="connect@kandapos.com">copy</button></div>
+                <div className="it"><b>+91 90009 90209</b><a href="https://wa.me/919000990209" target="_blank" rel="noopener noreferrer">WhatsApp us</a></div>
+                <div className="it"><b>@kanda.pos</b><a href="https://www.instagram.com/kanda.pos" target="_blank" rel="noopener noreferrer">on Instagram</a></div>
+              </div>
+            </div>
+
+            <div className="pad" id="pad">
+              <div className="pad-top"></div>
+              <div className="pad-h"><span>Kanda POS order pad</span><span>No. <b id="padNo">0143</b></span></div>
+              <h3>Contact us</h3>
+              <form id="leadForm" noValidate onSubmit={submitDemo}>
+                <div className="fld"><label htmlFor="f-name">Name <i>*</i></label><input id="f-name" name="name" autoComplete="name" placeholder="Your name" required value={form.name} onChange={update("name")} /></div>
+                <div className="fld"><label htmlFor="f-email">Email <i>*</i></label><input id="f-email" name="email" type="email" autoComplete="email" placeholder="Email address" required value={form.email} onChange={update("email")} /></div>
+                <div className="fld"><label htmlFor="f-business">Business</label><input id="f-business" name="business" autoComplete="organization" placeholder="Business name" value={form.business} onChange={update("business")} /></div>
+                <div className="fld two"><label htmlFor="f-phone">Phone</label><input id="f-phone" name="phone" type="tel" autoComplete="tel" placeholder="Phone number" value={form.phone} onChange={update("phone")} /><label htmlFor="f-city">City</label><input id="f-city" name="city" autoComplete="address-level2" placeholder="City" value={form.city} onChange={update("city")} /></div>
+                <div className="fld msg"><label htmlFor="f-message">Message</label><textarea id="f-message" name="message" rows={3} placeholder="What are you looking to solve?" value={form.message} onChange={update("message")}></textarea></div>
+                <div className="send"><small>We usually reply the same day.</small><button className="stampbtn" type="submit" id="sendBtn" disabled={busy}>{busy ? "Sending…" : "Contact us"}</button></div>
+              </form>
+              <div className="err" id="err" role="alert">{error}</div>
+              {submitted && (
+                <div className="done" id="done">
+                  <div><div className="rs">REQUEST RECEIVED</div><p id="doneTxt">We'll be in touch at {form.email} shortly.</p></div>
                 </div>
               )}
-              <f.icon className="w-5 h-5 mb-2.5 opacity-90" />
-              <div className="font-bold mb-1">{f.title}</div>
-              <div className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.82)" }}>{f.desc}</div>
-            </div>
-          ))}
-        </Marquee>
-      </Rise>
-
-      {/* Statement */}
-      <section className="max-w-6xl mx-auto px-6 py-24 md:py-36">
-        <ScrollWords
-          className="land-display text-3xl md:text-6xl"
-          text="Dine in, delivery, collection and the retail till. Kanda POS keeps every order, ticket and rupee on one live screen, so the rush hour runs itself."
-        />
-      </section>
-
-      {/* Numbers */}
-      <section className="max-w-7xl mx-auto px-6 pb-20 md:pb-28">
-        <div className="grid grid-cols-2 md:grid-cols-4" style={{ borderTop: "1px solid var(--pos-border)" }}>
-          {[[10, "", "modules in one system"], [4, "", "ways to sell, one live view"], [3, "", "platforms: web, Android, Windows"], [1, "", "screen for the whole counter"]].map(([n, suf, label], i) => (
-            <div key={label} className="pt-6 pb-2 pr-4" style={{ borderLeft: i ? "1px solid var(--pos-border)" : "none", paddingLeft: i ? "1.25rem" : 0 }}>
-              <CountUp to={n} suffix={suf} className="land-display text-6xl md:text-8xl block" />
-              <div className="text-sm mt-2" style={{ color: "var(--pos-muted)" }}>{label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Rush hour, as stacking cards */}
-      <section aria-label="How Kanda POS runs a rush hour" className="pb-10">
-        <div className="max-w-7xl mx-auto px-6 mb-6 md:mb-10">
-          <WordReveal as="h2" text="One order, start to finish." className="land-display text-4xl md:text-7xl" />
-        </div>
-        <StackCards cards={STACK} />
-      </section>
-
-      {/* Modules */}
-      <section id="features" className="max-w-7xl mx-auto px-6 pb-20 md:pb-28">
-        <div className="flex items-end justify-between gap-6 mb-8 md:mb-12">
-          <WordReveal as="h2" text="Everything at the counter" className="land-display text-4xl md:text-7xl" />
-          <span className="text-sm shrink-0 pb-2" style={{ color: "var(--pos-muted)" }}>({FEATURES.length} modules)</span>
-        </div>
-        <HoverList items={FEATURES} />
-      </section>
-
-      {/* A day at the counter — pinned horizontal scroll */}
-      <HorizontalScroll
-        heading={<WordReveal as="h2" text="A day at the counter." className="land-display text-4xl md:text-7xl" />}
-        panels={DAY.map((d) => ({ ...d, visual: <PulseRings /> }))}
-      />
-      <div className="h-16 md:h-24" />
-
-      {/* Live channels */}
-      <section id="live" className="px-3 md:px-6">
-        <div className="max-w-[90rem] mx-auto rounded-[2rem] md:rounded-[2.5rem] px-6 md:px-16 py-16 md:py-24 text-white" style={{ background: "#121014" }}>
-          <div className="grid md:grid-cols-[1fr_1fr] gap-6 items-end mb-10 md:mb-16">
-            <WordReveal as="h2" text="Four channels, one live view." className="land-display text-4xl md:text-7xl" />
-            <p className="text-base md:text-lg max-w-md md:justify-self-end" style={{ color: "#A39D95" }}>
-              From an Irani café counter to a kirana till, every way you sell lands on the same screen in real time.
-            </p>
-          </div>
-          <ServiceRows items={LIVE_CHANNELS} />
-        </div>
-      </section>
-
-      {/* GST */}
-      <section id="gst" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
-        <div className="grid md:grid-cols-2 gap-14 items-center">
-          <div>
-            <Kicker>Built for India</Kicker>
-            <h2 className="land-h2 text-3xl md:text-4xl mb-4">Every bill, GST ready.</h2>
-            <p style={{ color: "var(--pos-muted)" }} className="leading-relaxed mb-7 max-w-md">
-              GSTIN, tax breakdowns and store details print on every invoice automatically,
-              whether it is a dine in check or a retail receipt. Nothing to configure by
-              hand for tax season.
-            </p>
-            <a href="#contact" className="pos-btn land-pos-btn inline-block rounded-full px-6 py-3 font-bold text-white" style={{ background: "var(--pos-accent)" }}>
-              Book a demo
-            </a>
-          </div>
-
-          <div className="flex justify-center md:justify-end">
-            <div className="w-[280px] land-receipt" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-              <div className="land-receipt-edge" aria-hidden="true" />
-              <div className="px-5 pt-6 pb-5 font-mono text-[13px]" style={{ color: "var(--pos-text)" }}>
-                <div className="text-center mb-4">
-                  <div className="font-bold tracking-wide">DEMO RESTAURANT</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: "var(--pos-muted)" }}>Hyderabad, Telangana</div>
-                </div>
-                <RevealRows>
-                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
-                    <span>Hyderabadi Biryani</span><span>₹320</span>
-                  </m.div>
-                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
-                    <span>Irani Chai ×2</span><span>₹40</span>
-                  </m.div>
-                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
-                    <span>Osmania Biscuit ×4</span><span>₹80</span>
-                  </m.div>
-                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
-                    <span>CGST 2.5%</span><span>₹11.00</span>
-                  </m.div>
-                  <m.div variants={rowVariant} className="flex justify-between py-1.5" style={{ borderBottom: "1px dashed var(--pos-border)" }}>
-                    <span>SGST 2.5%</span><span>₹11.00</span>
-                  </m.div>
-                  <m.div variants={rowVariant} className="flex justify-between pt-3 font-bold text-[15px]" style={{ color: "var(--pos-accent)" }}>
-                    <span>Total</span><span>₹462.00</span>
-                  </m.div>
-                </RevealRows>
-                <div className="mt-4 pt-3 text-[10px] leading-relaxed text-center" style={{ borderTop: "1px solid var(--pos-border)", color: "var(--pos-muted)" }}>
-                  GSTIN 36AKPPK1234F1Z8<br />Thank you, visit again
-                </div>
-              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-
-      <ScaleCta
-        eyebrow="Small team, built in Hyderabad"
-        title="Let's open your counter."
-        sub="Tell us about your counter and we'll set up a walkthrough."
-        href="#contact"
-        cta="Book a demo"
-      />
-
-      {/* Contact */}
-      <section id="contact" className="max-w-7xl mx-auto px-6 py-16 md:py-20" style={{ borderTop: "1px solid var(--pos-border)" }}>
-        <div className="flex flex-col gap-5">
-          <div className="w-full rounded-2xl p-6 sm:p-10" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-            <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-              <div>
-                <h2 className="land-h2 text-2xl md:text-3xl mb-3">Let's get your business on Kanda POS</h2>
-                <p style={{ color: "var(--pos-muted)" }} className="leading-relaxed mb-6">
-                  Tell us about your restaurant or retail store and we'll set up a walkthrough,
-                  or reach us directly using the details below.
-                </p>
-                <div className="flex flex-col gap-3">
-                  <a href="mailto:connect@kandapos.com" className="flex items-center gap-3 text-sm">
-                    <Mail className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> connect@kandapos.com
-                  </a>
-                  <a href="https://wa.me/919000990209" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm">
-                    <MessageCircle className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> WhatsApp: +91 90009 90209
-                  </a>
-                  <a href="https://www.instagram.com/kanda.pos" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-sm">
-                    <Instagram className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> @kanda.pos
-                  </a>
-                  <div className="flex items-center gap-3 text-sm">
-                    <MapPin className="w-4 h-4 shrink-0" style={{ color: "var(--pos-accent)" }} /> Hyderabad, India
-                  </div>
-                </div>
-              </div>
-              <div className="pt-6 md:pt-0 md:border-l md:pl-12" style={{ borderColor: "var(--pos-border)" }}>
-                {submitted ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center py-10">
-                    <CheckCircle2 className="w-12 h-12 mb-3" style={{ color: "var(--pos-accent)" }} />
-                    <div className="font-semibold text-lg mb-1">Request received</div>
-                    <div className="text-sm" style={{ color: "var(--pos-muted)" }}>We'll be in touch at {form.email} shortly.</div>
-                  </div>
-                ) : (
-                  <form onSubmit={submitDemo} className="grid gap-4">
-                    <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--pos-accent)" }}>Contact us</div>
-                    <input required placeholder="Your name" value={form.name} onChange={update("name")}
-                      className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                    <input required type="email" placeholder="Email address" value={form.email} onChange={update("email")}
-                      className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                    <input placeholder="Business name" value={form.business} onChange={update("business")}
-                      className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <input placeholder="Phone number" value={form.phone} onChange={update("phone")}
-                        className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                      <input placeholder="City" value={form.city} onChange={update("city")}
-                        className="rounded-lg px-4 py-2.5 text-sm" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                    </div>
-                    <textarea placeholder="What are you looking to solve?" value={form.message} onChange={update("message")} rows={3}
-                      className="rounded-lg px-4 py-2.5 text-sm resize-none" style={{ background: "var(--pos-panel-2)", border: "1px solid var(--pos-border)", color: "var(--pos-text)" }} />
-                    <m.button whileTap={{ scale: 0.97 }} type="submit" disabled={demoBusy} className="land-pos-btn rounded-full px-6 py-3 font-bold text-white disabled:opacity-60" style={{ background: "var(--pos-accent)" }}>
-                      {demoBusy ? "Sending…" : "Contact us"}
-                    </m.button>
-                  </form>
-                )}
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer style={{ background: "#121014", color: "#A39D95" }}>
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr_1fr] gap-8">
-            <div className="col-span-2 md:col-span-1">
-              {/* Full lockup's wordmark is dark brown, illegible on this dark
-                  footer — crop to just the orange mark and set the name as
-                  real, theme-colored text instead of an inverted image. */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-7 w-7 overflow-hidden rounded-md shrink-0">
-                  <img src="/kanda-logo.png" alt="Kanda POS" className="h-7 w-auto max-w-none" />
-                </div>
-                <span className="font-bold text-white text-sm">KANDA POS</span>
-              </div>
-              <div className="text-sm max-w-[240px]" style={{ color: "#A39D95" }}>Point of sale software for restaurants and retail, built in Hyderabad.</div>
-            </div>
+      <footer>
+        <div className="wrap">
+          <div className="foot">
             <div>
-              <div className="text-white text-xs uppercase tracking-wider font-bold mb-3.5">Product</div>
-              <a href="#live" className="block text-sm mb-2 hover:text-white transition-colors">Live view</a>
-              <a href="#features" className="block text-sm mb-2 hover:text-white transition-colors">Features</a>
-              <a href="#gst" className="block text-sm mb-2 hover:text-white transition-colors">GST</a>
+              <a className="logo" href="#top" style={{ marginBottom: "14px", display: "flex" }}><img src="/kanda-mark.png" alt="" width="34" height="34" style={{ borderRadius: "8px", display: "block" }} /><span className="wm"><b style={{ color: "#fff" }}>KANDA<span style={{ color: "#F97316" }}>.</span></b><small>POINT OF SALE</small></span></a>
+              <div style={{ maxWidth: "30ch" }}>Point of sale software for restaurants and retail, built in Hyderabad.</div>
+              <button type="button" className="downbtn" id="downBtn">Pull the shutter down ↓</button>
             </div>
-            <div>
-              <div className="text-white text-xs uppercase tracking-wider font-bold mb-3.5">Company</div>
-              <a href="#contact" className="block text-sm mb-2 hover:text-white transition-colors">Contact</a>
-              <Link to="/privacy" className="block text-sm mb-2 hover:text-white transition-colors">Privacy</Link>
-              <Link to="/terms" className="block text-sm mb-2 hover:text-white transition-colors">Terms</Link>
-            </div>
-            <div>
-              <div className="text-white text-xs uppercase tracking-wider font-bold mb-3.5">Reach us</div>
-              <div className="text-sm mb-2">connect@kandapos.com</div>
-              <div className="text-sm mb-2">+91 90009 90209</div>
-              <div className="text-sm mb-2">Hyderabad, India</div>
-            </div>
+            <div><h4>Product</h4><a href="#till">Try the till</a><a href="#kitchen">Kitchen display</a><a href="#menu">Features</a></div>
+            <div><h4>Company</h4><a href="#contact">Contact</a><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link></div>
+            <div><h4>Reach us</h4><div>connect@kandapos.com</div><div>+91 90009 90209</div><div>Hyderabad, India</div></div>
           </div>
-          <div className="mt-10 pt-6 text-sm" style={{ borderTop: "1px solid #2A2730" }}>
-            © {new Date().getFullYear()} Kanda Solutions Pvt Ltd. All rights reserved.
-          </div>
-          <div className="land-display text-[17vw] lg:text-[15rem] leading-[0.8] text-center select-none mt-10 -mb-4 whitespace-nowrap" style={{ color: "#2A2730" }} aria-hidden="true">
-            KANDA POS
-          </div>
+    
+          <div className="copyr"><span>© 2026 Kanda Solutions Pvt Ltd. All rights reserved.</span><span>Prices in ₹ · GST invoices by default</span></div>
         </div>
       </footer>
 
-      {/* Mobile floating quick-contact button — WhatsApp, email, Instagram.
-          No phone/call option, matching the contact section above. */}
-      <div className="md:hidden fixed bottom-5 right-5 z-30 flex flex-col items-end gap-3">
-        <AnimatePresence>
-          {fabOpen && (
-            <m.div
-              initial={{ opacity: 0, y: 12, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.9 }}
-              transition={{ duration: 0.15 }}
-              className="flex flex-col items-end gap-2.5"
-            >
-              <a href="https://wa.me/919000990209" target="_blank" rel="noopener noreferrer"
-                onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>WhatsApp</span>
-                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "#25D366" }}>
-                  <MessageCircle className="w-4.5 h-4.5 text-white" />
-                </span>
-              </a>
-              <a href="mailto:connect@kandapos.com"
-                onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Email</span>
-                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "var(--pos-blue)" }}>
-                  <Mail className="w-4.5 h-4.5 text-white" />
-                </span>
-              </a>
-              <a href="https://www.instagram.com/kanda.pos" target="_blank" rel="noopener noreferrer"
-                onClick={() => setFabOpen(false)}
-                className="flex items-center gap-2.5 pl-4 pr-1.5 py-1.5 rounded-full shadow-lg" style={{ background: "var(--pos-panel)", border: "1px solid var(--pos-border)" }}>
-                <span className="text-sm font-semibold" style={{ color: "var(--pos-text)" }}>Instagram</span>
-                <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)" }}>
-                  <Instagram className="w-4.5 h-4.5 text-white" />
-                </span>
-              </a>
-            </m.div>
-          )}
-        </AnimatePresence>
-        <m.button
-          type="button"
-          onClick={() => setFabOpen((v) => !v)}
-          whileTap={{ scale: 0.94 }}
-          aria-label={fabOpen ? "Close quick contact menu" : "Open quick contact menu"}
-          aria-expanded={fabOpen}
-          className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
-          style={{ background: "var(--pos-accent)", boxShadow: "0 10px 24px -8px rgba(0,0,0,0.4)" }}
-        >
-          {fabOpen ? <X className="w-6 h-6 text-white" /> : <Plus className="w-6 h-6 text-white" />}
-        </m.button>
-      </div>
+      <div className="toast" id="toast" role="status"></div>
     </div>
-    </MotionConfig>
-    </LazyMotion>
   );
 }
