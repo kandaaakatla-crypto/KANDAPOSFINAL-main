@@ -11,52 +11,6 @@ jest.mock("react-router-dom", () => {
   };
 }, { virtual: true });
 
-// Animation layers: swap for plain elements so the copy renders in jsdom.
-jest.mock("framer-motion", () => {
-  const R = require("react");
-  const MOTION_PROPS = ["initial", "animate", "exit", "transition", "variants", "whileInView",
-    "whileHover", "whileTap", "viewport", "layout", "style"];
-  const strip = (props) => {
-    const out = { ...props };
-    MOTION_PROPS.forEach((k) => { if (k !== "style") delete out[k]; });
-    return out;
-  };
-  const m = new Proxy({}, {
-    get: (_t, tag) => ({ children, ...props }) => R.createElement(tag, strip(props), children),
-  });
-  const Pass = ({ children }) => R.createElement(R.Fragment, null, children);
-  return { m, motion: m, AnimatePresence: Pass, MotionConfig: Pass, LazyMotion: Pass, domAnimation: {} };
-});
-jest.mock("./landing/motion", () => {
-  const R = require("react");
-  const Pass = ({ children }) => R.createElement("div", null, children);
-  return {
-    WordReveal: ({ text }) => R.createElement("h1", null, text),
-    Rise: Pass,
-    ScrollWords: ({ text }) => R.createElement("p", null, text),
-    Marquee: Pass,
-    HoverList: () => null,
-    ServiceRows: () => null,
-    ScaleCta: ({ title, cta, href }) => R.createElement("a", { href }, title, cta),
-  };
-});
-jest.mock("./landing/immersive", () => {
-  const R = require("react");
-  const Pass = ({ children }) => R.createElement(R.Fragment, null, children);
-  return {
-    useSmoothScroll: () => {},
-    CursorFollower: () => null,
-    Magnetic: Pass,
-    CountUp: ({ to, suffix }) => R.createElement("span", null, `${to}${suffix || ""}`),
-    StackCards: () => null,
-    HorizontalScroll: () => null,
-  };
-});
-jest.mock("./landing/visuals", () => ({
-  OrderScreenMock: () => null, KdsMock: () => null, DispatchMock: () => null, ReportsMock: () => null, PulseRings: () => null,
-}));
-jest.mock("./landing/HeroOrderPanel", () => () => null);
-
 let container;
 let root;
 
