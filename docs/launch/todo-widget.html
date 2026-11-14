@@ -1,0 +1,212 @@
+<h2 class="sr-only">Interactive Kanda POS launch to-do list: 45 tasks grouped by week. Your own tasks open to show step-by-step instructions and links; Claude's tasks have a start button.</h2>
+<style>
+.kt-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 0;border-top:0.5px solid var(--border)}
+.kt-id{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary)}
+.kt-t{font-size:14px;line-height:1.4}
+.kt-s{font-size:12px;color:var(--text-muted)}
+.kt-pill{font-size:12px;padding:2px 8px;border-radius:var(--radius);white-space:nowrap}
+.kt-done .kt-t{color:var(--text-muted);text-decoration:line-through}
+.kt-btn{font-size:13px;white-space:nowrap}
+.kt-how{grid-column:2 / 4;background:var(--surface-1);border-radius:var(--radius);padding:12px 14px;font-size:13px;line-height:1.6;color:var(--text-primary)}
+.kt-how ol{margin:6px 0 8px;padding-left:18px}
+.kt-how a{color:var(--text-accent)}
+.kt-links{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:4px}
+</style>
+<div style="padding:0.5rem 0">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1rem">
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 14px"><div style="font-size:13px;color:var(--text-secondary)">Done</div><div style="font-size:24px;font-weight:500" id="kt-done">0 of 45</div></div>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 14px"><div style="font-size:13px;color:var(--text-secondary)">Your tasks left</div><div style="font-size:24px;font-weight:500" id="kt-you">24</div></div>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 14px"><div style="font-size:13px;color:var(--text-secondary)">Claude tasks left</div><div style="font-size:24px;font-weight:500" id="kt-cl">21</div></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.5rem">
+    <button id="kt-f-all">All</button><button id="kt-f-you">Only mine</button><button id="kt-f-cl">Only Claude's</button>
+    <button id="kt-refresh" style="margin-left:auto">Refresh list ↗</button>
+  </div>
+  <div id="kt-list"></div>
+</div>
+<script>
+const STATUS=/*STATUS*/{}/*END*/;
+const GCP="https://console.cloud.google.com/security/secret-manager?project=kandapos";
+const GH="https://github.com/kandaaakatla-crypto/KANDAPOSFINAL-main";
+const HOW={
+Y1:{why:"India requires every business that sends SMS to register on a telecom operator's DLT portal. Without it, operators drop your messages. Registering with one operator covers all of them.",
+ steps:["Pick one portal. Jio is the usual choice.","Sign up and choose \"Principal Entity\" (not Telemarketer).","Enter the company name and address exactly as on the PAN and GST certificate. A mismatch is the usual reason for rejection.","Upload: company PAN, GST certificate, certificate of incorporation, address proof under 3 months old, and an authorisation letter on company letterhead signed by a director (the portal gives a template).","Pay the fee, about ₹5,900 including GST for a year.","Wait for the approval email (about 3 to 5 working days). Save the Entity ID it gives you; MSG91 and Claude need it."],
+ links:[["Jio DLT portal","https://trueconnect.jio.com"],["Airtel DLT portal","https://dltconnect.airtel.in"],["Vi DLT portal","https://www.vilpower.in"]]},
+Y2:{why:"MSG91 will replace Twilio for SMS, OTP and WhatsApp.",
+ steps:["Sign up with the company email and verify your phone.","Complete the business KYC it asks for (same documents as DLT).","Open the support chat and ask: \"What are your India rates for transactional SMS, OTP and WhatsApp utility messages, and the monthly fee per WhatsApp number?\" Keep the reply.","Do not buy credits yet. Once Y1 is approved, add your DLT Entity ID under the SMS DLT settings."],
+ links:[["MSG91","https://msg91.com"],["MSG91 SMS pricing","https://msg91.com/in/pricing/sms"]]},
+Y3:{why:"Needed to publish the Android app. An organisation account skips the rule that makes personal accounts run 12 testers for 14 days.",
+ steps:["Open the sign-up page with the Google account you want to own the app.","Choose \"An organisation\".","Enter the company's legal name, address, website (kandapos.com) and the D-U-N-S number from Y4.","Verify the contact email and phone, and upload your own ID when asked.","Pay the one-time US$25."],
+ links:[["Play Console sign-up","https://play.google.com/console/signup"]]},
+Y4:{why:"A free company ID number that both Google and Apple ask for before they accept an organisation.",
+ steps:["First check whether the company already has one: open Apple's lookup tool, sign in with any Apple ID, search the legal company name.","If it finds the company, note the number and you are done.","If not, the same tool lets you submit a free request to Dun & Bradstreet. Use the exact legal name and registered address.","Wait for the email with the number. The free route can take 2 to 4 weeks. D&B may offer a paid faster option; that is optional."],
+ links:[["Apple D-U-N-S lookup","https://developer.apple.com/enroll/duns-lookup/"],["Dun & Bradstreet India","https://www.dnb.co.in"]]},
+Y5:{why:"Needed to publish the iPhone Dashboard app.",
+ steps:["Use an Apple ID with two-factor authentication switched on.","Start enrolment and choose \"Company / Organisation\".","Enter the legal name and D-U-N-S number, the company website, and yourself as a person allowed to sign for the company.","Apple may phone or email to confirm. Answer it; enrolment stalls until you do.","Pay US$99 for the year."],
+ links:[["Apple Developer enrolment","https://developer.apple.com/programs/enroll/"]]},
+Y6:{why:"Without it, Windows shows a security warning when someone installs the app, and automatic updates stay off.",
+ steps:["Important: certificates are no longer sold as a simple file. The key lives on a USB stick or in the seller's cloud. Our build runs on GitHub, so buy one with cloud signing.","Choose \"OV code signing\" (cheaper) or \"EV code signing\" (no warning from day one).","Buy it in the company's legal name. The seller will check company documents and may phone you. Allow 1 to 2 weeks.","When it is issued, tell Claude which seller and product you bought. The build needs a small change to match; do this before Y20."],
+ links:[["SSL.com code signing (eSigner cloud)","https://www.ssl.com/certificates/code-signing/"],["DigiCert code signing (KeyLocker cloud)","https://www.digicert.com/signing/code-signing-certificates"],["Sectigo code signing","https://www.sectigo.com/ssl-certificates-tls/code-signing"]]},
+Y7:{why:"Plivo will supply the Indian phone number for the voice agent. Indian numbers need company documents first.",
+ steps:["Sign up with the company email.","Open the compliance or KYC section and upload the company registration, address proof and the authorised signatory's ID.","Wait for approval (a few days).","Do not buy a number yet. Claude tells you when in task C19."],
+ links:[["Plivo sign-up","https://console.plivo.com/accounts/register/"],["Plivo India voice pricing","https://www.plivo.com/voice/pricing/in/"]]},
+Y8:{why:"Online payments only work with Razorpay in live mode, and live mode needs approved KYC.",
+ steps:["Log in to the Razorpay dashboard.","Switch the toggle at the top from Test mode to Live mode.","If it asks you to activate the account, finish that form (bank account, PAN, GST, website with privacy, terms and refund pages).","When live mode opens, go to Account and Settings, then API Keys. You should be able to generate a key that starts with rzp_live_.","Do not paste any key into this chat."],
+ links:[["Razorpay dashboard","https://dashboard.razorpay.com/"]]},
+Y9:{why:"The server reads payment keys from Google Cloud's Secret Manager. Keys typed anywhere else are wiped on each deploy.",
+ steps:["In Razorpay (Live mode): Account and Settings, API Keys, Generate key. Copy the Key ID and the Key Secret. The secret is shown once.","Open Secret Manager and click Create secret. Name: kanda-razorpay-key-id. Paste the Key ID as the value. Create.","Repeat for kanda-razorpay-key-secret with the Key Secret.","Make up a long random password (32+ characters). Create a third secret, kanda-razorpay-webhook-secret, with it. Keep a copy: you type the same value into Razorpay's webhook screen when Claude gives you the address in C4.","Tell Claude it is done by clicking Mark done. Never paste the values into chat."],
+ links:[["Secret Manager (kandapos)",GCP],["Razorpay dashboard","https://dashboard.razorpay.com/"]]},
+Y10:{why:"The only real proof that online payment and refund work.",
+ steps:["Do this after C4 is merged. Claude's C4 report gives the exact screen to use.","Pay ₹1 with your own card or UPI.","In Razorpay, open Transactions, Payments. The ₹1 should show as Captured.","Refund it from the POS (Orders, Refund).","In Razorpay, the payment should now show Refunded. Tell Claude if either step looks different."],
+ links:[["Razorpay payments","https://dashboard.razorpay.com/app/payments"],["Kanda POS","https://kandapos.com"]]},
+Y11:{why:"If the database is lost and there is no backup, every store's data is gone. Free and shared Atlas tiers have no real backups.",
+ steps:["Log in to MongoDB Atlas and open the project and cluster the app uses.","Note the cluster tier shown on the cluster card (M0, M10, and so on). Tell Claude the tier.","Open the Backup tab. If backups are off, switch on Cloud Backup (needs M10 or higher).","Test it once: choose a snapshot, Restore, and restore to a new temporary cluster. Check the collections are there, then delete the temporary cluster.","Tell Claude what you saw."],
+ links:[["MongoDB Atlas","https://cloud.mongodb.com"]]},
+Y12:{why:"Each SMS must go out under an approved sender name and match an approved template, or operators block it.",
+ steps:["First ask Claude for the exact text: click the button below.","In your DLT portal open Headers and add one, 6 letters, for example KANDAP. Type: Transactional or Service.","Open Content Templates and add each message Claude listed. Replace changing parts with {#var#}. Category: Service Implicit for bills and order updates, Transactional for OTP.","Wait for approval (1 to 3 days). Copy each Template ID and the header, and give them to Claude for task C11."],
+ links:[["Jio DLT portal","https://trueconnect.jio.com"]],
+ ask:["Get the template text ↗","List every SMS and WhatsApp message the app sends, as exact template text I can paste into the DLT portal and into WhatsApp template approval."]},
+Y13:{why:"WhatsApp bills and OTPs should come from an Indian business number. That is cheaper and looks right to customers.",
+ steps:["Get a phone number that is not already on WhatsApp (a new SIM is easiest). It must be able to receive one call or SMS.","In Meta Business, create or open the business portfolio for the company and start Business verification in the Security Centre (upload GST or incorporation documents).","In MSG91, open WhatsApp and add the number. It walks you through Meta's sign-up and the code sent to the phone.","Set the display name to Kanda POS.","Submit the three templates (bill, review request, OTP) using Claude's text from Y12. Approval takes minutes to 2 days."],
+ links:[["Meta Business","https://business.facebook.com"],["MSG91","https://msg91.com"]]},
+Y14:{why:"The server needs MSG91's key to send messages.",
+ steps:["In MSG91, open the account menu and find Authkey. Create one and copy it.","In Secret Manager, create a secret named kanda-msg91-auth-key with that value.","Click Mark done. Claude then switches staging, you test on Jio, Airtel and Vi phones, then production."],
+ links:[["Secret Manager (kandapos)",GCP],["MSG91","https://msg91.com"]]},
+Y15:{why:"A chartered accountant should confirm the tax invoice is legally right before real customers get one.",
+ steps:["Ask Claude for samples: click the button below.","Email both files to your CA. Ask them to confirm: GSTIN and invoice numbering, the CGST and SGST split, tax on discounted bills, and the \"Round off\" line.","Get the answer in writing and tell Claude about any change they want."],
+ links:[],
+ ask:["Get sample invoice and receipt ↗","Give me one sample tax invoice PDF and one sample receipt with the round-off line, from the demo store, to send to my CA."]},
+Y16:{why:"About 19 pull requests from other sessions are open. Launching with them half-merged is risky.",
+ steps:["Click the button below for Claude's one-line summary and recommendation for each.","Reply per pull request: merge, or park until after launch."],
+ links:[["Open pull requests",GH+"/pulls"]],
+ ask:["Get the list ↗","List the open pull requests with a one-line summary each and your recommendation: merge before launch, or park."]},
+Y17:{why:"Printing, the cash drawer and scanning have never been tried on real devices.",
+ steps:["Receipt printers, 80mm thermal, ESC/POS: one with network (LAN or Wi-Fi), one USB, one Bluetooth. Epson TM-T82 or a cheaper Xprinter are common.","A cash drawer with an RJ11 cable (it plugs into the printer).","A USB barcode scanner.","An Android tablet (10 inch, Android 10 or newer), an iPad, and a Windows 10 or 11 PC."],
+ links:[]},
+Y18:{why:"One sitting that proves the till works with real devices.",
+ steps:["Print the checklist from task C14.","Install the Windows app on the PC and the Android app on the tablet (Claude gives the download in C15 and C16).","Go through every line. Write what you saw next to anything odd.","Send Claude each failure, with a photo if you can."],
+ links:[]},
+Y19:{why:"Gets the Android app into Google Play for testing.",
+ steps:["In Play Console click Create app. Name: Kanda POS. Type: App. Free.","Work through the \"Set up your app\" list: privacy policy URL https://kandapos.com/privacy, data safety, content rating, target audience (18+), screenshots.","For the listing text and data-safety answers, click the button below.","Open Testing, Internal testing, Create new release. Upload the .aab file from task C15.","Add your own email as a tester, open the opt-in link on the tablet and install from Play."],
+ links:[["Play Console","https://play.google.com/console"]],
+ ask:["Get listing text and answers ↗","Write the Google Play store listing for Kanda POS (short and full description) and tell me how to answer the data-safety form based on what the app actually collects."]},
+Y20:{why:"The build can only sign the Windows app if GitHub holds the certificate details.",
+ steps:["Do this after Y6 arrives and after you have told Claude which seller you used. Claude tells you the exact secret names for that seller.","Open the repo's Actions secrets page and click New repository secret for each one.","Click Mark done."],
+ links:[["GitHub Actions secrets",GH+"/settings/secrets/actions"]]},
+Y21:{why:"A week of real service finds what tests cannot.",
+ steps:["Pick one friendly restaurant.","Set it up with them: menu, staff PINs, printer. Train the staff for 30 minutes.","For one week they ring every order on Kanda as well as their current till.","Each evening compare the day's totals on both. Send Claude every problem the same day."],
+ links:[]},
+Y22:{why:"Only native speakers can judge whether the voice agent sounds right in Telugu and Hindi.",
+ steps:["Get the 30-call script and score sheet from task C20.","Two native speakers each make the calls on both voice options, without knowing which is which.","Score every call 1 to 5 for: understood me, voice sounds natural, speed of reply, order correct.","Give Claude the sheets and pick the winner."],
+ links:[]},
+Y23:{why:"Store review takes days, so submit as soon as the go or no-go review passes.",
+ steps:["Android: Play Console, Production, Create new release, promote the tested build, Send for review.","iPhone: App Store Connect, open the app, add the TestFlight build, fill in description, privacy answers and screenshots, Submit for review.","Watch your email. Reviewers often ask for a test login; give them a demo account."],
+ links:[["Play Console","https://play.google.com/console"],["App Store Connect","https://appstoreconnect.apple.com"]]},
+Y24:{why:"Launch.",
+ steps:["Create the store in the Owner Portal and import its menu.","Set staff PINs and set up its printer in Devices.","Train the staff, and stay reachable for their first week.","Send Claude anything that goes wrong, as it happens."],
+ links:[["Kanda POS","https://kandapos.com"]]}
+};
+const T=[
+["Start today",[
+["Y1","Submit DLT registration for the company","3 to 7 days"],
+["Y2","Open an MSG91 account, get prices in writing",""],
+["Y3","Google Play developer account as an organisation","US$25 · needs Y4"],
+["Y4","Request a D-U-N-S number","2 to 4 weeks"],
+["Y5","Apple Developer Program as an organisation","After Y4 · US$99 a year"],
+["Y6","Order a Windows code-signing certificate","1 to 2 weeks"],
+["Y7","Plivo account and Indian KYC",""],
+["Y8","Confirm Razorpay live KYC and live keys",""]]],
+["Week 1 · make production safe",[
+["C1","Run scheduled jobs on one server only","Sonnet"],
+["C2","Make deploys wait for tests; add frontend tests to CI","Sonnet"],
+["C3","Record server errors and send them to Sentry","Sonnet"],
+["Y9","Put the three Razorpay secrets into Google Cloud",""],
+["C4","Wire Razorpay into the deploy","Sonnet · after Y9"],
+["Y10","Make a real ₹1 payment and refund","After C4"],
+["Y11","Check Atlas backups and do one restore",""]]],
+["Week 2 · money safety and tests",[
+["C5","Make refunds, voids and stock safe under retries","Opus"],
+["C6","Unit tests for the 13 untested modules","Haiku"],
+["C7","Check those tests can actually fail","Opus · after C6"],
+["C8","Set up browser tests, flows 1 to 6","Sonnet"],
+["Y12","Register DLT header and SMS templates","After Y1"],
+["Y13","WhatsApp business number and templates",""]]],
+["Week 3 · finish tests, switch messaging",[
+["C9","Browser test flows 7 to 12","Sonnet"],
+["C10","Audit the voice and WhatsApp code","Opus"],
+["C11","Messaging layer with MSG91","Sonnet · after Y2, Y12, Y13"],
+["Y14","Put the MSG91 key into Google Cloud",""],
+["C12","CORS, error boundary, log expiry, paged orders","Sonnet"],
+["C13","Refund and cancellation policy page","Sonnet"],
+["Y15","CA sign-off on invoice and round-off",""],
+["Y16","Decide the open pull requests",""]]],
+["Week 4 · devices and app stores",[
+["Y17","Gather printers, drawer, scanner, tablet, iPad",""],
+["C14","Printable hardware test checklist","Haiku"],
+["Y18","Hardware day","After C14"],
+["C15","Version scheme and Android release","Sonnet"],
+["Y19","Google Play listing and internal test","After C15"],
+["Y20","Add the Windows certificate to GitHub","After Y6"],
+["C16","Signed Windows release and update test","Sonnet · after Y20"],
+["C17","Load test on staging","Sonnet"]]],
+["Week 5 · trial, iPhone app, voice",[
+["Y21","Shadow week in a friendly restaurant",""],
+["C18","Dashboard iPhone app to TestFlight","Sonnet · after Y5"],
+["C19","Move the voice line to Plivo","Sonnet · after Y7"],
+["C20","Add Sarvam voice and the 30-call test script","Opus"],
+["Y22","Voice test with two native speakers","After C20"]]],
+["Week 6 · launch",[
+["C21","Go or no-go review of every blocker","Opus"],
+["Y23","Submit Android and iPhone apps for review",""],
+["Y24","First paying store",""]]]
+];
+const PILL={todo:["To do","var(--surface-1)","var(--text-secondary)"],working:["Claude working","var(--bg-accent)","var(--text-accent)"],review:["Ready to merge","var(--bg-warning)","var(--text-warning)"],done:["Done","var(--bg-success)","var(--text-success)"]};
+let filter="all";
+const open={};
+function st(id){return STATUS[id]||"todo"}
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
+function howBox(id){
+  const h=HOW[id];const box=el("div","kt-how");
+  box.appendChild(el("div","",h.why));
+  const ol=el("ol");h.steps.forEach(s=>ol.appendChild(el("li","",s)));box.appendChild(ol);
+  if(h.links.length){const l=el("div","kt-links");h.links.forEach(([t,u])=>{const a=el("a","",t);a.href=u;l.appendChild(a);});box.appendChild(l);}
+  if(h.ask){const b=el("button","kt-btn",h.ask[0]);b.style.marginTop="8px";b.addEventListener("click",()=>{b.disabled=true;b.textContent="Sent";sendPrompt(h.ask[1]);});box.appendChild(b);}
+  return box;
+}
+function render(){
+  const list=document.getElementById("kt-list");list.textContent="";
+  let done=0,you=0,cl=0;
+  T.forEach(([wk,rows])=>{
+    const vis=rows.filter(r=>filter==="all"||(filter==="you"&&r[0][0]==="Y")||(filter==="cl"&&r[0][0]==="C"));
+    rows.forEach(r=>{const s=st(r[0]);if(s==="done")done++;else if(r[0][0]==="Y")you++;else cl++;});
+    if(!vis.length)return;
+    const h=el("h3","",wk);h.style.margin="1.25rem 0 0.25rem";list.appendChild(h);
+    vis.forEach(([id,title,sub])=>{
+      const s=st(id),isC=id[0]==="C";
+      const row=el("div","kt-row"+(s==="done"?" kt-done":""));
+      const b=el("div");b.appendChild(el("div","kt-t",title));b.appendChild(el("div","kt-s",(isC?"Claude":"You")+(sub?" · "+sub:"")));
+      const c=el("div");c.style.display="flex";c.style.gap="8px";c.style.alignItems="center";c.style.flexWrap="wrap";c.style.justifyContent="flex-end";
+      const p=el("span","kt-pill",PILL[s][0]);p.style.background=PILL[s][1];p.style.color=PILL[s][2];c.appendChild(p);
+      if(!isC&&HOW[id]){const hb=el("button","kt-btn",open[id]?"Hide steps":"How to do this");hb.setAttribute("aria-expanded",open[id]?"true":"false");
+        hb.addEventListener("click",()=>{open[id]=!open[id];render();});c.appendChild(hb);}
+      let label=null,msg=null;
+      if(s==="todo"){label=isC?"Start ↗":"Mark done ↗";msg=isC?"Start launch task "+id:"Mark launch task "+id+" done";}
+      else if(s==="review"){label="Merge ↗";msg="Merge launch task "+id;}
+      else if(s==="working"&&!isC){label="Mark done ↗";msg="Mark launch task "+id+" done";}
+      if(label){const btn=el("button","kt-btn",label);btn.setAttribute("aria-label",label.replace(" ↗","")+" "+id+": "+title);
+        btn.addEventListener("click",()=>{btn.disabled=true;btn.textContent="Sent";sendPrompt(msg);});c.appendChild(btn);}
+      row.appendChild(el("div","kt-id",id));row.appendChild(b);row.appendChild(c);
+      if(open[id]&&HOW[id])row.appendChild(howBox(id));
+      list.appendChild(row);
+    });
+  });
+  document.getElementById("kt-done").textContent=done+" of 45";
+  document.getElementById("kt-you").textContent=String(you);
+  document.getElementById("kt-cl").textContent=String(cl);
+}
+document.getElementById("kt-f-all").addEventListener("click",()=>{filter="all";render();});
+document.getElementById("kt-f-you").addEventListener("click",()=>{filter="you";render();});
+document.getElementById("kt-f-cl").addEventListener("click",()=>{filter="cl";render();});
+document.getElementById("kt-refresh").addEventListener("click",()=>sendPrompt("Show my launch to-do list"));
+render();
+</script>
