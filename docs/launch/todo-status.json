@@ -1,0 +1,10 @@
+{
+  "_note": "Status of each launch task in docs/launch/TODO.md. Values: todo | working | review | done. 'review' means a PR is open and waiting for the owner's 'merge'. Claude updates this file and re-renders the interactive list after every change.",
+  "Y1": "todo", "Y2": "todo", "Y3": "todo", "Y4": "todo", "Y5": "todo", "Y6": "todo", "Y7": "todo", "Y8": "todo",
+  "C1": "todo", "C2": "todo", "C3": "todo", "Y9": "todo", "C4": "todo", "Y10": "todo", "Y11": "todo",
+  "C5": "todo", "C6": "todo", "C7": "todo", "C8": "todo", "Y12": "todo", "Y13": "todo",
+  "C9": "todo", "C10": "todo", "C11": "todo", "Y14": "todo", "C12": "todo", "C13": "todo", "Y15": "todo", "Y16": "todo",
+  "Y17": "todo", "C14": "todo", "Y18": "todo", "C15": "todo", "Y19": "todo", "Y20": "todo", "C16": "todo", "C17": "todo",
+  "Y21": "todo", "C18": "todo", "C19": "todo", "C20": "todo", "Y22": "todo",
+  "C21": "todo", "Y23": "todo", "Y24": "todo"
+}
